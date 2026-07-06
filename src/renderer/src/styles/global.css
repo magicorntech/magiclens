@@ -1,0 +1,83 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* Ant Design's Tabs nests several layers between the outer .ant-tabs and the actual pane
+   content (.ant-tabs -> .ant-tabs-body-holder -> .ant-tabs-body -> .ant-tabs-content),
+   and only .ant-tabs-body-holder gets a bounded height from antd's own CSS by default.
+   Without forcing every layer down to .ant-tabs-content to respect that same bound, a tall
+   tab pane (like AppShell) just renders at its full natural height and visually overflows
+   past the boundary — verified empirically via a temporary scroll-diagnostic (checked
+   clientHeight/scrollHeight/computed overflow at every level of the real DOM tree). Once
+   AppShell itself is properly bounded, its own Content area's overflow:auto is what actually
+   scrolls, while the sidebar/header/tab-bar stay fixed.
+   !important throughout because antd's own CSS-in-JS re-declares some of these at equal
+   specificity and wins the cascade on injection order otherwise — verified two of these
+   rules were silently ignored without it. */
+.ant-tabs {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.ant-tabs-body-holder {
+  overflow: hidden !important;
+}
+
+.ant-tabs-body {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.ant-tabs-content {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.ant-tabs-tabpane {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Splitter panels need a bounded ancestor; keep the scroll container inside the panel. */
+.ant-splitter-panel {
+  min-height: 0 !important;
+}
+
+/* Lets the top of the left sidebar double as the window's drag handle, merging the
+   native title bar into the app instead of showing it as a separate strip on top. */
+.titlebar-drag-region {
+  -webkit-app-region: drag;
+}
+
+.titlebar-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Favorites list in the left sidebar: keep it looking like a clean list rather than
+   loose stacked boxes, and only show the "..." menu once the row is actually relevant
+   (hovered) so the compact rows don't feel cluttered at rest. */
+.favorite-cluster-row + .favorite-cluster-row {
+  margin-top: 1px;
+}
+
+.favorite-cluster-row.active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.favorite-cluster-row:not(.active):hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.favorite-cluster-row-menu {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.favorite-cluster-row:hover .favorite-cluster-row-menu {
+  opacity: 1;
+}

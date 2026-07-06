@@ -1,0 +1,129 @@
+name: Release
+
+# Triggered whenever a semantic version tag (v1.0.0, v1.0.1, v1.1.0, v2.0.0, ...) is pushed.
+# Builds desktop installers for macOS (dmg, arm64 + x64), Windows (nsis exe) and Linux
+# (AppImage + deb), uploads them all to a single GitHub Release for the tag, and writes an
+# auto-generated changelog into the release notes.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  verify-version:
+    name: Verify tag matches package.json version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare tag with package.json version
+        id: check
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          echo "Tag version: $TAG_VERSION"
+          echo "package.json version: $PKG_VERSION"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Git tag ${GITHUB_REF_NAME} does not match package.json version ${PKG_VERSION}. Update package.json before tagging."
+            exit 1
+          fi
+          echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: verify-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: win
+          - os: ubuntu-latest
+            platform: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Linux native build dependencies
+        if: matrix.platform == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y libarchive-tools rpm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build renderer/main bundles
+        run: npm run build
+
+      # macOS code signing / notarization (optional): set these repository secrets to produce
+      # signed & notarized builds. Without them electron-builder still produces working, unsigned
+      # artifacts, but macOS Gatekeeper will warn users and Squirrel.Mac auto-update requires a
+      # signed app, so signing is strongly recommended for real releases.
+      - name: Build & publish desktop artifacts
+        run: npx electron-builder --publish always --${{ matrix.platform }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
+  changelog:
+    name: Generate changelog & finalize release
+    needs: [verify-version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build changelog from git history
+        id: changelog
+        run: |
+          CURRENT_TAG="${GITHUB_REF_NAME}"
+          PREV_TAG="$(git tag --sort=-creatordate | grep -A1 "^${CURRENT_TAG}$" | tail -n1)"
+          if [ "$PREV_TAG" == "$CURRENT_TAG" ] || [ -z "$PREV_TAG" ]; then
+            RANGE="$CURRENT_TAG"
+            echo "No previous tag found, using full history up to $CURRENT_TAG"
+          else
+            RANGE="$PREV_TAG..$CURRENT_TAG"
+            echo "Changelog range: $RANGE"
+          fi
+
+          {
+            echo "## What's changed"
+            echo ""
+            git log "$RANGE" --no-merges --pretty=format:"- %s (%h)"
+            echo ""
+            echo ""
+            if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$CURRENT_TAG" ]; then
+              echo "**Full changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${CURRENT_TAG}"
+            fi
+          } > CHANGELOG_RELEASE.md
+
+          cat CHANGELOG_RELEASE.md
+
+      - name: Update GitHub Release with changelog
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "${GITHUB_REF_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "MagicLens ${GITHUB_REF_NAME}" \
+            --notes-file CHANGELOG_RELEASE.md \
+            --draft=false \
+            --latest
