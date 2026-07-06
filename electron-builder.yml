@@ -22,13 +22,17 @@ publish:
   repo: magiclens
   releaseType: release
 
+# Auto-update on macOS requires the app (and the downloaded update) to be code-signed.
+# Set CSC_LINK / CSC_KEY_PASSWORD env vars in CI to enable signing + notarization.
+# Without those, afterSign.js falls back to a free ad-hoc signature so the app can still
+# launch on Apple Silicon (which refuses to run completely unsigned binaries).
+afterSign: build/afterSign.js
+
 mac:
   category: public.app-category.developer-tools
   icon: build/icon.png
   hardenedRuntime: true
   gatekeeperAssess: false
-  # Auto-update on macOS requires the app (and the downloaded update) to be code-signed.
-  # Set CSC_LINK / CSC_KEY_PASSWORD env vars in CI to enable signing + notarization.
   target:
     - target: dmg
       arch: [x64, arm64]

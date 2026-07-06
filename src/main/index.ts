@@ -2,9 +2,12 @@ import { join } from 'node:path'
 import { app, BrowserWindow } from 'electron'
 import { registerIpcHandlers } from './ipc/register'
 import { initAutoUpdater } from './update/autoUpdateService'
+import { fixShellPath } from './util/fixShellPath'
 import { createMainWindow } from './window'
 
 app.whenReady().then(() => {
+  fixShellPath()
+
   if (process.platform === 'darwin' && !app.isPackaged) {
     app.dock?.setIcon(join(__dirname, '../../resources/icon.png'))
   }
