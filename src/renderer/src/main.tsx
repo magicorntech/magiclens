@@ -1,20 +1,23 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect, useMemo } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ConfigProvider, theme as antdThemeApi } from 'antd'
+import { ConfigProvider } from 'antd'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { App } from './App'
 import { queryClient } from './queries/queryClient'
-import { antdTheme } from './theme'
+import { buildAntdTheme, syncDocumentTheme } from './theme'
 import { useResolvedDarkMode } from './stores/useResolvedDarkMode'
 import './styles/global.css'
 
 function Root(): React.JSX.Element {
   const isDark = useResolvedDarkMode()
+  const antdTheme = useMemo(() => buildAntdTheme(isDark), [isDark])
+
+  useEffect(() => {
+    syncDocumentTheme(isDark)
+  }, [isDark])
 
   return (
-    <ConfigProvider
-      theme={{ ...antdTheme, algorithm: isDark ? antdThemeApi.darkAlgorithm : antdThemeApi.defaultAlgorithm }}
-    >
+    <ConfigProvider theme={antdTheme}>
       <App />
     </ConfigProvider>
   )

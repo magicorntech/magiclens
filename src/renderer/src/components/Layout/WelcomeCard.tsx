@@ -57,7 +57,7 @@ export function WelcomeCard({ open, onClose }: WelcomeCardProps): React.JSX.Elem
       <Space direction="vertical" size={16} style={{ width: '100%', marginBottom: 24 }}>
         {features.map((feature) => (
           <div key={feature.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <div style={{ fontSize: 20, color: '#1677ff', marginTop: 2 }}>{feature.icon}</div>
+            <div style={{ fontSize: 20, color: 'var(--ml-primary)', marginTop: 2 }}>{feature.icon}</div>
             <div>
               <Typography.Text strong>{feature.title}</Typography.Text>
               <div>

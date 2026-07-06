@@ -3,6 +3,8 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  background: var(--ml-bg-layout, #f3f0f9);
+  color: var(--ml-text, #1a1225);
 }
 
 /* Ant Design's Tabs nests several layers between the outer .ant-tabs and the actual pane
@@ -66,11 +68,11 @@ body,
 }
 
 .favorite-cluster-row.active {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--ml-sidebar-active, rgba(255, 255, 255, 0.12));
 }
 
 .favorite-cluster-row:not(.active):hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--ml-sidebar-hover, rgba(255, 255, 255, 0.08));
 }
 
 .favorite-cluster-row-menu {
@@ -80,4 +82,191 @@ body,
 
 .favorite-cluster-row:hover .favorite-cluster-row-menu {
   opacity: 1;
+}
+
+/* Startup splash screen: several large, blurred, colorful blobs drifting on independent
+   elliptical paths behind the logo. mix-blend-mode: screen on a dark base is what makes
+   overlapping blobs visually blend into brighter intermediate colors (blue+magenta -> violet
+   glow) rather than just stacking as flat shapes, giving the "colorful waves weaving through
+   each other" look instead of a static gradient. */
+.splash-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  mix-blend-mode: screen;
+  opacity: 0.75;
+  will-change: transform;
+}
+
+.splash-blob-1 {
+  width: 520px;
+  height: 520px;
+  top: -10%;
+  left: -8%;
+  background: radial-gradient(circle at 30% 30%, #7c3aed, transparent 70%);
+  animation: splash-drift-1 22s ease-in-out infinite;
+}
+
+.splash-blob-2 {
+  width: 460px;
+  height: 460px;
+  top: 20%;
+  right: -12%;
+  background: radial-gradient(circle at 60% 40%, #c026d3, transparent 70%);
+  animation: splash-drift-2 26s ease-in-out infinite;
+}
+
+.splash-blob-3 {
+  width: 420px;
+  height: 420px;
+  bottom: -14%;
+  left: 8%;
+  background: radial-gradient(circle at 50% 50%, #6366f1, transparent 70%);
+  animation: splash-drift-3 19s ease-in-out infinite;
+}
+
+.splash-blob-4 {
+  width: 380px;
+  height: 380px;
+  bottom: -6%;
+  right: 10%;
+  background: radial-gradient(circle at 40% 60%, #5b21b6, transparent 70%);
+  animation: splash-drift-4 24s ease-in-out infinite;
+}
+
+.splash-blob-5 {
+  width: 340px;
+  height: 340px;
+  top: 40%;
+  left: 40%;
+  background: radial-gradient(circle at 50% 50%, #a855f7, transparent 70%);
+  animation: splash-drift-5 30s ease-in-out infinite;
+}
+
+@keyframes splash-drift-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(8%, 10%) scale(1.15);
+  }
+  66% {
+    transform: translate(-6%, 6%) scale(0.9);
+  }
+}
+
+@keyframes splash-drift-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-10%, 8%) scale(0.85);
+  }
+  66% {
+    transform: translate(-4%, -10%) scale(1.2);
+  }
+}
+
+@keyframes splash-drift-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(10%, -8%) scale(1.1);
+  }
+}
+
+@keyframes splash-drift-4 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-8%, -6%) scale(1.1);
+  }
+  66% {
+    transform: translate(6%, 4%) scale(0.85);
+  }
+}
+
+@keyframes splash-drift-5 {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) translate(6%, -6%) scale(1.25);
+  }
+}
+
+.splash-noise {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 40%, rgba(10, 6, 16, 0) 0%, rgba(10, 6, 16, 0.6) 75%);
+}
+
+/* Left cluster sidebar — follows the active theme surface, not a fixed purple block. */
+.sidebar-search .ant-input-affix-wrapper,
+.sidebar-search .ant-input-search-button {
+  background: var(--ml-sidebar-control-bg) !important;
+  border-color: var(--ml-sidebar-control-border) !important;
+}
+
+.sidebar-search .ant-input {
+  background: transparent !important;
+  color: var(--ml-sidebar-text) !important;
+}
+
+.sidebar-search .ant-input::placeholder {
+  color: var(--ml-sidebar-subtle) !important;
+}
+
+.sidebar-search .ant-input-clear-icon {
+  color: var(--ml-sidebar-muted) !important;
+}
+
+.sidebar-segmented .ant-segmented {
+  background: var(--ml-sidebar-control-bg) !important;
+  border: 1px solid var(--ml-sidebar-control-border);
+}
+
+.sidebar-segmented .ant-segmented-item-label {
+  color: var(--ml-sidebar-muted) !important;
+}
+
+.sidebar-segmented .ant-segmented-item-selected .ant-segmented-item-label {
+  color: var(--ml-sidebar-text) !important;
+}
+
+.sidebar-segmented .ant-segmented-thumb {
+  background: var(--ml-sidebar-active) !important;
+}
+
+.sidebar-action-btn {
+  background: var(--ml-sidebar-control-bg) !important;
+  border-color: var(--ml-sidebar-control-border) !important;
+  color: var(--ml-sidebar-text) !important;
+}
+
+.sidebar-action-btn:hover {
+  border-color: var(--ml-primary) !important;
+  color: var(--ml-primary) !important;
+}
+
+.splash-content {
+  animation: splash-fade-in 0.6s ease-out;
+}
+
+@keyframes splash-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

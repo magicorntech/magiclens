@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Empty, Input, Splitter, Table, Tag, Typography } from 'antd'
+import { Button, Empty, Input, Space, Splitter, Table, Tag, Typography } from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { CustomResourceKind, DynamicResourceItem } from '@shared/types/discovery'
 import { useCustomResourceKinds, useDynamicResourceList } from '../../queries/useDiscovery'
+import { useDynamicResourceWatch } from '../../queries/useResourceWatch'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
+import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
+import { useBottomPanel } from '../Layout/BottomPanelContext'
 
 interface CustomResourceBrowserPageProps {
   clusterId: string
@@ -23,22 +28,10 @@ const kindColumns: ColumnsType<CustomResourceKind> = [
   }
 ]
 
-const instanceColumns: ColumnsType<DynamicResourceItem> = [
-  { title: 'Name', dataIndex: 'name', key: 'name' },
-  { title: 'Namespace', dataIndex: 'namespace', key: 'namespace' },
-  {
-    title: 'Age',
-    dataIndex: 'ageTimestamp',
-    key: 'age',
-    render: (v: string | null) => (v ? new Date(v).toLocaleString() : '-')
-  },
-  {
-    title: 'Labels',
-    dataIndex: 'labelKeys',
-    key: 'labelKeys',
-    render: (keys: string[]) => keys.map((k) => <Tag key={k}>{k}</Tag>)
-  }
-]
+function buildDynamicCreateTemplate(kind: CustomResourceKind, namespace: string): string {
+  const metaNamespace = kind.namespaced && namespace !== 'ALL' ? `\n  namespace: ${namespace}` : ''
+  return `apiVersion: ${kind.apiVersion}\nkind: ${kind.kind}\nmetadata:\n  name: my-${kind.singular}${metaNamespace}\nspec: {}\n`
+}
 
 export function CustomResourceBrowserPage({
   clusterId,
@@ -48,6 +41,7 @@ export function CustomResourceBrowserPage({
   const { data: kindsData, isLoading: kindsLoading } = useCustomResourceKinds(clusterId, mode === 'installed')
   const [search, setSearch] = useState('')
   const [selectedKind, setSelectedKind] = useState<CustomResourceKind | null>(null)
+  const { openYamlEditor } = useBottomPanel()
 
   const kinds = kindsData && 'kinds' in kindsData ? kindsData.kinds : []
   const kindsError = kindsData && 'error' in kindsData ? kindsData.error : null
@@ -63,16 +57,75 @@ export function CustomResourceBrowserPage({
     }
   }, [kinds, selectedKind])
 
+  const watchStatus = useDynamicResourceWatch(
+    clusterId,
+    namespace,
+    selectedKind?.apiVersion ?? null,
+    selectedKind?.kind ?? null,
+    selectedKind?.plural ?? null,
+    selectedKind?.namespaced ?? false,
+    !!selectedKind
+  )
+  const needsPollingFallback = watchStatus === 'fallback-polling' || watchStatus === 'error' || watchStatus === 'disconnected'
   const { data: instancesData, isLoading: instancesLoading } = useDynamicResourceList(
     clusterId,
     selectedKind?.apiVersion ?? null,
     selectedKind?.kind ?? null,
     selectedKind?.namespaced ?? false,
-    namespace
+    namespace,
+    needsPollingFallback ? 5000 : false
   )
 
   const instances = instancesData && 'items' in instancesData ? instancesData.items : []
   const instancesError = instancesData && 'error' in instancesData ? instancesData.error : null
+
+  const listQueryKey = useMemo(
+    () => [
+      'dynamic-resource-list',
+      clusterId,
+      selectedKind?.apiVersion ?? null,
+      selectedKind?.kind ?? null,
+      selectedKind?.namespaced ?? false,
+      namespace
+    ],
+    [clusterId, selectedKind, namespace]
+  )
+
+  const instanceColumns: ColumnsType<DynamicResourceItem> = useMemo(
+    () => [
+      { title: 'Name', dataIndex: 'name', key: 'name' },
+      { title: 'Namespace', dataIndex: 'namespace', key: 'namespace' },
+      {
+        title: 'Age',
+        dataIndex: 'ageTimestamp',
+        key: 'age',
+        render: (v: string | null) => (v ? new Date(v).toLocaleString() : '-')
+      },
+      {
+        title: 'Labels',
+        dataIndex: 'labelKeys',
+        key: 'labelKeys',
+        render: (keys: string[]) => keys.map((k) => <Tag key={k}>{k}</Tag>)
+      },
+      {
+        title: '',
+        key: 'actions',
+        width: 56,
+        render: (_, item) =>
+          selectedKind ? (
+            <ResourceRowActions
+              clusterId={clusterId}
+              target={{ type: 'dynamic', apiVersion: selectedKind.apiVersion, kind: selectedKind.kind }}
+              namespace={item.namespace}
+              name={item.name}
+              itemId={item.id}
+              listQueryKey={listQueryKey}
+            />
+          ) : null
+      }
+    ],
+    [clusterId, selectedKind, listQueryKey]
+  )
 
   const title = mode === 'installed' ? 'Installed Operator Resources' : 'Dynamic Custom Resources'
   const description =
@@ -114,7 +167,7 @@ export function CustomResourceBrowserPage({
                     onClick: () => setSelectedKind(row),
                     style: {
                       cursor: 'pointer',
-                      background: selectedKind?.crdName === row.crdName ? 'rgba(22,119,255,0.08)' : undefined
+                      background: selectedKind?.crdName === row.crdName ? 'var(--ml-selection-bg)' : undefined
                     }
                   })}
                 />
@@ -131,12 +184,36 @@ export function CustomResourceBrowserPage({
                 <Empty description={instancesError} />
               ) : (
                 <>
-                  <Typography.Title level={5} style={{ marginTop: 0 }}>
-                    {selectedKind.kind}{' '}
-                    <Typography.Text type="secondary" style={{ fontWeight: 400 }}>
-                      {selectedKind.apiVersion}
-                    </Typography.Text>
-                  </Typography.Title>
+                  <Space
+                    align="start"
+                    style={{ width: '100%', justifyContent: 'space-between', marginBottom: 8 }}
+                  >
+                    <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 0 }}>
+                      {selectedKind.kind}{' '}
+                      <Typography.Text type="secondary" style={{ fontWeight: 400 }}>
+                        {selectedKind.apiVersion}
+                      </Typography.Text>
+                    </Typography.Title>
+                    <Button
+                      icon={<PlusOutlined />}
+                      size="small"
+                      onClick={() =>
+                        openYamlEditor({
+                          title: `New ${selectedKind.kind}`,
+                          clusterId,
+                          mode: 'create',
+                          namespace,
+                          initialYaml: buildDynamicCreateTemplate(selectedKind, namespace),
+                          listQueryKey
+                        })
+                      }
+                    >
+                      Create
+                    </Button>
+                  </Space>
+                  <div style={{ marginBottom: 8 }}>
+                    <WatchStatusBadge isError={false} watchStatus={watchStatus} />
+                  </div>
                   {selectedKind.shortNames.length > 0 && (
                     <div style={{ marginBottom: 8 }}>
                       {selectedKind.shortNames.map((s) => (

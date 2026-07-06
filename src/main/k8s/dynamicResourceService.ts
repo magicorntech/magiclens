@@ -1,8 +1,8 @@
-import type { KubernetesObject } from '@kubernetes/client-node'
+import type { KubernetesObject, KubernetesListObject } from '@kubernetes/client-node'
 import type { DynamicResourceItem } from '@shared/types/discovery'
 import type { ClusterClients } from './clusterManager'
 
-function toItem(obj: KubernetesObject): DynamicResourceItem {
+export function toDynamicItem(obj: KubernetesObject): DynamicResourceItem {
   const m = obj.metadata ?? {}
   return {
     id: m.uid ?? `${m.namespace ?? ''}/${m.name ?? ''}`,
@@ -11,6 +11,18 @@ function toItem(obj: KubernetesObject): DynamicResourceItem {
     ageTimestamp: m.creationTimestamp ? new Date(m.creationTimestamp).toISOString() : null,
     labelKeys: Object.keys(m.labels ?? {})
   }
+}
+
+/** Raw (unmapped) list, used both for the plain resource:list call and to seed a watch's resourceVersion. */
+export async function listDynamicResourcesRaw(
+  clients: ClusterClients,
+  apiVersion: string,
+  kind: string,
+  namespaced: boolean,
+  namespace: string | 'ALL'
+): Promise<KubernetesListObject<KubernetesObject>> {
+  const ns = namespaced && namespace !== 'ALL' ? namespace : undefined
+  return clients.objects.list(apiVersion, kind, ns)
 }
 
 /** Lists any Kubernetes object type by GVK using the fully generic KubernetesObjectApi client —
@@ -22,9 +34,8 @@ export async function listDynamicResources(
   namespaced: boolean,
   namespace: string | 'ALL'
 ): Promise<DynamicResourceItem[]> {
-  const ns = namespaced && namespace !== 'ALL' ? namespace : undefined
-  const res = await clients.objects.list(apiVersion, kind, ns)
-  return (res.items ?? []).map(toItem)
+  const res = await listDynamicResourcesRaw(clients, apiVersion, kind, namespaced, namespace)
+  return (res.items ?? []).map(toDynamicItem)
 }
 
 export async function dynamicResourceHasInstances(

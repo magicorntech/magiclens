@@ -1,21 +1,78 @@
+import { useEffect, useMemo } from 'react'
 import { Alert, Progress, Table, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import dayjs from 'dayjs'
 import type { PodContainerMetric } from '@shared/types/pod'
 import { usePodMetrics } from '../../queries/usePodMetrics'
 import { usePodDetail } from '../../queries/usePodDetail'
 import { formatBytes, formatCores } from '../../format'
+import { usePodMetricsHistoryStore } from '../../stores/podMetricsHistoryStore'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { PodMetricsChart } from './PodMetricsChart'
 
 interface PodMetricsPanelProps {
   clusterId: string
   namespace: string
   podName: string
+  podUid: string
+  ageTimestamp: string | null
   isActive: boolean
 }
 
-export function PodMetricsPanel({ clusterId, namespace, podName, isActive }: PodMetricsPanelProps): React.JSX.Element {
-  const { data: metrics, isLoading: metricsLoading } = usePodMetrics(clusterId, namespace, podName, isActive)
+export function PodMetricsPanel({
+  clusterId,
+  namespace,
+  podName,
+  podUid,
+  ageTimestamp,
+  isActive
+}: PodMetricsPanelProps): React.JSX.Element {
+  const { data: metrics, isLoading: metricsLoading, dataUpdatedAt } = usePodMetrics(
+    clusterId,
+    namespace,
+    podName,
+    isActive
+  )
   const { data: detail, isLoading: detailLoading } = usePodDetail(clusterId, namespace, podName, isActive)
+
+  const historyKey = `${clusterId}:${podUid}`
+  const addSample = usePodMetricsHistoryStore((s) => s.addSample)
+  const history = usePodMetricsHistoryStore((s) => s.historyByPod.get(historyKey))
+
+  useEffect(() => {
+    if (!metrics?.metricsAvailable || !dataUpdatedAt) return
+    const containers: Record<string, { cpuUsageCores: number; memoryUsageBytes: number }> = {}
+    for (const c of metrics.containers) {
+      containers[c.name] = { cpuUsageCores: c.cpuUsageCores, memoryUsageBytes: c.memoryUsageBytes }
+    }
+    addSample(historyKey, {
+      t: dataUpdatedAt,
+      totalCpuUsageCores: metrics.totalCpuUsageCores,
+      totalMemoryUsageBytes: metrics.totalMemoryUsageBytes,
+      containers
+    })
+    // `historyKey`/`addSample` are stable for the lifetime of this panel instance; only new data matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataUpdatedAt])
+
+  const containerNames = useMemo(() => metrics?.containers.map((c) => c.name) ?? [], [metrics])
+
+  const cpuPoints = useMemo(
+    () =>
+      (history ?? []).map((s) => ({
+        t: s.t,
+        values: Object.fromEntries(containerNames.map((name) => [name, s.containers[name]?.cpuUsageCores ?? 0]))
+      })),
+    [history, containerNames]
+  )
+  const memoryPoints = useMemo(
+    () =>
+      (history ?? []).map((s) => ({
+        t: s.t,
+        values: Object.fromEntries(containerNames.map((name) => [name, s.containers[name]?.memoryUsageBytes ?? 0]))
+      })),
+    [history, containerNames]
+  )
 
   if (metricsLoading || detailLoading) return <LoadingState />
 
@@ -35,11 +92,7 @@ export function PodMetricsPanel({ clusterId, namespace, podName, isActive }: Pod
     {
       title: 'CPU usage',
       key: 'cpu',
-      render: (_, c) => (
-        <Typography.Text>
-          {formatCores(c.cpuUsageCores)}
-        </Typography.Text>
-      )
+      render: (_, c) => <Typography.Text>{formatCores(c.cpuUsageCores)}</Typography.Text>
     },
     {
       title: 'Memory usage',
@@ -47,6 +100,9 @@ export function PodMetricsPanel({ clusterId, namespace, podName, isActive }: Pod
       render: (_, c) => <Typography.Text>{formatBytes(c.memoryUsageBytes)}</Typography.Text>
     }
   ]
+
+  const firstSampleAt = history?.[0]?.t
+  const recordingSincePodStart = firstSampleAt && ageTimestamp && firstSampleAt - new Date(ageTimestamp).getTime() < 5000
 
   return (
     <div>
@@ -58,17 +114,34 @@ export function PodMetricsPanel({ clusterId, namespace, podName, isActive }: Pod
         </div>
         <div style={{ flex: 1 }}>
           <Typography.Text type="secondary">Total Memory</Typography.Text>
-          <Progress percent={Math.min(100, (metrics.totalMemoryUsageBytes / (1024 * 1024 * 1024)) * 20)} size="small" showInfo={false} />
+          <Progress
+            percent={Math.min(100, (metrics.totalMemoryUsageBytes / (1024 * 1024 * 1024)) * 20)}
+            size="small"
+            showInfo={false}
+          />
           <Typography.Text strong>{formatBytes(metrics.totalMemoryUsageBytes)}</Typography.Text>
         </div>
       </div>
-      <Table
-        rowKey="name"
-        columns={columns}
-        dataSource={metrics.containers}
-        pagination={false}
-        size="small"
-      />
+
+      <Table rowKey="name" columns={columns} dataSource={metrics.containers} pagination={false} size="small" />
+
+      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <PodMetricsChart title="CPU usage over time" points={cpuPoints} seriesNames={containerNames} formatValue={formatCores} />
+        <PodMetricsChart
+          title="Memory usage over time"
+          points={memoryPoints}
+          seriesNames={containerNames}
+          formatValue={formatBytes}
+        />
+        {firstSampleAt && (
+          <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+            {recordingSincePodStart
+              ? `Showing the full pod lifetime, recorded since it started at ${dayjs(firstSampleAt).format('HH:mm:ss')}.`
+              : `Recording since ${dayjs(firstSampleAt).format('HH:mm:ss')} — this pod started earlier, but Kubernetes' metrics API has no historical data from before MagicLens began observing it.`}
+          </Typography.Text>
+        )}
+      </div>
+
       {detail && (
         <div style={{ marginTop: 16 }}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>

@@ -27,7 +27,8 @@ export function useDynamicResourceList(
   apiVersion: string | null,
   kind: string | null,
   namespaced: boolean,
-  namespace: string
+  namespace: string,
+  refetchInterval: number | false = false
 ) {
   return useQuery({
     queryKey: ['dynamic-resource-list', clusterId, apiVersion, kind, namespaced, namespace],
@@ -39,6 +40,7 @@ export function useDynamicResourceList(
         namespaced,
         namespace
       }),
-    enabled: !!clusterId && !!apiVersion && !!kind
+    enabled: !!clusterId && !!apiVersion && !!kind,
+    refetchInterval
   })
 }

@@ -7,7 +7,8 @@ import type { ClusterEntry } from '../../stores/clusterStore'
 import type { VirtualPageKey } from '../../resourceConfig/kinds.renderer'
 import { ResourceMenu } from './ResourceMenu'
 import { NamespaceSelector } from './NamespaceSelector'
-import { TerminalPanel } from '../Terminal/TerminalPanel'
+import { BottomPanel } from './BottomPanel'
+import { BottomPanelProvider, useBottomPanel } from './BottomPanelContext'
 
 const { Header, Sider, Content } = Layout
 
@@ -20,7 +21,15 @@ interface AppShellProps {
   children: ReactNode
 }
 
-export function AppShell({
+export function AppShell(props: AppShellProps): React.JSX.Element {
+  return (
+    <BottomPanelProvider>
+      <AppShellInner {...props} />
+    </BottomPanelProvider>
+  )
+}
+
+function AppShellInner({
   cluster,
   onNamespaceChange,
   onSelectKind,
@@ -30,7 +39,15 @@ export function AppShell({
 }: AppShellProps): React.JSX.Element {
   const { token } = theme.useToken()
   const [collapsed, setCollapsed] = useState(false)
-  const [showTerminal, setShowTerminal] = useState(false)
+  const { tabs, addTerminalTab, setActiveTab } = useBottomPanel()
+
+  const hasTerminalTab = tabs.some((t) => t.kind === 'terminal')
+
+  function handleTerminalClick(): void {
+    const existing = tabs.find((t) => t.kind === 'terminal')
+    if (existing) setActiveTab(existing.id)
+    else addTerminalTab()
+  }
 
   return (
     <Layout style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -38,7 +55,7 @@ export function AppShell({
         style={{
           background: token.colorBgContainer,
           borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          boxShadow: '0 1px 4px rgba(0, 21, 41, 0.08)',
+          boxShadow: 'var(--ml-shadow-sm)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -54,11 +71,7 @@ export function AppShell({
           {cluster.serverVersion && <Tag color="blue">{cluster.serverVersion}</Tag>}
         </Space>
         <Space>
-          <Button
-            type={showTerminal ? 'primary' : 'default'}
-            icon={<CodeOutlined />}
-            onClick={() => setShowTerminal((v) => !v)}
-          >
+          <Button type={hasTerminalTab ? 'primary' : 'default'} icon={<CodeOutlined />} onClick={handleTerminalClick}>
             Terminal
           </Button>
           <NamespaceSelector clusterId={cluster.id} value={cluster.selectedNamespace} onChange={onNamespaceChange} />
@@ -94,13 +107,13 @@ export function AppShell({
           }}
         >
           <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-            {showTerminal ? (
+            {tabs.length > 0 ? (
               <Splitter layout="vertical" style={{ height: '100%' }}>
                 <Splitter.Panel defaultSize="65%" min="25%">
                   <div style={{ height: '100%', overflow: 'hidden' }}>{children}</div>
                 </Splitter.Panel>
                 <Splitter.Panel defaultSize="35%" min="15%" max="75%">
-                  <TerminalPanel onClose={() => setShowTerminal(false)} />
+                  <BottomPanel />
                 </Splitter.Panel>
               </Splitter>
             ) : (

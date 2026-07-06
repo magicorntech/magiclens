@@ -10,6 +10,7 @@ import type {
 import { clusterManager } from '../k8s/clusterManager'
 import { clearDiscoveryCache } from '../k8s/discoveryService'
 import { portForwardManager } from '../k8s/portForwardManager'
+import { resourceWatchManager } from '../k8s/resourceWatchManager'
 
 export function registerClusterHandlers(): void {
   ipcMain.handle(IPC.CLUSTER_CONNECT, async (_e, req: ConnectRequest): Promise<ConnectResponse> => {
@@ -25,6 +26,7 @@ export function registerClusterHandlers(): void {
   })
 
   ipcMain.handle(IPC.CLUSTER_DISCONNECT, async (_e, req: ClusterIdRequest) => {
+    resourceWatchManager.stopAllForCluster(req.clusterId)
     portForwardManager.stopAllForCluster(req.clusterId)
     clusterManager.disconnect(req.clusterId)
     clearDiscoveryCache(req.clusterId)

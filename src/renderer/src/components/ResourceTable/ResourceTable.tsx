@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Input, Progress, Space, Splitter, Table, Typography } from 'antd'
+import { Button, Input, Progress, Space, Splitter, Table, Typography } from 'antd'
+import { PlusOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { ResourceKind } from '@shared/resourceKinds'
 import { isNamespaceScoped } from '@shared/resourceKinds'
@@ -7,6 +8,7 @@ import type { ResourceListItem } from '@shared/types/resource'
 import { useResourceList } from '../../queries/useResourceList'
 import { useNodeMetrics } from '../../queries/useNodeMetrics'
 import { kindColumnDefs } from '../../resourceConfig/kinds.renderer'
+import { buildCreateTemplate } from '../../resourceConfig/manifestTemplates'
 import { formatBytes, formatCores, percentOf } from '../../format'
 import { AgeCell } from './AgeCell'
 import { StatusTag } from './StatusTag'
@@ -14,7 +16,9 @@ import { LiveRefreshControl } from './LiveRefreshControl'
 import { WatchStatusBadge } from './WatchStatusBadge'
 import { EmptyState, ErrorState, LoadingState } from './EmptyErrorStates'
 import { ResourceDetailPanel } from './ResourceDetailPanel'
+import { ResourceRowActions } from './ResourceRowActions'
 import { ClusterMetricsSummary } from '../Metrics/ClusterMetricsSummary'
+import { useBottomPanel } from '../Layout/BottomPanelContext'
 
 interface ResourceTableProps {
   clusterId: string
@@ -26,7 +30,9 @@ interface ResourceTableProps {
 export function ResourceTable({ clusterId, namespace, kind, isActive }: ResourceTableProps): React.JSX.Element {
   const [search, setSearch] = useState('')
   const [selectedItem, setSelectedItem] = useState<ResourceListItem | null>(null)
-  const { data, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useResourceList(
+  const { openYamlEditor } = useBottomPanel()
+  const listQueryKey = useMemo(() => ['resource-list', clusterId, namespace, kind], [clusterId, namespace, kind])
+  const { data, isLoading, isError, error, refetch, isFetching, watchStatus } = useResourceList(
     clusterId,
     namespace,
     kind,
@@ -95,8 +101,23 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
       key: 'age',
       render: (_, item) => <AgeCell timestamp={item.ageTimestamp} />
     })
+    cols.push({
+      title: '',
+      key: 'actions',
+      width: 56,
+      render: (_, item) => (
+        <ResourceRowActions
+          clusterId={clusterId}
+          target={{ type: 'builtin', kind }}
+          namespace={item.namespace}
+          name={item.name}
+          itemId={item.id}
+          listQueryKey={listQueryKey}
+        />
+      )
+    })
     return cols
-  }, [kind, namespace, isNodesKind, nodeMetrics])
+  }, [kind, namespace, isNodesKind, nodeMetrics, clusterId, listQueryKey])
 
   const items = 'items' in (data ?? {}) ? (data as { items: ResourceListItem[] }).items : []
   const filtered = search ? items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase())) : items
@@ -116,9 +137,26 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
             style={{ width: 320 }}
             allowClear
           />
-          <WatchStatusBadge isError={isError} />
+          <WatchStatusBadge isError={isError} watchStatus={watchStatus} />
         </Space>
-        <LiveRefreshControl dataUpdatedAt={dataUpdatedAt} isFetching={isFetching} onManualRefresh={() => refetch()} />
+        <Space>
+          <Button
+            icon={<PlusOutlined />}
+            onClick={() =>
+              openYamlEditor({
+                title: `New ${kind}`,
+                clusterId,
+                mode: 'create',
+                namespace,
+                initialYaml: buildCreateTemplate(kind, namespace),
+                listQueryKey
+              })
+            }
+          >
+            Create
+          </Button>
+          <LiveRefreshControl isFetching={isFetching} onManualRefresh={() => refetch()} />
+        </Space>
       </Space>
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         {isNodesKind && (

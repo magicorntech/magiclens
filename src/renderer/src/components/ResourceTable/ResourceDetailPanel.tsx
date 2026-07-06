@@ -97,7 +97,14 @@ export function ResourceDetailPanel({
             key: 'metrics',
             label: 'Metrics',
             children: paddedPane(
-              <PodMetricsPanel clusterId={clusterId} namespace={item.namespace} podName={item.name} isActive={isActive} />
+              <PodMetricsPanel
+                clusterId={clusterId}
+                namespace={item.namespace}
+                podName={item.name}
+                podUid={item.id}
+                ageTimestamp={item.ageTimestamp}
+                isActive={isActive}
+              />
             )
           },
           {

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
+import { useAppPalette } from '../../stores/useAppPalette'
 
 interface TerminalViewProps {
   sessionId: string
@@ -9,6 +10,7 @@ interface TerminalViewProps {
 }
 
 export function TerminalView({ sessionId, isActive }: TerminalViewProps): React.JSX.Element {
+  const palette = useAppPalette()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const termRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
@@ -20,7 +22,7 @@ export function TerminalView({ sessionId, isActive }: TerminalViewProps): React.
       convertEol: true,
       fontSize: 13,
       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-      theme: { background: '#0d1117', foreground: '#c9d1d9' },
+      theme: { background: palette.terminalBg, foreground: palette.terminalFg, cursor: palette.primary },
       cursorBlink: true
     })
     const fitAddon = new FitAddon()
@@ -69,7 +71,7 @@ export function TerminalView({ sessionId, isActive }: TerminalViewProps): React.
       term.dispose()
       termRef.current = null
     }
-  }, [sessionId])
+  }, [sessionId, palette.terminalBg, palette.terminalFg, palette.primary])
 
   useEffect(() => {
     if (!isActive) return

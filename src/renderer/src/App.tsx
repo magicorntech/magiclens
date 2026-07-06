@@ -4,6 +4,7 @@ import { useUpdateStore } from './stores/updateStore'
 import { connectCluster } from './clusterConnect'
 import { AppLayout } from './components/Layout/AppLayout'
 import { LoadingScreen } from './components/Layout/LoadingScreen'
+import { SplashIntroScreen } from './components/Layout/SplashIntroScreen'
 import { WelcomeCard } from './components/Layout/WelcomeCard'
 import { UpdateNotificationBanner } from './components/Update/UpdateNotificationBanner'
 import { UpdateCenterModal } from './components/Update/UpdateCenterModal'
@@ -13,6 +14,8 @@ export function App(): React.JSX.Element {
   const hydrateUiState = useClusterStore((s) => s.hydrateUiState)
   const initUpdates = useUpdateStore((s) => s.init)
   const [ready, setReady] = useState(false)
+  const [showSplash, setShowSplash] = useState(false)
+  const [splashDismissed, setSplashDismissed] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false)
 
   useEffect(() => {
@@ -31,6 +34,7 @@ export function App(): React.JSX.Element {
       if (cancelled) return
 
       if (!welcomeState.hasSeenWelcome) setShowWelcome(true)
+      setShowSplash(welcomeState.showSplash)
 
       const persistedIds = new Set(persisted.map((c) => c.id))
       const openedTabs = uiState.openedTabs.filter((id) => persistedIds.has(id))
@@ -74,7 +78,15 @@ export function App(): React.JSX.Element {
     void window.api.app.setWelcomeSeen()
   }
 
+  function handleStartFromSplash(): void {
+    setSplashDismissed(true)
+    void window.api.app.setSplashSeen()
+  }
+
   if (!ready) return <LoadingScreen />
+  if (showSplash && !splashDismissed) {
+    return <SplashIntroScreen onStart={handleStartFromSplash} />
+  }
 
   return (
     <>

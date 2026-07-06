@@ -5,6 +5,7 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 import { usePodDetail } from '../../queries/usePodDetail'
+import { useAppPalette } from '../../stores/useAppPalette'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 
 interface PodExecPanelProps {
@@ -19,6 +20,7 @@ function newSessionId(): string {
 }
 
 export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExecPanelProps): React.JSX.Element {
+  const palette = useAppPalette()
   const { data: detail, isLoading } = usePodDetail(clusterId, namespace, podName, isActive)
   const containers = useMemo(() => detail?.containers.map((c) => c.name) ?? [], [detail])
 
@@ -41,7 +43,7 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
       convertEol: true,
       fontSize: 13,
       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-      theme: { background: '#0d1117', foreground: '#c9d1d9' },
+      theme: { background: palette.terminalBg, foreground: palette.terminalFg, cursor: palette.primary },
       cursorBlink: true
     })
     const fitAddon = new FitAddon()
@@ -102,7 +104,7 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
       term.dispose()
       termRef.current = null
     }
-  }, [clusterId, namespace, podName, containerName, restartToken])
+  }, [clusterId, namespace, podName, containerName, restartToken, palette.terminalBg, palette.terminalFg, palette.primary])
 
   if (isLoading) return <LoadingState />
 
@@ -137,7 +139,7 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
         style={{
           flex: 1,
           minHeight: 0,
-          background: '#0d1117',
+          background: 'var(--ml-terminal-bg)',
           padding: 8,
           borderRadius: 6
         }}

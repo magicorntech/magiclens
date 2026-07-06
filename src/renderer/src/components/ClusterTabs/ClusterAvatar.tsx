@@ -13,7 +13,7 @@ export function ClusterAvatar({ logoUrl, name, size = 32 }: ClusterAvatarProps):
   }
   const initial = name.trim().charAt(0).toUpperCase() || <ClusterOutlined />
   return (
-    <Avatar size={size} shape="square" style={{ backgroundColor: '#1677ff' }}>
+    <Avatar size={size} shape="square" style={{ backgroundColor: 'var(--ml-primary)' }}>
       {initial}
     </Avatar>
   )

@@ -32,7 +32,7 @@ export function ConnectionStatusBadge({
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
           <Badge status={config.status} />
           <Typography.Text
-            style={{ fontSize: 11, lineHeight: '14px', color: textColor ?? 'rgba(255,255,255,0.65)', whiteSpace: 'nowrap' }}
+            style={{ fontSize: 11, lineHeight: '14px', color: textColor ?? 'var(--ml-sidebar-muted)', whiteSpace: 'nowrap' }}
           >
             {config.label}
           </Typography.Text>

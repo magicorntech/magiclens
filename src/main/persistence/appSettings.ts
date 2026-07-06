@@ -5,6 +5,7 @@ interface AppSettings {
   hasSeenWelcome: boolean
   updateSettings: UpdateSettings
   skippedVersion: string | null
+  lastSeenSplashVersion: string | null
 }
 
 const defaultUpdateSettings: UpdateSettings = {
@@ -18,7 +19,8 @@ const defaultUpdateSettings: UpdateSettings = {
 const defaults: AppSettings = {
   hasSeenWelcome: false,
   updateSettings: defaultUpdateSettings,
-  skippedVersion: null
+  skippedVersion: null,
+  lastSeenSplashVersion: null
 }
 
 const store = new Store<AppSettings>({
@@ -50,4 +52,12 @@ export function getSkippedVersion(): string | null {
 
 export function setSkippedVersion(version: string | null): void {
   store.set('skippedVersion', version)
+}
+
+export function getLastSeenSplashVersion(): string | null {
+  return store.get('lastSeenSplashVersion')
+}
+
+export function setLastSeenSplashVersion(version: string): void {
+  store.set('lastSeenSplashVersion', version)
 }

@@ -1,7 +1,12 @@
 import { app, ipcMain } from 'electron'
 import { IPC } from '@shared/ipc-contract'
 import type { AppInfoResponse, WelcomeStateResponse } from '@shared/types/app'
-import { getHasSeenWelcome, setHasSeenWelcome } from '../persistence/appSettings'
+import {
+  getHasSeenWelcome,
+  getLastSeenSplashVersion,
+  setHasSeenWelcome,
+  setLastSeenSplashVersion
+} from '../persistence/appSettings'
 import packageJson from '../../../package.json'
 
 export function registerAppHandlers(): void {
@@ -13,12 +18,19 @@ export function registerAppHandlers(): void {
     nodeVersion: process.versions.node ?? '-'
   }))
 
-  ipcMain.handle(IPC.APP_GET_WELCOME_STATE, async (): Promise<WelcomeStateResponse> => ({
-    hasSeenWelcome: getHasSeenWelcome()
-  }))
+  ipcMain.handle(IPC.APP_GET_WELCOME_STATE, async (): Promise<WelcomeStateResponse> => {
+    const hasSeenWelcome = getHasSeenWelcome()
+    const showSplash = !hasSeenWelcome || getLastSeenSplashVersion() !== app.getVersion()
+    return { hasSeenWelcome, showSplash }
+  })
 
   ipcMain.handle(IPC.APP_SET_WELCOME_SEEN, async (): Promise<{ ok: true }> => {
     setHasSeenWelcome(true)
+    return { ok: true }
+  })
+
+  ipcMain.handle(IPC.APP_SET_SPLASH_SEEN, async (): Promise<{ ok: true }> => {
+    setLastSeenSplashVersion(app.getVersion())
     return { ok: true }
   })
 }

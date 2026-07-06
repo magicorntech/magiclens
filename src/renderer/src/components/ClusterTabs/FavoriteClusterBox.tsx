@@ -48,7 +48,7 @@ export function FavoriteClusterBox({ cluster, active }: FavoriteClusterBoxProps)
     >
       <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={24} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Typography.Text ellipsis style={{ display: 'block', color: '#fff', fontSize: 13, lineHeight: '18px' }}>
+        <Typography.Text ellipsis style={{ display: 'block', color: 'var(--ml-sidebar-text)', fontSize: 13, lineHeight: '18px' }}>
           {cluster.customName}
         </Typography.Text>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, overflow: 'hidden' }}>
@@ -77,7 +77,7 @@ export function FavoriteClusterBox({ cluster, active }: FavoriteClusterBoxProps)
       >
         <MoreOutlined
           className="favorite-cluster-row-menu"
-          style={{ color: 'rgba(255,255,255,0.65)', flexShrink: 0, padding: 4 }}
+          style={{ color: 'var(--ml-sidebar-muted)', flexShrink: 0, padding: 4 }}
           onClick={(e) => e.stopPropagation()}
         />
       </Dropdown>

@@ -16,6 +16,23 @@ import type {
   PersistedUiState
 } from '@shared/types/cluster'
 import type { ResourceListRequest, ResourceListResponse } from '@shared/types/resource'
+import type {
+  ResourceWatchEventPayload,
+  ResourceWatchSessionRequest,
+  ResourceWatchStartRequest,
+  ResourceWatchStartResponse,
+  ResourceWatchStatusPayload
+} from '@shared/types/resourceWatch'
+import type {
+  ResourceApplyManifestRequest,
+  ResourceApplyManifestResponse,
+  ResourceCreateManifestRequest,
+  ResourceCreateManifestResponse,
+  ResourceDeleteRequest,
+  ResourceDeleteResponse,
+  ResourceGetManifestRequest,
+  ResourceGetManifestResponse
+} from '@shared/types/resourceMutation'
 import type { ClusterMetricsSummary, NodeMetricsResponse } from '@shared/types/metrics'
 import type { AppInfoResponse, WelcomeStateResponse } from '@shared/types/app'
 import type {
@@ -94,7 +111,31 @@ const api = {
       ipcRenderer.invoke(IPC.CLUSTER_LIST_NAMESPACES, req)
   },
   resource: {
-    list: (req: ResourceListRequest): Promise<ResourceListResponse> => ipcRenderer.invoke(IPC.RESOURCE_LIST, req)
+    list: (req: ResourceListRequest): Promise<ResourceListResponse> => ipcRenderer.invoke(IPC.RESOURCE_LIST, req),
+    watch: {
+      start: (req: ResourceWatchStartRequest): Promise<ResourceWatchStartResponse> =>
+        ipcRenderer.invoke(IPC.RESOURCE_WATCH_START, req),
+      stop: (req: ResourceWatchSessionRequest): Promise<{ ok: true }> =>
+        ipcRenderer.invoke(IPC.RESOURCE_WATCH_STOP, req),
+      onEvent: (cb: (payload: ResourceWatchEventPayload) => void): (() => void) => {
+        const listener = (_e: Electron.IpcRendererEvent, payload: ResourceWatchEventPayload): void => cb(payload)
+        ipcRenderer.on(IPC.RESOURCE_WATCH_EVENT, listener)
+        return () => ipcRenderer.removeListener(IPC.RESOURCE_WATCH_EVENT, listener)
+      },
+      onStatus: (cb: (payload: ResourceWatchStatusPayload) => void): (() => void) => {
+        const listener = (_e: Electron.IpcRendererEvent, payload: ResourceWatchStatusPayload): void => cb(payload)
+        ipcRenderer.on(IPC.RESOURCE_WATCH_STATUS, listener)
+        return () => ipcRenderer.removeListener(IPC.RESOURCE_WATCH_STATUS, listener)
+      }
+    },
+    getManifest: (req: ResourceGetManifestRequest): Promise<ResourceGetManifestResponse> =>
+      ipcRenderer.invoke(IPC.RESOURCE_GET_MANIFEST, req),
+    applyManifest: (req: ResourceApplyManifestRequest): Promise<ResourceApplyManifestResponse> =>
+      ipcRenderer.invoke(IPC.RESOURCE_APPLY_MANIFEST, req),
+    createManifest: (req: ResourceCreateManifestRequest): Promise<ResourceCreateManifestResponse> =>
+      ipcRenderer.invoke(IPC.RESOURCE_CREATE_MANIFEST, req),
+    delete: (req: ResourceDeleteRequest): Promise<ResourceDeleteResponse> =>
+      ipcRenderer.invoke(IPC.RESOURCE_DELETE, req)
   },
   clusterStore: {
     list: (): Promise<{ clusters: PersistedClusterEntry[] }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_LIST),
@@ -116,7 +157,8 @@ const api = {
   app: {
     getInfo: (): Promise<AppInfoResponse> => ipcRenderer.invoke(IPC.APP_GET_INFO),
     getWelcomeState: (): Promise<WelcomeStateResponse> => ipcRenderer.invoke(IPC.APP_GET_WELCOME_STATE),
-    setWelcomeSeen: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_SET_WELCOME_SEEN)
+    setWelcomeSeen: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_SET_WELCOME_SEEN),
+    setSplashSeen: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_SET_SPLASH_SEEN)
   },
   pod: {
     getDetail: (req: PodResourceRequest): Promise<PodDetailResponse> => ipcRenderer.invoke(IPC.POD_GET_DETAIL, req),

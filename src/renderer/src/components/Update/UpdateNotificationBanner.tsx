@@ -47,7 +47,7 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
       <Space orientation="vertical" style={{ width: '100%' }} size={10}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
           <Space size={8}>
-            <RocketOutlined style={{ color: '#1677ff', fontSize: 18 }} />
+            <RocketOutlined style={{ color: 'var(--ml-primary)', fontSize: 18 }} />
             <Typography.Text strong>
               {showDownloaded ? 'Update ready to install' : showDownloading ? 'Downloading update…' : 'Update available'}
             </Typography.Text>

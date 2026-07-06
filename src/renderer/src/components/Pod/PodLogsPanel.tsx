@@ -147,8 +147,8 @@ export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLog
           flex: 1,
           minHeight: 0,
           overflow: 'auto',
-          background: '#0d1117',
-          color: '#c9d1d9',
+          background: 'var(--ml-terminal-bg)',
+          color: 'var(--ml-terminal-fg)',
           fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
           fontSize: 12,
           lineHeight: 1.6,
@@ -159,7 +159,7 @@ export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLog
         }}
       >
         {lines.length === 0 ? (
-          <Typography.Text style={{ color: '#8b949e' }}>Waiting for log output...</Typography.Text>
+          <Typography.Text style={{ color: 'var(--ml-terminal-muted)' }}>Waiting for log output...</Typography.Text>
         ) : (
           lines.map((line, i) => <div key={i}>{line || '\u00A0'}</div>)
         )}

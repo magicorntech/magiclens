@@ -12,6 +12,14 @@ export const IPC = {
   CLUSTER_LIST_NAMESPACES: 'cluster:listNamespaces',
 
   RESOURCE_LIST: 'resource:list',
+  RESOURCE_WATCH_START: 'resource:watch:start',
+  RESOURCE_WATCH_STOP: 'resource:watch:stop',
+  RESOURCE_WATCH_EVENT: 'resource:watch:event',
+  RESOURCE_WATCH_STATUS: 'resource:watch:status',
+  RESOURCE_GET_MANIFEST: 'resource:getManifest',
+  RESOURCE_APPLY_MANIFEST: 'resource:applyManifest',
+  RESOURCE_CREATE_MANIFEST: 'resource:createManifest',
+  RESOURCE_DELETE: 'resource:delete',
 
   CLUSTER_STORE_LIST: 'clusterStore:list',
   CLUSTER_STORE_ADD: 'clusterStore:add',
@@ -27,6 +35,7 @@ export const IPC = {
   APP_GET_INFO: 'app:getInfo',
   APP_GET_WELCOME_STATE: 'app:getWelcomeState',
   APP_SET_WELCOME_SEEN: 'app:setWelcomeSeen',
+  APP_SET_SPLASH_SEEN: 'app:setSplashSeen',
 
   POD_GET_DETAIL: 'pod:getDetail',
   POD_GET_METRICS: 'pod:getMetrics',
