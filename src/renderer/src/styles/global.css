@@ -208,6 +208,15 @@ body,
   background: radial-gradient(circle at 50% 40%, rgba(10, 6, 16, 0) 0%, rgba(10, 6, 16, 0.6) 75%);
 }
 
+/* Cluster tab bar: labels only — content is rendered in a separate split/single pane below. */
+.cluster-tabs-bar-only .ant-tabs-content-holder {
+  display: none !important;
+}
+
+.cluster-tabs-bar-only .ant-tabs-nav {
+  margin-bottom: 0 !important;
+}
+
 /* Left cluster sidebar — follows the active theme surface, not a fixed purple block. */
 .sidebar-search .ant-input-affix-wrapper,
 .sidebar-search .ant-input-search-button {

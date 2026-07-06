@@ -1,9 +1,9 @@
-import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button, Layout, Space, Splitter, Tag, theme, Typography } from 'antd'
 import { CodeOutlined } from '@ant-design/icons'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ClusterEntry } from '../../stores/clusterStore'
+import { useClusterStore } from '../../stores/clusterStore'
 import type { VirtualPageKey } from '../../resourceConfig/kinds.renderer'
 import { ResourceMenu } from './ResourceMenu'
 import { NamespaceSelector } from './NamespaceSelector'
@@ -38,7 +38,9 @@ function AppShellInner({
   children
 }: AppShellProps): React.JSX.Element {
   const { token } = theme.useToken()
-  const [collapsed, setCollapsed] = useState(false)
+  const resourceMenuCollapsed = useClusterStore((s) => s.resourceMenuCollapsed)
+  const setResourceMenuCollapsed = useClusterStore((s) => s.setResourceMenuCollapsed)
+  const splitView = useClusterStore((s) => s.splitView)
   const { tabs, addTerminalTab, setActiveTab } = useBottomPanel()
 
   const hasTerminalTab = tabs.some((t) => t.kind === 'terminal')
@@ -58,21 +60,28 @@ function AppShellInner({
           boxShadow: 'var(--ml-shadow-sm)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 16px',
-          height: 56,
-          lineHeight: '56px',
+          justifyContent: splitView ? 'flex-end' : 'space-between',
+          padding: splitView ? '0 10px' : '0 16px',
+          height: splitView ? 36 : 56,
+          lineHeight: splitView ? '36px' : '56px',
           flexShrink: 0,
           zIndex: 1
         }}
       >
-        <Space>
-          <Typography.Text strong>{cluster.customName}</Typography.Text>
-          {cluster.serverVersion && <Tag color="blue">{cluster.serverVersion}</Tag>}
-        </Space>
-        <Space>
-          <Button type={hasTerminalTab ? 'primary' : 'default'} icon={<CodeOutlined />} onClick={handleTerminalClick}>
-            Terminal
+        {!splitView && (
+          <Space>
+            <Typography.Text strong>{cluster.customName}</Typography.Text>
+            {cluster.serverVersion && <Tag color="blue">{cluster.serverVersion}</Tag>}
+          </Space>
+        )}
+        <Space size={splitView ? 'small' : 'middle'}>
+          <Button
+            type={hasTerminalTab ? 'primary' : 'default'}
+            size={splitView ? 'small' : 'middle'}
+            icon={<CodeOutlined />}
+            onClick={handleTerminalClick}
+          >
+            {!splitView && 'Terminal'}
           </Button>
           <NamespaceSelector clusterId={cluster.id} value={cluster.selectedNamespace} onChange={onNamespaceChange} />
         </Space>
@@ -82,8 +91,8 @@ function AppShellInner({
           width={220}
           theme="dark"
           collapsible
-          collapsed={collapsed}
-          onCollapse={setCollapsed}
+          collapsed={resourceMenuCollapsed}
+          onCollapse={setResourceMenuCollapsed}
           collapsedWidth={56}
           style={{ overflow: 'auto' }}
         >

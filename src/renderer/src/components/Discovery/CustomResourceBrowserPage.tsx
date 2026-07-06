@@ -5,8 +5,10 @@ import type { ColumnsType } from 'antd/es/table'
 import type { CustomResourceKind, DynamicResourceItem } from '@shared/types/discovery'
 import { useCustomResourceKinds, useDynamicResourceList } from '../../queries/useDiscovery'
 import { useDynamicResourceWatch } from '../../queries/useResourceWatch'
+import { compareAgeTimestamps } from '../../format'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
+import { AgeCell } from '../ResourceTable/AgeCell'
 import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
 
@@ -99,7 +101,8 @@ export function CustomResourceBrowserPage({
         title: 'Age',
         dataIndex: 'ageTimestamp',
         key: 'age',
-        render: (v: string | null) => (v ? new Date(v).toLocaleString() : '-')
+        sorter: (a, b) => compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp),
+        render: (v: string | null) => <AgeCell timestamp={v} />
       },
       {
         title: 'Labels',

@@ -9,7 +9,7 @@ import { useResourceList } from '../../queries/useResourceList'
 import { useNodeMetrics } from '../../queries/useNodeMetrics'
 import { kindColumnDefs } from '../../resourceConfig/kinds.renderer'
 import { buildCreateTemplate } from '../../resourceConfig/manifestTemplates'
-import { formatBytes, formatCores, percentOf } from '../../format'
+import { formatBytes, formatCores, percentOf, compareAgeTimestamps } from '../../format'
 import { AgeCell } from './AgeCell'
 import { StatusTag } from './StatusTag'
 import { LiveRefreshControl } from './LiveRefreshControl'
@@ -99,6 +99,7 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
     cols.push({
       title: 'Age',
       key: 'age',
+      sorter: (a, b) => compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp),
       render: (_, item) => <AgeCell timestamp={item.ageTimestamp} />
     })
     cols.push({

@@ -4,7 +4,13 @@ import type { PersistedUiState } from '@shared/types/cluster'
 const defaults: PersistedUiState = {
   openedTabs: [],
   activeClusterId: null,
-  activeView: 'clusters'
+  activeView: 'clusters',
+  splitView: false,
+  splitLeftClusterId: null,
+  splitRightClusterId: null,
+  focusedSplitPane: 'left',
+  leftSidebarCollapsed: false,
+  resourceMenuCollapsed: false
 }
 
 const store = new Store<PersistedUiState>({
@@ -16,7 +22,13 @@ export function getUiState(): PersistedUiState {
   return {
     openedTabs: store.get('openedTabs'),
     activeClusterId: store.get('activeClusterId'),
-    activeView: store.get('activeView')
+    activeView: store.get('activeView'),
+    splitView: store.get('splitView') ?? false,
+    splitLeftClusterId: store.get('splitLeftClusterId') ?? null,
+    splitRightClusterId: store.get('splitRightClusterId') ?? null,
+    focusedSplitPane: store.get('focusedSplitPane') ?? 'left',
+    leftSidebarCollapsed: store.get('leftSidebarCollapsed') ?? false,
+    resourceMenuCollapsed: store.get('resourceMenuCollapsed') ?? false
   }
 }
 

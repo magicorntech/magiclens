@@ -1,4 +1,5 @@
-import { Empty, Table, Tag, Typography } from 'antd'
+import { useMemo, useState } from 'react'
+import { Empty, Input, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmChartSummary } from '@shared/types/helm'
 import { useHelmCharts } from '../../queries/useHelm'
@@ -28,11 +29,21 @@ const columns: ColumnsType<HelmChartSummary> = [
 
 export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.Element {
   const { data, isLoading } = useHelmCharts(clusterId)
-
-  if (isLoading) return <LoadingState />
+  const [search, setSearch] = useState('')
 
   const charts = data && 'charts' in data ? data.charts : []
   const error = data && 'error' in data ? data.error : null
+
+  const filteredCharts = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return charts
+    return charts.filter((c) => {
+      const haystack = [c.chartName, c.chartVersion, c.appVersion, ...c.namespaces].join(' ').toLowerCase()
+      return haystack.includes(q)
+    })
+  }, [charts, search])
+
+  if (isLoading) return <LoadingState />
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
@@ -48,7 +59,20 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
       ) : charts.length === 0 ? (
         <Empty description="No Helm charts found in this cluster" />
       ) : (
-        <Table rowKey="id" columns={columns} dataSource={charts} pagination={false} size="middle" />
+        <>
+          <Input.Search
+            placeholder="Search charts by name, version, namespace..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+            style={{ width: 360, marginBottom: 12 }}
+          />
+          {filteredCharts.length === 0 ? (
+            <Empty description="No charts match your search" />
+          ) : (
+            <Table rowKey="id" columns={columns} dataSource={filteredCharts} pagination={false} size="middle" />
+          )}
+        </>
       )}
     </div>
   )

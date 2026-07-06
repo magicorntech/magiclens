@@ -26,6 +26,12 @@ interface ClusterStoreState {
   openedTabs: string[]
   activeClusterId: string | null
   activeView: 'clusters' | 'tabs'
+  splitView: boolean
+  splitLeftClusterId: string | null
+  splitRightClusterId: string | null
+  focusedSplitPane: 'left' | 'right'
+  leftSidebarCollapsed: boolean
+  resourceMenuCollapsed: boolean
 
   addCluster: (entry: ClusterEntry) => void
   removeCluster: (id: string) => void
@@ -33,6 +39,11 @@ interface ClusterStoreState {
   closeClusterTab: (id: string) => void
   setActiveCluster: (id: string) => void
   setActiveView: (view: 'clusters' | 'tabs') => void
+  enableSplitView: () => void
+  disableSplitView: () => void
+  setFocusedSplitPane: (pane: 'left' | 'right') => void
+  setLeftSidebarCollapsed: (collapsed: boolean) => void
+  setResourceMenuCollapsed: (collapsed: boolean) => void
   toggleFavorite: (id: string) => void
   updateClusterMeta: (id: string, patch: Partial<Pick<ClusterEntry, 'customName' | 'logoUrl'>>) => void
   setClusterStatus: (id: string, status: ConnectionStatus, errorMessage?: string) => void
@@ -54,6 +65,12 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
   openedTabs: [],
   activeClusterId: null,
   activeView: 'clusters',
+  splitView: false,
+  splitLeftClusterId: null,
+  splitRightClusterId: null,
+  focusedSplitPane: 'left',
+  leftSidebarCollapsed: false,
+  resourceMenuCollapsed: false,
 
   addCluster: (entry) => set((state) => ({ clusters: [...state.clusters, entry] })),
 
@@ -86,12 +103,60 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         state.activeClusterId === id
           ? (openedTabs.length > 0 ? openedTabs[openedTabs.length - 1] : null)
           : state.activeClusterId
-      return { openedTabs, activeClusterId }
+
+      let splitLeftClusterId = state.splitLeftClusterId
+      let splitRightClusterId = state.splitRightClusterId
+      if (splitLeftClusterId === id) {
+        splitLeftClusterId = openedTabs.find((t) => t !== splitRightClusterId) ?? openedTabs[0] ?? null
+      }
+      if (splitRightClusterId === id) {
+        splitRightClusterId = openedTabs.find((t) => t !== splitLeftClusterId) ?? null
+      }
+      const canSplit = splitLeftClusterId && splitRightClusterId && splitLeftClusterId !== splitRightClusterId
+
+      return {
+        openedTabs,
+        activeClusterId,
+        splitLeftClusterId: canSplit ? splitLeftClusterId : activeClusterId,
+        splitRightClusterId: canSplit ? splitRightClusterId : null,
+        splitView: state.splitView && !!canSplit
+      }
     }),
 
-  setActiveCluster: (id) => set({ activeClusterId: id }),
+  setActiveCluster: (id) =>
+    set((state) => {
+      if (state.splitView) {
+        const pane = state.focusedSplitPane
+        return {
+          activeClusterId: id,
+          ...(pane === 'left' ? { splitLeftClusterId: id } : { splitRightClusterId: id })
+        }
+      }
+      return { activeClusterId: id }
+    }),
 
   setActiveView: (view) => set({ activeView: view }),
+
+  enableSplitView: () =>
+    set((state) => {
+      const left = state.activeClusterId ?? state.openedTabs[0] ?? null
+      const right = state.openedTabs.find((t) => t !== left) ?? null
+      if (!left || !right) return state
+      return {
+        splitView: true,
+        splitLeftClusterId: left,
+        splitRightClusterId: right,
+        focusedSplitPane: 'left'
+      }
+    }),
+
+  disableSplitView: () => set({ splitView: false }),
+
+  setFocusedSplitPane: (pane) => set({ focusedSplitPane: pane }),
+
+  setLeftSidebarCollapsed: (collapsed) => set({ leftSidebarCollapsed: collapsed }),
+
+  setResourceMenuCollapsed: (collapsed) => set({ resourceMenuCollapsed: collapsed }),
 
   toggleFavorite: (id) =>
     set((state) => ({
@@ -163,6 +228,12 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
     set({
       openedTabs: uiState.openedTabs,
       activeClusterId: uiState.activeClusterId,
-      activeView: uiState.activeView
+      activeView: uiState.activeView,
+      splitView: uiState.splitView ?? false,
+      splitLeftClusterId: uiState.splitLeftClusterId ?? uiState.activeClusterId,
+      splitRightClusterId: uiState.splitRightClusterId ?? null,
+      focusedSplitPane: uiState.focusedSplitPane ?? 'left',
+      leftSidebarCollapsed: uiState.leftSidebarCollapsed ?? false,
+      resourceMenuCollapsed: uiState.resourceMenuCollapsed ?? false
     })
 }))

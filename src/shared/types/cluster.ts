@@ -43,4 +43,10 @@ export interface PersistedUiState {
   openedTabs: string[]
   activeClusterId: string | null
   activeView: 'clusters' | 'tabs'
+  splitView?: boolean
+  splitLeftClusterId?: string | null
+  splitRightClusterId?: string | null
+  focusedSplitPane?: 'left' | 'right'
+  leftSidebarCollapsed?: boolean
+  resourceMenuCollapsed?: boolean
 }

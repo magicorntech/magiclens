@@ -43,7 +43,17 @@ export function App(): React.JSX.Element {
         : (openedTabs[0] ?? null)
 
       hydrateFromPersistence(persisted)
-      hydrateUiState({ openedTabs, activeClusterId, activeView: uiState.activeView })
+      hydrateUiState({
+        openedTabs,
+        activeClusterId,
+        activeView: uiState.activeView,
+        splitView: uiState.splitView,
+        splitLeftClusterId: uiState.splitLeftClusterId,
+        splitRightClusterId: uiState.splitRightClusterId,
+        focusedSplitPane: uiState.focusedSplitPane,
+        leftSidebarCollapsed: uiState.leftSidebarCollapsed,
+        resourceMenuCollapsed: uiState.resourceMenuCollapsed
+      })
       setReady(true)
 
       for (const id of openedTabs) {
@@ -67,7 +77,13 @@ export function App(): React.JSX.Element {
       void window.api.uiState.set({
         openedTabs: state.openedTabs,
         activeClusterId: state.activeClusterId,
-        activeView: state.activeView
+        activeView: state.activeView,
+        splitView: state.splitView,
+        splitLeftClusterId: state.splitLeftClusterId,
+        splitRightClusterId: state.splitRightClusterId,
+        focusedSplitPane: state.focusedSplitPane,
+        leftSidebarCollapsed: state.leftSidebarCollapsed,
+        resourceMenuCollapsed: state.resourceMenuCollapsed
       })
     })
     return unsubscribe

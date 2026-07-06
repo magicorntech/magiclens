@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Button, Empty, Table, Tag, Typography } from 'antd'
+import { useMemo, useState } from 'react'
+import { Button, Empty, Input, Table, Tag, Typography } from 'antd'
 import { HistoryOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmRelease } from '@shared/types/helm'
@@ -34,9 +34,29 @@ function statusColor(status: string): string {
 export function HelmReleasesPage({ clusterId }: HelmReleasesPageProps): React.JSX.Element {
   const { data, isLoading } = useHelmReleases(clusterId)
   const [historyTarget, setHistoryTarget] = useState<{ namespace: string; name: string } | null>(null)
+  const [search, setSearch] = useState('')
 
   const releases = data && 'releases' in data ? data.releases : []
   const error = data && 'error' in data ? data.error : null
+
+  const filteredReleases = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return releases
+    return releases.filter((r) => {
+      const haystack = [
+        r.name,
+        r.namespace,
+        r.status,
+        r.chartName,
+        r.chartVersion,
+        `${r.chartName}-${r.chartVersion}`,
+        r.appVersion
+      ]
+        .join(' ')
+        .toLowerCase()
+      return haystack.includes(q)
+    })
+  }, [releases, search])
 
   const columns: ColumnsType<HelmRelease> = [
     {
@@ -92,7 +112,20 @@ export function HelmReleasesPage({ clusterId }: HelmReleasesPageProps): React.JS
       ) : releases.length === 0 ? (
         <Empty description="No Helm releases found in this cluster" />
       ) : (
-        <Table rowKey="id" columns={columns} dataSource={releases} pagination={false} size="middle" />
+        <>
+          <Input.Search
+            placeholder="Search releases by name, namespace, chart, status..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+            style={{ width: 360, marginBottom: 12 }}
+          />
+          {filteredReleases.length === 0 ? (
+            <Empty description="No releases match your search" />
+          ) : (
+            <Table rowKey="id" columns={columns} dataSource={filteredReleases} pagination={false} size="middle" />
+          )}
+        </>
       )}
       {historyTarget && (
         <HelmReleaseHistoryModal

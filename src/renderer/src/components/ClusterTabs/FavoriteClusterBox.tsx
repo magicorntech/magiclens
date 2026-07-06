@@ -1,4 +1,4 @@
-import { Dropdown, Tag, Typography } from 'antd'
+import { Dropdown, Tag, Tooltip, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { MoreOutlined, StarFilled } from '@ant-design/icons'
 import type { ClusterEntry } from '../../stores/clusterStore'
@@ -9,9 +9,10 @@ import { ConnectionStatusBadge } from '../ResourceTable/ConnectionStatusBadge'
 interface FavoriteClusterBoxProps {
   cluster: ClusterEntry
   active: boolean
+  compact?: boolean
 }
 
-export function FavoriteClusterBox({ cluster, active }: FavoriteClusterBoxProps): React.JSX.Element {
+export function FavoriteClusterBox({ cluster, active, compact = false }: FavoriteClusterBoxProps): React.JSX.Element {
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
   const toggleFavorite = useClusterStore((s) => s.toggleFavorite)
   const removeCluster = useClusterStore((s) => s.removeCluster)
@@ -30,6 +31,29 @@ export function FavoriteClusterBox({ cluster, active }: FavoriteClusterBoxProps)
       void window.api.clusterStore.remove(cluster.id)
       removeCluster(cluster.id)
     }
+  }
+
+  if (compact) {
+    return (
+      <Dropdown menu={{ items: menuItems, onClick: ({ key }) => handleMenuClick(key) }} trigger={['contextMenu']}>
+        <Tooltip title={cluster.customName} placement="right">
+          <div
+            className={`favorite-cluster-row${active ? ' active' : ''}`}
+            onClick={() => openClusterTab(cluster.id)}
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              padding: '6px 4px',
+              borderRadius: 6,
+              cursor: 'pointer'
+            }}
+          >
+            <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={28} />
+          </div>
+        </Tooltip>
+      </Dropdown>
+    )
   }
 
   return (
