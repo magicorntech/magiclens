@@ -5,7 +5,10 @@
   "buildNumber": "1",
   "description": "A simple, fast Kubernetes cluster manager",
   "main": "./out/main/index.js",
-  "author": "magiclens",
+  "author": {
+    "name": "MagicLens",
+    "email": "support@magicorn.co"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/magicorntech/magiclens.git"
@@ -35,7 +38,7 @@
     "dayjs": "^1.11.13",
     "electron-store": "^8.2.0",
     "electron-updater": "^6.3.9",
-    "node-pty": "^1.0.0",
+    "node-pty": "^1.1.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "react-easy-crop": "^6.1.0",

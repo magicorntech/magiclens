@@ -70,17 +70,25 @@ jobs:
       # signed & notarized builds. Without them electron-builder still produces working, unsigned
       # artifacts, but macOS Gatekeeper will warn users and Squirrel.Mac auto-update requires a
       # signed app, so signing is strongly recommended for real releases.
+      #
+      # These env vars are only exported when the corresponding secret is actually configured.
+      # electron-builder treats an *empty string* CSC_LINK/WIN_CSC_LINK as a (missing) file path
+      # and hard-fails, so we must avoid setting the var at all when no secret is present.
+      - name: Export optional code signing secrets
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.MAC_CSC_LINK }}" ]; then echo "CSC_LINK=${{ secrets.MAC_CSC_LINK }}" >> "$GITHUB_ENV"; fi
+          if [ -n "${{ secrets.MAC_CSC_KEY_PASSWORD }}" ]; then echo "CSC_KEY_PASSWORD=${{ secrets.MAC_CSC_KEY_PASSWORD }}" >> "$GITHUB_ENV"; fi
+          if [ -n "${{ secrets.APPLE_ID }}" ]; then echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> "$GITHUB_ENV"; fi
+          if [ -n "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" ]; then echo "APPLE_APP_SPECIFIC_PASSWORD=${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" >> "$GITHUB_ENV"; fi
+          if [ -n "${{ secrets.APPLE_TEAM_ID }}" ]; then echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> "$GITHUB_ENV"; fi
+          if [ -n "${{ secrets.WIN_CSC_LINK }}" ]; then echo "WIN_CSC_LINK=${{ secrets.WIN_CSC_LINK }}" >> "$GITHUB_ENV"; fi
+          if [ -n "${{ secrets.WIN_CSC_KEY_PASSWORD }}" ]; then echo "WIN_CSC_KEY_PASSWORD=${{ secrets.WIN_CSC_KEY_PASSWORD }}" >> "$GITHUB_ENV"; fi
+
       - name: Build & publish desktop artifacts
         run: npx electron-builder --publish always --${{ matrix.platform }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
   changelog:
     name: Generate changelog & finalize release
