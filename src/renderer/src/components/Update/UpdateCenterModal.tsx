@@ -1,5 +1,5 @@
 import { Alert, Button, Descriptions, Modal, Progress, Space, Tag, Typography } from 'antd'
-import { CheckCircleOutlined, DownloadOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined, DownloadOutlined, ExportOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons'
 import type { UpdatePhase } from '@shared/types/update'
 import { useUpdateStore } from '../../stores/updateStore'
 
@@ -31,9 +31,11 @@ export function UpdateCenterModal(): React.JSX.Element {
   const download = useUpdateStore((s) => s.download)
   const install = useUpdateStore((s) => s.install)
   const skip = useUpdateStore((s) => s.skip)
+  const openReleasePage = useUpdateStore((s) => s.openReleasePage)
 
   const phase = state?.phase ?? 'idle'
   const isSkipped = !!state?.latestVersion && state.latestVersion === state.skippedVersion
+  const manualDownloadOnly = state?.manualDownloadOnly ?? false
 
   return (
     <Modal title="Update Center" open={open} onCancel={close} footer={null} width={520}>
@@ -72,6 +74,15 @@ export function UpdateCenterModal(): React.JSX.Element {
           />
         )}
 
+        {phase === 'available' && manualDownloadOnly && (
+          <Alert
+            type="info"
+            showIcon
+            message="Manual download required on macOS"
+            description="Without a paid Apple Developer ID certificate, automatic install can't be verified safely on macOS. Download the DMG from the GitHub release page and install it manually - it only takes a moment."
+          />
+        )}
+
         {state?.releaseNotes && (
           <div>
             <Typography.Text strong>Release notes</Typography.Text>
@@ -96,7 +107,12 @@ export function UpdateCenterModal(): React.JSX.Element {
           <Button icon={<SyncOutlined />} loading={phase === 'checking'} onClick={() => void check()}>
             Check for updates
           </Button>
-          {phase === 'available' && !isSkipped && (
+          {phase === 'available' && !isSkipped && manualDownloadOnly && (
+            <Button type="primary" icon={<ExportOutlined />} onClick={() => void openReleasePage()}>
+              Open GitHub release
+            </Button>
+          )}
+          {phase === 'available' && !isSkipped && !manualDownloadOnly && (
             <Button type="primary" icon={<DownloadOutlined />} onClick={() => void download()}>
               Download update
             </Button>

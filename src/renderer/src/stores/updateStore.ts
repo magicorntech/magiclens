@@ -14,6 +14,7 @@ interface UpdateStoreState {
   install: () => Promise<void>
   skip: () => Promise<void>
   remindLater: () => Promise<void>
+  openReleasePage: () => Promise<void>
   saveSettings: (patch: Partial<UpdateSettings>) => Promise<void>
 }
 
@@ -56,6 +57,10 @@ export const useUpdateStore = create<UpdateStoreState>()((set, get) => ({
 
   remindLater: async () => {
     await window.api.update.remindLater()
+  },
+
+  openReleasePage: async () => {
+    await window.api.update.openReleasePage()
   },
 
   saveSettings: async (patch) => {

@@ -76,5 +76,6 @@ export const IPC = {
   UPDATE_GET_STATE: 'update:getState',
   UPDATE_GET_SETTINGS: 'update:getSettings',
   UPDATE_SET_SETTINGS: 'update:setSettings',
-  UPDATE_STATE_CHANGED: 'update:stateChanged'
+  UPDATE_STATE_CHANGED: 'update:stateChanged',
+  UPDATE_OPEN_RELEASE_PAGE: 'update:openReleasePage'
 } as const

@@ -1,4 +1,4 @@
-import { app, type BrowserWindow } from 'electron'
+import { app, shell, type BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { IPC } from '@shared/ipc-contract'
 import type { UpdateSettings, UpdateState } from '@shared/types/update'
@@ -11,6 +11,18 @@ import {
 
 const AUTO_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000 // 4 hours
 const REMIND_LATER_DELAY_MS = 60 * 60 * 1000 // 1 hour
+const RELEASES_BASE_URL = 'https://github.com/magicorntech/magiclens/releases'
+
+/**
+ * Squirrel.Mac (the macOS engine behind electron-updater's in-app download/install flow)
+ * requires every update to be signed with the exact same code-signing identity as the
+ * currently-installed build. Without a paid Apple Developer ID certificate we can only produce
+ * ad-hoc signatures, which are unique per-build and will always fail that check ("Code signature
+ * ... did not pass validation"). Rather than let users hit that dead end, macOS builds skip the
+ * in-app download/install entirely and just link out to the GitHub release for a manual DMG
+ * download. Windows/Linux are unaffected and keep the full automatic flow.
+ */
+const MANUAL_DOWNLOAD_ONLY = process.platform === 'darwin'
 
 let mainWindow: BrowserWindow | null = null
 let autoCheckTimer: ReturnType<typeof setInterval> | null = null
@@ -26,7 +38,9 @@ let state: UpdateState = {
   progress: null,
   error: null,
   skippedVersion: getSkippedVersion(),
-  notificationDismissed: false
+  notificationDismissed: false,
+  manualDownloadOnly: MANUAL_DOWNLOAD_ONLY,
+  releaseUrl: null
 }
 
 function normalizeReleaseNotes(notes: string | { version: string; note?: string | null }[] | null | undefined): string | null {
@@ -64,11 +78,12 @@ function registerUpdaterEvents(): void {
       latestVersion: info.version,
       releaseNotes: normalizeReleaseNotes(info.releaseNotes),
       releaseDate: info.releaseDate ?? null,
+      releaseUrl: `${RELEASES_BASE_URL}/tag/v${info.version}`,
       skippedVersion: skipped,
       notificationDismissed: false,
       error: null
     })
-    if (skipped !== info.version && getUpdateSettings().autoDownload) {
+    if (!MANUAL_DOWNLOAD_ONLY && skipped !== info.version && getUpdateSettings().autoDownload) {
       void autoUpdater.downloadUpdate().catch((err) => {
         setState({ phase: 'error', error: err instanceof Error ? err.message : String(err) })
       })
@@ -160,6 +175,10 @@ export async function checkForUpdates(): Promise<void> {
 }
 
 export async function downloadUpdate(): Promise<void> {
+  if (MANUAL_DOWNLOAD_ONLY) {
+    openReleasePage()
+    return
+  }
   try {
     await autoUpdater.downloadUpdate()
   } catch (err) {
@@ -168,7 +187,13 @@ export async function downloadUpdate(): Promise<void> {
 }
 
 export function installUpdate(): void {
+  if (MANUAL_DOWNLOAD_ONLY) return
   autoUpdater.quitAndInstall()
+}
+
+export function openReleasePage(): void {
+  const url = state.releaseUrl ?? RELEASES_BASE_URL
+  void shell.openExternal(url)
 }
 
 export function skipVersion(version: string): void {

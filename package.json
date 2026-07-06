@@ -1,8 +1,8 @@
 {
   "name": "magiclens",
   "productName": "MagicLens",
-  "version": "0.1.1",
-  "buildNumber": "2",
+  "version": "0.1.2",
+  "buildNumber": "3",
   "description": "A simple, fast Kubernetes cluster manager",
   "main": "./out/main/index.js",
   "author": {

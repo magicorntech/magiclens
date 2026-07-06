@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Button, Progress, Space, Typography, message } from 'antd'
-import { CloseOutlined, DownloadOutlined, ReloadOutlined, RocketOutlined } from '@ant-design/icons'
+import { CloseOutlined, DownloadOutlined, ExportOutlined, ReloadOutlined, RocketOutlined } from '@ant-design/icons'
 import { useUpdateStore } from '../../stores/updateStore'
 
 export function UpdateNotificationBanner(): React.JSX.Element | null {
@@ -10,6 +10,7 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
   const skip = useUpdateStore((s) => s.skip)
   const remindLater = useUpdateStore((s) => s.remindLater)
   const openCenter = useUpdateStore((s) => s.openCenter)
+  const openReleasePage = useUpdateStore((s) => s.openReleasePage)
   const lastErrorRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -61,7 +62,9 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
             ? `MagicLens v${state.latestVersion} has been downloaded. Restart to finish installing.`
             : showDownloading
               ? `Downloading v${state.latestVersion}…`
-              : `MagicLens v${state.latestVersion} is available (current: v${state.currentVersion}).`}
+              : state.manualDownloadOnly
+                ? `MagicLens v${state.latestVersion} is available (current: v${state.currentVersion}). Automatic install isn't supported on macOS - download the DMG from GitHub.`
+                : `MagicLens v${state.latestVersion} is available (current: v${state.currentVersion}).`}
         </Typography.Text>
 
         {showDownloading && (
@@ -70,9 +73,15 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
 
         {showAvailable && (
           <Space size={8} wrap>
-            <Button type="primary" size="small" icon={<DownloadOutlined />} onClick={() => void download()}>
-              Download
-            </Button>
+            {state.manualDownloadOnly ? (
+              <Button type="primary" size="small" icon={<ExportOutlined />} onClick={() => void openReleasePage()}>
+                Open GitHub release
+              </Button>
+            ) : (
+              <Button type="primary" size="small" icon={<DownloadOutlined />} onClick={() => void download()}>
+                Download
+              </Button>
+            )}
             <Button size="small" onClick={() => openCenter()}>
               Details
             </Button>

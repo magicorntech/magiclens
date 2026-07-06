@@ -7,6 +7,7 @@ import {
   getUpdateSettingsSnapshot,
   getUpdateState,
   installUpdate,
+  openReleasePage,
   remindLater,
   skipVersion,
   updateUpdateSettings
@@ -45,4 +46,9 @@ export function registerUpdateHandlers(): void {
   ipcMain.handle(IPC.UPDATE_SET_SETTINGS, async (_e, patch: Partial<UpdateSettings>): Promise<UpdateSettings> =>
     updateUpdateSettings(patch)
   )
+
+  ipcMain.handle(IPC.UPDATE_OPEN_RELEASE_PAGE, async (): Promise<{ ok: true }> => {
+    openReleasePage()
+    return { ok: true }
+  })
 }

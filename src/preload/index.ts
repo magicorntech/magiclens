@@ -208,6 +208,7 @@ const api = {
     skipVersion: (req: SkipVersionRequest): Promise<{ ok: true }> =>
       ipcRenderer.invoke(IPC.UPDATE_SKIP_VERSION, req),
     remindLater: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.UPDATE_REMIND_LATER),
+    openReleasePage: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.UPDATE_OPEN_RELEASE_PAGE),
     getState: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.UPDATE_GET_STATE),
     getSettings: (): Promise<UpdateSettings> => ipcRenderer.invoke(IPC.UPDATE_GET_SETTINGS),
     setSettings: (patch: Partial<UpdateSettings>): Promise<UpdateSettings> =>

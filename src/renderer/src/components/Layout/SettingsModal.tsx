@@ -82,20 +82,30 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 onChange={(checked) => void saveUpdateSettings({ includePrerelease: checked })}
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography.Text>Auto-download updates</Typography.Text>
-              <Switch
-                checked={updateSettings?.autoDownload ?? false}
-                onChange={(checked) => void saveUpdateSettings({ autoDownload: checked })}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography.Text>Ask before install</Typography.Text>
-              <Switch
-                checked={updateSettings?.askBeforeInstall ?? true}
-                onChange={(checked) => void saveUpdateSettings({ askBeforeInstall: checked })}
-              />
-            </div>
+            {updateState?.manualDownloadOnly ? (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                Automatic download/install isn't available on macOS without a paid Apple Developer ID
+                certificate. When an update is found, MagicLens links out to the GitHub release for a manual
+                DMG download instead.
+              </Typography.Text>
+            ) : (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography.Text>Auto-download updates</Typography.Text>
+                  <Switch
+                    checked={updateSettings?.autoDownload ?? false}
+                    onChange={(checked) => void saveUpdateSettings({ autoDownload: checked })}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography.Text>Ask before install</Typography.Text>
+                  <Switch
+                    checked={updateSettings?.askBeforeInstall ?? true}
+                    onChange={(checked) => void saveUpdateSettings({ askBeforeInstall: checked })}
+                  />
+                </div>
+              </>
+            )}
             <Space style={{ marginTop: 4 }}>
               <Button
                 size="small"
