@@ -1,16 +1,24 @@
-import { Button, Descriptions, Tabs, Typography, theme } from 'antd'
+import { Button, Descriptions, Table, Tabs, Tag, Typography, theme } from 'antd'
 import { CloseOutlined } from '@ant-design/icons'
+import type { ColumnsType } from 'antd/es/table'
 import type { ResourceKind } from '@shared/resourceKinds'
+import { isPodDetailData } from '@shared/types/pod'
+import type { PodContainerInfo } from '@shared/types/pod'
 import type { ResourceListItem } from '@shared/types/resource'
 import { kindColumnDefs } from '../../resourceConfig/kinds.renderer'
+import { usePodDetail } from '../../queries/usePodDetail'
 import { AgeCell } from './AgeCell'
 import { StatusTag } from './StatusTag'
+import { IngressHostsCell } from './IngressHostsCell'
+import { ResourceEventsPanel } from './ResourceEventsPanel'
 import { PodMetricsPanel } from '../Pod/PodMetricsPanel'
 import { PodNetworkPanel } from '../Pod/PodNetworkPanel'
 import { PodLogsPanel } from '../Pod/PodLogsPanel'
 import { PodExecPanel } from '../Pod/PodExecPanel'
 import { ServicePortForwardPanel } from '../Pod/ServicePortForwardPanel'
 import { NodeMetricsPanel } from '../Metrics/NodeMetricsPanel'
+import { NodeExecPanel } from '../Node/NodeExecPanel'
+import { LoadingState } from './EmptyErrorStates'
 
 interface ResourceDetailPanelProps {
   clusterId: string
@@ -19,6 +27,38 @@ interface ResourceDetailPanelProps {
   isActive: boolean
   onClose: () => void
 }
+
+const podContainerColumns: ColumnsType<PodContainerInfo> = [
+  { title: 'Container', dataIndex: 'name', key: 'name' },
+  {
+    title: 'State',
+    key: 'state',
+    render: (_, c) => (
+      <div>
+        <Tag color={c.state === 'Running' ? 'green' : c.state === 'Waiting' ? 'gold' : 'red'}>{c.state}</Tag>
+        {c.stateMessage ? (
+          <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 4 }}>
+            {c.stateMessage}
+          </Typography.Text>
+        ) : null}
+        {c.lastTerminatedReason ? (
+          <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+            Last: {c.lastTerminatedReason}
+          </Typography.Text>
+        ) : null}
+      </div>
+    )
+  },
+  {
+    title: 'Ready',
+    dataIndex: 'ready',
+    key: 'ready',
+    width: 70,
+    render: (v: boolean) => (v ? 'Yes' : 'No')
+  },
+  { title: 'Restarts', dataIndex: 'restartCount', key: 'restartCount', width: 80 },
+  { title: 'Image', dataIndex: 'image', key: 'image', ellipsis: true }
+]
 
 export function ResourceDetailPanel({
   clusterId,
@@ -31,23 +71,59 @@ export function ResourceDetailPanel({
   const isPod = kind === 'Pods'
   const isService = kind === 'Services'
   const isNode = kind === 'Nodes'
+  const { data: podDetail, isLoading: podDetailLoading } = usePodDetail(
+    clusterId,
+    item.namespace,
+    item.name,
+    isActive && isPod
+  )
 
   const overview = (
-    <Descriptions bordered size="small" column={1}>
-      <Descriptions.Item label="Name">{item.name}</Descriptions.Item>
-      {item.namespace ? <Descriptions.Item label="Namespace">{item.namespace}</Descriptions.Item> : null}
-      <Descriptions.Item label="Status">
-        <StatusTag text={item.statusText} color={item.statusColor} />
-      </Descriptions.Item>
-      <Descriptions.Item label="Age">
-        <AgeCell timestamp={item.ageTimestamp} />
-      </Descriptions.Item>
-      {kindColumnDefs[kind].map((col) => (
-        <Descriptions.Item key={col.key} label={col.title}>
-          {item.columns[col.key] ?? '-'}
+    <>
+      <Descriptions bordered size="small" column={1}>
+        <Descriptions.Item label="Name">{item.name}</Descriptions.Item>
+        {item.namespace ? <Descriptions.Item label="Namespace">{item.namespace}</Descriptions.Item> : null}
+        <Descriptions.Item label="Status">
+          <StatusTag text={item.statusText} color={item.statusColor} detail={item.statusDetail} />
         </Descriptions.Item>
-      ))}
-    </Descriptions>
+        <Descriptions.Item label="Age">
+          <AgeCell timestamp={item.ageTimestamp} />
+        </Descriptions.Item>
+        {kindColumnDefs[kind]
+          .filter((col) => col.key !== 'tlsHosts')
+          .map((col) => (
+            <Descriptions.Item key={col.key} label={col.title}>
+              {kind === 'Ingresses' && col.key === 'hosts' ? (
+                <IngressHostsCell hosts={item.columns.hosts} tlsHosts={item.columns.tlsHosts} />
+              ) : (
+                (item.columns[col.key] ?? '-')
+              )}
+            </Descriptions.Item>
+          ))}
+      </Descriptions>
+      {isPod && (
+        <div style={{ marginTop: 16 }}>
+          <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+            Containers
+          </Typography.Text>
+          {podDetailLoading ? (
+            <LoadingState />
+          ) : !isPodDetailData(podDetail) ? (
+            <Typography.Text type="danger">
+              {podDetail && 'error' in podDetail ? podDetail.error : 'Failed to load pod details'}
+            </Typography.Text>
+          ) : (
+            <Table
+              rowKey="name"
+              columns={podContainerColumns}
+              dataSource={podDetail.containers}
+              pagination={false}
+              size="small"
+            />
+          )}
+        </div>
+      )}
+    </>
   )
 
   const properties = (
@@ -75,8 +151,21 @@ export function ResourceDetailPanel({
     <div style={{ height: '100%', overflow: 'hidden', padding: 12, boxSizing: 'border-box' }}>{content}</div>
   )
 
-  const items = [
+  const tabItems = [
     { key: 'overview', label: 'Overview', children: paddedPane(overview) },
+    {
+      key: 'events',
+      label: 'Events',
+      children: paddedPane(
+        <ResourceEventsPanel
+          clusterId={clusterId}
+          namespace={item.namespace}
+          name={item.name}
+          target={{ type: 'builtin', kind }}
+          isActive={isActive}
+        />
+      )
+    },
     ...(isPod
       ? [
           {
@@ -135,6 +224,13 @@ export function ResourceDetailPanel({
     ...(isNode
       ? [
           {
+            key: 'exec',
+            label: 'Exec',
+            children: fullBleedPane(
+              <NodeExecPanel clusterId={clusterId} nodeName={item.name} isActive={isActive} />
+            )
+          },
+          {
             key: 'metrics',
             label: 'Metrics',
             children: paddedPane(<NodeMetricsPanel clusterId={clusterId} nodeName={item.name} isActive={isActive} />)
@@ -176,7 +272,7 @@ export function ResourceDetailPanel({
         <Button type="text" size="small" icon={<CloseOutlined />} onClick={onClose} />
       </div>
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <Tabs size="small" items={items} style={{ height: '100%' }} tabBarStyle={{ margin: '0 16px' }} destroyOnHidden />
+        <Tabs size="small" items={tabItems} style={{ height: '100%' }} tabBarStyle={{ margin: '0 16px' }} destroyOnHidden />
       </div>
     </div>
   )

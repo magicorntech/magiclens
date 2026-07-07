@@ -2,6 +2,7 @@ import type { V1ObjectMeta } from '@kubernetes/client-node'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceListItem } from '@shared/types/resource'
 import type { ClusterClients } from './clusterManager'
+import { derivePodStatus } from './podStatus'
 
 /** Group/Version/Resource info needed to build a Kubernetes Watch API path. */
 export interface ResourceGvk {
@@ -94,12 +95,12 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
       const containers = pod.status?.containerStatuses ?? []
       const readyCount = containers.filter((c) => c.ready).length
       const restarts = containers.reduce((sum, c) => sum + (c.restartCount ?? 0), 0)
-      const phase = pod.status?.phase ?? 'Unknown'
+      const status = derivePodStatus(pod)
       return {
         ...baseMeta(pod),
-        statusText: phase,
-        statusColor:
-          phase === 'Running' ? 'green' : phase === 'Pending' ? 'gold' : phase === 'Failed' ? 'red' : 'default',
+        statusText: status.statusText,
+        statusColor: status.statusColor,
+        statusDetail: status.statusDetail,
         columns: {
           ready: `${readyCount}/${containers.length}`,
           restarts: String(restarts),
@@ -296,11 +297,28 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
         .map((r) => r.host)
         .filter(Boolean)
         .join(',')
+      const tlsHosts = (ing.spec?.tls ?? [])
+        .flatMap((t) => t.hosts ?? [])
+        .filter(Boolean)
+        .join(',')
+      const addresses = (ing.status?.loadBalancer?.ingress ?? [])
+        .map((e) => e.ip ?? e.hostname)
+        .filter(Boolean)
+        .join(', ')
+      const ingressClass =
+        ing.spec?.ingressClassName ??
+        ing.metadata?.annotations?.['kubernetes.io/ingress.class'] ??
+        '-'
       return {
         ...baseMeta(ing),
-        statusText: 'Active',
-        statusColor: 'blue',
-        columns: { hosts: hosts || '-' }
+        statusText: addresses ? 'Active' : 'Pending',
+        statusColor: addresses ? 'green' : 'gold',
+        columns: {
+          ingressClass,
+          addresses: addresses || '-',
+          hosts: hosts || '-',
+          tlsHosts: tlsHosts || ''
+        }
       }
     }
   ),

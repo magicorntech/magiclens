@@ -20,6 +20,8 @@ export const IPC = {
   RESOURCE_APPLY_MANIFEST: 'resource:applyManifest',
   RESOURCE_CREATE_MANIFEST: 'resource:createManifest',
   RESOURCE_DELETE: 'resource:delete',
+  RESOURCE_LIST_EVENTS: 'resource:listEvents',
+  RESOURCE_LIST_CLUSTER_EVENTS: 'resource:listClusterEvents',
 
   CLUSTER_STORE_LIST: 'clusterStore:list',
   CLUSTER_STORE_ADD: 'clusterStore:add',
@@ -36,6 +38,8 @@ export const IPC = {
   APP_GET_WELCOME_STATE: 'app:getWelcomeState',
   APP_SET_WELCOME_SEEN: 'app:setWelcomeSeen',
   APP_SET_SPLASH_SEEN: 'app:setSplashSeen',
+  APP_GET_DISPLAY_SETTINGS: 'app:getDisplaySettings',
+  APP_SET_DISPLAY_SETTINGS: 'app:setDisplaySettings',
 
   POD_GET_DETAIL: 'pod:getDetail',
   POD_GET_METRICS: 'pod:getMetrics',
@@ -53,6 +57,11 @@ export const IPC = {
   POD_EXEC_STOP: 'pod:exec:stop',
   POD_EXEC_DATA: 'pod:exec:data',
   POD_EXEC_EXIT: 'pod:exec:exit',
+
+  NODE_EXEC_START: 'node:exec:start',
+  NODE_EXEC_INPUT: 'node:exec:input',
+  NODE_EXEC_RESIZE: 'node:exec:resize',
+  NODE_EXEC_STOP: 'node:exec:stop',
 
   SERVICE_GET_DETAIL: 'service:getDetail',
 
@@ -75,7 +84,10 @@ export const IPC = {
   HELM_LIST_RELEASES: 'helm:listReleases',
   HELM_LIST_CHARTS: 'helm:listCharts',
   HELM_GET_HISTORY: 'helm:getHistory',
+  HELM_GET_RELEASE_DETAIL: 'helm:getReleaseDetail',
   HELM_ROLLBACK: 'helm:rollback',
+  HELM_UNINSTALL_CHART: 'helm:uninstallChart',
+  HELM_UNINSTALL_RELEASE: 'helm:uninstallRelease',
 
   UPDATE_CHECK: 'update:check',
   UPDATE_DOWNLOAD: 'update:download',

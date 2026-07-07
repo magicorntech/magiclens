@@ -2,13 +2,28 @@ import type { V1ContainerState } from '@kubernetes/client-node'
 import type { PodDetailResponse, PodMetricsResponse, PodNetworkResponse } from '@shared/types/pod'
 import type { ClusterClients } from './clusterManager'
 import { parseCpuQuantity, parseMemoryQuantity } from './quantity'
+import { derivePodStatus } from './podStatus'
 
-function summarizeContainerState(state: V1ContainerState | undefined): string {
-  if (!state) return 'Unknown'
-  if (state.running) return 'Running'
-  if (state.waiting) return state.waiting.reason ?? 'Waiting'
-  if (state.terminated) return state.terminated.reason ?? 'Terminated'
-  return 'Unknown'
+function summarizeContainerState(state: V1ContainerState | undefined): {
+  state: string
+  stateMessage?: string
+  lastTerminatedReason?: string
+} {
+  if (!state) return { state: 'Unknown' }
+  if (state.running) return { state: 'Running' }
+  if (state.waiting) {
+    return {
+      state: state.waiting.reason ?? 'Waiting',
+      stateMessage: state.waiting.message ?? undefined
+    }
+  }
+  if (state.terminated) {
+    return {
+      state: state.terminated.reason ?? 'Terminated',
+      stateMessage: state.terminated.message ?? undefined
+    }
+  }
+  return { state: 'Unknown' }
 }
 
 export async function getPodDetail(
@@ -21,12 +36,15 @@ export async function getPodDetail(
 
   const containers = (pod.spec?.containers ?? []).map((c) => {
     const status = statusByName.get(c.name)
+    const stateInfo = summarizeContainerState(status?.state)
     return {
       name: c.name,
       image: c.image ?? '',
       ready: status?.ready ?? false,
       restartCount: status?.restartCount ?? 0,
-      state: summarizeContainerState(status?.state),
+      state: stateInfo.state,
+      stateMessage: stateInfo.stateMessage,
+      lastTerminatedReason: status?.lastState?.terminated?.reason,
       ports: (c.ports ?? []).map((p) => ({
         name: p.name,
         containerPort: p.containerPort,
@@ -35,13 +53,19 @@ export async function getPodDetail(
     }
   })
 
+  const podStatus = derivePodStatus(pod)
+
   return {
     containers,
     nodeName: pod.spec?.nodeName ?? '-',
     podIP: pod.status?.podIP ?? '-',
     hostIP: pod.status?.hostIP ?? '-',
     qosClass: pod.status?.qosClass ?? '-',
-    labels: pod.metadata?.labels ?? {}
+    labels: pod.metadata?.labels ?? {},
+    phase: pod.status?.phase ?? 'Unknown',
+    statusText: podStatus.statusText,
+    statusColor: podStatus.statusColor,
+    statusDetail: podStatus.statusDetail
   }
 }
 

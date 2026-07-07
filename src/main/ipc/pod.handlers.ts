@@ -22,8 +22,12 @@ import { podExecManager } from '../k8s/podExecManager'
 
 export function registerPodHandlers(): void {
   ipcMain.handle(IPC.POD_GET_DETAIL, async (_e, req: PodResourceRequest): Promise<PodDetailResponse> => {
-    const clients = clusterManager.get(req.clusterId)
-    return getPodDetail(clients, req.namespace, req.podName)
+    try {
+      const clients = clusterManager.get(req.clusterId)
+      return await getPodDetail(clients, req.namespace, req.podName)
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : String(err) }
+    }
   })
 
   ipcMain.handle(IPC.POD_GET_METRICS, async (_e, req: PodResourceRequest): Promise<PodMetricsResponse> => {

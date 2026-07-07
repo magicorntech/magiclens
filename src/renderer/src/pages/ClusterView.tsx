@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Spin } from 'antd'
 import type { ResourceKind } from '@shared/resourceKinds'
+import type { ResourceFocus } from '@shared/types/navigation'
 import { useClusterStore } from '../stores/clusterStore'
 import { connectCluster } from '../clusterConnect'
 import { AppShell } from '../components/Layout/AppShell'
@@ -21,6 +22,7 @@ export function ClusterView({ clusterId }: ClusterViewProps): React.JSX.Element 
   const cluster = useClusterStore((s) => s.clusters.find((c) => c.id === clusterId))
   const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const openResourceKind = useClusterStore((s) => s.openResourceKind)
+  const navigateToResource = useClusterStore((s) => s.navigateToResource)
   const [virtualPage, setVirtualPage] = useState<VirtualPageKey | null>(null)
 
   // Clusters can be saved without ever having been connected (added via Add Cluster,
@@ -68,6 +70,11 @@ export function ClusterView({ clusterId }: ClusterViewProps): React.JSX.Element 
     openResourceKind(clusterId, kind)
   }
 
+  function handleNavigateToResource(focus: ResourceFocus): void {
+    setVirtualPage(null)
+    navigateToResource(clusterId, focus)
+  }
+
   function renderVirtualPage(page: VirtualPageKey): React.JSX.Element {
     switch (page) {
       case 'portForwarding':
@@ -83,7 +90,7 @@ export function ClusterView({ clusterId }: ClusterViewProps): React.JSX.Element 
       case 'helmCharts':
         return <HelmChartsPage clusterId={clusterId} />
       case 'helmReleases':
-        return <HelmReleasesPage clusterId={clusterId} />
+        return <HelmReleasesPage clusterId={clusterId} onNavigateToResource={handleNavigateToResource} />
     }
   }
 

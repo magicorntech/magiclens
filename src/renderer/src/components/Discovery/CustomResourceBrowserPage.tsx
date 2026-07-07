@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Empty, Input, Space, Splitter, Table, Tag, Typography } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
 import type { CustomResourceKind, DynamicResourceItem } from '@shared/types/discovery'
 import { useCustomResourceKinds, useDynamicResourceList } from '../../queries/useDiscovery'
 import { useDynamicResourceWatch } from '../../queries/useResourceWatch'
-import { compareAgeTimestamps } from '../../format'
+import { compareAgeTimestamps } from '../../utils/tableSort'
+import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
 import { AgeCell } from '../ResourceTable/AgeCell'
 import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
+import { batchDeleteResources, confirmBatchDelete } from '../ResourceTable/batchDelete'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
 
 interface CustomResourceBrowserPageProps {
@@ -44,6 +47,18 @@ export function CustomResourceBrowserPage({
   const [search, setSearch] = useState('')
   const [selectedKind, setSelectedKind] = useState<CustomResourceKind | null>(null)
   const { openYamlEditor } = useBottomPanel()
+  const queryClient = useQueryClient()
+  const [selectedInstanceKeys, setSelectedInstanceKeys] = useState<string[]>([])
+  const { setPagination: setKindPagination, paginationProps: kindPaginationProps } = useTablePagination([
+    clusterId,
+    mode,
+    search
+  ])
+  const { setPagination: setInstancePagination, paginationProps: instancePaginationProps } = useTablePagination([
+    clusterId,
+    namespace,
+    selectedKind?.crdName ?? null
+  ])
 
   const kinds = kindsData && 'kinds' in kindsData ? kindsData.kinds : []
   const kindsError = kindsData && 'error' in kindsData ? kindsData.error : null
@@ -54,10 +69,8 @@ export function CustomResourceBrowserPage({
   )
 
   useEffect(() => {
-    if (selectedKind && !kinds.some((k) => k.crdName === selectedKind.crdName)) {
-      setSelectedKind(null)
-    }
-  }, [kinds, selectedKind])
+    setSelectedInstanceKeys([])
+  }, [selectedKind?.crdName, namespace])
 
   const watchStatus = useDynamicResourceWatch(
     clusterId,
@@ -92,6 +105,34 @@ export function CustomResourceBrowserPage({
     ],
     [clusterId, selectedKind, namespace]
   )
+
+  useEffect(() => {
+    if (selectedKind && !kinds.some((k) => k.crdName === selectedKind.crdName)) {
+      setSelectedKind(null)
+    }
+  }, [kinds, selectedKind])
+
+  const selectedInstances = useMemo(
+    () => instances.filter((item) => selectedInstanceKeys.includes(item.id)),
+    [instances, selectedInstanceKeys]
+  )
+
+  function handleBatchDelete(): void {
+    if (!selectedKind || selectedInstances.length === 0) return
+    confirmBatchDelete(selectedKind.kind, selectedInstances, async () => {
+      const result = await batchDeleteResources(
+        queryClient,
+        listQueryKey,
+        clusterId,
+        { type: 'dynamic', apiVersion: selectedKind.apiVersion, kind: selectedKind.kind },
+        selectedInstances
+      )
+      if (result.failed.length === 0) {
+        setSelectedInstanceKeys([])
+      }
+      return result
+    })
+  }
 
   const instanceColumns: ColumnsType<DynamicResourceItem> = useMemo(
     () => [
@@ -164,7 +205,8 @@ export function CustomResourceBrowserPage({
                   rowKey="crdName"
                   columns={kindColumns}
                   dataSource={filteredKinds}
-                  pagination={false}
+                  pagination={kindPaginationProps(filteredKinds.length)}
+                  onChange={(paginationConfig) => setKindPagination(readPaginationChange(paginationConfig))}
                   size="small"
                   onRow={(row) => ({
                     onClick: () => setSelectedKind(row),
@@ -197,7 +239,13 @@ export function CustomResourceBrowserPage({
                         {selectedKind.apiVersion}
                       </Typography.Text>
                     </Typography.Title>
-                    <Button
+                    <Space>
+                      {selectedInstanceKeys.length > 0 && (
+                        <Button danger size="small" icon={<DeleteOutlined />} onClick={handleBatchDelete}>
+                          Delete ({selectedInstanceKeys.length})
+                        </Button>
+                      )}
+                      <Button
                       icon={<PlusOutlined />}
                       size="small"
                       onClick={() =>
@@ -213,6 +261,7 @@ export function CustomResourceBrowserPage({
                     >
                       Create
                     </Button>
+                    </Space>
                   </Space>
                   <div style={{ marginBottom: 8 }}>
                     <WatchStatusBadge isError={false} watchStatus={watchStatus} />
@@ -228,9 +277,14 @@ export function CustomResourceBrowserPage({
                     rowKey="id"
                     columns={instanceColumns}
                     dataSource={instances}
-                    pagination={false}
+                    pagination={instancePaginationProps(instances.length)}
+                    onChange={(paginationConfig) => setInstancePagination(readPaginationChange(paginationConfig))}
                     size="small"
                     locale={{ emptyText: 'No live instances of this kind' }}
+                    rowSelection={{
+                      selectedRowKeys: selectedInstanceKeys,
+                      onChange: (keys) => setSelectedInstanceKeys(keys as string[])
+                    }}
                   />
                 </>
               )}

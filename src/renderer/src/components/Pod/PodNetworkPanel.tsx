@@ -1,6 +1,7 @@
 import { Empty, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { PodContainerInfo, PodServiceBinding } from '@shared/types/pod'
+import { isPodDetailData } from '@shared/types/pod'
 import { usePodNetwork } from '../../queries/usePodNetwork'
 import { usePodDetail } from '../../queries/usePodDetail'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
@@ -29,7 +30,7 @@ export function PodNetworkPanel({ clusterId, namespace, podName, isActive }: Pod
 
   if (networkLoading || detailLoading) return <LoadingState />
 
-  const containers = detail?.containers ?? []
+  const containers = isPodDetailData(detail) ? detail.containers : []
 
   const serviceColumns: ColumnsType<PodServiceBinding> = [
     { title: 'Service', dataIndex: 'name', key: 'name' },

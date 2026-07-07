@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ConnectionStatus, PersistedClusterEntry, PersistedUiState } from '@shared/types/cluster'
+import type { ResourceFocus } from '@shared/types/navigation'
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
+import { isNamespaceScoped } from '@shared/resourceKinds'
 
 export interface ClusterEntry {
   id: string
@@ -18,6 +20,7 @@ export interface ClusterEntry {
   selectedNamespace: string
   selectedResourceKind: ResourceKind | null
   openResourceKinds: ResourceKind[]
+  resourceFocus: ResourceFocus | null
   lastOpenedAt?: string
 }
 
@@ -52,6 +55,8 @@ interface ClusterStoreState {
   setSelectedResourceKind: (id: string, kind: ResourceKind) => void
   openResourceKind: (id: string, kind: ResourceKind) => void
   closeResourceKind: (id: string, kind: ResourceKind) => void
+  navigateToResource: (id: string, focus: ResourceFocus) => void
+  clearResourceFocus: (id: string) => void
   hydrateFromPersistence: (entries: PersistedClusterEntry[]) => void
   hydrateUiState: (uiState: PersistedUiState) => void
 }
@@ -207,6 +212,28 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
       return { clusters: updateCluster(state.clusters, id, { openResourceKinds, selectedResourceKind }) }
     }),
 
+  navigateToResource: (id, focus) =>
+    set((state) => {
+      const cluster = state.clusters.find((c) => c.id === id)
+      if (!cluster) return {}
+      const openResourceKinds = cluster.openResourceKinds.includes(focus.kind)
+        ? cluster.openResourceKinds
+        : [...cluster.openResourceKinds, focus.kind]
+      const selectedNamespace =
+        isNamespaceScoped(focus.kind) && focus.namespace ? focus.namespace : cluster.selectedNamespace
+      return {
+        clusters: updateCluster(state.clusters, id, {
+          openResourceKinds,
+          selectedResourceKind: focus.kind,
+          selectedNamespace,
+          resourceFocus: focus
+        })
+      }
+    }),
+
+  clearResourceFocus: (id) =>
+    set((state) => ({ clusters: updateCluster(state.clusters, id, { resourceFocus: null }) })),
+
   hydrateFromPersistence: (entries) =>
     set({
       clusters: entries.map((entry) => ({
@@ -220,7 +247,8 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         status: 'idle',
         selectedNamespace: entry.selectedNamespace || 'ALL',
         selectedResourceKind: entry.selectedResourceKind,
-        openResourceKinds: entry.selectedResourceKind ? [entry.selectedResourceKind] : []
+        openResourceKinds: entry.selectedResourceKind ? [entry.selectedResourceKind] : [],
+        resourceFocus: null
       }))
     }),
 

@@ -10,16 +10,28 @@ export interface PodContainerInfo {
   ready: boolean
   restartCount: number
   state: string
+  stateMessage?: string
+  lastTerminatedReason?: string
   ports: PodContainerPort[]
 }
 
-export interface PodDetailResponse {
+export interface PodDetailData {
   containers: PodContainerInfo[]
   nodeName: string
   podIP: string
   hostIP: string
   qosClass: string
   labels: Record<string, string>
+  phase: string
+  statusText: string
+  statusColor: string
+  statusDetail?: string
+}
+
+export type PodDetailResponse = PodDetailData | { error: string }
+
+export function isPodDetailData(data: PodDetailResponse | undefined): data is PodDetailData {
+  return !!data && !('error' in data)
 }
 
 export interface PodContainerMetric {

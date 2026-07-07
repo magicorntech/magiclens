@@ -4,6 +4,7 @@ import { ReloadOutlined } from '@ant-design/icons'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
+import { isPodDetailData } from '@shared/types/pod'
 import { usePodDetail } from '../../queries/usePodDetail'
 import { useAppPalette } from '../../stores/useAppPalette'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
@@ -22,7 +23,10 @@ function newSessionId(): string {
 export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExecPanelProps): React.JSX.Element {
   const palette = useAppPalette()
   const { data: detail, isLoading } = usePodDetail(clusterId, namespace, podName, isActive)
-  const containers = useMemo(() => detail?.containers.map((c) => c.name) ?? [], [detail])
+  const containers = useMemo(
+    () => (isPodDetailData(detail) ? detail.containers.map((c) => c.name) : []),
+    [detail]
+  )
 
   const [containerName, setContainerName] = useState<string | null>(null)
   const [status, setStatus] = useState<'connecting' | 'connected' | 'exited'>('connecting')

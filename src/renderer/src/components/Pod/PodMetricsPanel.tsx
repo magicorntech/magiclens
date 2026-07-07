@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import type { PodContainerMetric } from '@shared/types/pod'
 import { usePodMetrics } from '../../queries/usePodMetrics'
+import { isPodDetailData } from '@shared/types/pod'
 import { usePodDetail } from '../../queries/usePodDetail'
 import { formatBytes, formatCores } from '../../format'
 import { usePodMetricsHistoryStore } from '../../stores/podMetricsHistoryStore'
@@ -142,7 +143,7 @@ export function PodMetricsPanel({
         )}
       </div>
 
-      {detail && (
+      {isPodDetailData(detail) && (
         <div style={{ marginTop: 16 }}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             Node: {detail.nodeName} · Pod IP: {detail.podIP} · QoS: {detail.qosClass}

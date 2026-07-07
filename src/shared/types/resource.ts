@@ -7,6 +7,7 @@ export interface ResourceListItem {
   ageTimestamp: string | null
   statusText: string
   statusColor: string
+  statusDetail?: string
   columns: Record<string, string>
 }
 

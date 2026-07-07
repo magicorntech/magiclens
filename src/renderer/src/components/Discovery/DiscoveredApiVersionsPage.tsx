@@ -3,6 +3,7 @@ import { Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { DiscoveredApiResource } from '@shared/types/discovery'
 import { useDiscovery } from '../../queries/useDiscovery'
+import { buildTablePagination, readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 
 interface DiscoveredApiVersionsPageProps {
@@ -48,6 +49,7 @@ const resourceColumns: ColumnsType<DiscoveredApiResource> = [
 
 export function DiscoveredApiVersionsPage({ clusterId }: DiscoveredApiVersionsPageProps): React.JSX.Element {
   const { data, isLoading } = useDiscovery(clusterId)
+  const { setPagination, paginationProps } = useTablePagination([clusterId])
 
   const rows: VersionRow[] = useMemo(() => {
     if (!data) return []
@@ -100,7 +102,8 @@ export function DiscoveredApiVersionsPage({ clusterId }: DiscoveredApiVersionsPa
         rowKey="key"
         columns={columns}
         dataSource={rows}
-        pagination={false}
+        pagination={paginationProps(rows.length)}
+        onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
         size="middle"
         expandable={{
           expandedRowRender: (row) => (
@@ -108,7 +111,7 @@ export function DiscoveredApiVersionsPage({ clusterId }: DiscoveredApiVersionsPa
               rowKey="name"
               columns={resourceColumns}
               dataSource={row.resources}
-              pagination={false}
+              pagination={buildTablePagination({ current: 1, pageSize: 20 }, row.resources.length)}
               size="small"
             />
           )

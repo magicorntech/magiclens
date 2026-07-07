@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, Descriptions, Divider, Modal, Select, Space, Switch, Tag, Typography } from 'antd'
 import { SyncOutlined } from '@ant-design/icons'
 import { refreshIntervalOptions, useLiveRefreshStore } from '../../stores/liveRefreshStore'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useUpdateStore } from '../../stores/updateStore'
 import type { AppInfoResponse } from '@shared/types/app'
 
@@ -20,6 +21,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const saveUpdateSettings = useUpdateStore((s) => s.saveSettings)
   const check = useUpdateStore((s) => s.check)
   const openUpdateCenter = useUpdateStore((s) => s.openCenter)
+  const showClusterTabLogos = useDisplaySettingsStore((s) => s.showClusterTabLogos)
+  const showResourceTabIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
+  const setShowClusterTabLogos = useDisplaySettingsStore((s) => s.setShowClusterTabLogos)
+  const setShowResourceTabIcons = useDisplaySettingsStore((s) => s.setShowResourceTabIcons)
 
   useEffect(() => {
     if (!open) return
@@ -120,6 +125,26 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
               </Button>
             </Space>
           </Space>
+        </div>
+
+        <Divider style={{ margin: '4px 0' }} />
+
+        <div>
+          <Typography.Text strong>Tab icons</Typography.Text>
+          <Space orientation="vertical" style={{ width: '100%', marginTop: 8 }} size={8}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography.Text>Show logos on cluster tabs</Typography.Text>
+              <Switch checked={showClusterTabLogos} onChange={(checked) => void setShowClusterTabLogos(checked)} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography.Text>Show icons on resource tabs (Pods, Deployments, …)</Typography.Text>
+              <Switch checked={showResourceTabIcons} onChange={(checked) => void setShowResourceTabIcons(checked)} />
+            </div>
+          </Space>
+          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+            Cluster tabs use the cluster logo you set when adding a cluster. Resource tabs use the same icons as the
+            left menu.
+          </Typography.Text>
         </div>
 
         <Divider style={{ margin: '4px 0' }} />

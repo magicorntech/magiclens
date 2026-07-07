@@ -1,9 +1,11 @@
 import { app, ipcMain } from 'electron'
 import { IPC } from '@shared/ipc-contract'
-import type { AppInfoResponse, WelcomeStateResponse } from '@shared/types/app'
+import type { AppInfoResponse, DisplaySettings, WelcomeStateResponse } from '@shared/types/app'
 import {
+  getDisplaySettings,
   getHasSeenWelcome,
   getLastSeenSplashVersion,
+  setDisplaySettings,
   setHasSeenWelcome,
   setLastSeenSplashVersion
 } from '../persistence/appSettings'
@@ -33,4 +35,11 @@ export function registerAppHandlers(): void {
     setLastSeenSplashVersion(app.getVersion())
     return { ok: true }
   })
+
+  ipcMain.handle(IPC.APP_GET_DISPLAY_SETTINGS, async (): Promise<DisplaySettings> => getDisplaySettings())
+
+  ipcMain.handle(
+    IPC.APP_SET_DISPLAY_SETTINGS,
+    async (_e, patch: Partial<DisplaySettings>): Promise<DisplaySettings> => setDisplaySettings(patch)
+  )
 }

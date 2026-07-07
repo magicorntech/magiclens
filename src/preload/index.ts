@@ -16,6 +16,7 @@ import type {
   PersistedUiState
 } from '@shared/types/cluster'
 import type { ResourceListRequest, ResourceListResponse } from '@shared/types/resource'
+import type { ResourceEventsRequest, ResourceEventsResponse, ClusterEventsRequest } from '@shared/types/resourceEvents'
 import type {
   ResourceWatchEventPayload,
   ResourceWatchSessionRequest,
@@ -34,7 +35,7 @@ import type {
   ResourceGetManifestResponse
 } from '@shared/types/resourceMutation'
 import type { ClusterMetricsSummary, NodeMetricsResponse } from '@shared/types/metrics'
-import type { AppInfoResponse, WelcomeStateResponse } from '@shared/types/app'
+import type { AppInfoResponse, DisplaySettings, WelcomeStateResponse } from '@shared/types/app'
 import type {
   PodDetailResponse,
   PodExecDataPayload,
@@ -53,6 +54,12 @@ import type {
   PodNetworkResponse,
   PodResourceRequest
 } from '@shared/types/pod'
+import type {
+  NodeExecInputRequest,
+  NodeExecResizeRequest,
+  NodeExecSessionRequest,
+  NodeExecStartRequest
+} from '@shared/types/node'
 import type { ServiceDetailResponse, ServiceResourceRequest } from '@shared/types/service'
 import type {
   PortForwardListRequest,
@@ -83,9 +90,15 @@ import type {
   HelmChartsResponse,
   HelmReleaseHistoryRequest,
   HelmReleaseHistoryResponse,
+  HelmReleaseDetailRequest,
+  HelmReleaseDetailResponse,
   HelmReleasesResponse,
   HelmRollbackRequest,
-  HelmRollbackResponse
+  HelmRollbackResponse,
+  HelmUninstallChartRequest,
+  HelmUninstallChartResponse,
+  HelmUninstallReleaseRequest,
+  HelmUninstallReleaseResponse
 } from '@shared/types/helm'
 import type { SkipVersionRequest, UpdateSettings, UpdateState } from '@shared/types/update'
 
@@ -135,7 +148,11 @@ const api = {
     createManifest: (req: ResourceCreateManifestRequest): Promise<ResourceCreateManifestResponse> =>
       ipcRenderer.invoke(IPC.RESOURCE_CREATE_MANIFEST, req),
     delete: (req: ResourceDeleteRequest): Promise<ResourceDeleteResponse> =>
-      ipcRenderer.invoke(IPC.RESOURCE_DELETE, req)
+      ipcRenderer.invoke(IPC.RESOURCE_DELETE, req),
+    listEvents: (req: ResourceEventsRequest): Promise<ResourceEventsResponse> =>
+      ipcRenderer.invoke(IPC.RESOURCE_LIST_EVENTS, req),
+    listClusterEvents: (req: ClusterEventsRequest): Promise<ResourceEventsResponse> =>
+      ipcRenderer.invoke(IPC.RESOURCE_LIST_CLUSTER_EVENTS, req)
   },
   clusterStore: {
     list: (): Promise<{ clusters: PersistedClusterEntry[] }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_LIST),
@@ -158,7 +175,10 @@ const api = {
     getInfo: (): Promise<AppInfoResponse> => ipcRenderer.invoke(IPC.APP_GET_INFO),
     getWelcomeState: (): Promise<WelcomeStateResponse> => ipcRenderer.invoke(IPC.APP_GET_WELCOME_STATE),
     setWelcomeSeen: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_SET_WELCOME_SEEN),
-    setSplashSeen: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_SET_SPLASH_SEEN)
+    setSplashSeen: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_SET_SPLASH_SEEN),
+    getDisplaySettings: (): Promise<DisplaySettings> => ipcRenderer.invoke(IPC.APP_GET_DISPLAY_SETTINGS),
+    setDisplaySettings: (patch: Partial<DisplaySettings>): Promise<DisplaySettings> =>
+      ipcRenderer.invoke(IPC.APP_SET_DISPLAY_SETTINGS, patch)
   },
   pod: {
     getDetail: (req: PodResourceRequest): Promise<PodDetailResponse> => ipcRenderer.invoke(IPC.POD_GET_DETAIL, req),
@@ -187,6 +207,24 @@ const api = {
       input: (req: PodExecInputRequest): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.POD_EXEC_INPUT, req),
       resize: (req: PodExecResizeRequest): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.POD_EXEC_RESIZE, req),
       stop: (req: PodExecSessionRequest): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.POD_EXEC_STOP, req),
+      onData: (cb: (payload: PodExecDataPayload) => void): (() => void) => {
+        const listener = (_e: Electron.IpcRendererEvent, payload: PodExecDataPayload): void => cb(payload)
+        ipcRenderer.on(IPC.POD_EXEC_DATA, listener)
+        return () => ipcRenderer.removeListener(IPC.POD_EXEC_DATA, listener)
+      },
+      onExit: (cb: (payload: PodExecExitPayload) => void): (() => void) => {
+        const listener = (_e: Electron.IpcRendererEvent, payload: PodExecExitPayload): void => cb(payload)
+        ipcRenderer.on(IPC.POD_EXEC_EXIT, listener)
+        return () => ipcRenderer.removeListener(IPC.POD_EXEC_EXIT, listener)
+      }
+    }
+  },
+  node: {
+    exec: {
+      start: (req: NodeExecStartRequest): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.NODE_EXEC_START, req),
+      input: (req: NodeExecInputRequest): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.NODE_EXEC_INPUT, req),
+      resize: (req: NodeExecResizeRequest): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.NODE_EXEC_RESIZE, req),
+      stop: (req: NodeExecSessionRequest): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.NODE_EXEC_STOP, req),
       onData: (cb: (payload: PodExecDataPayload) => void): (() => void) => {
         const listener = (_e: Electron.IpcRendererEvent, payload: PodExecDataPayload): void => cb(payload)
         ipcRenderer.on(IPC.POD_EXEC_DATA, listener)
@@ -241,7 +279,13 @@ const api = {
     listCharts: (req: ClusterIdRequest): Promise<HelmChartsResponse> => ipcRenderer.invoke(IPC.HELM_LIST_CHARTS, req),
     getHistory: (req: HelmReleaseHistoryRequest): Promise<HelmReleaseHistoryResponse> =>
       ipcRenderer.invoke(IPC.HELM_GET_HISTORY, req),
-    rollback: (req: HelmRollbackRequest): Promise<HelmRollbackResponse> => ipcRenderer.invoke(IPC.HELM_ROLLBACK, req)
+    getReleaseDetail: (req: HelmReleaseDetailRequest): Promise<HelmReleaseDetailResponse> =>
+      ipcRenderer.invoke(IPC.HELM_GET_RELEASE_DETAIL, req),
+    rollback: (req: HelmRollbackRequest): Promise<HelmRollbackResponse> => ipcRenderer.invoke(IPC.HELM_ROLLBACK, req),
+    uninstallChart: (req: HelmUninstallChartRequest): Promise<HelmUninstallChartResponse> =>
+      ipcRenderer.invoke(IPC.HELM_UNINSTALL_CHART, req),
+    uninstallRelease: (req: HelmUninstallReleaseRequest): Promise<HelmUninstallReleaseResponse> =>
+      ipcRenderer.invoke(IPC.HELM_UNINSTALL_RELEASE, req)
   },
   update: {
     check: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.UPDATE_CHECK),

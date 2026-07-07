@@ -1,9 +1,18 @@
 import * as zlib from 'node:zlib'
-import { parseAllDocuments } from 'yaml'
+import { parseAllDocuments, stringify } from 'yaml'
 import { PatchStrategy } from '@kubernetes/client-node'
 import type { KubernetesObject, V1Secret } from '@kubernetes/client-node'
-import type { HelmChartSummary, HelmRelease, HelmReleaseHistoryEntry } from '@shared/types/helm'
+import { k8sKindToResourceKind } from '@shared/k8sKindMap'
+import type {
+  HelmChartReleaseRef,
+  HelmChartSummary,
+  HelmManifestResource,
+  HelmRelease,
+  HelmReleaseDetail,
+  HelmReleaseHistoryEntry
+} from '@shared/types/helm'
 import type { ClusterClients } from './clusterManager'
+import { deleteResourceObject } from './resourceMutationService'
 
 interface DecodedHelmRelease {
   name: string
@@ -101,6 +110,7 @@ export async function listHelmCharts(clients: ClusterClients): Promise<HelmChart
       if (!existing.namespaces.includes(release.namespace)) {
         existing.namespaces.push(release.namespace)
       }
+      existing.releases.push({ namespace: release.namespace, name: release.name })
     } else {
       byChart.set(key, {
         id: key,
@@ -108,7 +118,8 @@ export async function listHelmCharts(clients: ClusterClients): Promise<HelmChart
         chartVersion: release.chartVersion,
         appVersion: release.appVersion,
         releaseCount: 1,
-        namespaces: [release.namespace]
+        namespaces: [release.namespace],
+        releases: [{ namespace: release.namespace, name: release.name }]
       })
     }
   }
@@ -145,6 +156,64 @@ export async function getHelmReleaseHistory(
     })
   }
   return entries.sort((a, b) => b.revision - a.revision)
+}
+
+function parseManifestResources(manifest: string, defaultNamespace: string): HelmManifestResource[] {
+  const resources: HelmManifestResource[] = []
+  for (const doc of parseAllDocuments(manifest ?? '')) {
+    const parsed = doc.toJS() as KubernetesObject | null
+    if (!parsed?.kind || !parsed.metadata?.name) continue
+    const ns = parsed.metadata.namespace ?? defaultNamespace
+    const k8sKind = parsed.kind
+    const resourceKind = k8sKindToResourceKind(k8sKind)
+    resources.push({
+      id: `${k8sKind}/${ns}/${parsed.metadata.name}`,
+      kind: k8sKind,
+      apiVersion: parsed.apiVersion ?? '',
+      name: parsed.metadata.name,
+      namespace: ns,
+      resourceKind
+    })
+  }
+  return resources.sort((a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name))
+}
+
+function getDeployedRevision(
+  inNamespace: { secret: V1Secret; decoded: DecodedHelmRelease }[]
+): { secret: V1Secret; decoded: DecodedHelmRelease } {
+  const deployed = inNamespace.find((r) => r.decoded.info?.status === 'deployed')
+  if (deployed) return deployed
+  return inNamespace.reduce((a, b) => (a.decoded.version > b.decoded.version ? a : b))
+}
+
+/** Latest deployed revision values and rendered manifest resources for a release. */
+export async function getHelmReleaseDetail(
+  clients: ClusterClients,
+  namespace: string,
+  name: string
+): Promise<HelmReleaseDetail> {
+  const revisions = await listReleaseSecrets(clients, `owner=helm,name=${name}`)
+  const inNamespace = revisions.filter((r) => r.decoded.namespace === namespace)
+  if (inNamespace.length === 0) {
+    throw new Error(`Release "${name}" not found in namespace ${namespace}`)
+  }
+
+  const { decoded } = getDeployedRevision(inNamespace)
+  const valuesYaml =
+    decoded.config != null && typeof decoded.config === 'object' && Object.keys(decoded.config as object).length > 0
+      ? stringify(decoded.config)
+      : '# No user-supplied values for this revision'
+
+  return {
+    revision: decoded.version,
+    status: decoded.info?.status ?? 'unknown',
+    chartName: decoded.chart?.metadata?.name ?? '-',
+    chartVersion: decoded.chart?.metadata?.version ?? '-',
+    appVersion: decoded.chart?.metadata?.appVersion ?? '',
+    updated: decoded.info?.last_deployed ?? null,
+    valuesYaml,
+    resources: parseManifestResources(decoded.manifest ?? '', namespace)
+  }
 }
 
 /** Fields the API server manages itself — must be stripped before re-applying an old manifest,
@@ -251,4 +320,84 @@ export async function rollbackHelmRelease(
   })
 
   return { newRevision, warnings }
+}
+
+async function deleteManifestResources(
+  clients: ClusterClients,
+  manifest: string,
+  namespace: string
+): Promise<string[]> {
+  const warnings: string[] = []
+  const docs = parseAllDocuments(manifest ?? '')
+  const objects: KubernetesObject[] = []
+  for (const doc of docs) {
+    const parsed = doc.toJS() as KubernetesObject | null
+    if (!parsed?.apiVersion || !parsed.kind || !parsed.metadata?.name) continue
+    objects.push(parsed)
+  }
+
+  for (const parsed of objects.reverse()) {
+    const ns = parsed.metadata?.namespace ?? namespace
+    const name = parsed.metadata?.name ?? '?'
+    try {
+      await deleteResourceObject(clients, parsed.apiVersion!, parsed.kind!, name, ns)
+    } catch (err) {
+      warnings.push(`${parsed.kind}/${name}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  return warnings
+}
+
+/** Uninstalls a Helm release: deletes rendered manifest resources, then removes all revision secrets. */
+export async function uninstallHelmRelease(
+  clients: ClusterClients,
+  namespace: string,
+  name: string
+): Promise<{ warnings: string[] }> {
+  const revisions = await listReleaseSecrets(clients, `owner=helm,name=${name}`)
+  const inNamespace = revisions.filter((r) => r.decoded.namespace === namespace)
+  if (inNamespace.length === 0) {
+    throw new Error(`Release "${name}" not found in namespace ${namespace}`)
+  }
+
+  const deployed = inNamespace.find((r) => r.decoded.info?.status === 'deployed')
+  const latest = inNamespace.reduce((a, b) => (a.decoded.version > b.decoded.version ? a : b))
+  const manifestSource = deployed ?? latest
+  const warnings = await deleteManifestResources(clients, manifestSource.decoded.manifest ?? '', namespace)
+
+  for (const { secret } of inNamespace) {
+    const secretName = secret.metadata?.name
+    if (!secretName) continue
+    try {
+      await clients.core.deleteNamespacedSecret({ name: secretName, namespace })
+    } catch (err) {
+      warnings.push(`Secret/${secretName}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  return { warnings }
+}
+
+/** Uninstalls every release that uses the given chart name and version. */
+export async function uninstallHelmChart(
+  clients: ClusterClients,
+  chartName: string,
+  chartVersion: string
+): Promise<{ uninstalled: HelmChartReleaseRef[]; warnings: string[] }> {
+  const releases = await listHelmReleases(clients)
+  const matching = releases.filter((r) => r.chartName === chartName && r.chartVersion === chartVersion)
+  if (matching.length === 0) {
+    throw new Error(`No releases found for chart ${chartName}-${chartVersion}`)
+  }
+
+  const uninstalled: HelmChartReleaseRef[] = []
+  const warnings: string[] = []
+  for (const release of matching) {
+    const result = await uninstallHelmRelease(clients, release.namespace, release.name)
+    warnings.push(...result.warnings)
+    uninstalled.push({ namespace: release.namespace, name: release.name })
+  }
+
+  return { uninstalled, warnings }
 }

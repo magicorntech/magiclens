@@ -12,3 +12,13 @@ export interface WelcomeStateResponse {
    * launch ever, or the app was just updated to a version the user hasn't launched yet. */
   showSplash: boolean
 }
+
+export interface DisplaySettings {
+  showClusterTabLogos: boolean
+  showResourceTabIcons: boolean
+}
+
+export const defaultDisplaySettings: DisplaySettings = {
+  showClusterTabLogos: true,
+  showResourceTabIcons: true
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Checkbox, Input, Select, Space, Typography, message, theme } from 'antd'
 import { DownloadOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import { isPodDetailData } from '@shared/types/pod'
 import { usePodDetail } from '../../queries/usePodDetail'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 
@@ -20,7 +21,10 @@ function newSessionId(): string {
 export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLogsPanelProps): React.JSX.Element {
   const { token } = theme.useToken()
   const { data: detail, isLoading } = usePodDetail(clusterId, namespace, podName, isActive)
-  const containers = useMemo(() => detail?.containers.map((c) => c.name) ?? [], [detail])
+  const containers = useMemo(
+    () => (isPodDetailData(detail) ? detail.containers.map((c) => c.name) : []),
+    [detail]
+  )
 
   const [containerName, setContainerName] = useState<string | null>(null)
   const [follow, setFollow] = useState(true)

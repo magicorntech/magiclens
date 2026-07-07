@@ -1,11 +1,13 @@
 import Store from 'electron-store'
 import type { UpdateSettings } from '@shared/types/update'
+import { defaultDisplaySettings, type DisplaySettings } from '@shared/types/app'
 
 interface AppSettings {
   hasSeenWelcome: boolean
   updateSettings: UpdateSettings
   skippedVersion: string | null
   lastSeenSplashVersion: string | null
+  displaySettings: DisplaySettings
 }
 
 const defaultUpdateSettings: UpdateSettings = {
@@ -20,7 +22,8 @@ const defaults: AppSettings = {
   hasSeenWelcome: false,
   updateSettings: defaultUpdateSettings,
   skippedVersion: null,
-  lastSeenSplashVersion: null
+  lastSeenSplashVersion: null,
+  displaySettings: defaultDisplaySettings
 }
 
 const store = new Store<AppSettings>({
@@ -60,4 +63,14 @@ export function getLastSeenSplashVersion(): string | null {
 
 export function setLastSeenSplashVersion(version: string): void {
   store.set('lastSeenSplashVersion', version)
+}
+
+export function getDisplaySettings(): DisplaySettings {
+  return { ...defaultDisplaySettings, ...store.get('displaySettings') }
+}
+
+export function setDisplaySettings(patch: Partial<DisplaySettings>): DisplaySettings {
+  const next = { ...getDisplaySettings(), ...patch }
+  store.set('displaySettings', next)
+  return next
 }

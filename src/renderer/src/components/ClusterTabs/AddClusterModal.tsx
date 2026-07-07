@@ -166,7 +166,8 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
           status: 'idle',
           selectedNamespace: 'ALL',
           selectedResourceKind: 'Pods',
-          openResourceKinds: ['Pods']
+          openResourceKinds: ['Pods'],
+          resourceFocus: null
         })
 
         await window.api.clusterStore.add({

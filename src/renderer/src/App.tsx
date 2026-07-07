@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useClusterStore } from './stores/clusterStore'
 import { useUpdateStore } from './stores/updateStore'
+import { useDisplaySettingsStore } from './stores/displaySettingsStore'
 import { connectCluster } from './clusterConnect'
 import { AppLayout } from './components/Layout/AppLayout'
 import { LoadingScreen } from './components/Layout/LoadingScreen'
@@ -13,6 +14,7 @@ export function App(): React.JSX.Element {
   const hydrateFromPersistence = useClusterStore((s) => s.hydrateFromPersistence)
   const hydrateUiState = useClusterStore((s) => s.hydrateUiState)
   const initUpdates = useUpdateStore((s) => s.init)
+  const hydrateDisplaySettings = useDisplaySettingsStore((s) => s.hydrate)
   const [ready, setReady] = useState(false)
   const [showSplash, setShowSplash] = useState(false)
   const [splashDismissed, setSplashDismissed] = useState(false)
@@ -26,11 +28,13 @@ export function App(): React.JSX.Element {
     let cancelled = false
 
     async function boot(): Promise<void> {
-      const [{ clusters: persisted }, uiState, welcomeState] = await Promise.all([
+      const [clusterStoreResult, uiState, welcomeState] = await Promise.all([
         window.api.clusterStore.list(),
         window.api.uiState.get(),
-        window.api.app.getWelcomeState()
+        window.api.app.getWelcomeState(),
+        hydrateDisplaySettings()
       ])
+      const persisted = clusterStoreResult.clusters
       if (cancelled) return
 
       if (!welcomeState.hasSeenWelcome) setShowWelcome(true)

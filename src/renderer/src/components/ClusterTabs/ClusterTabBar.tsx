@@ -2,7 +2,9 @@ import { Button, Empty, Splitter, Tabs, Tooltip } from 'antd'
 import type { TabsProps } from 'antd'
 import { SplitCellsOutlined } from '@ant-design/icons'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { ClusterView } from '../../pages/ClusterView'
+import { ClusterAvatar } from './ClusterAvatar'
 import { SplitClusterPane } from './SplitClusterPane'
 
 export function ClusterTabBar(): React.JSX.Element {
@@ -17,6 +19,7 @@ export function ClusterTabBar(): React.JSX.Element {
   const closeClusterTab = useClusterStore((s) => s.closeClusterTab)
   const enableSplitView = useClusterStore((s) => s.enableSplitView)
   const disableSplitView = useClusterStore((s) => s.disableSplitView)
+  const showClusterTabLogos = useDisplaySettingsStore((s) => s.showClusterTabLogos)
 
   const openClusters = openedTabs
     .map((id) => clusters.find((c) => c.id === id))
@@ -24,7 +27,14 @@ export function ClusterTabBar(): React.JSX.Element {
 
   const tabItems: TabsProps['items'] = openClusters.map((cluster) => ({
     key: cluster.id,
-    label: cluster.customName
+    label: showClusterTabLogos ? (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: 180 }}>
+        <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={18} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cluster.customName}</span>
+      </span>
+    ) : (
+      cluster.customName
+    )
   }))
 
   function handleEdit(targetKey: React.MouseEvent | React.KeyboardEvent | string): void {

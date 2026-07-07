@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc-contract'
 import type { ResourceListRequest, ResourceListResponse } from '@shared/types/resource'
+import type { ResourceEventsRequest, ResourceEventsResponse, ClusterEventsRequest } from '@shared/types/resourceEvents'
 import type {
   ResourceWatchSessionRequest,
   ResourceWatchStartRequest,
@@ -26,6 +27,7 @@ import {
   readResourceManifest
 } from '../k8s/resourceMutationService'
 import { resourceWatchManager } from '../k8s/resourceWatchManager'
+import { listEventsForObject, listRecentClusterEvents } from '../k8s/eventsService'
 
 function resolveTarget(target: ResourceMutationTarget): { apiVersion: string; kind: string } {
   if (target.type === 'builtin') {
@@ -114,6 +116,31 @@ export function registerResourceHandlers(): void {
       const { apiVersion, kind } = resolveTarget(req.target)
       await deleteResourceObject(clients, apiVersion, kind, req.name, req.namespace)
       return { ok: true }
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : String(err) }
+    }
+  })
+
+  ipcMain.handle(IPC.RESOURCE_LIST_EVENTS, async (_e, req: ResourceEventsRequest): Promise<ResourceEventsResponse> => {
+    try {
+      const clients = clusterManager.get(req.clusterId)
+      const { kind } = resolveTarget(req.target)
+      const events = await listEventsForObject(clients, req.namespace, kind, req.name)
+      return { events }
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : String(err) }
+    }
+  })
+
+  ipcMain.handle(IPC.RESOURCE_LIST_CLUSTER_EVENTS, async (_e, req: ClusterEventsRequest): Promise<ResourceEventsResponse> => {
+    try {
+      const clients = clusterManager.get(req.clusterId)
+      const events = await listRecentClusterEvents(clients, {
+        limit: req.limit,
+        involvedObjectKind: req.involvedObjectKind,
+        involvedObjectName: req.involvedObjectName
+      })
+      return { events }
     } catch (err) {
       return { error: err instanceof Error ? err.message : String(err) }
     }

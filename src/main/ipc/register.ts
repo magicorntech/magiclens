@@ -5,6 +5,7 @@ import { registerDiscoveryHandlers } from './discovery.handlers'
 import { registerHelmHandlers } from './helm.handlers'
 import { registerKubeconfigHandlers } from './kubeconfig.handlers'
 import { registerMetricsHandlers } from './metrics.handlers'
+import { registerNodeHandlers } from './node.handlers'
 import { registerPodHandlers } from './pod.handlers'
 import { registerPortForwardHandlers } from './portForward.handlers'
 import { registerResourceHandlers } from './resource.handlers'
@@ -22,6 +23,7 @@ export function registerIpcHandlers(): void {
   registerMetricsHandlers()
   registerAppHandlers()
   registerPodHandlers()
+  registerNodeHandlers()
   registerServiceHandlers()
   registerPortForwardHandlers()
   registerTerminalHandlers()

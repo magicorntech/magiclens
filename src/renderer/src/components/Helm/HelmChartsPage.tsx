@@ -1,35 +1,22 @@
 import { useMemo, useState } from 'react'
-import { Empty, Input, Table, Tag, Typography } from 'antd'
+import { Empty, Input, Modal, Table, Tag, Typography, message } from 'antd'
+import { DeleteOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmChartSummary } from '@shared/types/helm'
-import { useHelmCharts } from '../../queries/useHelm'
+import { useHelmCharts, useHelmUninstallChart } from '../../queries/useHelm'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import { HelmRowActions } from './HelmRowActions'
 
 interface HelmChartsPageProps {
   clusterId: string
 }
 
-const columns: ColumnsType<HelmChartSummary> = [
-  {
-    title: 'Chart',
-    dataIndex: 'chartName',
-    key: 'chartName',
-    render: (v: string) => <Typography.Text strong>{v}</Typography.Text>
-  },
-  { title: 'Version', dataIndex: 'chartVersion', key: 'chartVersion' },
-  { title: 'App version', dataIndex: 'appVersion', key: 'appVersion' },
-  { title: 'Releases', dataIndex: 'releaseCount', key: 'releaseCount', width: 100 },
-  {
-    title: 'Namespaces',
-    dataIndex: 'namespaces',
-    key: 'namespaces',
-    render: (namespaces: string[]) => namespaces.map((ns) => <Tag key={ns}>{ns}</Tag>)
-  }
-]
-
 export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.Element {
   const { data, isLoading } = useHelmCharts(clusterId)
+  const uninstallChart = useHelmUninstallChart(clusterId)
   const [search, setSearch] = useState('')
+  const { setPagination, paginationProps } = useTablePagination([clusterId, search])
 
   const charts = data && 'charts' in data ? data.charts : []
   const error = data && 'error' in data ? data.error : null
@@ -43,6 +30,74 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
     })
   }, [charts, search])
 
+  function confirmUninstall(chart: HelmChartSummary): void {
+    const releaseList = chart.releases.map((r) => `${r.namespace}/${r.name}`).join(', ')
+    Modal.confirm({
+      title: `Uninstall ${chart.chartName}-${chart.chartVersion}?`,
+      content: (
+        <div>
+          <Typography.Paragraph style={{ marginBottom: 8 }}>
+            This will delete all resources from {chart.releaseCount} release(s) and remove Helm release history:
+          </Typography.Paragraph>
+          <Typography.Text code>{releaseList}</Typography.Text>
+        </div>
+      ),
+      okText: 'Uninstall',
+      okType: 'danger',
+      onOk: async () => {
+        const res = await uninstallChart.mutateAsync({
+          chartName: chart.chartName,
+          chartVersion: chart.chartVersion
+        })
+        if ('error' in res) {
+          message.error(res.error)
+          throw new Error(res.error)
+        }
+        if (res.warnings.length > 0) {
+          message.warning(`Uninstalled with warnings: ${res.warnings.slice(0, 3).join('; ')}`)
+        } else {
+          message.success(`Uninstalled ${res.uninstalled.length} release(s)`)
+        }
+      }
+    })
+  }
+
+  const columns: ColumnsType<HelmChartSummary> = [
+    {
+      title: 'Chart',
+      dataIndex: 'chartName',
+      key: 'chartName',
+      render: (v: string) => <Typography.Text strong>{v}</Typography.Text>
+    },
+    { title: 'Version', dataIndex: 'chartVersion', key: 'chartVersion' },
+    { title: 'App version', dataIndex: 'appVersion', key: 'appVersion' },
+    { title: 'Releases', dataIndex: 'releaseCount', key: 'releaseCount', width: 100 },
+    {
+      title: 'Namespaces',
+      dataIndex: 'namespaces',
+      key: 'namespaces',
+      render: (namespaces: string[]) => namespaces.map((ns) => <Tag key={ns}>{ns}</Tag>)
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: 56,
+      render: (_, chart) => (
+        <HelmRowActions
+          items={[
+            {
+              key: 'uninstall',
+              label: 'Uninstall',
+              icon: <DeleteOutlined />,
+              danger: true,
+              onClick: () => confirmUninstall(chart)
+            }
+          ]}
+        />
+      )
+    }
+  ]
+
   if (isLoading) return <LoadingState />
 
   return (
@@ -51,8 +106,8 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
         Helm Charts
       </Typography.Title>
       <Typography.Paragraph type="secondary">
-        Charts currently installed as releases on this cluster, derived from live release data. This is not a chart
-        repository browser — it reflects what is actually deployed.
+        Charts currently installed as releases on this cluster, derived from live release data. Uninstall removes all
+        matching releases and their deployed resources.
       </Typography.Paragraph>
       {error ? (
         <Empty description={error} />
@@ -70,7 +125,14 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
           {filteredCharts.length === 0 ? (
             <Empty description="No charts match your search" />
           ) : (
-            <Table rowKey="id" columns={columns} dataSource={filteredCharts} pagination={false} size="middle" />
+            <Table
+              rowKey="id"
+              columns={columns}
+              dataSource={filteredCharts}
+              pagination={paginationProps(filteredCharts.length)}
+              onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
+              size="middle"
+            />
           )}
         </>
       )}

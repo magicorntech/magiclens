@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Input, Progress, Space, Splitter, Table, Typography } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { useQueryClient } from '@tanstack/react-query'
+import type { ColumnsType, TableProps } from 'antd/es/table'
+import type { SorterResult } from 'antd/es/table/interface'
 import type { ResourceKind } from '@shared/resourceKinds'
 import { isNamespaceScoped } from '@shared/resourceKinds'
 import type { ResourceListItem } from '@shared/types/resource'
@@ -9,7 +11,14 @@ import { useResourceList } from '../../queries/useResourceList'
 import { useNodeMetrics } from '../../queries/useNodeMetrics'
 import { kindColumnDefs } from '../../resourceConfig/kinds.renderer'
 import { buildCreateTemplate } from '../../resourceConfig/manifestTemplates'
-import { formatBytes, formatCores, percentOf, compareAgeTimestamps } from '../../format'
+import { formatBytes, formatCores, percentOf } from '../../format'
+import {
+  columnValueSorter,
+  compareAgeTimestamps,
+  statusSorter,
+  type TableSortState
+} from '../../utils/tableSort'
+import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { AgeCell } from './AgeCell'
 import { StatusTag } from './StatusTag'
 import { LiveRefreshControl } from './LiveRefreshControl'
@@ -17,8 +26,12 @@ import { WatchStatusBadge } from './WatchStatusBadge'
 import { EmptyState, ErrorState, LoadingState } from './EmptyErrorStates'
 import { ResourceDetailPanel } from './ResourceDetailPanel'
 import { ResourceRowActions } from './ResourceRowActions'
+import { IngressHostsCell } from './IngressHostsCell'
 import { ClusterMetricsSummary } from '../Metrics/ClusterMetricsSummary'
+import { NodesEventsFooter } from '../Metrics/NodesEventsFooter'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
+import { batchDeleteResources, confirmBatchDelete } from './batchDelete'
+import { useClusterStore } from '../../stores/clusterStore'
 
 interface ResourceTableProps {
   clusterId: string
@@ -27,9 +40,23 @@ interface ResourceTableProps {
   isActive: boolean
 }
 
+function applySortOrder(
+  col: ColumnsType<ResourceListItem>[number],
+  sortState: TableSortState
+): ColumnsType<ResourceListItem>[number] {
+  if (!col.key || sortState.columnKey !== col.key) return col
+  return { ...col, sortOrder: sortState.order ?? null }
+}
+
 export function ResourceTable({ clusterId, namespace, kind, isActive }: ResourceTableProps): React.JSX.Element {
   const [search, setSearch] = useState('')
   const [selectedItem, setSelectedItem] = useState<ResourceListItem | null>(null)
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
+  const [sortState, setSortState] = useState<TableSortState>({})
+  const queryClient = useQueryClient()
+  const clearResourceFocus = useClusterStore((s) => s.clearResourceFocus)
+  const resourceFocus = useClusterStore((s) => s.clusters.find((c) => c.id === clusterId)?.resourceFocus ?? null)
+  const { setPagination, paginationProps } = useTablePagination([clusterId, namespace, kind, search])
   const { openYamlEditor } = useBottomPanel()
   const listQueryKey = useMemo(() => ['resource-list', clusterId, namespace, kind], [clusterId, namespace, kind])
   const { data, isLoading, isError, error, refetch, isFetching, watchStatus } = useResourceList(
@@ -43,17 +70,48 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
 
   useEffect(() => {
     setSelectedItem(null)
+    setSelectedRowKeys([])
   }, [clusterId, namespace, kind])
 
   const columns = useMemo<ColumnsType<ResourceListItem>>(() => {
     const cols: ColumnsType<ResourceListItem> = [
-      { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) }
+      applySortOrder(
+        { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
+        sortState
+      )
     ]
     if (namespace === 'ALL' && isNamespaceScoped(kind)) {
-      cols.push({ title: 'Namespace', dataIndex: 'namespace', key: 'namespace' })
+      cols.push(
+        applySortOrder(
+          {
+            title: 'Namespace',
+            dataIndex: 'namespace',
+            key: 'namespace',
+            sorter: (a, b) => a.namespace.localeCompare(b.namespace)
+          },
+          sortState
+        )
+      )
     }
     for (const col of kindColumnDefs[kind]) {
-      cols.push({ title: col.title, key: col.key, render: (_, item) => item.columns[col.key] ?? '-' })
+      cols.push(
+        applySortOrder(
+          {
+            title: col.title,
+            key: col.key,
+            sorter: columnValueSorter(col.key),
+            render: (_, item) => {
+              if (kind === 'Ingresses' && col.key === 'hosts') {
+                return (
+                  <IngressHostsCell hosts={item.columns.hosts} tlsHosts={item.columns.tlsHosts} />
+                )
+              }
+              return item.columns[col.key] ?? '-'
+            }
+          },
+          sortState
+        )
+      )
     }
     if (isNodesKind) {
       cols.push({
@@ -91,17 +149,30 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
         }
       })
     }
-    cols.push({
-      title: 'Status',
-      key: 'status',
-      render: (_, item) => <StatusTag text={item.statusText} color={item.statusColor} />
-    })
-    cols.push({
-      title: 'Age',
-      key: 'age',
-      sorter: (a, b) => compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp),
-      render: (_, item) => <AgeCell timestamp={item.ageTimestamp} />
-    })
+    cols.push(
+      applySortOrder(
+        {
+          title: 'Status',
+          key: 'status',
+          sorter: statusSorter,
+          render: (_, item) => (
+            <StatusTag text={item.statusText} color={item.statusColor} detail={item.statusDetail} />
+          )
+        },
+        sortState
+      )
+    )
+    cols.push(
+      applySortOrder(
+        {
+          title: 'Age',
+          key: 'age',
+          sorter: (a, b) => compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp),
+          render: (_, item) => <AgeCell timestamp={item.ageTimestamp} />
+        },
+        sortState
+      )
+    )
     cols.push({
       title: '',
       key: 'actions',
@@ -118,10 +189,57 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
       )
     })
     return cols
-  }, [kind, namespace, isNodesKind, nodeMetrics, clusterId, listQueryKey])
+  }, [kind, namespace, isNodesKind, nodeMetrics, clusterId, listQueryKey, sortState])
+
+  const handleTableChange: TableProps<ResourceListItem>['onChange'] = (paginationConfig, _filters, sorter) => {
+    setPagination(readPaginationChange(paginationConfig))
+    const active = (Array.isArray(sorter) ? sorter[0] : sorter) as SorterResult<ResourceListItem>
+    setSortState({
+      columnKey: (active.columnKey as string) ?? active.field?.toString(),
+      order: active.order ?? null
+    })
+  }
 
   const items = 'items' in (data ?? {}) ? (data as { items: ResourceListItem[] }).items : []
   const filtered = search ? items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase())) : items
+
+  useEffect(() => {
+    if (!resourceFocus || resourceFocus.kind !== kind) return
+    const match = filtered.find(
+      (item) =>
+        item.name === resourceFocus.name &&
+        (!isNamespaceScoped(kind) || item.namespace === resourceFocus.namespace)
+    )
+    if (match) {
+      setSelectedItem(match)
+      clearResourceFocus(clusterId)
+    }
+  }, [resourceFocus, filtered, kind, clusterId, clearResourceFocus])
+
+  const selectedForDelete = useMemo(
+    () => filtered.filter((item) => selectedRowKeys.includes(item.id)),
+    [filtered, selectedRowKeys]
+  )
+
+  function handleBatchDelete(): void {
+    if (selectedForDelete.length === 0) return
+    confirmBatchDelete(kind, selectedForDelete, async () => {
+      const result = await batchDeleteResources(
+        queryClient,
+        listQueryKey,
+        clusterId,
+        { type: 'builtin', kind },
+        selectedForDelete
+      )
+      if (result.failed.length === 0) {
+        setSelectedRowKeys([])
+        if (selectedItem && selectedForDelete.some((i) => i.id === selectedItem.id)) {
+          setSelectedItem(null)
+        }
+      }
+      return result
+    })
+  }
 
   if (isLoading) return <LoadingState />
   if (isError) return <ErrorState message={error instanceof Error ? error.message : String(error)} onRetry={refetch} />
@@ -141,6 +259,11 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
           <WatchStatusBadge isError={isError} watchStatus={watchStatus} />
         </Space>
         <Space>
+          {selectedRowKeys.length > 0 && (
+            <Button danger icon={<DeleteOutlined />} onClick={handleBatchDelete}>
+              Delete ({selectedRowKeys.length})
+            </Button>
+          )}
           <Button
             icon={<PlusOutlined />}
             onClick={() =>
@@ -172,12 +295,12 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
             rowKey="id"
             columns={columns}
             dataSource={filtered}
-            pagination={{ pageSize: 20, showSizeChanger: true }}
+            pagination={paginationProps(filtered.length)}
             size="middle"
+            onChange={handleTableChange}
             rowSelection={{
-              type: 'radio',
-              selectedRowKeys: selectedItem ? [selectedItem.id] : [],
-              onChange: (_, rows) => setSelectedItem(rows[0] ?? null)
+              selectedRowKeys,
+              onChange: (keys) => setSelectedRowKeys(keys as string[])
             }}
             onRow={(record) => ({
               onClick: () => setSelectedItem(record)
@@ -185,6 +308,9 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
           />
         )}
       </div>
+      {isNodesKind && (
+        <NodesEventsFooter clusterId={clusterId} isActive={isActive} selectedNodeName={selectedItem?.name} />
+      )}
     </div>
   )
 

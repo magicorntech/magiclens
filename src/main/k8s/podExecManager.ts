@@ -54,7 +54,8 @@ class PodExecManager {
     containerName: string,
     cols: number,
     rows: number,
-    sender: WebContents
+    sender: WebContents,
+    command?: string[]
   ): Promise<void> {
     this.stop(sessionId)
 
@@ -78,7 +79,9 @@ class PodExecManager {
     stdin.on('error', () => {})
 
     const exec = new Exec(clients.kc)
-    const command = ['/bin/sh', '-c', 'command -v bash >/dev/null 2>&1 && exec bash || exec sh']
+    const shellCommand =
+      command ??
+      ['/bin/sh', '-c', 'command -v bash >/dev/null 2>&1 && exec bash || exec sh']
 
     const session: ExecSession = { stdin, stdout, senderId: sender.id }
     this.sessions.set(sessionId, session)
@@ -95,7 +98,7 @@ class PodExecManager {
         namespace,
         podName,
         containerName,
-        command,
+        shellCommand,
         stdout,
         stderr,
         stdin,

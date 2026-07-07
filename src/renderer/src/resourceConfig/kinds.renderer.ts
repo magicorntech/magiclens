@@ -227,7 +227,11 @@ export const kindColumnDefs: Record<ResourceKind, ColumnDef[]> = {
     { key: 'endpoints', title: 'Endpoints' }
   ],
   Endpoints: [{ key: 'addresses', title: 'Addresses' }],
-  Ingresses: [{ key: 'hosts', title: 'Hosts' }],
+  Ingresses: [
+    { key: 'ingressClass', title: 'Class' },
+    { key: 'addresses', title: 'Address' },
+    { key: 'hosts', title: 'Hosts' }
+  ],
   IngressClasses: [{ key: 'controller', title: 'Controller' }],
   NetworkPolicies: [{ key: 'policyTypes', title: 'Policy types' }],
   PersistentVolumeClaims: [{ key: 'capacity', title: 'Capacity' }],

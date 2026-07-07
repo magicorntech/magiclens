@@ -4,6 +4,7 @@ import type { MenuProps } from 'antd'
 import { DeleteOutlined, EditOutlined, MoreOutlined } from '@ant-design/icons'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
+import { batchDeleteResources, removeItemsById } from './batchDelete'
 
 interface ListLike {
   items: { id: string }[]
@@ -11,8 +12,7 @@ interface ListLike {
 type ListResponse = ListLike | { error: string }
 
 function removeById(data: ListResponse | undefined, id: string): ListResponse | undefined {
-  if (!data || 'error' in data) return data
-  return { items: data.items.filter((it) => it.id !== id) }
+  return removeItemsById(data, new Set([id]))
 }
 
 interface ResourceRowActionsProps {
