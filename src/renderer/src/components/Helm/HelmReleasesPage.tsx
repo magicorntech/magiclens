@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, Empty, Input, Modal, Space, Splitter, Table, Tag, Typography, message } from 'antd'
+import { Button, Empty, Input, Modal, Space, Splitter, Tag, Typography, message } from 'antd'
 import { DeleteOutlined, HistoryOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmRelease } from '@shared/types/helm'
@@ -7,6 +7,7 @@ import type { ResourceFocus } from '@shared/types/navigation'
 import { useHelmReleases, useHelmUninstallRelease } from '../../queries/useHelm'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { HelmReleaseHistoryModal } from './HelmReleaseHistoryModal'
 import { HelmReleaseDetailPanel } from './HelmReleaseDetailPanel'
 import { HelmRowActions } from './HelmRowActions'
@@ -204,7 +205,8 @@ export function HelmReleasesPage({ clusterId, onNavigateToResource }: HelmReleas
             {filteredReleases.length === 0 ? (
               <Empty description="No releases match your search" />
             ) : (
-              <Table
+              <ResizableTable
+                tableKey="helm-releases"
                 rowKey="id"
                 columns={columns}
                 dataSource={filteredReleases}

@@ -1,8 +1,9 @@
-import { Empty, Table, Tag, Typography } from 'antd'
+import { Empty, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { ResourceEventItem } from '@shared/types/resourceEvents'
 import { useClusterEvents } from '../../queries/useClusterEvents'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from './AgeCell'
 import { LoadingState } from './EmptyErrorStates'
 
@@ -78,7 +79,8 @@ export function ClusterEventsPanel({
         <Empty description="No events" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-          <Table
+          <ResizableTable
+            tableKey={`cluster-events${involvedObjectKind ? `-${involvedObjectKind}` : ''}`}
             rowKey="id"
             columns={columns}
             dataSource={events}

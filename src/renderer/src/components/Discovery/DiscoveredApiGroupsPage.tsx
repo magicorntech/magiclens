@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
-import { Table, Tag, Typography } from 'antd'
+import { Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { DiscoveredApiGroup } from '@shared/types/discovery'
 import { useDiscovery } from '../../queries/useDiscovery'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 
 interface DiscoveredApiGroupsPageProps {
@@ -70,7 +71,8 @@ export function DiscoveredApiGroupsPage({ clusterId }: DiscoveredApiGroupsPagePr
         Read live from this cluster's Discovery API (GET /api, GET /apis) — nothing here is hardcoded, so CRDs and
         operator-registered API groups appear automatically.
       </Typography.Paragraph>
-      <Table
+      <ResizableTable
+        tableKey="discovered-api-groups"
         rowKey="name"
         columns={columns}
         dataSource={rows}

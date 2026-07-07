@@ -1,10 +1,11 @@
-import { Button, Descriptions, Empty, Splitter, Table, Tag, Typography, theme } from 'antd'
+import { Button, Descriptions, Empty, Splitter, Tag, Typography, theme } from 'antd'
 import { CloseOutlined, LinkOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmManifestResource, HelmRelease } from '@shared/types/helm'
 import type { ResourceFocus } from '@shared/types/navigation'
 import { useHelmReleaseDetail } from '../../queries/useHelm'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { ResizableTable } from '../../utils/ResizableTable'
 
 interface HelmReleaseDetailPanelProps {
   clusterId: string
@@ -138,7 +139,8 @@ export function HelmReleaseDetailPanel({
                   Resources ({detail.resources.length})
                 </Typography.Text>
                 <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-                  <Table
+                  <ResizableTable
+                    tableKey="helm-release-resources"
                     rowKey="id"
                     size="small"
                     columns={resourceColumns}

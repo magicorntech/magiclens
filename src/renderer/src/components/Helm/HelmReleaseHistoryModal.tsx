@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Button, Empty, Modal, Popconfirm, Table, Tag, Typography, message } from 'antd'
+import { Button, Empty, Modal, Popconfirm, Tag, Typography, message } from 'antd'
 import { HistoryOutlined, RollbackOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmReleaseHistoryEntry } from '@shared/types/helm'
 import { useHelmHistory } from '../../queries/useHelm'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { ResizableTable } from '../../utils/ResizableTable'
 
 interface HelmReleaseHistoryModalProps {
   clusterId: string
@@ -126,7 +127,7 @@ export function HelmReleaseHistoryModal({
       ) : history.length === 0 ? (
         <Empty description="No revision history found" />
       ) : (
-        <Table rowKey="id" columns={columns} dataSource={history} pagination={false} size="small" />
+        <ResizableTable tableKey="helm-release-history" rowKey="id" columns={columns} dataSource={history} pagination={false} size="small" />
       )}
     </Modal>
   )

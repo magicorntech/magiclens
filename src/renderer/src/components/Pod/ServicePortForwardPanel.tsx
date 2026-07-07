@@ -1,8 +1,9 @@
-import { Alert, Table, Tag, Typography } from 'antd'
+import { Alert, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { ServicePortInfo } from '@shared/types/service'
 import { useServiceDetail } from '../../queries/useServiceDetail'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { PortForwardControl } from './PortForwardControl'
 
 interface ServicePortForwardPanelProps {
@@ -51,7 +52,8 @@ export function ServicePortForwardPanel({
         Forwards a local port to a pod behind this service ({data.type} · {data.clusterIP}). Kubernetes has no direct
         service port-forward API, so a running pod matching the service's selector is resolved automatically.
       </Typography.Paragraph>
-      <Table
+      <ResizableTable
+        tableKey="service-port-forward"
         rowKey={(row) => `${row.name ?? ''}-${row.port}`}
         columns={columns}
         dataSource={data.ports}

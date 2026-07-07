@@ -1,9 +1,10 @@
-import { Empty, Table, Tag, Typography } from 'antd'
+import { Empty, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
 import type { ResourceEventItem } from '@shared/types/resourceEvents'
 import { useResourceEvents } from '../../queries/useResourceEvents'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from './AgeCell'
 import { LoadingState } from './EmptyErrorStates'
 
@@ -66,7 +67,8 @@ export function ResourceEventsPanel({
   }
 
   return (
-    <Table
+    <ResizableTable
+      tableKey="resource-events"
       rowKey="id"
       columns={columns}
       dataSource={events}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Input, Progress, Space, Splitter, Table, Typography } from 'antd'
+import { Button, Input, Progress, Space, Splitter, Typography } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType, TableProps } from 'antd/es/table'
@@ -19,6 +19,7 @@ import {
   type TableSortState
 } from '../../utils/tableSort'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from './AgeCell'
 import { StatusTag } from './StatusTag'
 import { LiveRefreshControl } from './LiveRefreshControl'
@@ -291,7 +292,8 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
         {filtered.length === 0 ? (
           <EmptyState />
         ) : (
-          <Table
+          <ResizableTable
+            tableKey={`resource-list-${kind}`}
             rowKey="id"
             columns={columns}
             dataSource={filtered}

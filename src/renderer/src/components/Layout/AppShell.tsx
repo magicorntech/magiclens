@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Layout, Space, Splitter, Tag, theme, Typography } from 'antd'
 import { CodeOutlined } from '@ant-design/icons'
 import type { ResourceKind } from '@shared/resourceKinds'
@@ -10,6 +11,21 @@ import { NamespaceSelector } from './NamespaceSelector'
 import { BottomPanel } from './BottomPanel'
 import { BottomPanelProvider, useBottomPanel } from './BottomPanelContext'
 
+const TERMINAL_LABEL_MIN_WIDTH = 480
+
+function useCompactToolbar(ref: RefObject<HTMLElement | null>): boolean {
+  const [compact, setCompact] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => {
+      setCompact(entry.contentRect.width < TERMINAL_LABEL_MIN_WIDTH)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [ref])
+  return compact
+}
 const { Header, Sider, Content } = Layout
 
 interface AppShellProps {
@@ -41,6 +57,8 @@ function AppShellInner({
   const resourceMenuCollapsed = useClusterStore((s) => s.resourceMenuCollapsed)
   const setResourceMenuCollapsed = useClusterStore((s) => s.setResourceMenuCollapsed)
   const splitView = useClusterStore((s) => s.splitView)
+  const headerInnerRef = useRef<HTMLDivElement>(null)
+  const compactToolbar = useCompactToolbar(headerInnerRef)
   const { tabs, addTerminalTab, setActiveTab } = useBottomPanel()
 
   const hasTerminalTab = tabs.some((t) => t.kind === 'terminal')
@@ -58,9 +76,6 @@ function AppShellInner({
           background: token.colorBgContainer,
           borderBottom: `1px solid ${token.colorBorderSecondary}`,
           boxShadow: 'var(--ml-shadow-sm)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: splitView ? 'flex-end' : 'space-between',
           padding: splitView ? '0 10px' : '0 16px',
           height: splitView ? 36 : 56,
           lineHeight: splitView ? '36px' : '56px',
@@ -68,6 +83,16 @@ function AppShellInner({
           zIndex: 1
         }}
       >
+        <div
+          ref={headerInnerRef}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: splitView ? 'flex-end' : 'space-between',
+            width: '100%',
+            height: '100%'
+          }}
+        >
         {!splitView && (
           <Space>
             <Typography.Text strong>{cluster.customName}</Typography.Text>
@@ -81,10 +106,11 @@ function AppShellInner({
             icon={<CodeOutlined />}
             onClick={handleTerminalClick}
           >
-            {!splitView && 'Terminal'}
+            {!compactToolbar && 'Terminal'}
           </Button>
           <NamespaceSelector clusterId={cluster.id} value={cluster.selectedNamespace} onChange={onNamespaceChange} />
         </Space>
+        </div>
       </Header>
       <Layout style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <Sider
@@ -97,6 +123,7 @@ function AppShellInner({
           style={{ overflow: 'auto' }}
         >
           <ResourceMenu
+            clusterId={cluster.id}
             selectedKind={cluster.selectedResourceKind}
             selectedVirtualPage={selectedVirtualPage}
             onSelect={onSelectKind}

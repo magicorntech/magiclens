@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Button, Empty, Space, Table, Tag, Tooltip, Typography, message } from 'antd'
+import { Button, Empty, Space, Tag, Tooltip, Typography, message } from 'antd'
 import { LinkOutlined, StopOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { PortForwardSession } from '@shared/types/portForward'
 import { usePortForwards } from '../../queries/usePortForwards'
 import { useQueryClient } from '@tanstack/react-query'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { ResizableTable } from '../../utils/ResizableTable'
 
 interface PortForwardingPageProps {
   clusterId: string
@@ -88,7 +89,8 @@ export function PortForwardingPage({ clusterId }: PortForwardingPageProps): Reac
           style={{ marginTop: 48 }}
         />
       ) : (
-        <Table
+        <ResizableTable
+          tableKey="port-forwards"
           rowKey="id"
           columns={columns}
           dataSource={sessions}

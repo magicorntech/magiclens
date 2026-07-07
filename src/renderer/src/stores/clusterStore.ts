@@ -4,6 +4,12 @@ import type { ConnectionStatus, PersistedClusterEntry, PersistedUiState } from '
 import type { ResourceFocus } from '@shared/types/navigation'
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import { isNamespaceScoped } from '@shared/resourceKinds'
+import {
+  loadResourceTabPreferences,
+  saveResourceTabPreferences,
+  sortResourceKinds,
+  type ResourceTabPreferences
+} from '../utils/resourceTabPreferences'
 
 export interface ClusterEntry {
   id: string
@@ -57,6 +63,12 @@ interface ClusterStoreState {
   closeResourceKind: (id: string, kind: ResourceKind) => void
   navigateToResource: (id: string, focus: ResourceFocus) => void
   clearResourceFocus: (id: string) => void
+  reorderResourceKinds: (id: string, kinds: ResourceKind[]) => void
+  getResourceTabPrefs: (id: string) => import('../utils/resourceTabPreferences').ResourceTabPreferences
+  updateResourceTabPrefs: (
+    id: string,
+    patch: Partial<import('../utils/resourceTabPreferences').ResourceTabPreferences>
+  ) => void
   hydrateFromPersistence: (entries: PersistedClusterEntry[]) => void
   hydrateUiState: (uiState: PersistedUiState) => void
 }
@@ -194,9 +206,11 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
     set((state) => {
       const cluster = state.clusters.find((c) => c.id === id)
       if (!cluster) return {}
-      const openResourceKinds = cluster.openResourceKinds.includes(kind)
+      const prefs = loadResourceTabPreferences(id)
+      let openResourceKinds = cluster.openResourceKinds.includes(kind)
         ? cluster.openResourceKinds
         : [...cluster.openResourceKinds, kind]
+      openResourceKinds = sortResourceKinds(openResourceKinds, prefs.pinned)
       return { clusters: updateCluster(state.clusters, id, { openResourceKinds, selectedResourceKind: kind }) }
     }),
 
@@ -204,13 +218,38 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
     set((state) => {
       const cluster = state.clusters.find((c) => c.id === id)
       if (!cluster) return {}
+      const prefs = loadResourceTabPreferences(id)
+      if (prefs.pinned.includes(kind)) return {}
       const openResourceKinds = cluster.openResourceKinds.filter((k) => k !== kind)
       const selectedResourceKind =
         cluster.selectedResourceKind === kind
-          ? (openResourceKinds.length > 0 ? openResourceKinds[openResourceKinds.length - 1] : null)
+          ? (openResourceKinds.length > 0 ? openResourceKinds[0] : null)
           : cluster.selectedResourceKind
+      const patch: Partial<ResourceTabPreferences> = {}
+      if (prefs.splitLeftKind === kind) patch.splitLeftKind = selectedResourceKind
+      if (prefs.splitRightKind === kind) patch.splitRightKind = selectedResourceKind
+      if (openResourceKinds.length < 2) patch.splitView = false
+      if (Object.keys(patch).length > 0) {
+        saveResourceTabPreferences(id, { ...prefs, ...patch })
+      }
       return { clusters: updateCluster(state.clusters, id, { openResourceKinds, selectedResourceKind }) }
     }),
+
+  reorderResourceKinds: (id, kinds) =>
+    set((state) => {
+      const cluster = state.clusters.find((c) => c.id === id)
+      if (!cluster) return {}
+      const valid = kinds.filter((k) => cluster.openResourceKinds.includes(k))
+      if (valid.length !== cluster.openResourceKinds.length) return {}
+      return { clusters: updateCluster(state.clusters, id, { openResourceKinds: valid }) }
+    }),
+
+  getResourceTabPrefs: (id) => loadResourceTabPreferences(id),
+
+  updateResourceTabPrefs: (id, patch) => {
+    const current = loadResourceTabPreferences(id)
+    saveResourceTabPreferences(id, { ...current, ...patch })
+  },
 
   navigateToResource: (id, focus) =>
     set((state) => {

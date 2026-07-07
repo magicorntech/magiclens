@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { Alert, Progress, Table, Typography } from 'antd'
+import { Alert, Progress, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import type { PodContainerMetric } from '@shared/types/pod'
@@ -9,6 +9,7 @@ import { usePodDetail } from '../../queries/usePodDetail'
 import { formatBytes, formatCores } from '../../format'
 import { usePodMetricsHistoryStore } from '../../stores/podMetricsHistoryStore'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { PodMetricsChart } from './PodMetricsChart'
 
 interface PodMetricsPanelProps {
@@ -124,7 +125,7 @@ export function PodMetricsPanel({
         </div>
       </div>
 
-      <Table rowKey="name" columns={columns} dataSource={metrics.containers} pagination={false} size="small" />
+      <ResizableTable tableKey="pod-metrics-containers" rowKey="name" columns={columns} dataSource={metrics.containers} pagination={false} size="small" />
 
       <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
         <PodMetricsChart title="CPU usage over time" points={cpuPoints} seriesNames={containerNames} formatValue={formatCores} />

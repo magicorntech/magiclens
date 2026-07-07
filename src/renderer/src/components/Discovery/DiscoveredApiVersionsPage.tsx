@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
-import { Table, Tag, Typography } from 'antd'
+import { Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { DiscoveredApiResource } from '@shared/types/discovery'
 import { useDiscovery } from '../../queries/useDiscovery'
 import { buildTablePagination, readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 
 interface DiscoveredApiVersionsPageProps {
@@ -98,7 +99,8 @@ export function DiscoveredApiVersionsPage({ clusterId }: DiscoveredApiVersionsPa
         Every group/version this cluster currently serves, with the resources, verbs, scope, short names and
         categories reported by its own Discovery API. Expand a row to inspect it.
       </Typography.Paragraph>
-      <Table
+      <ResizableTable
+        tableKey="discovered-api-versions"
         rowKey="key"
         columns={columns}
         dataSource={rows}
@@ -107,7 +109,8 @@ export function DiscoveredApiVersionsPage({ clusterId }: DiscoveredApiVersionsPa
         size="middle"
         expandable={{
           expandedRowRender: (row) => (
-            <Table
+            <ResizableTable
+              tableKey={`discovered-api-resources-${row.apiVersion}`}
               rowKey="name"
               columns={resourceColumns}
               dataSource={row.resources}

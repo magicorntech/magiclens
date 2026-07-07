@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Empty, Input, Space, Splitter, Table, Tag, Typography } from 'antd'
+import { Button, Empty, Input, Space, Splitter, Tag, Typography } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
@@ -8,6 +8,7 @@ import { useCustomResourceKinds, useDynamicResourceList } from '../../queries/us
 import { useDynamicResourceWatch } from '../../queries/useResourceWatch'
 import { compareAgeTimestamps } from '../../utils/tableSort'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
 import { AgeCell } from '../ResourceTable/AgeCell'
@@ -201,7 +202,8 @@ export function CustomResourceBrowserPage({
                 style={{ marginBottom: 8 }}
               />
               <div style={{ flex: 1, overflow: 'auto' }}>
-                <Table
+                <ResizableTable
+                  tableKey={`crd-kinds-${mode}`}
                   rowKey="crdName"
                   columns={kindColumns}
                   dataSource={filteredKinds}
@@ -273,7 +275,8 @@ export function CustomResourceBrowserPage({
                       ))}
                     </div>
                   )}
-                  <Table
+                  <ResizableTable
+                    tableKey={`crd-instances-${selectedKind.crdName}`}
                     rowKey="id"
                     columns={instanceColumns}
                     dataSource={instances}

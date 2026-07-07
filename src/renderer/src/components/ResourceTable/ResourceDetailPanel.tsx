@@ -1,4 +1,4 @@
-import { Button, Descriptions, Table, Tabs, Tag, Typography, theme } from 'antd'
+import { Button, Descriptions, Tabs, Tag, Typography, theme } from 'antd'
 import { CloseOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { ResourceKind } from '@shared/resourceKinds'
@@ -19,6 +19,7 @@ import { ServicePortForwardPanel } from '../Pod/ServicePortForwardPanel'
 import { NodeMetricsPanel } from '../Metrics/NodeMetricsPanel'
 import { NodeExecPanel } from '../Node/NodeExecPanel'
 import { LoadingState } from './EmptyErrorStates'
+import { ResizableTable } from '../../utils/ResizableTable'
 
 interface ResourceDetailPanelProps {
   clusterId: string
@@ -113,7 +114,8 @@ export function ResourceDetailPanel({
               {podDetail && 'error' in podDetail ? podDetail.error : 'Failed to load pod details'}
             </Typography.Text>
           ) : (
-            <Table
+            <ResizableTable
+              tableKey="pod-containers"
               rowKey="name"
               columns={podContainerColumns}
               dataSource={podDetail.containers}

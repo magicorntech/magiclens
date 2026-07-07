@@ -1,10 +1,11 @@
-import { Empty, Space, Table, Tag, Typography } from 'antd'
+import { Empty, Space, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { PodContainerInfo, PodServiceBinding } from '@shared/types/pod'
 import { isPodDetailData } from '@shared/types/pod'
 import { usePodNetwork } from '../../queries/usePodNetwork'
 import { usePodDetail } from '../../queries/usePodDetail'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { PortForwardControl } from './PortForwardControl'
 
 interface PodNetworkPanelProps {
@@ -71,7 +72,8 @@ export function PodNetworkPanel({ clusterId, namespace, podName, isActive }: Pod
       {!network?.services.length ? (
         <Empty description="No services route traffic to this pod" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
-        <Table
+        <ResizableTable
+          tableKey="pod-network-services"
           rowKey="name"
           columns={serviceColumns}
           dataSource={network.services}
@@ -85,7 +87,8 @@ export function PodNetworkPanel({ clusterId, namespace, podName, isActive }: Pod
       {!containers.some((c) => c.ports.length > 0) ? (
         <Empty description="No container ports declared" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
-        <Table
+        <ResizableTable
+          tableKey="pod-network-ports"
           rowKey={(row) => `${row.container}-${row.containerPort}-${row.protocol}`}
           columns={[
             { title: 'Container', dataIndex: 'container', key: 'container' },

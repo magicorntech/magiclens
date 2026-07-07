@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Empty, Input, Modal, Table, Tag, Typography, message } from 'antd'
+import { Empty, Input, Modal, Tag, Typography, message } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmChartSummary } from '@shared/types/helm'
 import { useHelmCharts, useHelmUninstallChart } from '../../queries/useHelm'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import { ResizableTable } from '../../utils/ResizableTable'
 import { HelmRowActions } from './HelmRowActions'
 
 interface HelmChartsPageProps {
@@ -125,7 +126,8 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
           {filteredCharts.length === 0 ? (
             <Empty description="No charts match your search" />
           ) : (
-            <Table
+            <ResizableTable
+              tableKey="helm-charts"
               rowKey="id"
               columns={columns}
               dataSource={filteredCharts}

@@ -279,3 +279,35 @@ body,
     transform: translateY(0);
   }
 }
+
+/* Draggable column resize handles on data tables */
+.ml-table-col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 1;
+  touch-action: none;
+}
+
+.ml-table-col-resize-handle:hover {
+  background: color-mix(in srgb, var(--ml-primary, #7c3aed) 35%, transparent);
+}
+
+.resource-kind-tabs-bar .ant-tabs-content-holder {
+  display: none;
+}
+
+.resource-kind-tabs-root > .resource-kind-tabs-bar.ant-tabs {
+  height: auto !important;
+  min-height: 0 !important;
+  flex-shrink: 0;
+}
+
+.resource-kind-tabs-root > .resource-kind-tabs-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
