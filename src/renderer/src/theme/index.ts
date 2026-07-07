@@ -1,3 +1,5 @@
 export { brand, dark, getPalette, light } from './palette'
 export type { AppPalette } from './palette'
 export { buildAntdTheme, syncDocumentTheme } from './buildTheme'
+export { COLOR_SCHEME_DEFINITIONS, getSchemePalette, type ColorSchemeId } from './schemes'
+export { deriveSchemeFromAccent, normalizeHex } from './colorUtils'

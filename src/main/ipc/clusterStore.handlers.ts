@@ -9,7 +9,8 @@ export function registerClusterStoreHandlers(): void {
   })
 
   ipcMain.handle(IPC.CLUSTER_STORE_ADD, async (_e, entry: PersistedClusterEntry) => {
-    addCluster(entry)
+    const result = addCluster(entry)
+    if (result === 'duplicate') return { ok: false as const, reason: 'duplicate' as const }
     return { ok: true as const }
   })
 

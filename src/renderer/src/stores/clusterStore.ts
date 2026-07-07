@@ -18,6 +18,7 @@ export interface ClusterEntry {
   source: KubeconfigSource
   endpoint?: string
   logoUrl?: string
+  prometheusUrl?: string
   isFavorite: boolean
   status: ConnectionStatus
   errorMessage?: string
@@ -54,7 +55,10 @@ interface ClusterStoreState {
   setLeftSidebarCollapsed: (collapsed: boolean) => void
   setResourceMenuCollapsed: (collapsed: boolean) => void
   toggleFavorite: (id: string) => void
-  updateClusterMeta: (id: string, patch: Partial<Pick<ClusterEntry, 'customName' | 'logoUrl'>>) => void
+  updateClusterMeta: (
+    id: string,
+    patch: Partial<Pick<ClusterEntry, 'customName' | 'logoUrl' | 'prometheusUrl'>>
+  ) => void
   setClusterStatus: (id: string, status: ConnectionStatus, errorMessage?: string) => void
   setClusterConnected: (id: string, serverVersion: string, namespaces: string[], endpoint?: string) => void
   setSelectedNamespace: (id: string, namespace: string) => void
@@ -282,6 +286,7 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         source: entry.source,
         endpoint: entry.endpoint,
         logoUrl: entry.logoUrl,
+        prometheusUrl: entry.prometheusUrl,
         isFavorite: entry.isFavorite,
         status: 'idle',
         selectedNamespace: entry.selectedNamespace || 'ALL',

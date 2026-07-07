@@ -12,7 +12,7 @@ import {
 import type { ClusterEntry } from '../../stores/clusterStore'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useResourceList } from '../../queries/useResourceList'
-import { connectCluster } from '../../clusterConnect'
+import { connectCluster, disconnectCluster } from '../../clusterConnect'
 import { ClusterAvatar } from './ClusterAvatar'
 import { ConnectionStatusBadge } from '../ResourceTable/ConnectionStatusBadge'
 import { HighlightText } from './ClusterSearchInput'
@@ -42,7 +42,7 @@ export function ClusterListRow({ cluster, searchQuery, onEdit }: ClusterListRowP
   }
 
   async function handleRemove(): Promise<void> {
-    await window.api.cluster.disconnect({ clusterId: cluster.id })
+    await disconnectCluster(cluster.id)
     await window.api.clusterStore.remove(cluster.id)
     removeCluster(cluster.id)
   }

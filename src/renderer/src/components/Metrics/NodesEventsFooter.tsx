@@ -1,62 +1,70 @@
-import { Tabs, Typography } from 'antd'
+import { useEffect, useState } from 'react'
+import { Button, Segmented, Typography } from 'antd'
+import { DownOutlined } from '@ant-design/icons'
 import { ClusterEventsPanel } from '../ResourceTable/ClusterEventsPanel'
 import { ResourceEventsPanel } from '../ResourceTable/ResourceEventsPanel'
+
+type EventsView = 'cluster' | 'node'
 
 interface NodesEventsFooterProps {
   clusterId: string
   isActive: boolean
   selectedNodeName?: string
+  onCollapse?: () => void
 }
 
 export function NodesEventsFooter({
   clusterId,
   isActive,
-  selectedNodeName
+  selectedNodeName,
+  onCollapse
 }: NodesEventsFooterProps): React.JSX.Element {
-  const tabItems = [
-    {
-      key: 'cluster',
-      label: 'Cluster',
-      children: (
-        <div style={{ height: 220, overflow: 'hidden' }}>
-          <ClusterEventsPanel clusterId={clusterId} isActive={isActive} compact />
-        </div>
-      )
-    },
-    ...(selectedNodeName
-      ? [
-          {
-            key: 'node',
-            label: selectedNodeName,
-            children: (
-              <div style={{ height: 220, overflow: 'hidden' }}>
-                <ResourceEventsPanel
-                  clusterId={clusterId}
-                  namespace=""
-                  name={selectedNodeName}
-                  target={{ type: 'builtin', kind: 'Nodes' }}
-                  isActive={isActive}
-                />
-              </div>
-            )
-          }
-        ]
-      : [])
-  ]
+  const [view, setView] = useState<EventsView>('cluster')
+
+  useEffect(() => {
+    if (!selectedNodeName && view === 'node') setView('cluster')
+  }, [selectedNodeName, view])
 
   return (
-    <div
-      style={{
-        flexShrink: 0,
-        borderTop: '1px solid var(--ml-border-secondary)',
-        background: 'var(--ml-bg-container)',
-        padding: '8px 12px 0'
-      }}
-    >
-      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
-        Events
-      </Typography.Text>
-      <Tabs size="small" items={tabItems} destroyOnHidden />
+    <div className="nodes-events-footer">
+      <div className="nodes-events-footer-header">
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          Events
+        </Typography.Text>
+        {onCollapse ? (
+          <Button type="text" size="small" icon={<DownOutlined />} onClick={onCollapse} style={{ fontSize: 12 }}>
+            Collapse
+          </Button>
+        ) : null}
+      </div>
+
+      {selectedNodeName ? (
+        <Segmented
+          size="small"
+          style={{ marginBottom: 8, flexShrink: 0 }}
+          value={view}
+          onChange={(value) => setView(value as EventsView)}
+          options={[
+            { label: 'Cluster', value: 'cluster' },
+            { label: selectedNodeName, value: 'node' }
+          ]}
+        />
+      ) : null}
+
+      <div className="nodes-events-body">
+        {view === 'cluster' || !selectedNodeName ? (
+          <ClusterEventsPanel clusterId={clusterId} isActive={isActive} compact embedded />
+        ) : (
+          <ResourceEventsPanel
+            clusterId={clusterId}
+            namespace=""
+            name={selectedNodeName}
+            target={{ type: 'builtin', kind: 'Nodes' }}
+            isActive={isActive}
+            embedded
+          />
+        )}
+      </div>
     </div>
   )
 }

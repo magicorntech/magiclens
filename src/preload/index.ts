@@ -34,7 +34,36 @@ import type {
   ResourceGetManifestRequest,
   ResourceGetManifestResponse
 } from '@shared/types/resourceMutation'
-import type { ClusterMetricsSummary, NodeMetricsResponse } from '@shared/types/metrics'
+import type {
+  ClusterMetricsRangeRequest,
+  ClusterMetricsSummary,
+  DeploymentMetricsRangeRequest,
+  HpaMetricsRangeRequest,
+  MetricsRangeResponse,
+  NodeMetricsRangeRequest,
+  NodeMetricsResponse,
+  NodePressureRequest,
+  PodMetricsRangeRequest
+} from '@shared/types/metrics'
+import type { RbacCanIRequest, RbacCanIResponse, ResourcePermissionsRequest, ResourcePermissionsResponse } from '@shared/types/rbac'
+import type {
+  RolloutHistoryResponse,
+  WorkloadActionResponse,
+  WorkloadChangeImageRequest,
+  WorkloadContextInfo,
+  WorkloadPermissionsRequest,
+  WorkloadPermissionsResponse,
+  WorkloadRollbackRequest,
+  WorkloadScaleRequest,
+  WorkloadTargetRequest
+} from '@shared/types/workload'
+import type {
+  PrometheusDiscoverRequest,
+  PrometheusQueryRangeRequest,
+  PrometheusQueryRequest,
+  PrometheusQueryResponse,
+  PrometheusStatus
+} from '@shared/types/prometheus'
 import type { AppInfoResponse, DisplaySettings, WelcomeStateResponse } from '@shared/types/app'
 import type {
   PodDetailResponse,
@@ -156,7 +185,8 @@ const api = {
   },
   clusterStore: {
     list: (): Promise<{ clusters: PersistedClusterEntry[] }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_LIST),
-    add: (entry: PersistedClusterEntry): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_ADD, entry),
+    add: (entry: PersistedClusterEntry): Promise<{ ok: true } | { ok: false; reason: 'duplicate' }> =>
+      ipcRenderer.invoke(IPC.CLUSTER_STORE_ADD, entry),
     update: (entry: PersistedClusterEntry): Promise<{ ok: true }> =>
       ipcRenderer.invoke(IPC.CLUSTER_STORE_UPDATE, entry),
     remove: (id: string): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_REMOVE, { id })
@@ -169,7 +199,68 @@ const api = {
     getClusterSummary: (req: ClusterIdRequest): Promise<ClusterMetricsSummary> =>
       ipcRenderer.invoke(IPC.METRICS_GET_CLUSTER_SUMMARY, req),
     getNodeMetrics: (req: ClusterIdRequest): Promise<NodeMetricsResponse> =>
-      ipcRenderer.invoke(IPC.METRICS_GET_NODE_METRICS, req)
+      ipcRenderer.invoke(IPC.METRICS_GET_NODE_METRICS, req),
+    getNodeRange: (req: NodeMetricsRangeRequest): Promise<MetricsRangeResponse> =>
+      ipcRenderer.invoke(IPC.METRICS_GET_NODE_RANGE, req),
+    getPodRange: (req: PodMetricsRangeRequest): Promise<MetricsRangeResponse> =>
+      ipcRenderer.invoke(IPC.METRICS_GET_POD_RANGE, req),
+    getClusterRange: (req: ClusterMetricsRangeRequest): Promise<MetricsRangeResponse> =>
+      ipcRenderer.invoke(IPC.METRICS_GET_CLUSTER_RANGE, req),
+    getHpaRange: (req: HpaMetricsRangeRequest): Promise<MetricsRangeResponse> =>
+      ipcRenderer.invoke(IPC.METRICS_GET_HPA_RANGE, req),
+    getDeploymentRange: (req: DeploymentMetricsRangeRequest): Promise<MetricsRangeResponse> =>
+      ipcRenderer.invoke(IPC.METRICS_GET_DEPLOYMENT_RANGE, req),
+    getNodePressure: (req: NodePressureRequest): Promise<MetricsRangeResponse> =>
+      ipcRenderer.invoke(IPC.METRICS_GET_NODE_PRESSURE, req)
+  },
+  rbac: {
+    canI: (req: RbacCanIRequest): Promise<RbacCanIResponse> => ipcRenderer.invoke(IPC.RBAC_CAN_I, req),
+    getResourcePermissions: (req: ResourcePermissionsRequest): Promise<ResourcePermissionsResponse> =>
+      ipcRenderer.invoke(IPC.RBAC_GET_RESOURCE_PERMISSIONS, req)
+  },
+  workload: {
+    getContext: (req: WorkloadTargetRequest): Promise<WorkloadContextInfo | { error: string }> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_GET_CONTEXT, req),
+    getPermissions: (req: WorkloadPermissionsRequest): Promise<WorkloadPermissionsResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_GET_PERMISSIONS, req),
+    scale: (req: WorkloadScaleRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_SCALE, req),
+    restart: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_RESTART, req),
+    pauseRollout: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_PAUSE_ROLLOUT, req),
+    resumeRollout: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_RESUME_ROLLOUT, req),
+    rolloutHistory: (req: WorkloadTargetRequest): Promise<RolloutHistoryResponse | { error: string }> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_ROLLOUT_HISTORY, req),
+    rollback: (req: WorkloadRollbackRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_ROLLBACK, req),
+    changeImage: (req: WorkloadChangeImageRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_CHANGE_IMAGE, req),
+    suspendJob: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_SUSPEND_JOB, req),
+    resumeJob: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_RESUME_JOB, req),
+    rerunJob: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_RERUN_JOB, req),
+    suspendCronJob: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_SUSPEND_CRONJOB, req),
+    resumeCronJob: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_RESUME_CRONJOB, req),
+    triggerCronJob: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_TRIGGER_CRONJOB, req),
+    deletePods: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_DELETE_PODS, req)
+  },
+  prometheus: {
+    discover: (req: PrometheusDiscoverRequest): Promise<PrometheusStatus> =>
+      ipcRenderer.invoke(IPC.PROMETHEUS_DISCOVER, req),
+    getStatus: (req: ClusterIdRequest): Promise<PrometheusStatus> =>
+      ipcRenderer.invoke(IPC.PROMETHEUS_GET_STATUS, req),
+    query: (req: PrometheusQueryRequest): Promise<PrometheusQueryResponse> =>
+      ipcRenderer.invoke(IPC.PROMETHEUS_QUERY, req),
+    queryRange: (req: PrometheusQueryRangeRequest): Promise<PrometheusQueryResponse> =>
+      ipcRenderer.invoke(IPC.PROMETHEUS_QUERY_RANGE, req)
   },
   app: {
     getInfo: (): Promise<AppInfoResponse> => ipcRenderer.invoke(IPC.APP_GET_INFO),

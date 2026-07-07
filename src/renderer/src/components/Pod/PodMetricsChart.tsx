@@ -2,7 +2,7 @@ import { Empty, Typography } from 'antd'
 import dayjs from 'dayjs'
 import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
-const SERIES_COLORS = ['#7c3aed', '#059669', '#d97706', '#dc2626', '#6366f1', '#0891b2', '#db2777']
+const FALLBACK_SERIES_COLORS = ['#059669', '#d97706', '#dc2626', '#6366f1', '#0891b2', '#db2777']
 
 export interface PodMetricsChartPoint {
   t: number
@@ -52,7 +52,12 @@ export function PodMetricsChart({
             />
             {seriesNames.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
             {seriesNames.map((name, i) => {
-              const color = SERIES_COLORS[i % SERIES_COLORS.length]
+              const primary =
+                typeof document !== 'undefined'
+                  ? getComputedStyle(document.documentElement).getPropertyValue('--ml-primary').trim()
+                  : ''
+              const seriesColors = primary ? [primary, ...FALLBACK_SERIES_COLORS] : ['#7c3aed', ...FALLBACK_SERIES_COLORS]
+              const color = seriesColors[i % seriesColors.length]
               return (
                 <Area
                   key={name}

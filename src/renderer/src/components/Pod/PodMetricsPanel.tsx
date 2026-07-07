@@ -1,15 +1,20 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Alert, Progress, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import type { PodContainerMetric } from '@shared/types/pod'
+import { DEFAULT_METRICS_TIME_RANGE, HISTORICAL_METRICS_WARNING, type MetricsTimeRange } from '@shared/metricsTimeRange'
 import { usePodMetrics } from '../../queries/usePodMetrics'
+import { usePodMetricsRange } from '../../queries/useMetricsRange'
 import { isPodDetailData } from '@shared/types/pod'
 import { usePodDetail } from '../../queries/usePodDetail'
 import { formatBytes, formatCores } from '../../format'
 import { usePodMetricsHistoryStore } from '../../stores/podMetricsHistoryStore'
+import { seriesToChartPoints } from '../../utils/metricsChart'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { MetricsTimeRangeSelect } from '../Metrics/MetricsTimeRangeSelect'
+import { ExtendedMetricsCharts } from '../Metrics/ExtendedMetricsCharts'
 import { PodMetricsChart } from './PodMetricsChart'
 
 interface PodMetricsPanelProps {
@@ -29,10 +34,18 @@ export function PodMetricsPanel({
   ageTimestamp,
   isActive
 }: PodMetricsPanelProps): React.JSX.Element {
+  const [timeRange, setTimeRange] = useState<MetricsTimeRange>(DEFAULT_METRICS_TIME_RANGE)
   const { data: metrics, isLoading: metricsLoading, dataUpdatedAt } = usePodMetrics(
     clusterId,
     namespace,
     podName,
+    isActive
+  )
+  const { data: rangeData, isLoading: rangeLoading } = usePodMetricsRange(
+    clusterId,
+    namespace,
+    podName,
+    timeRange,
     isActive
   )
   const { data: detail, isLoading: detailLoading } = usePodDetail(clusterId, namespace, podName, isActive)
@@ -53,13 +66,15 @@ export function PodMetricsPanel({
       totalMemoryUsageBytes: metrics.totalMemoryUsageBytes,
       containers
     })
-    // `historyKey`/`addSample` are stable for the lifetime of this panel instance; only new data matters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataUpdatedAt])
 
   const containerNames = useMemo(() => metrics?.containers.map((c) => c.name) ?? [], [metrics])
 
-  const cpuPoints = useMemo(
+  const historicalCpu = useMemo(() => seriesToChartPoints(rangeData?.cpu), [rangeData?.cpu])
+  const historicalMemory = useMemo(() => seriesToChartPoints(rangeData?.memory), [rangeData?.memory])
+
+  const sessionCpuPoints = useMemo(
     () =>
       (history ?? []).map((s) => ({
         t: s.t,
@@ -67,7 +82,7 @@ export function PodMetricsPanel({
       })),
     [history, containerNames]
   )
-  const memoryPoints = useMemo(
+  const sessionMemoryPoints = useMemo(
     () =>
       (history ?? []).map((s) => ({
         t: s.t,
@@ -76,7 +91,11 @@ export function PodMetricsPanel({
     [history, containerNames]
   )
 
-  if (metricsLoading || detailLoading) return <LoadingState />
+  const useHistorical = rangeData?.historicalAvailable === true
+  const cpuChart = useHistorical ? historicalCpu : { points: sessionCpuPoints, seriesNames: containerNames }
+  const memoryChart = useHistorical ? historicalMemory : { points: sessionMemoryPoints, seriesNames: containerNames }
+
+  if (metricsLoading || detailLoading || rangeLoading) return <LoadingState />
 
   if (!metrics?.metricsAvailable) {
     return (
@@ -108,6 +127,15 @@ export function PodMetricsPanel({
 
   return (
     <div>
+      <MetricsTimeRangeSelect value={timeRange} onChange={setTimeRange} />
+
+      {!useHistorical && (
+        <Alert type="warning" showIcon message={HISTORICAL_METRICS_WARNING} style={{ marginBottom: 12 }} />
+      )}
+      {rangeData?.error ? (
+        <Alert type="error" showIcon message="Prometheus query failed" description={rangeData.error} style={{ marginBottom: 12 }} />
+      ) : null}
+
       <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
         <div style={{ flex: 1 }}>
           <Typography.Text type="secondary">Total CPU</Typography.Text>
@@ -125,23 +153,36 @@ export function PodMetricsPanel({
         </div>
       </div>
 
-      <ResizableTable tableKey="pod-metrics-containers" rowKey="name" columns={columns} dataSource={metrics.containers} pagination={false} size="small" />
+      <ResizableTable
+        tableKey="pod-metrics-containers"
+        rowKey="name"
+        columns={columns}
+        dataSource={metrics.containers}
+        pagination={false}
+        size="small"
+      />
 
       <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
-        <PodMetricsChart title="CPU usage over time" points={cpuPoints} seriesNames={containerNames} formatValue={formatCores} />
+        <PodMetricsChart
+          title="CPU usage over time"
+          points={cpuChart.points}
+          seriesNames={cpuChart.seriesNames.length > 0 ? cpuChart.seriesNames : containerNames}
+          formatValue={formatCores}
+        />
         <PodMetricsChart
           title="Memory usage over time"
-          points={memoryPoints}
-          seriesNames={containerNames}
+          points={memoryChart.points}
+          seriesNames={memoryChart.seriesNames.length > 0 ? memoryChart.seriesNames : containerNames}
           formatValue={formatBytes}
         />
-        {firstSampleAt && (
+        {!useHistorical && firstSampleAt && (
           <Typography.Text type="secondary" style={{ fontSize: 11 }}>
             {recordingSincePodStart
               ? `Showing the full pod lifetime, recorded since it started at ${dayjs(firstSampleAt).format('HH:mm:ss')}.`
               : `Recording since ${dayjs(firstSampleAt).format('HH:mm:ss')} — this pod started earlier, but Kubernetes' metrics API has no historical data from before MagicLens began observing it.`}
           </Typography.Text>
         )}
+        <ExtendedMetricsCharts rangeData={rangeData} />
       </div>
 
       {isPodDetailData(detail) && (

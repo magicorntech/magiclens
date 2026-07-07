@@ -7,12 +7,15 @@ import { registerKubeconfigHandlers } from './kubeconfig.handlers'
 import { registerMetricsHandlers } from './metrics.handlers'
 import { registerNodeHandlers } from './node.handlers'
 import { registerPodHandlers } from './pod.handlers'
+import { registerPrometheusHandlers } from './prometheus.handlers'
 import { registerPortForwardHandlers } from './portForward.handlers'
+import { registerRbacHandlers } from './rbac.handlers'
 import { registerResourceHandlers } from './resource.handlers'
 import { registerServiceHandlers } from './service.handlers'
 import { registerTerminalHandlers } from './terminal.handlers'
 import { registerUiStateHandlers } from './uiState.handlers'
 import { registerUpdateHandlers } from './update.handlers'
+import { registerWorkloadHandlers } from './workload.handlers'
 
 export function registerIpcHandlers(): void {
   registerKubeconfigHandlers()
@@ -21,6 +24,8 @@ export function registerIpcHandlers(): void {
   registerClusterStoreHandlers()
   registerUiStateHandlers()
   registerMetricsHandlers()
+  registerPrometheusHandlers()
+  registerRbacHandlers()
   registerAppHandlers()
   registerPodHandlers()
   registerNodeHandlers()
@@ -29,5 +34,6 @@ export function registerIpcHandlers(): void {
   registerTerminalHandlers()
   registerDiscoveryHandlers()
   registerHelmHandlers()
+  registerWorkloadHandlers()
   registerUpdateHandlers()
 }

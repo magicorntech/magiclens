@@ -9,6 +9,14 @@ interface LogSession {
   senderId: number
 }
 
+export interface PodLogStreamOptions {
+  tailLines?: number
+  timestamps?: boolean
+  sinceTime?: string
+  previous?: boolean
+  follow?: boolean
+}
+
 class PodLogManager {
   private sessions = new Map<string, LogSession>()
 
@@ -19,7 +27,7 @@ class PodLogManager {
     podName: string,
     containerName: string,
     sender: WebContents,
-    options: { tailLines?: number; timestamps?: boolean }
+    options: PodLogStreamOptions
   ): Promise<void> {
     this.stop(sessionId)
 
@@ -36,9 +44,11 @@ class PodLogManager {
     let abort: AbortController
     try {
       abort = await logApi.log(namespace, podName, containerName, writable, {
-        follow: true,
-        tailLines: options.tailLines ?? 200,
-        timestamps: options.timestamps ?? false
+        follow: options.follow ?? true,
+        tailLines: options.tailLines,
+        timestamps: options.timestamps ?? false,
+        sinceTime: options.sinceTime,
+        previous: options.previous ?? false
       })
     } catch (err) {
       if (!sender.isDestroyed()) {
@@ -58,8 +68,6 @@ class PodLogManager {
       }
     }
 
-    // Aborting mid-stream can surface as an 'error' rather than a clean 'close'; without a
-    // listener here Node treats it as unhandled and crashes the whole process.
     writable.on('error', (err) => finish(err instanceof Error ? err.message : String(err)))
     writable.on('close', () => finish())
   }

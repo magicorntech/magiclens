@@ -83,8 +83,12 @@ class ClusterManager {
     return clients
   }
 
-  get(clusterId: string): ClusterClients {
-    const clients = this.clients.get(clusterId)
+  get(clusterId: string): ClusterClients | undefined {
+    return this.clients.get(clusterId)
+  }
+
+  require(clusterId: string): ClusterClients {
+    const clients = this.get(clusterId)
     if (!clients) {
       throw new Error(`No connected client for cluster ${clusterId}`)
     }

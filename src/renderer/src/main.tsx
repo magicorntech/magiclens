@@ -6,15 +6,21 @@ import { App } from './App'
 import { queryClient } from './queries/queryClient'
 import { buildAntdTheme, syncDocumentTheme } from './theme'
 import { useResolvedDarkMode } from './stores/useResolvedDarkMode'
+import { useThemeStore } from './stores/themeStore'
 import './styles/global.css'
 
 function Root(): React.JSX.Element {
   const isDark = useResolvedDarkMode()
-  const antdTheme = useMemo(() => buildAntdTheme(isDark), [isDark])
+  const colorScheme = useThemeStore((s) => s.colorScheme)
+  const customAccentColor = useThemeStore((s) => s.customAccentColor)
+  const antdTheme = useMemo(
+    () => buildAntdTheme(isDark, colorScheme, customAccentColor),
+    [isDark, colorScheme, customAccentColor]
+  )
 
   useEffect(() => {
-    syncDocumentTheme(isDark)
-  }, [isDark])
+    syncDocumentTheme(isDark, colorScheme, customAccentColor)
+  }, [isDark, colorScheme, customAccentColor])
 
   return (
     <ConfigProvider theme={antdTheme}>

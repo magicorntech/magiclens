@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Button, Dropdown, Modal, message } from 'antd'
+import { Button, Dropdown, Modal, Tooltip, message } from 'antd'
 import type { MenuProps } from 'antd'
 import { DeleteOutlined, EditOutlined, MoreOutlined } from '@ant-design/icons'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
+import { useResourcePermissions } from '../../queries/useMetricsRange'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
 import { batchDeleteResources, removeItemsById } from './batchDelete'
 
@@ -36,8 +37,13 @@ export function ResourceRowActions({
 }: ResourceRowActionsProps): React.JSX.Element {
   const queryClient = useQueryClient()
   const { openYamlEditor } = useBottomPanel()
+  const { data: permissions } = useResourcePermissions(clusterId, target, namespace, name, true)
+
+  const canEdit = (permissions?.canGet ?? true) && ((permissions?.canUpdate ?? true) || (permissions?.canPatch ?? true))
+  const canDelete = permissions?.canDelete ?? true
 
   async function openEditor(): Promise<void> {
+    if (!canEdit) return
     const hideLoading = message.loading(`Loading ${name}...`, 0)
     try {
       const res = await window.api.resource.getManifest({ clusterId, namespace, name, target })
@@ -61,6 +67,7 @@ export function ResourceRowActions({
   }
 
   async function handleDelete(): Promise<void> {
+    if (!canDelete) return
     const previous = queryClient.getQueryData<ListResponse>(listQueryKey)
     queryClient.setQueryData<ListResponse | undefined>(listQueryKey, (old) => removeById(old, itemId))
     try {
@@ -89,9 +96,30 @@ export function ResourceRowActions({
   }
 
   const menuItems: MenuProps['items'] = [
-    { key: 'edit', label: 'Edit YAML', icon: <EditOutlined />, onClick: () => openEditor() },
+    {
+      key: 'edit',
+      label: canEdit ? (
+        'Edit YAML'
+      ) : (
+        <Tooltip title="You don't have permission to update this resource">Edit YAML</Tooltip>
+      ),
+      icon: <EditOutlined />,
+      disabled: !canEdit,
+      onClick: () => openEditor()
+    },
     { type: 'divider' },
-    { key: 'delete', label: 'Delete', icon: <DeleteOutlined />, danger: true, onClick: confirmDelete }
+    {
+      key: 'delete',
+      label: canDelete ? (
+        'Delete'
+      ) : (
+        <Tooltip title="You don't have permission to delete this resource">Delete</Tooltip>
+      ),
+      icon: <DeleteOutlined />,
+      danger: true,
+      disabled: !canDelete,
+      onClick: confirmDelete
+    }
   ]
 
   return (

@@ -17,7 +17,7 @@ export function registerPortForwardHandlers(): void {
     IPC.PORT_FORWARD_START_POD,
     async (event, req: PortForwardStartPodRequest): Promise<PortForwardStartResponse> => {
       try {
-        const clients = clusterManager.get(req.clusterId)
+        const clients = clusterManager.require(req.clusterId)
         const sender = event.sender
         sender.once('destroyed', () => portForwardManager.stopAllForSender(sender.id))
         return await portForwardManager.start({
@@ -43,7 +43,7 @@ export function registerPortForwardHandlers(): void {
     IPC.PORT_FORWARD_START_SERVICE,
     async (event, req: PortForwardStartServiceRequest): Promise<PortForwardStartResponse> => {
       try {
-        const clients = clusterManager.get(req.clusterId)
+        const clients = clusterManager.require(req.clusterId)
         const { podName, targetPort } = await resolveServiceBackingPod(clients, req.namespace, req.serviceName, req.port)
         const sender = event.sender
         sender.once('destroyed', () => portForwardManager.stopAllForSender(sender.id))

@@ -1,7 +1,7 @@
 import type { KubeconfigSource } from './kubeconfig'
 import type { ResourceKind } from '../resourceKinds'
 
-export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error'
+export type ConnectionStatus = 'idle' | 'disconnected' | 'connecting' | 'connected' | 'error'
 
 export interface PersistedClusterEntry {
   id: string
@@ -10,6 +10,8 @@ export interface PersistedClusterEntry {
   source: KubeconfigSource
   endpoint?: string
   logoUrl?: string
+  /** Manual Prometheus base URL or API-server proxy path. Empty = auto-discover on connect. */
+  prometheusUrl?: string
   isFavorite: boolean
   selectedNamespace: string
   selectedResourceKind: ResourceKind | null
@@ -25,6 +27,8 @@ export interface ConnectRequest {
 export type ConnectResponse =
   | { ok: true; serverVersion: string; endpoint: string }
   | { ok: false; error: string }
+
+export const CLUSTER_NOT_CONNECTED = 'CLUSTER_NOT_CONNECTED' as const
 
 export interface ClusterIdRequest {
   clusterId: string

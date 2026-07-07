@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Spin } from 'antd'
+import { Button, Result, Spin } from 'antd'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceFocus } from '@shared/types/navigation'
 import { useClusterStore } from '../stores/clusterStore'
@@ -25,10 +25,10 @@ export function ClusterView({ clusterId }: ClusterViewProps): React.JSX.Element 
   const navigateToResource = useClusterStore((s) => s.navigateToResource)
   const [virtualPage, setVirtualPage] = useState<VirtualPageKey | null>(null)
 
-  // Clusters can be saved without ever having been connected (added via Add Cluster,
-  // which no longer connects up front). Opening the tab is when we first try.
+  // New clusters start as idle and connect when the tab is first opened.
+  // Explicit disconnect sets status to disconnected — user must connect manually.
   useEffect(() => {
-    if (cluster && cluster.status === 'idle') {
+    if (cluster?.status === 'idle') {
       void connectCluster(cluster.id, cluster.source, cluster.contextName)
     }
   }, [cluster?.id, cluster?.status, cluster?.source, cluster?.contextName])
@@ -42,6 +42,7 @@ export function ClusterView({ clusterId }: ClusterViewProps): React.JSX.Element 
       source: cluster.source,
       endpoint: cluster.endpoint,
       logoUrl: cluster.logoUrl,
+      prometheusUrl: cluster.prometheusUrl,
       isFavorite: cluster.isFavorite,
       selectedNamespace: cluster.selectedNamespace,
       selectedResourceKind: cluster.selectedResourceKind
@@ -50,6 +51,26 @@ export function ClusterView({ clusterId }: ClusterViewProps): React.JSX.Element 
   }, [cluster?.selectedNamespace, cluster?.selectedResourceKind])
 
   if (!cluster) return <Spin />
+
+  if (cluster.status === 'disconnected') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <Result
+          status="info"
+          title="Cluster disconnected"
+          subTitle="Reconnect when you are ready to use this cluster again."
+          extra={
+            <Button
+              type="primary"
+              onClick={() => void connectCluster(cluster.id, cluster.source, cluster.contextName)}
+            >
+              Connect
+            </Button>
+          }
+        />
+      </div>
+    )
+  }
 
   if (cluster.status !== 'connected') {
     return (

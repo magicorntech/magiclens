@@ -1,9 +1,15 @@
 import { theme as antdThemeApi } from 'antd'
 import type { ThemeConfig } from 'antd'
-import { getPalette } from './palette'
+import type { ColorSchemeId } from './schemes'
+import { getSchemePalette } from './schemes'
+import { withAlpha } from './colorUtils'
 
-export function buildAntdTheme(isDark: boolean): ThemeConfig {
-  const p = getPalette(isDark)
+export function buildAntdTheme(
+  isDark: boolean,
+  colorScheme: ColorSchemeId = 'violet',
+  customAccent?: string
+): ThemeConfig {
+  const p = getSchemePalette(colorScheme, isDark, customAccent)
 
   return {
     algorithm: isDark ? antdThemeApi.darkAlgorithm : antdThemeApi.defaultAlgorithm,
@@ -36,7 +42,7 @@ export function buildAntdTheme(isDark: boolean): ThemeConfig {
       Menu: {
         darkItemBg: 'transparent',
         darkSubMenuItemBg: p.resourceSiderBg,
-        darkItemSelectedBg: isDark ? 'rgba(167, 139, 250, 0.18)' : 'rgba(124, 58, 237, 0.22)',
+        darkItemSelectedBg: withAlpha(p.primary, isDark ? 0.18 : 0.22),
         darkItemHoverBg: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.08)',
         itemSelectedColor: isDark ? p.primary : '#ffffff',
         itemColor: isDark ? 'rgba(255,255,255,0.78)' : 'rgba(255,255,255,0.82)'
@@ -63,8 +69,12 @@ export function buildAntdTheme(isDark: boolean): ThemeConfig {
 }
 
 /** Pushes palette values to CSS custom properties for non-antd surfaces (sidebar, terminal, panels). */
-export function syncDocumentTheme(isDark: boolean): void {
-  const p = getPalette(isDark)
+export function syncDocumentTheme(
+  isDark: boolean,
+  colorScheme: ColorSchemeId = 'violet',
+  customAccent?: string
+): void {
+  const p = getSchemePalette(colorScheme, isDark, customAccent)
   const root = document.documentElement
   root.setAttribute('data-theme', isDark ? 'dark' : 'light')
 
@@ -94,7 +104,9 @@ export function syncDocumentTheme(isDark: boolean): void {
     '--ml-terminal-fg': p.terminalFg,
     '--ml-terminal-muted': p.terminalMuted,
     '--ml-shadow-sm': p.shadow,
-    '--ml-selection-bg': p.selectionBg
+    '--ml-selection-bg': p.selectionBg,
+    '--ml-splash-accent': p.primary,
+    '--ml-splash-accent-2': p.primaryHover
   }
 
   for (const [key, value] of Object.entries(vars)) {

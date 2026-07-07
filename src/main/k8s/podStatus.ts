@@ -58,6 +58,14 @@ export function derivePodStatus(pod: V1Pod): {
   statusColor: string
   statusDetail?: string
 } {
+  if (pod.metadata?.deletionTimestamp) {
+    return {
+      statusText: 'Terminating',
+      statusColor: 'gold',
+      statusDetail: pod.status?.reason ?? pod.status?.message ?? undefined
+    }
+  }
+
   const initStatuses = pod.status?.initContainerStatuses ?? []
   const containerStatuses = pod.status?.containerStatuses ?? []
 
@@ -88,9 +96,18 @@ export function derivePodStatus(pod: V1Pod): {
     }
   }
 
+  const phaseColor =
+    phase === 'Running' || phase === 'Succeeded'
+      ? 'green'
+      : phase === 'Pending' || phase === 'Unknown'
+        ? 'gold'
+        : phase === 'Failed'
+          ? 'red'
+          : 'default'
+
   return {
     statusText: phase,
-    statusColor: phase === 'Running' ? 'green' : phase === 'Pending' ? 'gold' : 'default',
+    statusColor: phaseColor,
     statusDetail: podMessage ?? undefined
   }
 }

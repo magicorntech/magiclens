@@ -20,7 +20,7 @@ export function matchesFilter(cluster: ClusterEntry, filter: ClusterFilter): boo
     case 'connected':
       return cluster.status === 'connected'
     case 'disconnected':
-      return cluster.status === 'idle'
+      return cluster.status === 'idle' || cluster.status === 'disconnected'
     case 'error':
       return cluster.status === 'error'
     case 'recent':

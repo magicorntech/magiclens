@@ -1,8 +1,14 @@
 import { useMemo } from 'react'
-import { getPalette } from '../theme'
+import { getSchemePalette } from '../theme/schemes'
+import { useThemeStore } from './themeStore'
 import { useResolvedDarkMode } from './useResolvedDarkMode'
 
 export function useAppPalette() {
   const isDark = useResolvedDarkMode()
-  return useMemo(() => getPalette(isDark), [isDark])
+  const colorScheme = useThemeStore((s) => s.colorScheme)
+  const customAccentColor = useThemeStore((s) => s.customAccentColor)
+  return useMemo(
+    () => getSchemePalette(colorScheme, isDark, customAccentColor),
+    [colorScheme, isDark, customAccentColor]
+  )
 }

@@ -14,6 +14,8 @@ interface ClusterEventsPanelProps {
   involvedObjectName?: string
   title?: string
   compact?: boolean
+  /** Fixed-height scroll region for Nodes page footer (avoids nested flex / tabs layout issues). */
+  embedded?: boolean
 }
 
 const columns: ColumnsType<ResourceEventItem> = [
@@ -43,11 +45,12 @@ export function ClusterEventsPanel({
   involvedObjectKind,
   involvedObjectName,
   title,
-  compact = false
+  compact = false,
+  embedded = false
 }: ClusterEventsPanelProps): React.JSX.Element {
   const { data, isLoading, isError, error } = useClusterEvents(
     clusterId,
-    { limit: 100, involvedObjectKind, involvedObjectName },
+    { involvedObjectKind, involvedObjectName },
     isActive
   )
   const { setPagination, paginationProps } = useTablePagination([
@@ -67,9 +70,10 @@ export function ClusterEventsPanel({
   }
 
   const events = data?.events ?? []
+  const tableScroll = embedded ? { y: 220, x: 720 } : undefined
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <div style={embedded ? undefined : { height: '100%', minHeight: 120, display: 'flex', flexDirection: 'column' }}>
       {title ? (
         <Typography.Text strong style={{ display: 'block', marginBottom: 8, fontSize: compact ? 12 : 14 }}>
           {title}
@@ -78,15 +82,17 @@ export function ClusterEventsPanel({
       {events.length === 0 ? (
         <Empty description="No events" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
-        <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <div style={embedded ? undefined : { flex: 1, minHeight: 0, overflow: 'auto' }}>
           <ResizableTable
             tableKey={`cluster-events${involvedObjectKind ? `-${involvedObjectKind}` : ''}`}
             rowKey="id"
             columns={columns}
             dataSource={events}
-            pagination={paginationProps(events.length)}
+            pagination={embedded ? { pageSize: 10, size: 'small', hideOnSinglePage: true } : paginationProps(events.length)}
             onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
             size="small"
+            scroll={tableScroll}
+            resizable={!embedded}
           />
         </div>
       )}

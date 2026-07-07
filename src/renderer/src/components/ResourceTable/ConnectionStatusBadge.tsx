@@ -3,6 +3,7 @@ import type { ConnectionStatus } from '@shared/types/cluster'
 
 const statusConfig: Record<ConnectionStatus, { status: 'success' | 'processing' | 'error' | 'default'; label: string }> = {
   idle: { status: 'default', label: 'Idle' },
+  disconnected: { status: 'default', label: 'Disconnected' },
   connecting: { status: 'processing', label: 'Connecting…' },
   connected: { status: 'success', label: 'Connected' },
   error: { status: 'error', label: 'Connection error' }

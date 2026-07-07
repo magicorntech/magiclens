@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
+import type { ResourceKind } from '@shared/resourceKinds'
+import type { ResourceListItem } from '@shared/types/resource'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
 
 export interface TerminalTabState {
@@ -22,7 +24,17 @@ export interface YamlTabState {
   listQueryKey: unknown[]
 }
 
-export type BottomPanelTab = TerminalTabState | YamlTabState
+export interface ResourceDetailTabState {
+  id: string
+  kind: 'resource-detail'
+  title: string
+  clusterId: string
+  resourceKind: ResourceKind
+  namespace: string
+  item: ResourceListItem
+}
+
+export type BottomPanelTab = TerminalTabState | YamlTabState | ResourceDetailTabState
 
 interface OpenYamlEditorParams {
   title: string
@@ -35,11 +47,19 @@ interface OpenYamlEditorParams {
   listQueryKey: unknown[]
 }
 
+interface OpenResourceDetailParams {
+  clusterId: string
+  resourceKind: ResourceKind
+  namespace: string
+  item: ResourceListItem
+}
+
 interface BottomPanelContextValue {
   tabs: BottomPanelTab[]
   activeTabId: string | null
   addTerminalTab: () => void
   openYamlEditor: (params: OpenYamlEditorParams) => void
+  openResourceDetail: (params: OpenResourceDetailParams) => void
   closeTab: (id: string) => void
   setActiveTab: (id: string) => void
   closeAll: () => void
@@ -73,6 +93,36 @@ export function BottomPanelProvider({ children }: { children: ReactNode }): Reac
     setActiveTabId(id)
   }, [])
 
+  const openResourceDetail = useCallback((params: OpenResourceDetailParams) => {
+    setTabs((prev) => {
+      const existing = prev.find(
+        (t) =>
+          t.kind === 'resource-detail' &&
+          t.clusterId === params.clusterId &&
+          t.resourceKind === params.resourceKind &&
+          t.item.id === params.item.id
+      )
+      if (existing) {
+        setActiveTabId(existing.id)
+        return prev.map((t) =>
+          t.id === existing.id && t.kind === 'resource-detail' ? { ...t, item: params.item } : t
+        )
+      }
+      const id = newId('detail')
+      const tab: ResourceDetailTabState = {
+        id,
+        kind: 'resource-detail',
+        title: params.item.name,
+        clusterId: params.clusterId,
+        resourceKind: params.resourceKind,
+        namespace: params.namespace,
+        item: params.item
+      }
+      setActiveTabId(id)
+      return [...prev, tab]
+    })
+  }, [])
+
   const closeTab = useCallback((id: string) => {
     setTabs((prev) => {
       const idx = prev.findIndex((t) => t.id === id)
@@ -89,8 +139,17 @@ export function BottomPanelProvider({ children }: { children: ReactNode }): Reac
   }, [])
 
   const value = useMemo<BottomPanelContextValue>(
-    () => ({ tabs, activeTabId, addTerminalTab, openYamlEditor, closeTab, setActiveTab, closeAll }),
-    [tabs, activeTabId, addTerminalTab, openYamlEditor, closeTab, setActiveTab, closeAll]
+    () => ({
+      tabs,
+      activeTabId,
+      addTerminalTab,
+      openYamlEditor,
+      openResourceDetail,
+      closeTab,
+      setActiveTab,
+      closeAll
+    }),
+    [tabs, activeTabId, addTerminalTab, openYamlEditor, openResourceDetail, closeTab, setActiveTab, closeAll]
   )
 
   return <BottomPanelContext.Provider value={value}>{children}</BottomPanelContext.Provider>

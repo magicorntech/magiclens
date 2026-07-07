@@ -14,6 +14,7 @@ interface ResourceEventsPanelProps {
   name: string
   target: ResourceMutationTarget
   isActive: boolean
+  embedded?: boolean
 }
 
 const columns: ColumnsType<ResourceEventItem> = [
@@ -42,7 +43,8 @@ export function ResourceEventsPanel({
   namespace,
   name,
   target,
-  isActive
+  isActive,
+  embedded = false
 }: ResourceEventsPanelProps): React.JSX.Element {
   const { data, isLoading, isError, error } = useResourceEvents(clusterId, namespace, name, target, isActive)
   const { setPagination, paginationProps } = useTablePagination([clusterId, namespace, name, target])
@@ -66,15 +68,23 @@ export function ResourceEventsPanel({
     return <Empty description="No events for this resource" />
   }
 
+  const tableScroll = embedded ? { y: 220, x: 720 } : undefined
+
   return (
-    <ResizableTable
-      tableKey="resource-events"
-      rowKey="id"
-      columns={columns}
-      dataSource={events}
-      pagination={paginationProps(events.length)}
-      onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
-      size="small"
-    />
+    <div style={embedded ? undefined : { height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div style={embedded ? undefined : { flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <ResizableTable
+          tableKey="resource-events"
+          rowKey="id"
+          columns={columns}
+          dataSource={events}
+          pagination={embedded ? { pageSize: 10, size: 'small', hideOnSinglePage: true } : paginationProps(events.length)}
+          onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
+          size="small"
+          scroll={tableScroll}
+          resizable={!embedded}
+        />
+      </div>
+    </div>
   )
 }

@@ -125,7 +125,7 @@ export function CustomResourceBrowserPage({
         queryClient,
         listQueryKey,
         clusterId,
-        { type: 'dynamic', apiVersion: selectedKind.apiVersion, kind: selectedKind.kind },
+        { type: 'dynamic', apiVersion: selectedKind.apiVersion, kind: selectedKind.kind, plural: selectedKind.plural, namespaced: selectedKind.namespaced },
         selectedInstances
       )
       if (result.failed.length === 0) {
@@ -160,7 +160,7 @@ export function CustomResourceBrowserPage({
           selectedKind ? (
             <ResourceRowActions
               clusterId={clusterId}
-              target={{ type: 'dynamic', apiVersion: selectedKind.apiVersion, kind: selectedKind.kind }}
+              target={{ type: 'dynamic', apiVersion: selectedKind.apiVersion, kind: selectedKind.kind, plural: selectedKind.plural, namespaced: selectedKind.namespaced }}
               namespace={item.namespace}
               name={item.name}
               itemId={item.id}

@@ -15,7 +15,7 @@ import { listDynamicResources } from '../k8s/dynamicResourceService'
 
 export function registerDiscoveryHandlers(): void {
   ipcMain.handle(IPC.DISCOVERY_LIST, async (_e, req: DiscoveryRequest): Promise<DiscoveryResponse> => {
-    const clients = clusterManager.get(req.clusterId)
+    const clients = clusterManager.require(req.clusterId)
     return discoverApiResources(req.clusterId, clients, req.refresh)
   })
 
@@ -23,7 +23,7 @@ export function registerDiscoveryHandlers(): void {
     IPC.DISCOVERY_LIST_CUSTOM_RESOURCE_KINDS,
     async (_e, req: CustomResourceKindsRequest): Promise<CustomResourceKindsResponse> => {
       try {
-        const clients = clusterManager.get(req.clusterId)
+        const clients = clusterManager.require(req.clusterId)
         const kinds = await listCustomResourceKinds(clients, req.onlyWithInstances)
         return { kinds }
       } catch (err) {
@@ -36,7 +36,7 @@ export function registerDiscoveryHandlers(): void {
     IPC.DISCOVERY_LIST_DYNAMIC_RESOURCES,
     async (_e, req: DynamicResourceListRequest): Promise<DynamicResourceListResponse> => {
       try {
-        const clients = clusterManager.get(req.clusterId)
+        const clients = clusterManager.require(req.clusterId)
         const items = await listDynamicResources(clients, req.apiVersion, req.kind, req.namespaced, req.namespace)
         return { items }
       } catch (err) {

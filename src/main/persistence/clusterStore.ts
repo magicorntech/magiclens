@@ -1,5 +1,6 @@
 import { safeStorage } from 'electron'
 import Store from 'electron-store'
+import { findExistingCluster } from '@shared/clusterIdentity'
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import type { PersistedClusterEntry } from '@shared/types/cluster'
 
@@ -84,14 +85,23 @@ export function listClusters(): PersistedClusterEntry[] {
   return store.get('clusters').map(toPersisted)
 }
 
-export function addCluster(entry: PersistedClusterEntry): void {
-  const clusters = store.get('clusters').filter((c) => c.id !== entry.id)
-  clusters.push(toStored(entry))
-  store.set('clusters', clusters)
+function saveCluster(entry: PersistedClusterEntry): void {
+  const stored = store.get('clusters').filter((c) => c.id !== entry.id)
+  stored.push(toStored(entry))
+  store.set('clusters', stored)
+}
+
+export function addCluster(entry: PersistedClusterEntry): 'added' | 'duplicate' {
+  const clusters = listClusters()
+  if (findExistingCluster(clusters.filter((c) => c.id !== entry.id), entry, entry.endpoint)) {
+    return 'duplicate'
+  }
+  saveCluster(entry)
+  return 'added'
 }
 
 export function updateCluster(entry: PersistedClusterEntry): void {
-  addCluster(entry)
+  saveCluster(entry)
 }
 
 export function removeCluster(id: string): void {

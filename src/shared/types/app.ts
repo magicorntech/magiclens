@@ -13,12 +13,18 @@ export interface WelcomeStateResponse {
   showSplash: boolean
 }
 
+export type ResourceDetailPlacement = 'right' | 'bottom'
+
 export interface DisplaySettings {
   showClusterTabLogos: boolean
   showResourceTabIcons: boolean
+  resourceDetailPlacement: ResourceDetailPlacement
+  showNodesPageEvents: boolean
 }
 
 export const defaultDisplaySettings: DisplaySettings = {
   showClusterTabLogos: true,
-  showResourceTabIcons: true
+  showResourceTabIcons: true,
+  resourceDetailPlacement: 'right',
+  showNodesPageEvents: true
 }

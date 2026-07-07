@@ -17,8 +17,12 @@ import { PodLogsPanel } from '../Pod/PodLogsPanel'
 import { PodExecPanel } from '../Pod/PodExecPanel'
 import { ServicePortForwardPanel } from '../Pod/ServicePortForwardPanel'
 import { NodeMetricsPanel } from '../Metrics/NodeMetricsPanel'
+import { NodePressurePanel } from '../Metrics/NodePressurePanel'
+import { WorkloadReplicaHistoryPanel } from '../Metrics/WorkloadReplicaHistoryPanel'
 import { NodeExecPanel } from '../Node/NodeExecPanel'
 import { LoadingState } from './EmptyErrorStates'
+import { WorkloadDetailToolbar } from '../Workload/WorkloadDetailToolbar'
+import { isWorkloadKind } from '@shared/types/workload'
 import { ResizableTable } from '../../utils/ResizableTable'
 
 interface ResourceDetailPanelProps {
@@ -26,6 +30,8 @@ interface ResourceDetailPanelProps {
   kind: ResourceKind
   item: ResourceListItem
   isActive: boolean
+  layout?: 'sidebar' | 'bottom'
+  listQueryKey?: unknown[]
   onClose: () => void
 }
 
@@ -66,12 +72,16 @@ export function ResourceDetailPanel({
   kind,
   item,
   isActive,
+  layout = 'sidebar',
+  listQueryKey,
   onClose
 }: ResourceDetailPanelProps): React.JSX.Element {
   const { token } = theme.useToken()
   const isPod = kind === 'Pods'
   const isService = kind === 'Services'
   const isNode = kind === 'Nodes'
+  const isDeployment = kind === 'Deployments'
+  const isHpa = kind === 'HorizontalPodAutoscalers'
   const { data: podDetail, isLoading: podDetailLoading } = usePodDetail(
     clusterId,
     item.namespace,
@@ -79,13 +89,26 @@ export function ResourceDetailPanel({
     isActive && isPod
   )
 
+  const statusDisplay =
+    isPod && isPodDetailData(podDetail)
+      ? {
+          text: podDetail.statusText,
+          color: podDetail.statusColor,
+          detail: podDetail.statusDetail
+        }
+      : {
+          text: item.statusText,
+          color: item.statusColor,
+          detail: item.statusDetail
+        }
+
   const overview = (
     <>
       <Descriptions bordered size="small" column={1}>
         <Descriptions.Item label="Name">{item.name}</Descriptions.Item>
         {item.namespace ? <Descriptions.Item label="Namespace">{item.namespace}</Descriptions.Item> : null}
         <Descriptions.Item label="Status">
-          <StatusTag text={item.statusText} color={item.statusColor} detail={item.statusDetail} />
+          <StatusTag text={statusDisplay.text} color={statusDisplay.color} detail={statusDisplay.detail} />
         </Descriptions.Item>
         <Descriptions.Item label="Age">
           <AgeCell timestamp={item.ageTimestamp} />
@@ -223,6 +246,23 @@ export function ResourceDetailPanel({
           }
         ]
       : []),
+    ...(isDeployment || isHpa
+      ? [
+          {
+            key: 'replica-history',
+            label: 'Replica history',
+            children: paddedPane(
+              <WorkloadReplicaHistoryPanel
+                clusterId={clusterId}
+                namespace={item.namespace}
+                resourceName={item.name}
+                kind={kind as 'Deployments' | 'HorizontalPodAutoscalers'}
+                isActive={isActive}
+              />
+            )
+          }
+        ]
+      : []),
     ...(isNode
       ? [
           {
@@ -236,6 +276,13 @@ export function ResourceDetailPanel({
             key: 'metrics',
             label: 'Metrics',
             children: paddedPane(<NodeMetricsPanel clusterId={clusterId} nodeName={item.name} isActive={isActive} />)
+          },
+          {
+            key: 'pressure',
+            label: 'Pressure',
+            children: paddedPane(
+              <NodePressurePanel clusterId={clusterId} nodeName={item.name} isActive={isActive} />
+            )
           }
         ]
       : []),
@@ -250,7 +297,7 @@ export function ResourceDetailPanel({
         flexDirection: 'column',
         minHeight: 0,
         background: token.colorBgContainer,
-        borderLeft: `1px solid ${token.colorBorderSecondary}`
+        borderLeft: layout === 'sidebar' ? `1px solid ${token.colorBorderSecondary}` : undefined
       }}
     >
       <div
@@ -273,8 +320,22 @@ export function ResourceDetailPanel({
         </div>
         <Button type="text" size="small" icon={<CloseOutlined />} onClick={onClose} />
       </div>
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <Tabs size="small" items={tabItems} style={{ height: '100%' }} tabBarStyle={{ margin: '0 16px' }} destroyOnHidden />
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {isWorkloadKind(kind) && listQueryKey ? (
+          <div style={{ flexShrink: 0, padding: '8px 16px 0' }}>
+            <WorkloadDetailToolbar
+              clusterId={clusterId}
+              kind={kind}
+              namespace={item.namespace}
+              name={item.name}
+              target={{ type: 'builtin', kind }}
+              listQueryKey={listQueryKey}
+            />
+          </div>
+        ) : null}
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <Tabs size="small" items={tabItems} style={{ height: '100%' }} tabBarStyle={{ margin: '0 16px' }} destroyOnHidden />
+        </div>
       </div>
     </div>
   )

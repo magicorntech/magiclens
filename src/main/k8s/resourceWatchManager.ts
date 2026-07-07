@@ -113,11 +113,9 @@ class ResourceWatchManager {
       this.stop(priorSessionId)
     }
 
-    let clients: ClusterClients
-    try {
-      clients = clusterManager.get(req.clusterId)
-    } catch (err) {
-      return { error: errorMessage(err) }
+    let clients = clusterManager.get(req.clusterId)
+    if (!clients) {
+      return { error: 'CLUSTER_NOT_CONNECTED' }
     }
 
     let resolved: ResolvedTarget

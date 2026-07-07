@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, Checkbox, Divider, Input, Modal, Segmented, Space, Spin, Typography } from 'antd'
+import { Alert, Button, Checkbox, Divider, Input, Modal, Segmented, Space, Spin, Tag, Typography, message } from 'antd'
 import { ReloadOutlined } from '@ant-design/icons'
+import { findExistingCluster } from '@shared/clusterIdentity'
 import type { ContextInfo, KubeconfigSource } from '@shared/types/kubeconfig'
 import { useClusterStore } from '../../stores/clusterStore'
 
@@ -16,6 +17,7 @@ interface DiscoveredEntry {
   context: ContextInfo
   source: KubeconfigSource
   originLabel: string
+  existingCluster?: { id: string; customName: string }
 }
 
 function basename(filePath: string): string {
@@ -36,7 +38,18 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
   const [busy, setBusy] = useState(false)
   const [autoScanning, setAutoScanning] = useState(false)
 
+  const clusters = useClusterStore((s) => s.clusters)
   const addCluster = useClusterStore((s) => s.addCluster)
+
+  function lookupExisting(context: ContextInfo, source: KubeconfigSource): DiscoveredEntry['existingCluster'] | undefined {
+    const match = findExistingCluster(
+      clusters,
+      { contextName: context.name, source },
+      context.server
+    )
+    if (!match) return undefined
+    return { id: match.id, customName: match.customName }
+  }
 
   function addDiscovered(contexts: ContextInfo[], source: KubeconfigSource, originLabel: string): void {
     setDiscovered((prev) => {
@@ -45,8 +58,9 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
       for (const context of contexts) {
         const key = entryKey(source, context.name)
         if (!next.some((e) => e.key === key)) {
-          next.push({ key, context, source, originLabel })
-          newKeys.push(key)
+          const existingCluster = lookupExisting(context, source)
+          next.push({ key, context, source, originLabel, existingCluster })
+          if (!existingCluster) newKeys.push(key)
         }
       }
       if (newKeys.length > 0) {
@@ -97,7 +111,8 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
   }
 
   function toggleAll(checked: boolean): void {
-    setSelectedKeys(checked ? new Set(discovered.map((e) => e.key)) : new Set())
+    const selectable = discovered.filter((e) => !e.existingCluster).map((e) => e.key)
+    setSelectedKeys(checked ? new Set(selectable) : new Set())
   }
 
   async function handlePickFile(): Promise<void> {
@@ -149,36 +164,48 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
   }
 
   async function handleAddSelected(): Promise<void> {
-    const entries = discovered.filter((e) => selectedKeys.has(e.key))
-    if (entries.length === 0) return
+    const entries = discovered.filter((e) => selectedKeys.has(e.key) && !e.existingCluster)
+    if (entries.length === 0) {
+      message.warning('Selected clusters are already in your list.')
+      return
+    }
     setError(null)
     setBusy(true)
+
+    let skipped = 0
 
     try {
       for (const entry of entries) {
         const clusterId = crypto.randomUUID()
-        addCluster({
+        const persisted = {
           id: clusterId,
           customName: entry.context.name,
           contextName: entry.context.name,
           source: entry.source,
           isFavorite: false,
-          status: 'idle',
           selectedNamespace: 'ALL',
-          selectedResourceKind: 'Pods',
+          selectedResourceKind: 'Pods' as const
+        }
+
+        const storeRes = await window.api.clusterStore.add(persisted)
+        if (!storeRes.ok && storeRes.reason === 'duplicate') {
+          skipped += 1
+          continue
+        }
+
+        addCluster({
+          ...persisted,
+          status: 'idle',
           openResourceKinds: ['Pods'],
           resourceFocus: null
         })
+      }
 
-        await window.api.clusterStore.add({
-          id: clusterId,
-          customName: entry.context.name,
-          contextName: entry.context.name,
-          source: entry.source,
-          isFavorite: false,
-          selectedNamespace: 'ALL',
-          selectedResourceKind: 'Pods'
-        })
+      if (skipped > 0) {
+        message.info(`${skipped} cluster${skipped === 1 ? '' : 's'} skipped — already in your list.`)
+      }
+      if (entries.length - skipped > 0) {
+        message.success(`Added ${entries.length - skipped} cluster${entries.length - skipped === 1 ? '' : 's'}.`)
       }
 
       handleClose()
@@ -189,7 +216,9 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
     }
   }
 
-  const allSelected = discovered.length > 0 && selectedKeys.size === discovered.length
+  const selectable = discovered.filter((e) => !e.existingCluster)
+  const existingCount = discovered.length - selectable.length
+  const allSelected = selectable.length > 0 && selectedKeys.size === selectable.length
 
   return (
     <Modal title="Add Cluster" open={open} onCancel={handleClose} footer={null} destroyOnHidden width={520}>
@@ -250,43 +279,65 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
         {discovered.length > 0 && (
           <div>
             <Divider style={{ margin: '12px 0' }} />
-            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-              <Typography.Text strong>
-                {discovered.length} context{discovered.length === 1 ? '' : 's'} found — all will be added as
-                not-yet-connected clusters. You can connect each one later.
-              </Typography.Text>
-            </Space>
-            <div style={{ margin: '8px 0' }}>
-              <Checkbox checked={allSelected} onChange={(e) => toggleAll(e.target.checked)}>
-                Select all
-              </Checkbox>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 260, overflowY: 'auto' }}>
-              {discovered.map((entry) => (
-                <Checkbox
-                  key={entry.key}
-                  checked={selectedKeys.has(entry.key)}
-                  onChange={(e) => toggleKey(entry.key, e.target.checked)}
-                  style={{ padding: '4px 0' }}
-                >
-                  <Space orientation="vertical" size={0}>
-                    <Typography.Text>{entry.context.name}</Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {entry.context.clusterName} · {entry.originLabel}
-                    </Typography.Text>
-                  </Space>
+            <Typography.Text strong>
+              {discovered.length} context{discovered.length === 1 ? '' : 's'} found
+              {existingCount > 0
+                ? ` — ${existingCount} already in your cluster list`
+                : ' — select contexts to add'}
+            </Typography.Text>
+            {selectable.length > 0 ? (
+              <div style={{ margin: '8px 0' }}>
+                <Checkbox checked={allSelected} onChange={(e) => toggleAll(e.target.checked)}>
+                  Select all new
                 </Checkbox>
-              ))}
+              </div>
+            ) : null}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 260, overflowY: 'auto' }}>
+              {discovered.map((entry) => {
+                const isExisting = !!entry.existingCluster
+                return (
+                  <Checkbox
+                    key={entry.key}
+                    checked={!isExisting && selectedKeys.has(entry.key)}
+                    disabled={isExisting}
+                    onChange={(e) => toggleKey(entry.key, e.target.checked)}
+                    style={{ padding: '4px 0' }}
+                  >
+                    <Space orientation="vertical" size={0}>
+                      <Space size={8}>
+                        <Typography.Text type={isExisting ? 'secondary' : undefined}>
+                          {entry.context.name}
+                        </Typography.Text>
+                        {isExisting ? (
+                          <Tag color="default">Already added</Tag>
+                        ) : null}
+                      </Space>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {entry.context.clusterName} · {entry.originLabel}
+                        {isExisting ? ` · matches "${entry.existingCluster!.customName}"` : ''}
+                      </Typography.Text>
+                    </Space>
+                  </Checkbox>
+                )
+              })}
             </div>
           </div>
         )}
 
         {error && <Alert type="error" message={error} showIcon />}
 
-        {discovered.length > 0 && (
+        {selectable.length > 0 && (
           <Button type="primary" block onClick={handleAddSelected} loading={busy} disabled={selectedKeys.size === 0}>
             Add {selectedKeys.size} cluster{selectedKeys.size === 1 ? '' : 's'}
           </Button>
+        )}
+
+        {discovered.length > 0 && selectable.length === 0 && (
+          <Alert
+            type="info"
+            showIcon
+            message="All detected contexts are already in your cluster list."
+          />
         )}
       </Space>
     </Modal>

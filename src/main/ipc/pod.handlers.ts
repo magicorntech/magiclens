@@ -23,7 +23,7 @@ import { podExecManager } from '../k8s/podExecManager'
 export function registerPodHandlers(): void {
   ipcMain.handle(IPC.POD_GET_DETAIL, async (_e, req: PodResourceRequest): Promise<PodDetailResponse> => {
     try {
-      const clients = clusterManager.get(req.clusterId)
+      const clients = clusterManager.require(req.clusterId)
       return await getPodDetail(clients, req.namespace, req.podName)
     } catch (err) {
       return { error: err instanceof Error ? err.message : String(err) }
@@ -31,22 +31,25 @@ export function registerPodHandlers(): void {
   })
 
   ipcMain.handle(IPC.POD_GET_METRICS, async (_e, req: PodResourceRequest): Promise<PodMetricsResponse> => {
-    const clients = clusterManager.get(req.clusterId)
+    const clients = clusterManager.require(req.clusterId)
     return getPodMetrics(clients, req.namespace, req.podName)
   })
 
   ipcMain.handle(IPC.POD_GET_NETWORK, async (_e, req: PodResourceRequest): Promise<PodNetworkResponse> => {
-    const clients = clusterManager.get(req.clusterId)
+    const clients = clusterManager.require(req.clusterId)
     return getPodNetwork(clients, req.namespace, req.podName)
   })
 
   ipcMain.handle(IPC.POD_LOGS_START, async (event, req: PodLogsStartRequest) => {
-    const clients = clusterManager.get(req.clusterId)
+    const clients = clusterManager.require(req.clusterId)
     const sender = event.sender
     sender.once('destroyed', () => podLogManager.stopAllForSender(sender.id))
     await podLogManager.start(req.sessionId, clients, req.namespace, req.podName, req.containerName, sender, {
       tailLines: req.tailLines,
-      timestamps: req.timestamps
+      timestamps: req.timestamps,
+      sinceTime: req.sinceTime,
+      previous: req.previous,
+      follow: req.follow
     })
     return { ok: true as const }
   })
@@ -57,13 +60,13 @@ export function registerPodHandlers(): void {
   })
 
   ipcMain.handle(IPC.POD_LOGS_DOWNLOAD, async (event, req: PodLogsDownloadRequest): Promise<PodLogsDownloadResponse> => {
-    const clients = clusterManager.get(req.clusterId)
+    const clients = clusterManager.require(req.clusterId)
     const window = BrowserWindow.fromWebContents(event.sender)
     return downloadPodLogs(window, clients, req)
   })
 
   ipcMain.handle(IPC.POD_EXEC_START, async (event, req: PodExecStartRequest) => {
-    const clients = clusterManager.get(req.clusterId)
+    const clients = clusterManager.require(req.clusterId)
     const sender = event.sender
     sender.once('destroyed', () => podExecManager.stopAllForSender(sender.id))
     await podExecManager.start(

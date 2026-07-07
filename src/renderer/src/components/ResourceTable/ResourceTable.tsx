@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Input, Progress, Space, Splitter, Typography } from 'antd'
+import { Button, Input, Space, Splitter, Typography } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType, TableProps } from 'antd/es/table'
@@ -11,7 +11,8 @@ import { useResourceList } from '../../queries/useResourceList'
 import { useNodeMetrics } from '../../queries/useNodeMetrics'
 import { kindColumnDefs } from '../../resourceConfig/kinds.renderer'
 import { buildCreateTemplate } from '../../resourceConfig/manifestTemplates'
-import { formatBytes, formatCores, percentOf } from '../../format'
+import { formatBytes, formatCores } from '../../format'
+import { NodeMetricUsageBar } from '../Metrics/NodeMetricUsageBar'
 import {
   columnValueSorter,
   compareAgeTimestamps,
@@ -26,13 +27,16 @@ import { LiveRefreshControl } from './LiveRefreshControl'
 import { WatchStatusBadge } from './WatchStatusBadge'
 import { EmptyState, ErrorState, LoadingState } from './EmptyErrorStates'
 import { ResourceDetailPanel } from './ResourceDetailPanel'
+import { isWorkloadKind } from '@shared/types/workload'
 import { ResourceRowActions } from './ResourceRowActions'
+import { WorkloadResourceRowActions } from './WorkloadResourceRowActions'
 import { IngressHostsCell } from './IngressHostsCell'
 import { ClusterMetricsSummary } from '../Metrics/ClusterMetricsSummary'
 import { NodesEventsFooter } from '../Metrics/NodesEventsFooter'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
 import { batchDeleteResources, confirmBatchDelete } from './batchDelete'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 
 interface ResourceTableProps {
   clusterId: string
@@ -58,7 +62,11 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
   const clearResourceFocus = useClusterStore((s) => s.clearResourceFocus)
   const resourceFocus = useClusterStore((s) => s.clusters.find((c) => c.id === clusterId)?.resourceFocus ?? null)
   const { setPagination, paginationProps } = useTablePagination([clusterId, namespace, kind, search])
-  const { openYamlEditor } = useBottomPanel()
+  const { openYamlEditor, openResourceDetail } = useBottomPanel()
+  const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
+  const showNodesPageEvents = useDisplaySettingsStore((s) => s.showNodesPageEvents)
+  const detailInSidebar = resourceDetailPlacement === 'right'
+  const [nodesEventsCollapsed, setNodesEventsCollapsed] = useState(false)
   const listQueryKey = useMemo(() => ['resource-list', clusterId, namespace, kind], [clusterId, namespace, kind])
   const { data, isLoading, isError, error, refetch, isFetching, watchStatus } = useResourceList(
     clusterId,
@@ -72,6 +80,7 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
   useEffect(() => {
     setSelectedItem(null)
     setSelectedRowKeys([])
+    setNodesEventsCollapsed(false)
   }, [clusterId, namespace, kind])
 
   const columns = useMemo<ColumnsType<ResourceListItem>>(() => {
@@ -121,14 +130,18 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
         render: (_, item) => {
           const node = nodeMetrics?.nodes.find((n) => n.name === item.name)
           if (!nodeMetrics?.metricsAvailable || !node) return '-'
-          const percent = percentOf(node.cpuUsageCores, node.cpuCapacityCores)
           return (
-            <div style={{ minWidth: 140 }}>
-              {percent !== undefined && <Progress percent={percent} size="small" />}
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {node.cpuUsageCores !== undefined ? formatCores(node.cpuUsageCores) : '-'}
-              </Typography.Text>
-            </div>
+            <NodeMetricUsageBar
+              compact
+              usage={node.cpuUsageCores}
+              allocatable={node.cpuAllocatableCores}
+              capacity={node.cpuCapacityCores}
+              formatValue={formatCores}
+              clusterId={clusterId}
+              nodeName={item.name}
+              metric="cpu"
+              isActive={isActive}
+            />
           )
         }
       })
@@ -138,14 +151,18 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
         render: (_, item) => {
           const node = nodeMetrics?.nodes.find((n) => n.name === item.name)
           if (!nodeMetrics?.metricsAvailable || !node) return '-'
-          const percent = percentOf(node.memoryUsageBytes, node.memoryCapacityBytes)
           return (
-            <div style={{ minWidth: 140 }}>
-              {percent !== undefined && <Progress percent={percent} size="small" />}
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {node.memoryUsageBytes !== undefined ? formatBytes(node.memoryUsageBytes) : '-'}
-              </Typography.Text>
-            </div>
+            <NodeMetricUsageBar
+              compact
+              usage={node.memoryUsageBytes}
+              allocatable={node.memoryAllocatableBytes}
+              capacity={node.memoryCapacityBytes}
+              formatValue={formatBytes}
+              clusterId={clusterId}
+              nodeName={item.name}
+              metric="memory"
+              isActive={isActive}
+            />
           )
         }
       })
@@ -177,20 +194,31 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
     cols.push({
       title: '',
       key: 'actions',
-      width: 56,
-      render: (_, item) => (
-        <ResourceRowActions
-          clusterId={clusterId}
-          target={{ type: 'builtin', kind }}
-          namespace={item.namespace}
-          name={item.name}
-          itemId={item.id}
-          listQueryKey={listQueryKey}
-        />
-      )
+      width: isWorkloadKind(kind) ? 96 : 56,
+      render: (_, item) =>
+        isWorkloadKind(kind) ? (
+          <WorkloadResourceRowActions
+            clusterId={clusterId}
+            kind={kind}
+            target={{ type: 'builtin', kind }}
+            namespace={item.namespace}
+            name={item.name}
+            itemId={item.id}
+            listQueryKey={listQueryKey}
+          />
+        ) : (
+          <ResourceRowActions
+            clusterId={clusterId}
+            target={{ type: 'builtin', kind }}
+            namespace={item.namespace}
+            name={item.name}
+            itemId={item.id}
+            listQueryKey={listQueryKey}
+          />
+        )
     })
     return cols
-  }, [kind, namespace, isNodesKind, nodeMetrics, clusterId, listQueryKey, sortState])
+  }, [kind, namespace, isNodesKind, nodeMetrics, clusterId, listQueryKey, sortState, isActive])
 
   const handleTableChange: TableProps<ResourceListItem>['onChange'] = (paginationConfig, _filters, sorter) => {
     setPagination(readPaginationChange(paginationConfig))
@@ -203,6 +231,17 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
 
   const items = 'items' in (data ?? {}) ? (data as { items: ResourceListItem[] }).items : []
   const filtered = search ? items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase())) : items
+  const liveSelectedItem = useMemo(() => {
+    if (!selectedItem) return null
+    return filtered.find((item) => item.id === selectedItem.id) ?? items.find((item) => item.id === selectedItem.id) ?? selectedItem
+  }, [filtered, items, selectedItem])
+
+  function selectResource(item: ResourceListItem): void {
+    setSelectedItem(item)
+    if (!detailInSidebar) {
+      openResourceDetail({ clusterId, resourceKind: kind, namespace, item })
+    }
+  }
 
   useEffect(() => {
     if (!resourceFocus || resourceFocus.kind !== kind) return
@@ -213,9 +252,12 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
     )
     if (match) {
       setSelectedItem(match)
+      if (!detailInSidebar) {
+        openResourceDetail({ clusterId, resourceKind: kind, namespace, item: match })
+      }
       clearResourceFocus(clusterId)
     }
-  }, [resourceFocus, filtered, kind, clusterId, clearResourceFocus])
+  }, [resourceFocus, filtered, kind, clusterId, clearResourceFocus, detailInSidebar, namespace, openResourceDetail])
 
   const selectedForDelete = useMemo(
     () => filtered.filter((item) => selectedRowKeys.includes(item.id)),
@@ -241,6 +283,55 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
       return result
     })
   }
+
+  const nodesTableContent = (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <ClusterMetricsSummary clusterId={clusterId} isActiveTab={isActive} />
+      </div>
+      {filtered.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <ResizableTable
+          tableKey={`resource-list-${kind}`}
+          rowKey="id"
+          columns={columns}
+          dataSource={filtered}
+          pagination={paginationProps(filtered.length)}
+          size="middle"
+          onChange={handleTableChange}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys as string[])
+          }}
+          onRow={(record) => ({
+            onClick: () => selectResource(record)
+          })}
+        />
+      )}
+    </>
+  )
+
+  const nodesEventsBar = (
+    <button
+      type="button"
+      onClick={() => setNodesEventsCollapsed(false)}
+      style={{
+        flexShrink: 0,
+        width: '100%',
+        border: 'none',
+        borderTop: '1px solid var(--ml-border-secondary)',
+        background: 'var(--ml-bg-container)',
+        padding: '8px 12px',
+        textAlign: 'left',
+        cursor: 'pointer',
+        color: 'var(--ml-text-secondary)',
+        fontSize: 12
+      }}
+    >
+      Events — click to expand
+    </button>
+  )
 
   if (isLoading) return <LoadingState />
   if (isError) return <ErrorState message={error instanceof Error ? error.message : String(error)} onRetry={refetch} />
@@ -283,40 +374,59 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
           <LiveRefreshControl isFetching={isFetching} onManualRefresh={() => refetch()} />
         </Space>
       </Space>
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        {isNodesKind && (
-          <div style={{ marginBottom: 16 }}>
-            <ClusterMetricsSummary clusterId={clusterId} isActiveTab={isActive} />
-          </div>
-        )}
-        {filtered.length === 0 ? (
-          <EmptyState />
+      <div style={{ flex: 1, minHeight: 0, overflow: isNodesKind ? 'hidden' : 'auto' }}>
+        {isNodesKind ? (
+          showNodesPageEvents && !nodesEventsCollapsed ? (
+            <Splitter layout="vertical" style={{ height: '100%' }}>
+              <Splitter.Panel defaultSize="62%" min="30%">
+                <div style={{ height: '100%', overflow: 'auto' }}>{nodesTableContent}</div>
+              </Splitter.Panel>
+              <Splitter.Panel defaultSize="38%" min="120px" max="70%">
+                <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <NodesEventsFooter
+                    clusterId={clusterId}
+                    isActive={isActive}
+                    selectedNodeName={selectedItem?.name}
+                    onCollapse={() => setNodesEventsCollapsed(true)}
+                  />
+                </div>
+              </Splitter.Panel>
+            </Splitter>
+          ) : (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>{nodesTableContent}</div>
+              {showNodesPageEvents && nodesEventsCollapsed ? nodesEventsBar : null}
+            </div>
+          )
         ) : (
-          <ResizableTable
-            tableKey={`resource-list-${kind}`}
-            rowKey="id"
-            columns={columns}
-            dataSource={filtered}
-            pagination={paginationProps(filtered.length)}
-            size="middle"
-            onChange={handleTableChange}
-            rowSelection={{
-              selectedRowKeys,
-              onChange: (keys) => setSelectedRowKeys(keys as string[])
-            }}
-            onRow={(record) => ({
-              onClick: () => setSelectedItem(record)
-            })}
-          />
+          <>
+            {filtered.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <ResizableTable
+                tableKey={`resource-list-${kind}`}
+                rowKey="id"
+                columns={columns}
+                dataSource={filtered}
+                pagination={paginationProps(filtered.length)}
+                size="middle"
+                onChange={handleTableChange}
+                rowSelection={{
+                  selectedRowKeys,
+                  onChange: (keys) => setSelectedRowKeys(keys as string[])
+                }}
+                onRow={(record) => ({
+                  onClick: () => selectResource(record)
+                })}
+              />
+            )}
+          </>
         )}
       </div>
-      {isNodesKind && (
-        <NodesEventsFooter clusterId={clusterId} isActive={isActive} selectedNodeName={selectedItem?.name} />
-      )}
     </div>
   )
 
-  if (!selectedItem) {
+  if (!detailInSidebar || !liveSelectedItem) {
     return <div style={{ height: '100%' }}>{listPanel}</div>
   }
 
@@ -329,8 +439,9 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
         <ResourceDetailPanel
           clusterId={clusterId}
           kind={kind}
-          item={selectedItem}
+          item={liveSelectedItem}
           isActive={isActive}
+          listQueryKey={listQueryKey}
           onClose={() => setSelectedItem(null)}
         />
       </Splitter.Panel>

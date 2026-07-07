@@ -2,6 +2,7 @@ import { Button, Tabs, Tooltip } from 'antd'
 import { CloseOutlined } from '@ant-design/icons'
 import { TerminalView } from '../Terminal/TerminalView'
 import { YamlEditorPanelBody } from '../ResourceTable/YamlEditorPanelBody'
+import { ResourceDetailTabBody } from '../ResourceTable/ResourceDetailTabBody'
 import { useBottomPanel } from './BottomPanelContext'
 
 export function BottomPanel(): React.JSX.Element {
@@ -13,8 +14,10 @@ export function BottomPanel(): React.JSX.Element {
     children:
       tab.kind === 'terminal' ? (
         <TerminalView sessionId={tab.id} isActive={activeTabId === tab.id} />
-      ) : (
+      ) : tab.kind === 'yaml' ? (
         <YamlEditorPanelBody tab={tab} onDone={() => closeTab(tab.id)} />
+      ) : (
+        <ResourceDetailTabBody tab={tab} isActive={activeTabId === tab.id} onClose={() => closeTab(tab.id)} />
       )
   }))
 

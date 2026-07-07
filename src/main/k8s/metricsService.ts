@@ -88,6 +88,8 @@ export async function getNodeMetricsTable(clients: ClusterClients): Promise<Node
       name,
       cpuCapacityCores: parseCpuQuantity(node.status?.capacity?.cpu),
       memoryCapacityBytes: parseMemoryQuantity(node.status?.capacity?.memory),
+      cpuAllocatableCores: parseCpuQuantity(node.status?.allocatable?.cpu),
+      memoryAllocatableBytes: parseMemoryQuantity(node.status?.allocatable?.memory),
       cpuUsageCores: usage?.cpu,
       memoryUsageBytes: usage?.memory
     }

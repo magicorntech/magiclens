@@ -15,5 +15,15 @@ export function formatBytes(bytes: number): string {
 
 export function percentOf(value: number | undefined, total: number): number | undefined {
   if (value === undefined || total <= 0) return undefined
-  return Math.min(100, Math.round((value / total) * 100))
+  const pct = (value / total) * 100
+  return Math.min(100, Math.round(pct * 10) / 10)
+}
+
+export function nodeResourcePercent(
+  usage: number | undefined,
+  allocatable: number,
+  capacity: number
+): number | undefined {
+  const total = allocatable > 0 ? allocatable : capacity
+  return percentOf(usage, total)
 }

@@ -1,8 +1,9 @@
 import { Dropdown, Tag, Tooltip, Typography } from 'antd'
 import type { MenuProps } from 'antd'
-import { MoreOutlined, StarFilled } from '@ant-design/icons'
+import { DisconnectOutlined, MoreOutlined, StarFilled } from '@ant-design/icons'
 import type { ClusterEntry } from '../../stores/clusterStore'
 import { useClusterStore } from '../../stores/clusterStore'
+import { disconnectCluster } from '../../clusterConnect'
 import { ClusterAvatar } from './ClusterAvatar'
 import { ConnectionStatusBadge } from '../ResourceTable/ConnectionStatusBadge'
 
@@ -17,19 +18,27 @@ export function FavoriteClusterBox({ cluster, active, compact = false }: Favorit
   const toggleFavorite = useClusterStore((s) => s.toggleFavorite)
   const removeCluster = useClusterStore((s) => s.removeCluster)
 
+  const canDisconnect = cluster.status === 'connected' || cluster.status === 'connecting' || cluster.status === 'error'
+
   const menuItems: MenuProps['items'] = [
     { key: 'open', label: 'Open' },
+    ...(canDisconnect
+      ? [{ key: 'disconnect', label: 'Disconnect', icon: <DisconnectOutlined /> }]
+      : []),
+    { type: 'divider' },
     { key: 'unfavorite', label: 'Remove from favorites', icon: <StarFilled /> },
     { key: 'remove', label: 'Remove cluster', danger: true }
   ]
 
   function handleMenuClick(key: string): void {
     if (key === 'open') openClusterTab(cluster.id)
+    if (key === 'disconnect') void disconnectCluster(cluster.id)
     if (key === 'unfavorite') toggleFavorite(cluster.id)
     if (key === 'remove') {
-      void window.api.cluster.disconnect({ clusterId: cluster.id })
-      void window.api.clusterStore.remove(cluster.id)
-      removeCluster(cluster.id)
+      void disconnectCluster(cluster.id).finally(() => {
+        void window.api.clusterStore.remove(cluster.id)
+        removeCluster(cluster.id)
+      })
     }
   }
 

@@ -8,7 +8,9 @@ import type {
   NamespacesResponse
 } from '@shared/types/cluster'
 import { clusterManager } from '../k8s/clusterManager'
+import { withClusterClients } from '../k8s/withClusterClients'
 import { clearDiscoveryCache } from '../k8s/discoveryService'
+import { clearPrometheusCache } from '../k8s/prometheusService'
 import { portForwardManager } from '../k8s/portForwardManager'
 import { resourceWatchManager } from '../k8s/resourceWatchManager'
 
@@ -30,18 +32,25 @@ export function registerClusterHandlers(): void {
     portForwardManager.stopAllForCluster(req.clusterId)
     clusterManager.disconnect(req.clusterId)
     clearDiscoveryCache(req.clusterId)
+    clearPrometheusCache(req.clusterId)
     return { ok: true as const }
   })
 
-  ipcMain.handle(IPC.CLUSTER_GET_VERSION, async (_e, req: ClusterIdRequest): Promise<ClusterVersionResponse> => {
-    const clients = clusterManager.get(req.clusterId)
-    const versionInfo = await clients.version.getCode()
-    return { gitVersion: versionInfo.gitVersion, platform: versionInfo.platform }
+  ipcMain.handle(IPC.CLUSTER_GET_VERSION, async (_e, req: ClusterIdRequest): Promise<ClusterVersionResponse | { error: string }> => {
+    const result = await withClusterClients(req.clusterId, async (clients) => {
+      const versionInfo = await clients.version.getCode()
+      return { gitVersion: versionInfo.gitVersion, platform: versionInfo.platform }
+    })
+    if ('error' in result) return result
+    return result
   })
 
-  ipcMain.handle(IPC.CLUSTER_LIST_NAMESPACES, async (_e, req: ClusterIdRequest): Promise<NamespacesResponse> => {
-    const clients = clusterManager.get(req.clusterId)
-    const res = await clients.core.listNamespace()
-    return { namespaces: res.items.map((ns) => ns.metadata?.name ?? '').filter(Boolean) }
+  ipcMain.handle(IPC.CLUSTER_LIST_NAMESPACES, async (_e, req: ClusterIdRequest): Promise<NamespacesResponse | { error: string }> => {
+    const result = await withClusterClients(req.clusterId, async (clients) => {
+      const res = await clients.core.listNamespace()
+      return { namespaces: res.items.map((ns) => ns.metadata?.name ?? '').filter(Boolean) }
+    })
+    if ('error' in result) return result
+    return result
   })
 }

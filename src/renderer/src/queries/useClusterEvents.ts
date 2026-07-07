@@ -6,9 +6,15 @@ export function useClusterEvents(clusterId: string, options: Omit<ClusterEventsR
   const refetchInterval = useLiveRefetchInterval(isActive)
 
   return useQuery({
-    queryKey: ['cluster-events', clusterId, options],
+    queryKey: [
+      'cluster-events',
+      clusterId,
+      options.limit ?? null,
+      options.involvedObjectKind ?? null,
+      options.involvedObjectName ?? null
+    ],
     queryFn: () => window.api.resource.listClusterEvents({ clusterId, ...options }),
-    enabled: !!clusterId,
+    enabled: !!clusterId && isActive,
     refetchInterval
   })
 }

@@ -2,7 +2,7 @@ import type { ResourceKind } from '../resourceKinds'
 
 export type ResourceMutationTarget =
   | { type: 'builtin'; kind: ResourceKind }
-  | { type: 'dynamic'; apiVersion: string; kind: string }
+  | { type: 'dynamic'; apiVersion: string; kind: string; plural: string; namespaced: boolean }
 
 export interface ResourceGetManifestRequest {
   clusterId: string

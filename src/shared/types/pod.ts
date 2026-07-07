@@ -79,6 +79,9 @@ export interface PodLogsStartRequest {
   containerName: string
   tailLines?: number
   timestamps?: boolean
+  sinceTime?: string
+  previous?: boolean
+  follow?: boolean
 }
 
 export interface PodLogsSessionRequest {
