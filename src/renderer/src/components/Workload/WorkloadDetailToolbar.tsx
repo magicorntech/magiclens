@@ -1,6 +1,7 @@
 import { Button, Dropdown, Space } from 'antd'
 import type { MenuProps } from 'antd'
-import { MoreOutlined, ReloadOutlined, ScissorOutlined } from '@ant-design/icons'
+import { MoreHorizontal, RefreshCw, Scissors } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
 import type { WorkloadKind } from '@shared/types/workload'
 import { actionRequiresPermission } from '@shared/workloadActions'
@@ -12,8 +13,8 @@ import { WorkloadWarningBanners } from './WorkloadWarningBanners'
 const QUICK_IDS = new Set(['scale', 'restart'])
 
 const quickIcons: Record<string, React.ReactNode> = {
-  scale: <ScissorOutlined />,
-  restart: <ReloadOutlined />
+  scale: <Icon icon={Scissors} variant="detail" />,
+  restart: <Icon icon={RefreshCw} variant="detail" />
 }
 
 interface WorkloadDetailToolbarProps {
@@ -74,7 +75,7 @@ export function WorkloadDetailToolbar({
           </Button>
         ))}
         <Dropdown menu={{ items: menuItems }} trigger={['click']}>
-          <Button icon={<MoreOutlined />}>Actions</Button>
+          <Button icon={<Icon icon={MoreHorizontal} variant="detail" />}>Actions</Button>
         </Dropdown>
       </Space>
       <WorkloadActionModals clusterId={clusterId} kind={kind} namespace={namespace} name={name} workload={workload} />

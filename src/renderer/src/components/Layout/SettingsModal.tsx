@@ -15,28 +15,31 @@ import {
 import type { MenuProps } from 'antd'
 import type { AggregationColor } from 'antd/es/color-picker/color'
 import {
-  BgColorsOutlined,
-  CheckOutlined,
-  CloudDownloadOutlined,
-  InfoCircleOutlined,
-  LayoutOutlined,
-  SyncOutlined
-} from '@ant-design/icons'
+  Check,
+  CloudDownload,
+  Info,
+  LayoutDashboard,
+  Palette,
+  RefreshCw
+} from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { refreshIntervalOptions, useLiveRefreshStore } from '../../stores/liveRefreshStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useUpdateStore } from '../../stores/updateStore'
 import { useThemeStore } from '../../stores/themeStore'
 import { COLOR_SCHEME_DEFINITIONS } from '../../theme/schemes'
 import type { AppInfoResponse } from '@shared/types/app'
+import { useLayoutMode } from '../../hooks/useLayoutMode'
+import { NodesDashboardSettings } from '../Nodes/NodesDashboardSettings'
 
 type SettingsSection = 'general' | 'updates' | 'display' | 'appearance' | 'about'
 
 const MENU_ITEMS: MenuProps['items'] = [
-  { key: 'general', icon: <SyncOutlined />, label: 'General' },
-  { key: 'updates', icon: <CloudDownloadOutlined />, label: 'Updates' },
-  { key: 'display', icon: <LayoutOutlined />, label: 'Display' },
-  { key: 'appearance', icon: <BgColorsOutlined />, label: 'Appearance' },
-  { key: 'about', icon: <InfoCircleOutlined />, label: 'About' }
+  { key: 'general', icon: <Icon icon={RefreshCw} variant="detail" />, label: 'General' },
+  { key: 'updates', icon: <Icon icon={CloudDownload} variant="detail" />, label: 'Updates' },
+  { key: 'display', icon: <Icon icon={LayoutDashboard} variant="detail" />, label: 'Display' },
+  { key: 'appearance', icon: <Icon icon={Palette} variant="detail" />, label: 'Appearance' },
+  { key: 'about', icon: <Icon icon={Info} variant="detail" />, label: 'About' }
 ]
 
 const SECTION_TITLES: Record<SettingsSection, string> = {
@@ -54,6 +57,9 @@ interface SettingsModalProps {
 
 export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.Element {
   const { token } = theme.useToken()
+  const layoutMode = useLayoutMode()
+  const isMobileSettings = layoutMode === 'mobile'
+  const modalWidth = layoutMode === 'mobile' ? 'calc(100vw - 16px)' : layoutMode === 'compact' ? 560 : 760
   const [section, setSection] = useState<SettingsSection>('general')
   const interval = useLiveRefreshStore((s) => s.interval)
   const setInterval_ = useLiveRefreshStore((s) => s.setInterval)
@@ -74,8 +80,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const setShowClusterTabLogos = useDisplaySettingsStore((s) => s.setShowClusterTabLogos)
   const setShowResourceTabIcons = useDisplaySettingsStore((s) => s.setShowResourceTabIcons)
   const setResourceDetailPlacement = useDisplaySettingsStore((s) => s.setResourceDetailPlacement)
-  const showNodesPageEvents = useDisplaySettingsStore((s) => s.showNodesPageEvents)
-  const setShowNodesPageEvents = useDisplaySettingsStore((s) => s.setShowNodesPageEvents)
 
   useEffect(() => {
     if (!open) return
@@ -164,7 +168,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             <Space style={{ marginTop: 4 }}>
               <Button
                 size="small"
-                icon={<SyncOutlined />}
+                icon={<Icon icon={RefreshCw} variant="detail" />}
                 loading={updateState?.phase === 'checking'}
                 onClick={() => void check()}
               >
@@ -187,6 +191,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                   value={resourceDetailPlacement}
                   onChange={(value) => void setResourceDetailPlacement(value)}
                   options={[
+                    { value: 'drawer', label: 'Right drawer (recommended)' },
                     { value: 'right', label: 'Right panel (split view)' },
                     { value: 'bottom', label: 'Bottom tab' }
                   ]}
@@ -199,14 +204,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
               </Typography.Text>
             </div>
             <div>
-              <Typography.Text strong>Nodes page</Typography.Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                <Typography.Text>Show events panel</Typography.Text>
-                <Switch checked={showNodesPageEvents} onChange={(checked) => void setShowNodesPageEvents(checked)} />
+              <Typography.Text strong>Nodes page layout</Typography.Text>
+              <div style={{ marginTop: 10 }}>
+                <NodesDashboardSettings />
               </div>
               <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                When enabled, the Nodes view shows a collapsible events panel at the bottom. You can collapse it with
-                the button on the panel header.
+                Toggle sections on or off and drag to reorder. The table section stays flexible and fills remaining
+                space when visible.
               </Typography.Text>
             </div>
             <div>
@@ -279,7 +283,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                     </div>
                     <Typography.Text strong style={{ fontSize: 13 }}>
                       {scheme.name}
-                      {selected ? <CheckOutlined style={{ marginLeft: 6, color: token.colorPrimary }} /> : null}
+                      {selected ? <Icon icon={Check} variant="detail" style={{ marginLeft: 6, color: token.colorPrimary }} /> : null}
                     </Typography.Text>
                     <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
                       {scheme.description}
@@ -313,12 +317,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                       border: `1px solid ${token.colorBorderSecondary}`
                     }}
                   />
-                  <BgColorsOutlined style={{ color: token.colorTextSecondary, fontSize: 14 }} />
+                  <Icon icon={Palette} variant="detail" style={{ color: token.colorTextSecondary }} />
                 </div>
                 <Typography.Text strong style={{ fontSize: 13 }}>
                   Custom
                   {colorScheme === 'custom' ? (
-                    <CheckOutlined style={{ marginLeft: 6, color: token.colorPrimary }} />
+                    <Icon icon={Check} variant="detail" style={{ marginLeft: 6, color: token.colorPrimary }} />
                   ) : null}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
@@ -374,33 +378,38 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
       open={open}
       onCancel={onClose}
       footer={null}
-      width={760}
+      width={modalWidth}
       destroyOnHidden
+      className="settings-modal"
+      centered={!isMobileSettings}
       styles={{ body: { padding: 0 } }}
     >
-      <div style={{ display: 'flex', minHeight: 400 }}>
+      <div className={`settings-modal-body${isMobileSettings ? ' settings-modal-body--mobile' : ''}`}>
         <Menu
-          mode="inline"
+          mode={isMobileSettings ? 'horizontal' : 'inline'}
           selectedKeys={[section]}
           items={MENU_ITEMS}
           onClick={({ key }) => setSection(key as SettingsSection)}
-          style={{
-            width: 168,
-            flexShrink: 0,
-            borderInlineEnd: `1px solid ${token.colorBorderSecondary}`,
-            borderRadius: 0,
-            padding: '8px 0'
-          }}
+          className="settings-modal-menu"
+          style={
+            isMobileSettings
+              ? {
+                  width: '100%',
+                  flexShrink: 0,
+                  borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                  borderRadius: 0,
+                  overflowX: 'auto'
+                }
+              : {
+                  width: 168,
+                  flexShrink: 0,
+                  borderInlineEnd: `1px solid ${token.colorBorderSecondary}`,
+                  borderRadius: 0,
+                  padding: '8px 0'
+                }
+          }
         />
-        <div
-          style={{
-            flex: 1,
-            minWidth: 0,
-            padding: '20px 24px',
-            overflow: 'auto',
-            maxHeight: 'min(70vh, 520px)'
-          }}
-        >
+        <div className="settings-modal-content">
           <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
             {SECTION_TITLES[section]}
           </Typography.Title>

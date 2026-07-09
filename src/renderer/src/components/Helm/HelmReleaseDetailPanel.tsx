@@ -1,5 +1,6 @@
 import { Button, Descriptions, Empty, Splitter, Tag, Typography, theme } from 'antd'
-import { CloseOutlined, LinkOutlined } from '@ant-design/icons'
+import { ExternalLink, X } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmManifestResource, HelmRelease } from '@shared/types/helm'
 import type { ResourceFocus } from '@shared/types/navigation'
@@ -46,7 +47,7 @@ export function HelmReleaseDetailPanel({
           <Button
             type="link"
             size="small"
-            icon={<LinkOutlined />}
+            icon={<Icon icon={ExternalLink} variant="detail" />}
             onClick={(e) => {
               e.stopPropagation()
               onNavigateToResource({
@@ -90,7 +91,7 @@ export function HelmReleaseDetailPanel({
             {release.namespace}
           </Typography.Text>
         </div>
-        <Button type="text" size="small" icon={<CloseOutlined />} onClick={onClose} />
+        <Button type="text" size="small" icon={<Icon icon={X} variant="detail" />} onClick={onClose} />
       </div>
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: 12 }}>
         {isLoading ? (

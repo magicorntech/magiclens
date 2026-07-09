@@ -27,6 +27,12 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src')
       }
     },
-    plugins: [react()]
+    plugins: [react()],
+    worker: {
+      format: 'es'
+    },
+    optimizeDeps: {
+      include: ['monaco-editor', '@monaco-editor/react']
+    }
   }
 })

@@ -7,6 +7,9 @@ import { queryClient } from './queries/queryClient'
 import { buildAntdTheme, syncDocumentTheme } from './theme'
 import { useResolvedDarkMode } from './stores/useResolvedDarkMode'
 import { useThemeStore } from './stores/themeStore'
+import '@fontsource-variable/inter'
+import '@fontsource/jetbrains-mono/400.css'
+import '@fontsource/jetbrains-mono/500.css'
 import './styles/global.css'
 
 function Root(): React.JSX.Element {

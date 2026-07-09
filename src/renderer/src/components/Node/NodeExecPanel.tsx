@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button, Space, Tag, Typography } from 'antd'
-import { ReloadOutlined } from '@ant-design/icons'
+import { RefreshCw } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
@@ -106,7 +107,7 @@ export function NodeExecPanel({ clusterId, nodeName, isActive }: NodeExecPanelPr
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <Space style={{ marginBottom: 8, flexShrink: 0 }} wrap>
         {statusTag}
-        <Button size="small" icon={<ReloadOutlined />} onClick={() => setRestartToken((t) => t + 1)}>
+        <Button size="small" icon={<Icon icon={RefreshCw} variant="detail" />} onClick={() => setRestartToken((t) => t + 1)}>
           Restart session
         </Button>
       </Space>

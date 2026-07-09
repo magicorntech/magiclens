@@ -1,10 +1,14 @@
 import { useState } from 'react'
-import { Alert, Card, Col, Popover, Progress, Row, Skeleton, Statistic, Typography } from 'antd'
+import { Alert, Popover } from 'antd'
+import { AlertTriangle, Box, Server } from 'lucide-react'
 import { DEFAULT_METRICS_TIME_RANGE, type MetricsTimeRange } from '@shared/metricsTimeRange'
 import { useClusterMetrics } from '../../queries/useClusterMetrics'
 import { useClusterMetricsRange } from '../../queries/useMetricsRange'
 import { formatBytes, formatCores, percentOf } from '../../format'
 import { MetricsHistoryPopoverContent } from './MetricsHistoryPopoverContent'
+import { MetricStatChip } from '../ui/MetricStatChip'
+import { ProgressBar } from '../ui/ProgressBar'
+import { MotionDiv, slideUp } from '../ui/Motion'
 
 interface ClusterMetricsSummaryProps {
   clusterId: string
@@ -21,12 +25,22 @@ export function ClusterMetricsSummary({ clusterId, isActiveTab }: ClusterMetrics
     isActiveTab && hoverMetric !== null
   )
 
-  if (isLoading || !data) return <Skeleton active paragraph={{ rows: 4 }} />
+  if (isLoading || !data) {
+    return (
+      <div className="ml-nodes-dashboard ml-nodes-dashboard--loading">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="ml-skeleton-row" style={{ height: 72 }} />
+        ))}
+      </div>
+    )
+  }
 
   const cpuPercent = percentOf(data.cpuUsageCores, data.cpuAllocatableCores)
   const memoryPercent = percentOf(data.memoryUsageBytes, data.memoryAllocatableBytes)
+  const totalPods = data.runningPods + data.pendingPods + data.failedPods
+  const podsPercent = percentOf(totalPods, data.podCapacity)
 
-  function metricPopover(metric: 'cpu' | 'memory', title: string, formatValue: (v: number) => string, children: React.ReactNode) {
+  function metricPopover(metric: 'cpu' | 'memory', title: string, formatValue: (v: number) => string, bar: React.ReactNode) {
     return (
       <Popover
         trigger="hover"
@@ -45,113 +59,88 @@ export function ClusterMetricsSummary({ clusterId, isActiveTab }: ClusterMetrics
           />
         }
       >
-        <div style={{ cursor: 'default' }}>{children}</div>
+        <div className="ml-nodes-dashboard-resource" style={{ cursor: 'default' }}>
+          {bar}
+        </div>
       </Popover>
     )
   }
 
   return (
-    <div>
+    <MotionDiv className="ml-nodes-dashboard" {...slideUp}>
       {!data.metricsAvailable && (
-        <Alert
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message="metrics-server is not available in this cluster. CPU and memory usage metrics cannot be displayed."
-        />
+        <Alert type="warning" showIcon className="ml-nodes-dashboard-alert" message="metrics-server unavailable — usage bars may be incomplete" />
       )}
 
-      <Row gutter={16}>
-        <Col span={4}>
-          <Card size="small">
-            <Statistic title="Total Nodes" value={data.totalNodes} />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card size="small">
-            <Statistic title="Ready" value={data.readyNodes} valueStyle={{ color: '#3f8600' }} />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card size="small">
-            <Statistic
-              title="NotReady"
-              value={data.notReadyNodes}
-              valueStyle={data.notReadyNodes > 0 ? { color: '#cf1322' } : undefined}
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card size="small">
-            <Statistic title="Running Pods" value={data.runningPods} />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card size="small">
-            <Statistic title="Pending Pods" value={data.pendingPods} />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card size="small">
-            <Statistic
-              title="Failed Pods"
-              value={data.failedPods}
-              valueStyle={data.failedPods > 0 ? { color: '#cf1322' } : undefined}
-            />
-          </Card>
-        </Col>
-      </Row>
+      <section className="ml-nodes-dashboard-section">
+        <h3 className="ml-nodes-dashboard-heading">Cluster Summary</h3>
+        <div className="ml-nodes-dashboard-stats">
+          <MetricStatChip icon={Server} label="Nodes" value={String(data.totalNodes)} />
+          <MetricStatChip icon={Server} label="Ready" value={String(data.readyNodes)} accent="var(--ml-success)" />
+          <MetricStatChip
+            icon={AlertTriangle}
+            label="Not Ready"
+            value={String(data.notReadyNodes)}
+            accent={data.notReadyNodes > 0 ? 'var(--ml-error)' : undefined}
+          />
+          <MetricStatChip icon={Box} label="Running Pods" value={String(data.runningPods)} accent="var(--ml-success)" />
+          <MetricStatChip icon={Box} label="Pending" value={String(data.pendingPods)} accent="var(--ml-warning)" />
+          <MetricStatChip
+            icon={Box}
+            label="Failed"
+            value={String(data.failedPods)}
+            accent={data.failedPods > 0 ? 'var(--ml-error)' : undefined}
+          />
+        </div>
+      </section>
 
-      <Row gutter={16} style={{ marginTop: 16 }}>
-        <Col span={12}>
+      <section className="ml-nodes-dashboard-section">
+        <h3 className="ml-nodes-dashboard-heading">Cluster Resources</h3>
+        <div className="ml-nodes-dashboard-resources">
           {metricPopover(
             'cpu',
             'Cluster CPU over time',
             formatCores,
-            <Card size="small" title="CPU">
-              {cpuPercent !== undefined && (
-                <Progress percent={cpuPercent} format={(p) => `${p}%`} status={cpuPercent >= 90 ? 'exception' : undefined} />
-              )}
-              <Typography.Text
-                type="secondary"
-                style={{ fontSize: 12, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-              >
-                {data.cpuUsageCores !== undefined && <>Usage: {formatCores(data.cpuUsageCores)} · </>}
-                Allocatable: {formatCores(data.cpuAllocatableCores)} · Capacity: {formatCores(data.cpuCapacityCores)}
-              </Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                Hover for usage history
-              </Typography.Text>
-            </Card>
+            <ProgressBar
+              label="CPU"
+              percent={cpuPercent}
+              detail={
+                data.cpuUsageCores !== undefined
+                  ? `${formatCores(data.cpuUsageCores)} / ${formatCores(data.cpuAllocatableCores)} cores`
+                  : 'Usage unavailable'
+              }
+              accent="var(--ml-primary)"
+            />
           )}
-        </Col>
-        <Col span={12}>
           {metricPopover(
             'memory',
             'Cluster memory over time',
             formatBytes,
-            <Card size="small" title="Memory">
-              {memoryPercent !== undefined && (
-                <Progress
-                  percent={memoryPercent}
-                  format={(p) => `${p}%`}
-                  status={memoryPercent >= 90 ? 'exception' : undefined}
-                />
-              )}
-              <Typography.Text
-                type="secondary"
-                style={{ fontSize: 12, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-              >
-                {data.memoryUsageBytes !== undefined && <>Usage: {formatBytes(data.memoryUsageBytes)} · </>}
-                Allocatable: {formatBytes(data.memoryAllocatableBytes)} · Capacity: {formatBytes(data.memoryCapacityBytes)}
-              </Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                Hover for usage history
-              </Typography.Text>
-            </Card>
+            <ProgressBar
+              label="Memory"
+              percent={memoryPercent}
+              detail={
+                data.memoryUsageBytes !== undefined
+                  ? `${formatBytes(data.memoryUsageBytes)} / ${formatBytes(data.memoryAllocatableBytes)}`
+                  : 'Usage unavailable'
+              }
+              accent="#6366f1"
+            />
           )}
-        </Col>
-      </Row>
-    </div>
+          <ProgressBar
+            label="Storage"
+            percent={undefined}
+            detail="Usage metrics unavailable"
+            accent="var(--ml-text-tertiary)"
+          />
+          <ProgressBar
+            label="Pods Capacity"
+            percent={podsPercent}
+            detail={`${totalPods} / ${data.podCapacity} scheduled`}
+            accent="#38bdf8"
+          />
+        </div>
+      </section>
+    </MotionDiv>
   )
 }

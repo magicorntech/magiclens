@@ -13,18 +13,23 @@ export interface WelcomeStateResponse {
   showSplash: boolean
 }
 
-export type ResourceDetailPlacement = 'right' | 'bottom'
+export type ResourceDetailPlacement = 'drawer' | 'right' | 'bottom'
+
+import type { NodesDashboardPrefs } from './nodesDashboard'
+import { defaultNodesDashboardPrefs } from './nodesDashboard'
 
 export interface DisplaySettings {
   showClusterTabLogos: boolean
   showResourceTabIcons: boolean
   resourceDetailPlacement: ResourceDetailPlacement
   showNodesPageEvents: boolean
+  nodesDashboard: NodesDashboardPrefs
 }
 
 export const defaultDisplaySettings: DisplaySettings = {
   showClusterTabLogos: true,
   showResourceTabIcons: true,
-  resourceDetailPlacement: 'right',
-  showNodesPageEvents: true
+  resourceDetailPlacement: 'drawer',
+  showNodesPageEvents: true,
+  nodesDashboard: defaultNodesDashboardPrefs
 }

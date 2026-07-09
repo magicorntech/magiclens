@@ -16,14 +16,29 @@ import type { VirtualPageKey } from '../resourceConfig/kinds.renderer'
 
 interface ClusterViewProps {
   clusterId: string
+  splitPane?: 'left' | 'right'
 }
 
-export function ClusterView({ clusterId }: ClusterViewProps): React.JSX.Element {
+export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.JSX.Element {
   const cluster = useClusterStore((s) => s.clusters.find((c) => c.id === clusterId))
   const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const openResourceKind = useClusterStore((s) => s.openResourceKind)
   const navigateToResource = useClusterStore((s) => s.navigateToResource)
+  const clearPendingNavigation = useClusterStore((s) => s.clearPendingNavigation)
   const [virtualPage, setVirtualPage] = useState<VirtualPageKey | null>(null)
+  const [helmReleaseFocus, setHelmReleaseFocus] = useState<{ namespace: string; name: string } | null>(null)
+  const [dynamicResourceFocus, setDynamicResourceFocus] = useState<
+    import('@shared/types/navigation').DynamicResourceFocus | null
+  >(null)
+
+  useEffect(() => {
+    if (!cluster?.pendingNavigation) return
+    const pending = cluster.pendingNavigation
+    if (pending.virtualPage) setVirtualPage(pending.virtualPage)
+    if (pending.helmRelease) setHelmReleaseFocus(pending.helmRelease)
+    if (pending.dynamicResource) setDynamicResourceFocus(pending.dynamicResource)
+    clearPendingNavigation(clusterId)
+  }, [cluster?.pendingNavigation, clusterId, clearPendingNavigation])
 
   // New clusters start as idle and connect when the tab is first opened.
   // Explicit disconnect sets status to disconnected — user must connect manually.
@@ -105,19 +120,43 @@ export function ClusterView({ clusterId }: ClusterViewProps): React.JSX.Element 
       case 'discoveredApiVersions':
         return <DiscoveredApiVersionsPage clusterId={clusterId} />
       case 'dynamicCustomResources':
-        return <CustomResourceBrowserPage clusterId={clusterId} namespace={selectedNamespace} mode="all" />
+        return (
+          <CustomResourceBrowserPage
+            clusterId={clusterId}
+            namespace={selectedNamespace}
+            mode="all"
+            initialFocus={dynamicResourceFocus}
+            onFocusConsumed={() => setDynamicResourceFocus(null)}
+          />
+        )
       case 'operatorResources':
-        return <CustomResourceBrowserPage clusterId={clusterId} namespace={selectedNamespace} mode="installed" />
+        return (
+          <CustomResourceBrowserPage
+            clusterId={clusterId}
+            namespace={selectedNamespace}
+            mode="installed"
+            initialFocus={dynamicResourceFocus}
+            onFocusConsumed={() => setDynamicResourceFocus(null)}
+          />
+        )
       case 'helmCharts':
         return <HelmChartsPage clusterId={clusterId} />
       case 'helmReleases':
-        return <HelmReleasesPage clusterId={clusterId} onNavigateToResource={handleNavigateToResource} />
+        return (
+          <HelmReleasesPage
+            clusterId={clusterId}
+            onNavigateToResource={handleNavigateToResource}
+            initialRelease={helmReleaseFocus}
+            onReleaseFocusConsumed={() => setHelmReleaseFocus(null)}
+          />
+        )
     }
   }
 
   return (
     <AppShell
       cluster={cluster}
+      splitPane={splitPane}
       onNamespaceChange={handleNamespaceChange}
       onSelectKind={handleSelectKind}
       selectedVirtualPage={virtualPage}

@@ -16,6 +16,7 @@ import { registerTerminalHandlers } from './terminal.handlers'
 import { registerUiStateHandlers } from './uiState.handlers'
 import { registerUpdateHandlers } from './update.handlers'
 import { registerWorkloadHandlers } from './workload.handlers'
+import { registerSearchHandlers } from './search.handlers'
 
 export function registerIpcHandlers(): void {
   registerKubeconfigHandlers()
@@ -36,4 +37,5 @@ export function registerIpcHandlers(): void {
   registerHelmHandlers()
   registerWorkloadHandlers()
   registerUpdateHandlers()
+  registerSearchHandlers()
 }

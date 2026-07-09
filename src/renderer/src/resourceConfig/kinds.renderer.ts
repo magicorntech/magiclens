@@ -1,53 +1,9 @@
-import {
-  ApartmentOutlined,
-  ApiOutlined,
-  AppstoreOutlined,
-  BlockOutlined,
-  BranchesOutlined,
-  ClockCircleOutlined,
-  CloudServerOutlined,
-  ClusterOutlined,
-  CodeSandboxOutlined,
-  CompassOutlined,
-  ContainerOutlined,
-  DatabaseOutlined,
-  DeploymentUnitOutlined,
-  ExperimentOutlined,
-  FileProtectOutlined,
-  FileTextOutlined,
-  FlagOutlined,
-  ForkOutlined,
-  GlobalOutlined,
-  GoldOutlined,
-  HddOutlined,
-  IdcardOutlined,
-  KeyOutlined,
-  LinkOutlined,
-  LockOutlined,
-  NodeIndexOutlined,
-  NotificationOutlined,
-  PartitionOutlined,
-  PieChartOutlined,
-  RiseOutlined,
-  RocketOutlined,
-  SafetyCertificateOutlined,
-  SafetyOutlined,
-  ScheduleOutlined,
-  ShareAltOutlined,
-  SlidersOutlined,
-  TagsOutlined
-} from '@ant-design/icons'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ColumnDef } from '@shared/types/resource'
+import type { VirtualPageKey } from '@shared/types/navigation'
+import { kindIcons, virtualPageIconComponents } from '../icons/resourceKindIcons'
 
-export type VirtualPageKey =
-  | 'portForwarding'
-  | 'dynamicCustomResources'
-  | 'operatorResources'
-  | 'discoveredApiGroups'
-  | 'discoveredApiVersions'
-  | 'helmCharts'
-  | 'helmReleases'
+export type { VirtualPageKey }
 
 export interface VirtualMenuItem {
   key: VirtualPageKey
@@ -55,47 +11,7 @@ export interface VirtualMenuItem {
   icon: React.ComponentType
 }
 
-export const kindIcons: Record<ResourceKind, React.ComponentType> = {
-  Nodes: ClusterOutlined,
-  Namespaces: AppstoreOutlined,
-  Pods: ContainerOutlined,
-  Deployments: DeploymentUnitOutlined,
-  StatefulSets: DatabaseOutlined,
-  DaemonSets: ApartmentOutlined,
-  ReplicaSets: BranchesOutlined,
-  ReplicationControllers: ForkOutlined,
-  Jobs: ScheduleOutlined,
-  CronJobs: ClockCircleOutlined,
-  ConfigMaps: FileTextOutlined,
-  Secrets: LockOutlined,
-  ResourceQuotas: PieChartOutlined,
-  LimitRanges: SlidersOutlined,
-  HorizontalPodAutoscalers: RiseOutlined,
-  PodDisruptionBudgets: SafetyOutlined,
-  PriorityClasses: FlagOutlined,
-  RuntimeClasses: CodeSandboxOutlined,
-  Leases: KeyOutlined,
-  MutatingWebhookConfigurations: ApiOutlined,
-  ValidatingWebhookConfigurations: ApiOutlined,
-  ValidatingAdmissionPolicies: FileProtectOutlined,
-  ValidatingAdmissionPolicyBindings: LinkOutlined,
-  Services: GlobalOutlined,
-  EndpointSlices: NodeIndexOutlined,
-  Endpoints: ShareAltOutlined,
-  Ingresses: GlobalOutlined,
-  IngressClasses: TagsOutlined,
-  NetworkPolicies: SafetyCertificateOutlined,
-  PersistentVolumeClaims: HddOutlined,
-  PersistentVolumes: HddOutlined,
-  StorageClasses: CloudServerOutlined,
-  ServiceAccounts: IdcardOutlined,
-  Roles: SafetyCertificateOutlined,
-  RoleBindings: LinkOutlined,
-  ClusterRoles: SafetyCertificateOutlined,
-  ClusterRoleBindings: LinkOutlined,
-  CustomResourceDefinitions: BlockOutlined,
-  Events: NotificationOutlined
-}
+export { kindIcons }
 
 export interface KindSubGroup {
   title: string
@@ -130,20 +46,27 @@ export const kindGroups: KindGroup[] = [
       'RuntimeClasses',
       'Leases',
       'MutatingWebhookConfigurations',
-      'ValidatingWebhookConfigurations'
-    ],
-    subGroups: [
-      { title: 'Admission Policies', kinds: ['ValidatingAdmissionPolicies', 'ValidatingAdmissionPolicyBindings'] }
+      'ValidatingWebhookConfigurations',
+      'ValidatingAdmissionPolicies',
+      'ValidatingAdmissionPolicyBindings'
     ]
   },
   {
     title: 'Network',
     kinds: ['Services', 'EndpointSlices', 'Endpoints', 'Ingresses', 'IngressClasses', 'NetworkPolicies'],
-    virtualEntries: [{ key: 'portForwarding', label: 'Port Forwarding', icon: ApiOutlined }]
+    virtualEntries: [{ key: 'portForwarding', label: 'Port Forwarding', icon: virtualPageIconComponents.portForwarding }]
   },
   {
     title: 'Storage',
     kinds: ['PersistentVolumeClaims', 'PersistentVolumes', 'StorageClasses']
+  },
+  {
+    title: 'Helm',
+    kinds: [],
+    virtualEntries: [
+      { key: 'helmCharts', label: 'Charts', icon: virtualPageIconComponents.helmCharts },
+      { key: 'helmReleases', label: 'Releases', icon: virtualPageIconComponents.helmReleases }
+    ]
   },
   {
     title: 'Access Control',
@@ -153,23 +76,9 @@ export const kindGroups: KindGroup[] = [
     title: 'Custom Resources',
     kinds: ['CustomResourceDefinitions'],
     virtualEntries: [
-      { key: 'dynamicCustomResources', label: 'Dynamic Custom Resources', icon: ExperimentOutlined },
-      { key: 'operatorResources', label: 'Installed Operator Resources', icon: PartitionOutlined },
-      { key: 'discoveredApiGroups', label: 'Discovered API Groups', icon: CompassOutlined },
-      { key: 'discoveredApiVersions', label: 'Discovered API Versions', icon: BranchesOutlined }
+      { key: 'operatorResources', label: 'Installed CRDs', icon: virtualPageIconComponents.operatorResources },
+      { key: 'dynamicCustomResources', label: 'Dynamic Resources', icon: virtualPageIconComponents.dynamicCustomResources }
     ]
-  },
-  {
-    title: 'Helm',
-    kinds: [],
-    virtualEntries: [
-      { key: 'helmCharts', label: 'Charts', icon: GoldOutlined },
-      { key: 'helmReleases', label: 'Releases', icon: RocketOutlined }
-    ]
-  },
-  {
-    title: 'Cluster',
-    kinds: ['Namespaces', 'Events']
   }
 ]
 
@@ -180,15 +89,32 @@ export const kindColumnDefs: Record<ResourceKind, ColumnDef[]> = {
   ],
   Namespaces: [],
   Pods: [
-    { key: 'ready', title: 'Ready' },
+    { key: 'containers', title: 'Containers' },
     { key: 'restarts', title: 'Restarts' },
-    { key: 'node', title: 'Node' }
+    { key: 'controlledBy', title: 'Controlled By' },
+    { key: 'node', title: 'Node' },
+    { key: 'qos', title: 'QoS' }
   ],
-  Deployments: [{ key: 'ready', title: 'Ready' }],
-  StatefulSets: [{ key: 'ready', title: 'Ready' }],
-  DaemonSets: [{ key: 'ready', title: 'Ready' }],
-  ReplicaSets: [{ key: 'ready', title: 'Ready' }],
-  ReplicationControllers: [{ key: 'ready', title: 'Ready' }],
+  Deployments: [
+    { key: 'ready', title: 'Ready' },
+    { key: 'controlledBy', title: 'Controlled By' }
+  ],
+  StatefulSets: [
+    { key: 'ready', title: 'Ready' },
+    { key: 'controlledBy', title: 'Controlled By' }
+  ],
+  DaemonSets: [
+    { key: 'ready', title: 'Ready' },
+    { key: 'controlledBy', title: 'Controlled By' }
+  ],
+  ReplicaSets: [
+    { key: 'ready', title: 'Ready' },
+    { key: 'controlledBy', title: 'Controlled By' }
+  ],
+  ReplicationControllers: [
+    { key: 'ready', title: 'Ready' },
+    { key: 'controlledBy', title: 'Controlled By' }
+  ],
   Jobs: [{ key: 'completions', title: 'Completions' }],
   CronJobs: [{ key: 'schedule', title: 'Schedule' }],
   ConfigMaps: [{ key: 'keys', title: 'Keys' }],

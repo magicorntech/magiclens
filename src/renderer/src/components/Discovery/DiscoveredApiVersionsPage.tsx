@@ -5,7 +5,6 @@ import type { DiscoveredApiResource } from '@shared/types/discovery'
 import { useDiscovery } from '../../queries/useDiscovery'
 import { buildTablePagination, readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
-import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 
 interface DiscoveredApiVersionsPageProps {
   clusterId: string
@@ -88,8 +87,6 @@ export function DiscoveredApiVersionsPage({ clusterId }: DiscoveredApiVersionsPa
     }
   ]
 
-  if (isLoading) return <LoadingState />
-
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
       <Typography.Title level={4} style={{ marginTop: 0 }}>
@@ -104,6 +101,7 @@ export function DiscoveredApiVersionsPage({ clusterId }: DiscoveredApiVersionsPa
         rowKey="key"
         columns={columns}
         dataSource={rows}
+        loading={isLoading}
         pagination={paginationProps(rows.length)}
         onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
         size="middle"

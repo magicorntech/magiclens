@@ -5,7 +5,6 @@ import { useClusterEvents } from '../../queries/useClusterEvents'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from './AgeCell'
-import { LoadingState } from './EmptyErrorStates'
 
 interface ClusterEventsPanelProps {
   clusterId: string
@@ -59,8 +58,6 @@ export function ClusterEventsPanel({
     involvedObjectName ?? null
   ])
 
-  if (isLoading) return <LoadingState />
-
   if (isError) {
     return <Typography.Text type="danger">{error instanceof Error ? error.message : String(error)}</Typography.Text>
   }
@@ -79,7 +76,7 @@ export function ClusterEventsPanel({
           {title}
         </Typography.Text>
       ) : null}
-      {events.length === 0 ? (
+      {!isLoading && events.length === 0 ? (
         <Empty description="No events" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
         <div style={embedded ? undefined : { flex: 1, minHeight: 0, overflow: 'auto' }}>
@@ -88,6 +85,7 @@ export function ClusterEventsPanel({
             rowKey="id"
             columns={columns}
             dataSource={events}
+            loading={isLoading}
             pagination={embedded ? { pageSize: 10, size: 'small', hideOnSinglePage: true } : paginationProps(events.length)}
             onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
             size="small"

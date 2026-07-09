@@ -6,7 +6,6 @@ import { useResourceEvents } from '../../queries/useResourceEvents'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from './AgeCell'
-import { LoadingState } from './EmptyErrorStates'
 
 interface ResourceEventsPanelProps {
   clusterId: string
@@ -49,8 +48,6 @@ export function ResourceEventsPanel({
   const { data, isLoading, isError, error } = useResourceEvents(clusterId, namespace, name, target, isActive)
   const { setPagination, paginationProps } = useTablePagination([clusterId, namespace, name, target])
 
-  if (isLoading) return <LoadingState />
-
   if (isError) {
     return (
       <Typography.Text type="danger">
@@ -64,11 +61,11 @@ export function ResourceEventsPanel({
   }
 
   const events = data?.events ?? []
-  if (events.length === 0) {
+  const tableScroll = embedded ? { y: 220, x: 720 } : undefined
+
+  if (!isLoading && events.length === 0) {
     return <Empty description="No events for this resource" />
   }
-
-  const tableScroll = embedded ? { y: 220, x: 720 } : undefined
 
   return (
     <div style={embedded ? undefined : { height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -78,6 +75,7 @@ export function ResourceEventsPanel({
           rowKey="id"
           columns={columns}
           dataSource={events}
+          loading={isLoading}
           pagination={embedded ? { pageSize: 10, size: 'small', hideOnSinglePage: true } : paginationProps(events.length)}
           onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
           size="small"

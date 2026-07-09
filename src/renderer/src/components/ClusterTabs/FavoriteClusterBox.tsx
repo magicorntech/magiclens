@@ -1,9 +1,10 @@
 import { Dropdown, Tag, Tooltip, Typography } from 'antd'
 import type { MenuProps } from 'antd'
-import { DisconnectOutlined, MoreOutlined, StarFilled } from '@ant-design/icons'
+import { MoreHorizontal, Star, Unplug } from 'lucide-react'
 import type { ClusterEntry } from '../../stores/clusterStore'
 import { useClusterStore } from '../../stores/clusterStore'
 import { disconnectCluster } from '../../clusterConnect'
+import { Icon } from '../ui/Icon'
 import { ClusterAvatar } from './ClusterAvatar'
 import { ConnectionStatusBadge } from '../ResourceTable/ConnectionStatusBadge'
 
@@ -11,9 +12,15 @@ interface FavoriteClusterBoxProps {
   cluster: ClusterEntry
   active: boolean
   compact?: boolean
+  onActivate?: () => void
 }
 
-export function FavoriteClusterBox({ cluster, active, compact = false }: FavoriteClusterBoxProps): React.JSX.Element {
+export function FavoriteClusterBox({
+  cluster,
+  active,
+  compact = false,
+  onActivate
+}: FavoriteClusterBoxProps): React.JSX.Element {
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
   const toggleFavorite = useClusterStore((s) => s.toggleFavorite)
   const removeCluster = useClusterStore((s) => s.removeCluster)
@@ -23,15 +30,20 @@ export function FavoriteClusterBox({ cluster, active, compact = false }: Favorit
   const menuItems: MenuProps['items'] = [
     { key: 'open', label: 'Open' },
     ...(canDisconnect
-      ? [{ key: 'disconnect', label: 'Disconnect', icon: <DisconnectOutlined /> }]
+      ? [{ key: 'disconnect', label: 'Disconnect', icon: <Icon icon={Unplug} variant="detail" /> }]
       : []),
     { type: 'divider' },
-    { key: 'unfavorite', label: 'Remove from favorites', icon: <StarFilled /> },
+    { key: 'unfavorite', label: 'Remove from favorites', icon: <Icon icon={Star} variant="detail" fill="currentColor" /> },
     { key: 'remove', label: 'Remove cluster', danger: true }
   ]
 
+  function handleOpen(): void {
+    openClusterTab(cluster.id)
+    onActivate?.()
+  }
+
   function handleMenuClick(key: string): void {
-    if (key === 'open') openClusterTab(cluster.id)
+    if (key === 'open') handleOpen()
     if (key === 'disconnect') void disconnectCluster(cluster.id)
     if (key === 'unfavorite') toggleFavorite(cluster.id)
     if (key === 'remove') {
@@ -48,7 +60,7 @@ export function FavoriteClusterBox({ cluster, active, compact = false }: Favorit
         <Tooltip title={cluster.customName} placement="right">
           <div
             className={`favorite-cluster-row${active ? ' active' : ''}`}
-            onClick={() => openClusterTab(cluster.id)}
+            onClick={handleOpen}
             style={{
               display: 'flex',
               justifyContent: 'center',
@@ -68,7 +80,7 @@ export function FavoriteClusterBox({ cluster, active, compact = false }: Favorit
   return (
     <div
       className={`favorite-cluster-row${active ? ' active' : ''}`}
-      onClick={() => openClusterTab(cluster.id)}
+      onClick={handleOpen}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -108,11 +120,13 @@ export function FavoriteClusterBox({ cluster, active, compact = false }: Favorit
         menu={{ items: menuItems, onClick: ({ key }) => handleMenuClick(key) }}
         trigger={['click']}
       >
-        <MoreOutlined
+        <span
           className="favorite-cluster-row-menu"
-          style={{ color: 'var(--ml-sidebar-muted)', flexShrink: 0, padding: 4 }}
+          style={{ color: 'var(--ml-sidebar-muted)', flexShrink: 0, padding: 4, display: 'inline-flex' }}
           onClick={(e) => e.stopPropagation()}
-        />
+        >
+          <Icon icon={MoreHorizontal} variant="detail" />
+        </span>
       </Dropdown>
     </div>
   )

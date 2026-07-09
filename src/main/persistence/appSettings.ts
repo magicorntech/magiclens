@@ -1,6 +1,7 @@
 import Store from 'electron-store'
 import type { UpdateSettings } from '@shared/types/update'
 import { defaultDisplaySettings, type DisplaySettings } from '@shared/types/app'
+import { normalizeNodesDashboardPrefs } from '@shared/types/nodesDashboard'
 
 interface AppSettings {
   hasSeenWelcome: boolean
@@ -66,11 +67,23 @@ export function setLastSeenSplashVersion(version: string): void {
 }
 
 export function getDisplaySettings(): DisplaySettings {
-  return { ...defaultDisplaySettings, ...store.get('displaySettings') }
+  const stored = store.get('displaySettings')
+  return {
+    ...defaultDisplaySettings,
+    ...stored,
+    nodesDashboard: normalizeNodesDashboardPrefs(stored?.nodesDashboard)
+  }
 }
 
 export function setDisplaySettings(patch: Partial<DisplaySettings>): DisplaySettings {
-  const next = { ...getDisplaySettings(), ...patch }
+  const current = getDisplaySettings()
+  const next: DisplaySettings = {
+    ...current,
+    ...patch,
+    nodesDashboard: patch.nodesDashboard
+      ? normalizeNodesDashboardPrefs({ ...current.nodesDashboard, ...patch.nodesDashboard })
+      : current.nodesDashboard
+  }
   store.set('displaySettings', next)
   return next
 }

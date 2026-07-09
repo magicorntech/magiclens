@@ -1,5 +1,6 @@
 import { Button, Typography } from 'antd'
-import { ArrowRightOutlined } from '@ant-design/icons'
+import { ArrowRight } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import logo from '../../assets/logo.png'
 
 interface SplashIntroScreenProps {
@@ -75,7 +76,7 @@ export function SplashIntroScreen({ onStart }: SplashIntroScreenProps): React.JS
             type="primary"
             size="large"
             shape="round"
-            icon={<ArrowRightOutlined />}
+            icon={<Icon icon={ArrowRight} variant="action" />}
             iconPosition="end"
             onClick={onStart}
             style={{ paddingLeft: 28, paddingRight: 24, fontWeight: 600 }}

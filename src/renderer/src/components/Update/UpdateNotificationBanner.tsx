@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Button, Progress, Space, Typography, message } from 'antd'
-import { CloseOutlined, DownloadOutlined, ExportOutlined, ReloadOutlined, RocketOutlined } from '@ant-design/icons'
+import { Download, ExternalLink, RefreshCw, Rocket, X } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { useUpdateStore } from '../../stores/updateStore'
 
 export function UpdateNotificationBanner(): React.JSX.Element | null {
@@ -47,13 +48,13 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
       <Space orientation="vertical" style={{ width: '100%' }} size={10}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
           <Space size={8}>
-            <RocketOutlined style={{ color: 'var(--ml-primary)', fontSize: 18 }} />
+            <Icon icon={Rocket} variant="toolbar" style={{ color: 'var(--ml-primary)' }} />
             <Typography.Text strong>
               {showDownloaded ? 'Update ready to install' : showDownloading ? 'Downloading update…' : 'Update available'}
             </Typography.Text>
           </Space>
           {showAvailable && (
-            <Button type="text" size="small" icon={<CloseOutlined />} onClick={() => void remindLater()} />
+            <Button type="text" size="small" icon={<Icon icon={X} variant="detail" />} onClick={() => void remindLater()} />
           )}
         </div>
 
@@ -74,11 +75,11 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
         {showAvailable && (
           <Space size={8} wrap>
             {state.manualDownloadOnly ? (
-              <Button type="primary" size="small" icon={<ExportOutlined />} onClick={() => void openReleasePage()}>
+              <Button type="primary" size="small" icon={<Icon icon={ExternalLink} variant="detail" />} onClick={() => void openReleasePage()}>
                 Open GitHub release
               </Button>
             ) : (
-              <Button type="primary" size="small" icon={<DownloadOutlined />} onClick={() => void download()}>
+              <Button type="primary" size="small" icon={<Icon icon={Download} variant="detail" />} onClick={() => void download()}>
                 Download
               </Button>
             )}
@@ -96,7 +97,7 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
 
         {showDownloaded && (
           <Space size={8}>
-            <Button type="primary" size="small" icon={<ReloadOutlined />} onClick={() => void install()}>
+            <Button type="primary" size="small" icon={<Icon icon={RefreshCw} variant="detail" />} onClick={() => void install()}>
               Restart & Install
             </Button>
             <Button size="small" onClick={() => openCenter()}>

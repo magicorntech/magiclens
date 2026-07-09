@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, Input, Modal, Space, Tag, Typography } from 'antd'
-import { SyncOutlined, UploadOutlined } from '@ant-design/icons'
+import { RefreshCw, Upload } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { useQueryClient } from '@tanstack/react-query'
 import type { PrometheusStatus } from '@shared/types/prometheus'
 import type { ClusterEntry } from '../../stores/clusterStore'
@@ -112,7 +113,7 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
         <Space orientation="vertical" style={{ width: '100%' }} size="middle">
           <Space align="center">
             <ClusterAvatar logoUrl={logoUrl} name={customName} size={48} />
-            <Button icon={<UploadOutlined />} onClick={() => fileInputRef.current?.click()}>
+            <Button icon={<Icon icon={Upload} variant="detail" />} onClick={() => fileInputRef.current?.click()}>
               Change logo
             </Button>
             <input
@@ -144,7 +145,7 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
             {cluster?.status === 'connected' ? (
               <Button
                 size="small"
-                icon={<SyncOutlined />}
+                icon={<Icon icon={RefreshCw} variant="detail" />}
                 loading={discovering}
                 style={{ marginTop: 8 }}
                 onClick={() => void handleDiscover()}

@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button, Empty, Input, Modal, Space, Splitter, Tag, Typography, message } from 'antd'
-import { DeleteOutlined, HistoryOutlined } from '@ant-design/icons'
+import { History, Trash2 } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmRelease } from '@shared/types/helm'
 import type { ResourceFocus } from '@shared/types/navigation'
 import { useHelmReleases, useHelmUninstallRelease } from '../../queries/useHelm'
-import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { HelmReleaseHistoryModal } from './HelmReleaseHistoryModal'
@@ -15,6 +15,8 @@ import { HelmRowActions } from './HelmRowActions'
 interface HelmReleasesPageProps {
   clusterId: string
   onNavigateToResource: (focus: ResourceFocus) => void
+  initialRelease?: { namespace: string; name: string } | null
+  onReleaseFocusConsumed?: () => void
 }
 
 function statusColor(status: string): string {
@@ -37,7 +39,12 @@ function statusColor(status: string): string {
   }
 }
 
-export function HelmReleasesPage({ clusterId, onNavigateToResource }: HelmReleasesPageProps): React.JSX.Element {
+export function HelmReleasesPage({
+  clusterId,
+  onNavigateToResource,
+  initialRelease,
+  onReleaseFocusConsumed
+}: HelmReleasesPageProps): React.JSX.Element {
   const { data, isLoading } = useHelmReleases(clusterId)
   const uninstallRelease = useHelmUninstallRelease(clusterId)
   const [selectedRelease, setSelectedRelease] = useState<HelmRelease | null>(null)
@@ -67,6 +74,15 @@ export function HelmReleasesPage({ clusterId, onNavigateToResource }: HelmReleas
       return haystack.includes(q)
     })
   }, [releases, search])
+
+  useEffect(() => {
+    if (!initialRelease || releases.length === 0) return
+    const match = releases.find(
+      (r) => r.namespace === initialRelease.namespace && r.name === initialRelease.name
+    )
+    if (match) setSelectedRelease(match)
+    onReleaseFocusConsumed?.()
+  }, [initialRelease, releases, onReleaseFocusConsumed])
 
   const selectedReleases = useMemo(
     () => filteredReleases.filter((r) => selectedRowKeys.includes(r.id)),
@@ -151,14 +167,14 @@ export function HelmReleasesPage({ clusterId, onNavigateToResource }: HelmReleas
             {
               key: 'history',
               label: 'History',
-              icon: <HistoryOutlined />,
+              icon: <Icon icon={History} variant="detail" />,
               onClick: () => setHistoryTarget({ namespace: r.namespace, name: r.name })
             },
             { type: 'divider' },
             {
               key: 'uninstall',
               label: 'Uninstall',
-              icon: <DeleteOutlined />,
+              icon: <Icon icon={Trash2} variant="detail" />,
               danger: true,
               onClick: () => confirmUninstall([r])
             }
@@ -178,6 +194,18 @@ export function HelmReleasesPage({ clusterId, onNavigateToResource }: HelmReleas
       </Typography.Paragraph>
       {error ? (
         <Empty description={error} />
+      ) : isLoading ? (
+        <div style={{ flex: 1, minHeight: 240 }}>
+          <ResizableTable
+            tableKey="helm-releases"
+            rowKey="id"
+            columns={columns}
+            dataSource={[]}
+            loading
+            pagination={false}
+            size="middle"
+          />
+        </div>
       ) : releases.length === 0 ? (
         <Empty description="No Helm releases found in this cluster" />
       ) : (
@@ -193,7 +221,7 @@ export function HelmReleasesPage({ clusterId, onNavigateToResource }: HelmReleas
             {selectedRowKeys.length > 0 && (
               <Button
                 danger
-                icon={<DeleteOutlined />}
+                icon={<Icon icon={Trash2} variant="detail" />}
                 loading={uninstallRelease.isPending}
                 onClick={() => confirmUninstall(selectedReleases)}
               >
@@ -236,8 +264,6 @@ export function HelmReleasesPage({ clusterId, onNavigateToResource }: HelmReleas
       )}
     </div>
   )
-
-  if (isLoading) return <LoadingState />
 
   if (!selectedRelease) {
     return <div style={{ height: '100%', padding: 16, boxSizing: 'border-box' }}>{listPanel}</div>

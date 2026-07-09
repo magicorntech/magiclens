@@ -1,6 +1,7 @@
 import { Alert, Button, Descriptions, Modal, Progress, Space, Tag, Typography } from 'antd'
-import { CheckCircleOutlined, DownloadOutlined, ExportOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons'
+import { CheckCircle2, Download, ExternalLink, RefreshCw } from 'lucide-react'
 import type { UpdatePhase } from '@shared/types/update'
+import { Icon } from '../ui/Icon'
 import { useUpdateStore } from '../../stores/updateStore'
 
 const phaseLabel: Record<UpdatePhase, string> = {
@@ -36,6 +37,7 @@ export function UpdateCenterModal(): React.JSX.Element {
   const phase = state?.phase ?? 'idle'
   const isSkipped = !!state?.latestVersion && state.latestVersion === state.skippedVersion
   const manualDownloadOnly = state?.manualDownloadOnly ?? false
+  const isSpinning = phase === 'checking' || phase === 'downloading'
 
   return (
     <Modal title="Update Center" open={open} onCancel={close} footer={null} width={520}>
@@ -48,7 +50,7 @@ export function UpdateCenterModal(): React.JSX.Element {
           <Descriptions.Item label="Status">
             <Space size={6}>
               <Tag
-                icon={phase === 'checking' || phase === 'downloading' ? <SyncOutlined spin /> : undefined}
+                icon={isSpinning ? <Icon icon={RefreshCw} variant="micro" className="ml-icon-spin" /> : undefined}
                 color={phaseColor[phase]}
               >
                 {phaseLabel[phase]}
@@ -68,7 +70,7 @@ export function UpdateCenterModal(): React.JSX.Element {
           <Alert
             type="success"
             showIcon
-            icon={<CheckCircleOutlined />}
+            icon={<Icon icon={CheckCircle2} variant="action" />}
             message="Update downloaded"
             description="Restart MagicLens to finish installing the new version."
           />
@@ -104,22 +106,22 @@ export function UpdateCenterModal(): React.JSX.Element {
         )}
 
         <Space wrap>
-          <Button icon={<SyncOutlined />} loading={phase === 'checking'} onClick={() => void check()}>
+          <Button icon={<Icon icon={RefreshCw} variant="detail" />} loading={phase === 'checking'} onClick={() => void check()}>
             Check for updates
           </Button>
           {phase === 'available' && !isSkipped && manualDownloadOnly && (
-            <Button type="primary" icon={<ExportOutlined />} onClick={() => void openReleasePage()}>
+            <Button type="primary" icon={<Icon icon={ExternalLink} variant="detail" />} onClick={() => void openReleasePage()}>
               Open GitHub release
             </Button>
           )}
           {phase === 'available' && !isSkipped && !manualDownloadOnly && (
-            <Button type="primary" icon={<DownloadOutlined />} onClick={() => void download()}>
+            <Button type="primary" icon={<Icon icon={Download} variant="detail" />} onClick={() => void download()}>
               Download update
             </Button>
           )}
           {phase === 'available' && !isSkipped && <Button onClick={() => void skip()}>Skip this version</Button>}
           {phase === 'downloaded' && (
-            <Button type="primary" icon={<ReloadOutlined />} onClick={() => void install()}>
+            <Button type="primary" icon={<Icon icon={RefreshCw} variant="detail" />} onClick={() => void install()}>
               Restart & install
             </Button>
           )}

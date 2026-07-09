@@ -17,7 +17,9 @@ export function WatchStatusBadge({ isError, watchStatus }: WatchStatusBadgeProps
     case 'live':
       return (
         <Tooltip title="Streaming live updates via the Kubernetes Watch API">
-          <Badge status="success" text="Live" />
+          <span className="ml-live-badge">
+            <Badge status="success" text="Live" />
+          </span>
         </Tooltip>
       )
     case 'connecting':

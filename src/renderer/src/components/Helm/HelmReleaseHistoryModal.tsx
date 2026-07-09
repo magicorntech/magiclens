@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, Empty, Modal, Popconfirm, Tag, Typography, message } from 'antd'
-import { HistoryOutlined, RollbackOutlined } from '@ant-design/icons'
+import { History, Undo2 } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmReleaseHistoryEntry } from '@shared/types/helm'
 import { useHelmHistory } from '../../queries/useHelm'
@@ -97,7 +98,7 @@ export function HelmReleaseHistoryModal({
             okText="Rollback"
             okButtonProps={{ danger: true }}
           >
-            <Button size="small" icon={<RollbackOutlined />} loading={rollingBack === r.revision}>
+            <Button size="small" icon={<Icon icon={Undo2} variant="detail" />} loading={rollingBack === r.revision}>
               Rollback
             </Button>
           </Popconfirm>
@@ -109,7 +110,7 @@ export function HelmReleaseHistoryModal({
     <Modal
       title={
         <>
-          <HistoryOutlined /> History — {name}{' '}
+          <Icon icon={History} variant="action" /> History — {name}{' '}
           <Typography.Text type="secondary" style={{ fontWeight: 400 }}>
             {namespace}
           </Typography.Text>

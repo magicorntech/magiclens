@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ConnectionStatus, PersistedClusterEntry, PersistedUiState } from '@shared/types/cluster'
-import type { ResourceFocus } from '@shared/types/navigation'
+import type { ResourceFocus, PendingNavigation } from '@shared/types/navigation'
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import { isNamespaceScoped } from '@shared/resourceKinds'
 import {
@@ -28,6 +28,7 @@ export interface ClusterEntry {
   selectedResourceKind: ResourceKind | null
   openResourceKinds: ResourceKind[]
   resourceFocus: ResourceFocus | null
+  pendingNavigation: PendingNavigation | null
   lastOpenedAt?: string
 }
 
@@ -42,6 +43,7 @@ interface ClusterStoreState {
   focusedSplitPane: 'left' | 'right'
   leftSidebarCollapsed: boolean
   resourceMenuCollapsed: boolean
+  addClusterModalOpen: boolean
 
   addCluster: (entry: ClusterEntry) => void
   removeCluster: (id: string) => void
@@ -54,6 +56,7 @@ interface ClusterStoreState {
   setFocusedSplitPane: (pane: 'left' | 'right') => void
   setLeftSidebarCollapsed: (collapsed: boolean) => void
   setResourceMenuCollapsed: (collapsed: boolean) => void
+  setAddClusterModalOpen: (open: boolean) => void
   toggleFavorite: (id: string) => void
   updateClusterMeta: (
     id: string,
@@ -65,7 +68,15 @@ interface ClusterStoreState {
   setSelectedResourceKind: (id: string, kind: ResourceKind) => void
   openResourceKind: (id: string, kind: ResourceKind) => void
   closeResourceKind: (id: string, kind: ResourceKind) => void
+  closeAllResourceKinds: (id: string) => void
   navigateToResource: (id: string, focus: ResourceFocus) => void
+  navigateToHelmRelease: (id: string, namespace: string, name: string) => void
+  navigateToDynamicResource: (
+    id: string,
+    focus: import('@shared/types/navigation').DynamicResourceFocus
+  ) => void
+  navigateToCrd: (id: string, crdName: string) => void
+  clearPendingNavigation: (id: string) => void
   clearResourceFocus: (id: string) => void
   reorderResourceKinds: (id: string, kinds: ResourceKind[]) => void
   getResourceTabPrefs: (id: string) => import('../utils/resourceTabPreferences').ResourceTabPreferences
@@ -92,6 +103,7 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
   focusedSplitPane: 'left',
   leftSidebarCollapsed: false,
   resourceMenuCollapsed: false,
+  addClusterModalOpen: false,
 
   addCluster: (entry) => set((state) => ({ clusters: [...state.clusters, entry] })),
 
@@ -178,6 +190,7 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
   setLeftSidebarCollapsed: (collapsed) => set({ leftSidebarCollapsed: collapsed }),
 
   setResourceMenuCollapsed: (collapsed) => set({ resourceMenuCollapsed: collapsed }),
+  setAddClusterModalOpen: (open) => set({ addClusterModalOpen: open }),
 
   toggleFavorite: (id) =>
     set((state) => ({
@@ -239,6 +252,25 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
       return { clusters: updateCluster(state.clusters, id, { openResourceKinds, selectedResourceKind }) }
     }),
 
+  closeAllResourceKinds: (id) =>
+    set((state) => {
+      const cluster = state.clusters.find((c) => c.id === id)
+      if (!cluster) return {}
+      const prefs = loadResourceTabPreferences(id)
+      const openResourceKinds = cluster.openResourceKinds.filter((k) => prefs.pinned.includes(k))
+      if (openResourceKinds.length === cluster.openResourceKinds.length) return {}
+      const selectedResourceKind = openResourceKinds[0] ?? null
+      const patch: Partial<ResourceTabPreferences> = { splitView: false }
+      if (prefs.splitLeftKind && !openResourceKinds.includes(prefs.splitLeftKind)) {
+        patch.splitLeftKind = selectedResourceKind
+      }
+      if (prefs.splitRightKind && !openResourceKinds.includes(prefs.splitRightKind)) {
+        patch.splitRightKind = selectedResourceKind
+      }
+      saveResourceTabPreferences(id, { ...prefs, ...patch })
+      return { clusters: updateCluster(state.clusters, id, { openResourceKinds, selectedResourceKind }) }
+    }),
+
   reorderResourceKinds: (id, kinds) =>
     set((state) => {
       const cluster = state.clusters.find((c) => c.id === id)
@@ -265,14 +297,55 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
       const selectedNamespace =
         isNamespaceScoped(focus.kind) && focus.namespace ? focus.namespace : cluster.selectedNamespace
       return {
+        openedTabs: state.openedTabs.includes(id) ? state.openedTabs : [...state.openedTabs, id],
+        activeClusterId: id,
+        activeView: 'tabs',
         clusters: updateCluster(state.clusters, id, {
           openResourceKinds,
           selectedResourceKind: focus.kind,
           selectedNamespace,
-          resourceFocus: focus
+          resourceFocus: focus,
+          pendingNavigation: null
         })
       }
     }),
+
+  navigateToHelmRelease: (id, namespace, name) =>
+    set((state) => ({
+      openedTabs: state.openedTabs.includes(id) ? state.openedTabs : [...state.openedTabs, id],
+      activeClusterId: id,
+      activeView: 'tabs',
+      clusters: updateCluster(state.clusters, id, {
+        pendingNavigation: { virtualPage: 'helmReleases', helmRelease: { namespace, name } },
+        resourceFocus: null
+      })
+    })),
+
+  navigateToDynamicResource: (id, focus) =>
+    set((state) => ({
+      openedTabs: state.openedTabs.includes(id) ? state.openedTabs : [...state.openedTabs, id],
+      activeClusterId: id,
+      activeView: 'tabs',
+      clusters: updateCluster(state.clusters, id, {
+        selectedNamespace: focus.namespaced && focus.namespace ? focus.namespace : state.clusters.find((c) => c.id === id)?.selectedNamespace ?? 'ALL',
+        pendingNavigation: { virtualPage: 'dynamicCustomResources', dynamicResource: focus },
+        resourceFocus: null
+      })
+    })),
+
+  navigateToCrd: (id, crdName) =>
+    set((state) => ({
+      openedTabs: state.openedTabs.includes(id) ? state.openedTabs : [...state.openedTabs, id],
+      activeClusterId: id,
+      activeView: 'tabs',
+      clusters: updateCluster(state.clusters, id, {
+        pendingNavigation: { virtualPage: 'dynamicCustomResources' },
+        resourceFocus: null
+      })
+    })),
+
+  clearPendingNavigation: (id) =>
+    set((state) => ({ clusters: updateCluster(state.clusters, id, { pendingNavigation: null }) })),
 
   clearResourceFocus: (id) =>
     set((state) => ({ clusters: updateCluster(state.clusters, id, { resourceFocus: null }) })),
@@ -292,7 +365,8 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         selectedNamespace: entry.selectedNamespace || 'ALL',
         selectedResourceKind: entry.selectedResourceKind,
         openResourceKinds: entry.selectedResourceKind ? [entry.selectedResourceKind] : [],
-        resourceFocus: null
+        resourceFocus: null,
+        pendingNavigation: null
       }))
     }),
 

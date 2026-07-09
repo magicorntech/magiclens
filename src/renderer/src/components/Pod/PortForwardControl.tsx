@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, InputNumber, Space, Tag, Tooltip, message } from 'antd'
-import { LinkOutlined, PlayCircleOutlined, StopOutlined } from '@ant-design/icons'
+import { Link, PlayCircle, Square } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { usePortForwards } from '../../queries/usePortForwards'
 
 type ForwardTarget =
@@ -93,11 +94,11 @@ export function PortForwardControl({ clusterId, namespace, label, target }: Port
           <Button
             size="small"
             type="text"
-            icon={<LinkOutlined />}
+            icon={<Icon icon={Link} variant="detail" />}
             onClick={() => window.open(`http://localhost:${activeSession.localPort}`, '_blank')}
           />
         </Tooltip>
-        <Button size="small" danger icon={<StopOutlined />} loading={busy} onClick={handleStop}>
+        <Button size="small" danger icon={<Icon icon={Square} variant="detail" />} loading={busy} onClick={handleStop}>
           Stop
         </Button>
       </Space>
@@ -115,7 +116,7 @@ export function PortForwardControl({ clusterId, namespace, label, target }: Port
         style={{ width: 90 }}
         placeholder="Local port"
       />
-      <Button size="small" type="primary" icon={<PlayCircleOutlined />} loading={busy} onClick={handleStart}>
+      <Button size="small" type="primary" icon={<Icon icon={PlayCircle} variant="detail" />} loading={busy} onClick={handleStart}>
         Forward
       </Button>
     </Space>

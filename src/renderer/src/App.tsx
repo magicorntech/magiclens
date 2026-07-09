@@ -9,6 +9,8 @@ import { SplashIntroScreen } from './components/Layout/SplashIntroScreen'
 import { WelcomeCard } from './components/Layout/WelcomeCard'
 import { UpdateNotificationBanner } from './components/Update/UpdateNotificationBanner'
 import { UpdateCenterModal } from './components/Update/UpdateCenterModal'
+import { GlobalSearchModal } from './components/Search/GlobalSearchModal'
+import { useGlobalSearchShortcut } from './hooks/useGlobalSearchShortcut'
 
 export function App(): React.JSX.Element {
   const hydrateFromPersistence = useClusterStore((s) => s.hydrateFromPersistence)
@@ -19,6 +21,8 @@ export function App(): React.JSX.Element {
   const [showSplash, setShowSplash] = useState(false)
   const [splashDismissed, setSplashDismissed] = useState(false)
   const [showWelcome, setShowWelcome] = useState(false)
+
+  useGlobalSearchShortcut()
 
   useEffect(() => {
     initUpdates()
@@ -114,6 +118,7 @@ export function App(): React.JSX.Element {
       <WelcomeCard open={showWelcome} onClose={handleCloseWelcome} />
       <UpdateNotificationBanner />
       <UpdateCenterModal />
+      <GlobalSearchModal />
     </>
   )
 }

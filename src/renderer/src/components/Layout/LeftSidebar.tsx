@@ -1,225 +1,206 @@
-import { useMemo, useState } from 'react'
-import { Button, Divider, Empty, Tooltip, Typography } from 'antd'
-import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  PlusOutlined,
-  SettingOutlined,
-  UnorderedListOutlined
-} from '@ant-design/icons'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Empty, Tooltip } from 'antd'
+import { ChevronLeft, ChevronRight, Layers } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import logo from '../../assets/logo.png'
 import { useClusterStore } from '../../stores/clusterStore'
 import { applyClusterFilterAndSearch } from '../../clusterFilter'
-import { AddClusterModal } from '../ClusterTabs/AddClusterModal'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
-import { ThemeToggle } from './ThemeToggle'
-import { SettingsModal } from './SettingsModal'
+import { Icon } from '../ui/Icon'
 
-const COLLAPSED_WIDTH = 56
-const EXPANDED_WIDTH = 240
+const COLLAPSED_WIDTH = 60
+const EXPANDED_WIDTH = 252
+const FAVORITES_HEIGHT_KEY = 'ml-favorites-section-height'
+const DEFAULT_FAVORITES_HEIGHT = 220
+const MIN_FAVORITES_HEIGHT = 100
+const MAX_FAVORITES_HEIGHT = 520
 
-export function LeftSidebar(): React.JSX.Element {
+interface LeftSidebarProps {
+  variant?: 'inline' | 'drawer'
+  onNavigate?: () => void
+}
+
+function loadFavoritesHeight(): number {
+  try {
+    const raw = localStorage.getItem(FAVORITES_HEIGHT_KEY)
+    const n = raw ? parseInt(raw, 10) : DEFAULT_FAVORITES_HEIGHT
+    return Number.isFinite(n) ? Math.min(MAX_FAVORITES_HEIGHT, Math.max(MIN_FAVORITES_HEIGHT, n)) : DEFAULT_FAVORITES_HEIGHT
+  } catch {
+    return DEFAULT_FAVORITES_HEIGHT
+  }
+}
+
+export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps): React.JSX.Element {
   const clusters = useClusterStore((s) => s.clusters)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
   const activeView = useClusterStore((s) => s.activeView)
-  const collapsed = useClusterStore((s) => s.leftSidebarCollapsed)
+  const storedCollapsed = useClusterStore((s) => s.leftSidebarCollapsed)
   const setCollapsed = useClusterStore((s) => s.setLeftSidebarCollapsed)
   const setActiveView = useClusterStore((s) => s.setActiveView)
-  const [addModalOpen, setAddModalOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const isDrawer = variant === 'drawer'
+  const collapsed = isDrawer ? false : storedCollapsed
+
   const [favoriteSearch, setFavoriteSearch] = useState('')
+  const [favoritesHeight, setFavoritesHeight] = useState(loadFavoritesHeight)
+  const dragRef = useRef<{ startY: number; startHeight: number } | null>(null)
 
   const favorites = useMemo(
     () => applyClusterFilterAndSearch(clusters, 'favorites', collapsed ? '' : favoriteSearch),
     [clusters, favoriteSearch, collapsed]
   )
 
+  const connectedCount = useMemo(
+    () => clusters.filter((c) => c.status === 'connected').length,
+    [clusters]
+  )
+
+  function handleNavigate(action: () => void): void {
+    action()
+    onNavigate?.()
+  }
+
+  const onResizeMove = useCallback((e: MouseEvent) => {
+    if (!dragRef.current) return
+    const delta = e.clientY - dragRef.current.startY
+    const next = Math.min(
+      MAX_FAVORITES_HEIGHT,
+      Math.max(MIN_FAVORITES_HEIGHT, dragRef.current.startHeight + delta)
+    )
+    setFavoritesHeight(next)
+  }, [])
+
+  const onResizeEnd = useCallback(() => {
+    dragRef.current = null
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+    window.removeEventListener('mousemove', onResizeMove)
+    window.removeEventListener('mouseup', onResizeEnd)
+  }, [onResizeMove])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(FAVORITES_HEIGHT_KEY, String(favoritesHeight))
+    } catch {
+      // ignore
+    }
+  }, [favoritesHeight])
+
+  function startResize(e: React.MouseEvent): void {
+    e.preventDefault()
+    dragRef.current = { startY: e.clientY, startHeight: favoritesHeight }
+    document.body.style.cursor = 'row-resize'
+    document.body.style.userSelect = 'none'
+    window.addEventListener('mousemove', onResizeMove)
+    window.addEventListener('mouseup', onResizeEnd)
+  }
+
+  const width = isDrawer ? '100%' : collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH
+
   return (
-    <div
-      className="left-sidebar"
-      style={{
-        width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
-        height: '100%',
-        background: 'var(--ml-sidebar-bg)',
-        borderRight: '1px solid var(--ml-sidebar-divider)',
-        display: 'flex',
-        flexDirection: 'column',
-        color: 'var(--ml-sidebar-text)',
-        transition: 'width 0.2s ease',
-        flexShrink: 0,
-        overflow: 'hidden'
-      }}
+    <motion.aside
+      className={`ml-sidebar${collapsed ? ' ml-sidebar--collapsed' : ''}${isDrawer ? ' ml-sidebar--drawer' : ''}`}
+      animate={{ width }}
+      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      style={{ width }}
     >
-      <div className="titlebar-drag-region" style={{ display: 'flex', alignItems: 'center', height: 48, flexShrink: 0 }}>
-        {!collapsed && <div style={{ width: 76, flexShrink: 0 }} />}
-        <div
-          style={{
-            flex: 1,
-            minWidth: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6
-          }}
-        >
-          <img src={logo} alt="MagicLens" style={{ width: 24, height: 24, borderRadius: 6, flexShrink: 0 }} />
+      <div className="ml-sidebar-brand titlebar-drag-region">
+        {!collapsed && <div className="ml-sidebar-traffic-spacer" />}
+        <img src={logo} alt="" className="ml-sidebar-logo" />
+        <AnimatePresence>
           {!collapsed && (
-            <Typography.Text
-              style={{
-                color: 'var(--ml-sidebar-text)',
-                fontWeight: 600,
-                fontSize: 13,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
+            <motion.span
+              className="ml-sidebar-brand-text"
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -6 }}
             >
               MagicLens
-            </Typography.Text>
+            </motion.span>
           )}
-        </div>
+        </AnimatePresence>
+      </div>
+
+      <div className="ml-sidebar-actions titlebar-no-drag">
+        <Tooltip title="Manage clusters" placement="right">
+          <button
+            type="button"
+            className={`ml-sidebar-hub-btn${activeView === 'clusters' ? ' ml-sidebar-hub-btn--active' : ''}`}
+            onClick={() => handleNavigate(() => setActiveView('clusters'))}
+          >
+            <span className="ml-sidebar-hub-btn-icon">
+              <Icon icon={Layers} variant="action" />
+            </span>
+            {!collapsed && (
+              <span className="ml-sidebar-hub-btn-text">
+                <span className="ml-sidebar-hub-btn-title">Clusters</span>
+                <span className="ml-sidebar-hub-btn-meta">
+                  {clusters.length} total · {connectedCount} connected
+                </span>
+              </span>
+            )}
+            {!collapsed && clusters.length > 0 && (
+              <span className="ml-sidebar-hub-btn-badge">{clusters.length}</span>
+            )}
+          </button>
+        </Tooltip>
       </div>
 
       <div
-        className="titlebar-no-drag"
-        style={{
-          padding: collapsed ? '8px 6px' : '10px 10px',
-          display: 'flex',
-          flexDirection: collapsed ? 'column' : 'row',
-          gap: 6,
-          overflow: 'hidden'
-        }}
+        className="ml-sidebar-section"
+        style={collapsed ? undefined : { height: favoritesHeight, flex: 'none' }}
       >
-        <Tooltip title="Add Cluster" placement="right">
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            size="small"
-            block={!collapsed}
-            style={collapsed ? { width: '100%' } : { flex: '1 1 0', minWidth: 0, paddingInline: 6 }}
-            onClick={() => setAddModalOpen(true)}
-          >
-            {!collapsed && (
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Add Cluster</span>
-            )}
-          </Button>
-        </Tooltip>
-        <Tooltip title="All Clusters" placement="right">
-          <Button
-            type={activeView === 'clusters' ? 'primary' : 'default'}
-            icon={<UnorderedListOutlined />}
-            size="small"
-            block={!collapsed}
-            className={activeView !== 'clusters' ? 'sidebar-action-btn' : undefined}
-            style={collapsed ? { width: '100%' } : { flex: '1 1 0', minWidth: 0, paddingInline: 6 }}
-            onClick={() => setActiveView('clusters')}
-          >
-            {!collapsed && (
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>All Clusters</span>
-            )}
-          </Button>
-        </Tooltip>
-      </div>
-
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <Divider style={{ borderColor: 'var(--ml-sidebar-divider)', margin: '4px 0' }} />
-
-        <div
-          style={{
-            padding: collapsed ? '0 6px 8px' : '0 16px 8px',
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-        >
-          {!collapsed && (
-            <>
-              <Typography.Text
-                style={{
-                  color: 'var(--ml-sidebar-muted)',
-                  fontSize: 12,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em'
-                }}
-              >
-                Favorites
-              </Typography.Text>
-              <div className="sidebar-search" style={{ margin: '8px 0' }}>
-                <ClusterSearchInput
-                  value={favoriteSearch}
-                  onChange={setFavoriteSearch}
-                  placeholder="Search favorites"
-                  size="small"
-                />
-              </div>
-            </>
-          )}
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {favorites.length === 0 ? (
-              !collapsed && (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={<span style={{ color: 'var(--ml-sidebar-subtle)' }}>No favorite clusters</span>}
-                  style={{ marginTop: 16 }}
-                />
-              )
-            ) : (
-              favorites.map((cluster) => (
-                <FavoriteClusterBox
-                  key={cluster.id}
-                  cluster={cluster}
-                  active={cluster.id === activeClusterId}
-                  compact={collapsed}
-                />
-              ))
-            )}
+        {!collapsed && <div className="ml-sidebar-section-label">Favorites</div>}
+        {!collapsed && (
+          <div className="ml-sidebar-search">
+            <ClusterSearchInput
+              value={favoriteSearch}
+              onChange={setFavoriteSearch}
+              placeholder="Search favorites"
+              size="small"
+            />
           </div>
-        </div>
-
-        <div style={{ marginTop: 'auto', flexShrink: 0 }}>
-          <Divider style={{ borderColor: 'var(--ml-sidebar-divider)', margin: '4px 0' }} />
-
-          <div
-            className="titlebar-no-drag"
-            style={{
-              padding: collapsed ? '8px 6px' : '8px 16px 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8
-            }}
-          >
-            {!collapsed && (
-              <div className="sidebar-segmented">
-                <ThemeToggle />
-              </div>
-            )}
-            <Tooltip title="Settings" placement="right">
-              <Button
-                icon={<SettingOutlined />}
-                block
-                className="sidebar-action-btn"
-                onClick={() => setSettingsOpen(true)}
-              >
-                {!collapsed && 'Settings'}
-              </Button>
-            </Tooltip>
-            <Tooltip title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} placement="right">
-              <Button
-                type="text"
-                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                block
-                className="sidebar-action-btn"
-                onClick={() => setCollapsed(!collapsed)}
+        )}
+        <div className="ml-sidebar-list">
+          {favorites.length === 0 ? (
+            !collapsed && (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={<span className="ml-sidebar-empty">No favorite clusters</span>}
               />
-            </Tooltip>
-          </div>
+            )
+          ) : (
+            favorites.map((cluster) => (
+              <FavoriteClusterBox
+                key={cluster.id}
+                cluster={cluster}
+                active={cluster.id === activeClusterId}
+                compact={collapsed}
+                onActivate={onNavigate}
+              />
+            ))
+          )}
         </div>
+        {!collapsed && !isDrawer && (
+          <div
+            className="ml-sidebar-section-resize"
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize favorites section"
+            onMouseDown={startResize}
+          />
+        )}
       </div>
 
-      <AddClusterModal open={addModalOpen} onClose={() => setAddModalOpen(false)} />
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-    </div>
+      <div className="ml-sidebar-footer titlebar-no-drag">
+        {!isDrawer && (
+          <Tooltip title={collapsed ? 'Expand' : 'Collapse'} placement="right">
+            <button type="button" className="ml-sidebar-btn ml-sidebar-btn--ghost" onClick={() => setCollapsed(!collapsed)}>
+              <Icon icon={collapsed ? ChevronRight : ChevronLeft} variant="action" />
+            </button>
+          </Tooltip>
+        )}
+      </div>
+    </motion.aside>
   )
 }

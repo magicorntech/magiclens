@@ -1,5 +1,6 @@
 import { Button, Tabs, Tooltip } from 'antd'
-import { CloseOutlined } from '@ant-design/icons'
+import { X } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { TerminalView } from '../Terminal/TerminalView'
 import { YamlEditorPanelBody } from '../ResourceTable/YamlEditorPanelBody'
 import { ResourceDetailTabBody } from '../ResourceTable/ResourceDetailTabBody'
@@ -15,18 +16,19 @@ export function BottomPanel(): React.JSX.Element {
       tab.kind === 'terminal' ? (
         <TerminalView sessionId={tab.id} isActive={activeTabId === tab.id} />
       ) : tab.kind === 'yaml' ? (
-        <YamlEditorPanelBody tab={tab} onDone={() => closeTab(tab.id)} />
+        <YamlEditorPanelBody key={tab.id} tab={tab} onDone={() => closeTab(tab.id)} />
       ) : (
         <ResourceDetailTabBody tab={tab} isActive={activeTabId === tab.id} onClose={() => closeTab(tab.id)} />
       )
   }))
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--ml-panel-bg)' }}>
+    <div className="ml-bottom-panel">
       <Tabs
         type="editable-card"
         size="small"
         hideAdd={false}
+        destroyOnHidden={false}
         activeKey={activeTabId ?? undefined}
         onChange={setActiveTab}
         onEdit={(targetKey, action) => {
@@ -34,12 +36,12 @@ export function BottomPanel(): React.JSX.Element {
           else if (typeof targetKey === 'string') closeTab(targetKey)
         }}
         items={items}
-        style={{ height: '100%' }}
+        className="ml-bottom-panel-tabs"
         tabBarStyle={{ margin: 0, padding: '0 8px' }}
         tabBarExtraContent={{
           right: (
             <Tooltip title="Close panel">
-              <Button type="text" size="small" icon={<CloseOutlined />} onClick={closeAll} />
+              <Button type="text" size="small" icon={<Icon icon={X} variant="detail" />} onClick={closeAll} />
             </Tooltip>
           )
         }}

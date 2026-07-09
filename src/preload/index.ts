@@ -130,6 +130,7 @@ import type {
   HelmUninstallReleaseResponse
 } from '@shared/types/helm'
 import type { SkipVersionRequest, UpdateSettings, UpdateState } from '@shared/types/update'
+import type { GlobalSearchRequest, GlobalSearchResponse } from '@shared/types/search'
 
 const api = {
   kubeconfig: {
@@ -395,6 +396,10 @@ const api = {
       ipcRenderer.on(IPC.UPDATE_STATE_CHANGED, listener)
       return () => ipcRenderer.removeListener(IPC.UPDATE_STATE_CHANGED, listener)
     }
+  },
+  search: {
+    resources: (req: GlobalSearchRequest): Promise<GlobalSearchResponse> =>
+      ipcRenderer.invoke(IPC.SEARCH_RESOURCES, req)
   }
 }
 

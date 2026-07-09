@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Empty, Input, Space, Splitter, Tag, Typography } from 'antd'
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+import { Plus, Trash2 } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
 import type { CustomResourceKind, DynamicResourceItem } from '@shared/types/discovery'
+import type { DynamicResourceFocus } from '@shared/types/navigation'
 import { useCustomResourceKinds, useDynamicResourceList } from '../../queries/useDiscovery'
 import { useDynamicResourceWatch } from '../../queries/useResourceWatch'
 import { compareAgeTimestamps } from '../../utils/tableSort'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
-import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
 import { AgeCell } from '../ResourceTable/AgeCell'
 import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
@@ -20,6 +21,8 @@ interface CustomResourceBrowserPageProps {
   clusterId: string
   namespace: string
   mode: 'all' | 'installed'
+  initialFocus?: DynamicResourceFocus | null
+  onFocusConsumed?: () => void
 }
 
 const kindColumns: ColumnsType<CustomResourceKind> = [
@@ -42,7 +45,9 @@ function buildDynamicCreateTemplate(kind: CustomResourceKind, namespace: string)
 export function CustomResourceBrowserPage({
   clusterId,
   namespace,
-  mode
+  mode,
+  initialFocus,
+  onFocusConsumed
 }: CustomResourceBrowserPageProps): React.JSX.Element {
   const { data: kindsData, isLoading: kindsLoading } = useCustomResourceKinds(clusterId, mode === 'installed')
   const [search, setSearch] = useState('')
@@ -72,6 +77,18 @@ export function CustomResourceBrowserPage({
   useEffect(() => {
     setSelectedInstanceKeys([])
   }, [selectedKind?.crdName, namespace])
+
+  useEffect(() => {
+    if (!initialFocus || kinds.length === 0) return
+    const kind = kinds.find(
+      (k) => k.kind === initialFocus.kind && k.apiVersion === initialFocus.apiVersion
+    )
+    if (kind) {
+      setSelectedKind(kind)
+      setSearch(initialFocus.name)
+    }
+    onFocusConsumed?.()
+  }, [initialFocus, kinds, onFocusConsumed])
 
   const watchStatus = useDynamicResourceWatch(
     clusterId,
@@ -184,10 +201,20 @@ export function CustomResourceBrowserPage({
         {title}
       </Typography.Title>
       <Typography.Paragraph type="secondary">{description}</Typography.Paragraph>
-      {kindsLoading ? (
-        <LoadingState />
-      ) : kindsError ? (
+      {kindsError ? (
         <Empty description={kindsError} />
+      ) : kindsLoading ? (
+        <div style={{ flex: 1, minHeight: 280 }}>
+          <ResizableTable
+            tableKey={`crd-kinds-${mode}`}
+            rowKey="crdName"
+            columns={kindColumns}
+            dataSource={[]}
+            loading
+            pagination={false}
+            size="small"
+          />
+        </div>
       ) : kinds.length === 0 ? (
         <Empty description="No custom resource kinds found on this cluster" />
       ) : (
@@ -225,8 +252,6 @@ export function CustomResourceBrowserPage({
             <div style={{ height: '100%', overflow: 'auto', paddingLeft: 8 }}>
               {!selectedKind ? (
                 <Empty description="Select a kind on the left to browse its instances" style={{ marginTop: 48 }} />
-              ) : instancesLoading ? (
-                <LoadingState />
               ) : instancesError ? (
                 <Empty description={instancesError} />
               ) : (
@@ -243,12 +268,12 @@ export function CustomResourceBrowserPage({
                     </Typography.Title>
                     <Space>
                       {selectedInstanceKeys.length > 0 && (
-                        <Button danger size="small" icon={<DeleteOutlined />} onClick={handleBatchDelete}>
+                        <Button danger size="small" icon={<Icon icon={Trash2} variant="detail" />} onClick={handleBatchDelete}>
                           Delete ({selectedInstanceKeys.length})
                         </Button>
                       )}
                       <Button
-                      icon={<PlusOutlined />}
+                      icon={<Icon icon={Plus} variant="detail" />}
                       size="small"
                       onClick={() =>
                         openYamlEditor({
@@ -280,6 +305,7 @@ export function CustomResourceBrowserPage({
                     rowKey="id"
                     columns={instanceColumns}
                     dataSource={instances}
+                    loading={instancesLoading}
                     pagination={instancePaginationProps(instances.length)}
                     onChange={(paginationConfig) => setInstancePagination(readPaginationChange(paginationConfig))}
                     size="small"

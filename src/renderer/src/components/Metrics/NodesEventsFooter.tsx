@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Segmented, Typography } from 'antd'
-import { DownOutlined } from '@ant-design/icons'
+import { ChevronDown } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { ClusterEventsPanel } from '../ResourceTable/ClusterEventsPanel'
 import { ResourceEventsPanel } from '../ResourceTable/ResourceEventsPanel'
 
@@ -32,7 +33,7 @@ export function NodesEventsFooter({
           Events
         </Typography.Text>
         {onCollapse ? (
-          <Button type="text" size="small" icon={<DownOutlined />} onClick={onCollapse} style={{ fontSize: 12 }}>
+          <Button type="text" size="small" icon={<Icon icon={ChevronDown} variant="detail" />} onClick={onCollapse} style={{ fontSize: 12 }}>
             Collapse
           </Button>
         ) : null}

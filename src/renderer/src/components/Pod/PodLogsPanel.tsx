@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Button, Checkbox, Input, Select, Space, Typography, message, theme } from 'antd'
-import { DownloadOutlined, PauseCircleOutlined, PlayCircleOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Alert, Input, Select, message } from 'antd'
+import { Download, Pause, Play, RefreshCw, Search } from 'lucide-react'
 import dayjs from 'dayjs'
 import { isPodDetailData } from '@shared/types/pod'
 import { usePodDetail } from '../../queries/usePodDetail'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { Icon } from '../ui/Icon'
+import { emptyIllustrations } from '../ui/EmptyIllustration'
 
 interface PodLogsPanelProps {
   clusterId: string
@@ -42,8 +44,20 @@ function sincePresetToIso(preset: string): string | undefined {
   return dayjs().subtract(minutes, 'minute').toISOString()
 }
 
+function highlightLogLine(line: string, query: string): React.JSX.Element {
+  if (!query.trim()) return <>{line || '\u00A0'}</>
+  const idx = line.toLowerCase().indexOf(query.toLowerCase())
+  if (idx < 0) return <>{line}</>
+  return (
+    <>
+      {line.slice(0, idx)}
+      <mark className="ml-log-highlight">{line.slice(idx, idx + query.length)}</mark>
+      {line.slice(idx + query.length)}
+    </>
+  )
+}
+
 export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLogsPanelProps): React.JSX.Element {
-  const { token } = theme.useToken()
   const { data: detail, isLoading } = usePodDetail(clusterId, namespace, podName, isActive)
   const containers = useMemo(
     () => (isPodDetailData(detail) ? detail.containers.map((c) => c.name) : []),
@@ -56,6 +70,8 @@ export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLog
   const [sincePreset, setSincePreset] = useState('')
   const [timestamps, setTimestamps] = useState(false)
   const [previous, setPrevious] = useState(false)
+  const [wrap, setWrap] = useState(true)
+  const [logSearch, setLogSearch] = useState('')
   const [lines, setLines] = useState<string[]>([])
   const [ended, setEnded] = useState<string | null>(null)
   const [fileName, setFileName] = useState(`${podName}.log`)
@@ -65,6 +81,12 @@ export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLog
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const sessionIdRef = useRef<string | null>(null)
   const bufferRef = useRef('')
+
+  const filteredLines = useMemo(() => {
+    const q = logSearch.trim().toLowerCase()
+    if (!q) return lines
+    return lines.filter((l) => l.toLowerCase().includes(q))
+  }, [lines, logSearch])
 
   useEffect(() => {
     if (!containerName && containers.length > 0) setContainerName(containers[0])
@@ -149,90 +171,72 @@ export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLog
 
   if (isLoading) return <LoadingState />
 
+  const LogsIllustration = emptyIllustrations.logs
+
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <Space style={{ marginBottom: 8, flexShrink: 0 }} wrap>
+    <div className="ml-log-viewer">
+      <div className="ml-log-toolbar">
         {containers.length > 1 && (
-          <Select
-            size="small"
-            value={containerName}
-            onChange={setContainerName}
-            options={containers.map((c) => ({ label: c, value: c }))}
-            style={{ width: 180 }}
-          />
+          <Select size="small" value={containerName} onChange={setContainerName} options={containers.map((c) => ({ label: c, value: c }))} style={{ width: 160 }} />
         )}
-        <Select
-          size="small"
-          value={tailLines}
-          onChange={setTailLines}
-          options={TAIL_PRESETS.map((p) => ({ label: p.label, value: p.value }))}
-          style={{ width: 140 }}
-        />
-        <Select
-          size="small"
-          value={sincePreset}
-          onChange={setSincePreset}
-          options={SINCE_PRESETS.map((p) => ({ label: p.label, value: p.value }))}
-          style={{ width: 160 }}
-        />
-        <Checkbox checked={timestamps} onChange={(e) => setTimestamps(e.target.checked)}>
+        <Select size="small" value={tailLines} onChange={setTailLines} options={TAIL_PRESETS.map((p) => ({ label: p.label, value: p.value }))} style={{ width: 120 }} />
+        <Select size="small" value={sincePreset} onChange={setSincePreset} options={SINCE_PRESETS.map((p) => ({ label: p.label, value: p.value }))} style={{ width: 140 }} />
+        <label className="ml-log-toggle">
+          <input type="checkbox" checked={timestamps} onChange={(e) => setTimestamps(e.target.checked)} />
           Timestamps
-        </Checkbox>
-        <Checkbox checked={previous} onChange={(e) => setPrevious(e.target.checked)}>
-          Previous container
-        </Checkbox>
-        <Checkbox checked={follow} onChange={(e) => setFollow(e.target.checked)}>
-          {follow ? <PlayCircleOutlined /> : <PauseCircleOutlined />} Follow
-        </Checkbox>
-        <Button size="small" icon={<ReloadOutlined />} onClick={() => setStreamKey((k) => k + 1)} disabled={!follow}>
-          Restart stream
-        </Button>
+        </label>
+        <label className="ml-log-toggle">
+          <input type="checkbox" checked={previous} onChange={(e) => setPrevious(e.target.checked)} />
+          Previous
+        </label>
+        <label className="ml-log-toggle">
+          <input type="checkbox" checked={wrap} onChange={(e) => setWrap(e.target.checked)} />
+          Wrap
+        </label>
+        <button type="button" className={`ml-btn ml-btn--ghost${follow ? ' ml-btn--active' : ''}`} onClick={() => setFollow((f) => !f)}>
+          <Icon icon={follow ? Play : Pause} variant="detail" />
+          {follow ? 'Following' : 'Paused'}
+        </button>
+        <button type="button" className="ml-btn ml-btn--ghost" onClick={() => setStreamKey((k) => k + 1)} disabled={!follow}>
+          <Icon icon={RefreshCw} variant="detail" />
+          Restart
+        </button>
         <Input
           size="small"
-          value={fileName}
-          onChange={(e) => setFileName(e.target.value)}
-          style={{ width: 220 }}
-          placeholder="File name"
+          prefix={<Icon icon={Search} variant="detail" />}
+          placeholder="Filter logs"
+          value={logSearch}
+          onChange={(e) => setLogSearch(e.target.value)}
+          style={{ width: 180 }}
+          allowClear
         />
-        <Button size="small" icon={<DownloadOutlined />} loading={downloading} onClick={handleDownload}>
+        <Input size="small" value={fileName} onChange={(e) => setFileName(e.target.value)} style={{ width: 160 }} placeholder="filename.log" />
+        <button type="button" className="ml-btn ml-btn--ghost" disabled={downloading} onClick={() => void handleDownload()}>
+          <Icon icon={Download} variant="detail" />
           Download
-        </Button>
-      </Space>
+        </button>
+      </div>
 
       {!follow && (
-        <Alert
-          type="info"
-          showIcon
-          message="Log streaming paused"
-          description="Enable Follow or click Restart stream to load logs again."
-          style={{ marginBottom: 8, flexShrink: 0 }}
-        />
+        <Alert type="info" showIcon message="Log streaming paused" style={{ marginBottom: 8, flexShrink: 0 }} />
       )}
       {ended && <Alert type="warning" showIcon message={ended} style={{ marginBottom: 8, flexShrink: 0 }} />}
 
       <div
         ref={scrollRef}
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflow: 'auto',
-          background: 'var(--ml-terminal-bg)',
-          color: 'var(--ml-terminal-fg)',
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-          fontSize: 12,
-          lineHeight: 1.6,
-          padding: 12,
-          borderRadius: token.borderRadius,
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word'
-        }}
+        className={`ml-log-surface${wrap ? ' ml-log-surface--wrap' : ''}`}
       >
-        {lines.length === 0 ? (
-          <Typography.Text style={{ color: 'var(--ml-terminal-muted)' }}>
-            {follow ? 'Waiting for log output...' : 'Stream paused.'}
-          </Typography.Text>
+        {filteredLines.length === 0 ? (
+          <div className="ml-log-empty">
+            <LogsIllustration />
+            <span>{follow ? 'Waiting for log output…' : 'Stream paused.'}</span>
+          </div>
         ) : (
-          lines.map((line, i) => <div key={i}>{line || '\u00A0'}</div>)
+          filteredLines.map((line, i) => (
+            <div key={i} className="ml-log-line">
+              {highlightLogLine(line, logSearch)}
+            </div>
+          ))
         )}
       </div>
     </div>

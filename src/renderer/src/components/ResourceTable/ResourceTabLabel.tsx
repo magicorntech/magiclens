@@ -1,7 +1,8 @@
-import { PushpinFilled, PushpinOutlined, StarFilled } from '@ant-design/icons'
+import { Pin, Star } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
-import { kindIcons } from '../../resourceConfig/kinds.renderer'
+import { kindIconLucide } from '../../icons/resourceKindIcons'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
+import { Icon } from '../ui/Icon'
 
 interface ResourceTabLabelProps {
   kind: ResourceKind
@@ -27,10 +28,10 @@ export function ResourceTabLabel({
   onToggleFavorite
 }: ResourceTabLabelProps): React.JSX.Element {
   const showIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
-  const KindIcon = kindIcons[kind]
 
   return (
     <span
+      className="ml-resource-tab-label"
       draggable={draggable}
       onDragStart={(e) => {
         e.stopPropagation()
@@ -45,45 +46,36 @@ export function ResourceTabLabel({
         e.stopPropagation()
         onDrop?.(kind)
       }}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, userSelect: 'none' }}
     >
       {showIcons && (
-        <span style={{ fontSize: 14, lineHeight: 1, display: 'inline-flex' }}>
-          <KindIcon />
+        <span className="ml-resource-tab-label-icon">
+          <Icon icon={kindIconLucide[kind]} variant="detail" />
         </span>
       )}
-      <span>{kind}</span>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginLeft: 2 }}>
-        <StarFilled
-          role="button"
+      <span className="ml-resource-tab-label-text">{kind}</span>
+      <span className="ml-resource-tab-label-actions">
+        <button
+          type="button"
+          className={`ml-resource-tab-action${favorite ? ' ml-resource-tab-action--active' : ''}`}
           aria-label={favorite ? 'Remove favorite' : 'Add favorite'}
-          style={{ fontSize: 11, color: favorite ? 'var(--ml-primary)' : undefined, opacity: favorite ? 1 : 0.35 }}
           onClick={(e) => {
             e.stopPropagation()
             onToggleFavorite(kind)
           }}
-        />
-        {pinned ? (
-          <PushpinFilled
-            role="button"
-            aria-label="Unpin tab"
-            style={{ fontSize: 11, color: 'var(--ml-primary)' }}
-            onClick={(e) => {
-              e.stopPropagation()
-              onTogglePin(kind)
-            }}
-          />
-        ) : (
-          <PushpinOutlined
-            role="button"
-            aria-label="Pin tab"
-            style={{ fontSize: 11, opacity: 0.45 }}
-            onClick={(e) => {
-              e.stopPropagation()
-              onTogglePin(kind)
-            }}
-          />
-        )}
+        >
+          <Icon icon={Star} variant="micro" fill={favorite ? 'var(--ml-primary)' : 'none'} />
+        </button>
+        <button
+          type="button"
+          className={`ml-resource-tab-action${pinned ? ' ml-resource-tab-action--active' : ''}`}
+          aria-label={pinned ? 'Unpin tab' : 'Pin tab'}
+          onClick={(e) => {
+            e.stopPropagation()
+            onTogglePin(kind)
+          }}
+        >
+          <Icon icon={Pin} variant="micro" fill={pinned ? 'var(--ml-primary)' : 'none'} />
+        </button>
       </span>
     </span>
   )

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Checkbox, Divider, Input, Modal, Segmented, Space, Spin, Tag, Typography, message } from 'antd'
-import { ReloadOutlined } from '@ant-design/icons'
+import { RefreshCw } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { findExistingCluster } from '@shared/clusterIdentity'
 import type { ContextInfo, KubeconfigSource } from '@shared/types/kubeconfig'
 import { useClusterStore } from '../../stores/clusterStore'
@@ -13,10 +14,10 @@ interface AddClusterModalProps {
 type Mode = 'file' | 'paste' | 'folder'
 
 interface DiscoveredEntry {
-  key: string
+  dedupeKey: string
   context: ContextInfo
   source: KubeconfigSource
-  originLabel: string
+  originLabels: string[]
   existingCluster?: { id: string; customName: string }
 }
 
@@ -24,9 +25,10 @@ function basename(filePath: string): string {
   return filePath.split(/[\\/]/).pop() ?? filePath
 }
 
-function entryKey(source: KubeconfigSource, contextName: string): string {
-  const sourceKey = source.type === 'file' ? source.filePath : 'pasted-yaml'
-  return `${sourceKey}::${contextName}`
+function dedupeKeyForContext(context: ContextInfo): string {
+  const server = context.server?.trim().toLowerCase() ?? ''
+  const cluster = context.clusterName?.trim().toLowerCase() ?? ''
+  return `${context.name.trim().toLowerCase()}::${server || cluster}`
 }
 
 export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.JSX.Element {
@@ -55,14 +57,33 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
     setDiscovered((prev) => {
       const next = [...prev]
       const newKeys: string[] = []
+
       for (const context of contexts) {
-        const key = entryKey(source, context.name)
-        if (!next.some((e) => e.key === key)) {
-          const existingCluster = lookupExisting(context, source)
-          next.push({ key, context, source, originLabel, existingCluster })
-          if (!existingCluster) newKeys.push(key)
+        const dedupeKey = dedupeKeyForContext(context)
+        const existingCluster = lookupExisting(context, source)
+        const existingIdx = next.findIndex((e) => e.dedupeKey === dedupeKey)
+
+        if (existingIdx >= 0) {
+          const entry = next[existingIdx]
+          if (!entry.originLabels.includes(originLabel)) {
+            next[existingIdx] = {
+              ...entry,
+              originLabels: [...entry.originLabels, originLabel]
+            }
+          }
+          continue
         }
+
+        next.push({
+          dedupeKey,
+          context,
+          source,
+          originLabels: [originLabel],
+          existingCluster
+        })
+        if (!existingCluster) newKeys.push(dedupeKey)
       }
+
       if (newKeys.length > 0) {
         setSelectedKeys((prevSelected) => new Set([...prevSelected, ...newKeys]))
       }
@@ -111,7 +132,7 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
   }
 
   function toggleAll(checked: boolean): void {
-    const selectable = discovered.filter((e) => !e.existingCluster).map((e) => e.key)
+    const selectable = discovered.filter((e) => !e.existingCluster).map((e) => e.dedupeKey)
     setSelectedKeys(checked ? new Set(selectable) : new Set())
   }
 
@@ -164,7 +185,7 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
   }
 
   async function handleAddSelected(): Promise<void> {
-    const entries = discovered.filter((e) => selectedKeys.has(e.key) && !e.existingCluster)
+    const entries = discovered.filter((e) => selectedKeys.has(e.dedupeKey) && !e.existingCluster)
     if (entries.length === 0) {
       message.warning('Selected clusters are already in your list.')
       return
@@ -197,7 +218,8 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
           ...persisted,
           status: 'idle',
           openResourceKinds: ['Pods'],
-          resourceFocus: null
+          resourceFocus: null,
+          pendingNavigation: null
         })
       }
 
@@ -218,6 +240,7 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
 
   const selectable = discovered.filter((e) => !e.existingCluster)
   const existingCount = discovered.length - selectable.length
+  const mergedCount = discovered.filter((e) => e.originLabels.length > 1).length
   const allSelected = selectable.length > 0 && selectedKeys.size === selectable.length
 
   return (
@@ -229,7 +252,7 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
             <Button
               size="small"
               type="text"
-              icon={<ReloadOutlined />}
+              icon={<Icon icon={RefreshCw} variant="detail" />}
               loading={autoScanning}
               onClick={runDefaultScan}
             >
@@ -280,7 +303,8 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
           <div>
             <Divider style={{ margin: '12px 0' }} />
             <Typography.Text strong>
-              {discovered.length} context{discovered.length === 1 ? '' : 's'} found
+              {discovered.length} unique context{discovered.length === 1 ? '' : 's'}
+              {mergedCount > 0 ? ` (${mergedCount} merged from duplicate configs)` : ''}
               {existingCount > 0
                 ? ` — ${existingCount} already in your cluster list`
                 : ' — select contexts to add'}
@@ -295,12 +319,13 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 260, overflowY: 'auto' }}>
               {discovered.map((entry) => {
                 const isExisting = !!entry.existingCluster
+                const origins = entry.originLabels.join(', ')
                 return (
                   <Checkbox
-                    key={entry.key}
-                    checked={!isExisting && selectedKeys.has(entry.key)}
+                    key={entry.dedupeKey}
+                    checked={!isExisting && selectedKeys.has(entry.dedupeKey)}
                     disabled={isExisting}
-                    onChange={(e) => toggleKey(entry.key, e.target.checked)}
+                    onChange={(e) => toggleKey(entry.dedupeKey, e.target.checked)}
                     style={{ padding: '4px 0' }}
                   >
                     <Space orientation="vertical" size={0}>
@@ -308,12 +333,18 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
                         <Typography.Text type={isExisting ? 'secondary' : undefined}>
                           {entry.context.name}
                         </Typography.Text>
+                        {entry.originLabels.length > 1 ? (
+                          <Tag color="processing">Merged</Tag>
+                        ) : null}
                         {isExisting ? (
                           <Tag color="default">Already added</Tag>
                         ) : null}
                       </Space>
                       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        {entry.context.clusterName} · {entry.originLabel}
+                        {entry.context.clusterName}
+                        {entry.context.server ? ` · ${entry.context.server}` : ''}
+                        {' · '}
+                        {origins}
                         {isExisting ? ` · matches "${entry.existingCluster!.customName}"` : ''}
                       </Typography.Text>
                     </Space>

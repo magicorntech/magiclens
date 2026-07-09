@@ -1,16 +1,10 @@
 import { Button, Dropdown, Modal, Space, Tooltip, message } from 'antd'
 import type { MenuProps } from 'antd'
-import {
-  DeleteOutlined,
-  EditOutlined,
-  MoreOutlined,
-  PlayCircleOutlined,
-  ReloadOutlined,
-  ScissorOutlined
-} from '@ant-design/icons'
+import { MoreHorizontal, Pencil, PlayCircle, RefreshCw, Scissors, Trash2 } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
-import type { WorkloadKind } from '@shared/types/workload'
+import type { WorkloadKind, WorkloadActionId } from '@shared/types/workload'
 import { actionRequiresPermission } from '@shared/workloadActions'
 import { useResourcePermissions } from '../../queries/useMetricsRange'
 import { useClusterStore } from '../../stores/clusterStore'
@@ -31,10 +25,10 @@ function removeById(data: ListResponse | undefined, id: string): ListResponse | 
 const QUICK_ACTIONS = new Set(['scale', 'restart'])
 
 const actionIcons: Partial<Record<string, React.ReactNode>> = {
-  scale: <ScissorOutlined />,
-  restart: <ReloadOutlined />,
-  resume: <PlayCircleOutlined />,
-  resumeRollout: <PlayCircleOutlined />
+  scale: <Icon icon={Scissors} variant="detail" />,
+  restart: <Icon icon={RefreshCw} variant="detail" />,
+  resume: <Icon icon={PlayCircle} variant="detail" />,
+  resumeRollout: <Icon icon={PlayCircle} variant="detail" />
 }
 
 interface WorkloadResourceRowActionsProps {
@@ -78,28 +72,18 @@ export function WorkloadResourceRowActions({
     (permissions?.canGet ?? true) && ((permissions?.canUpdate ?? true) || (permissions?.canPatch ?? true))
   const canDelete = permissions?.canDelete ?? true
 
-  async function openEditor(): Promise<void> {
+  function openEditor(): void {
     if (!canEdit) return
-    const hideLoading = message.loading(`Loading ${name}...`, 0)
-    try {
-      const res = await window.api.resource.getManifest({ clusterId, namespace, name, target })
-      if ('error' in res) {
-        message.error(`Failed to load manifest: ${res.error}`)
-        return
-      }
-      openYamlEditor({
-        title: `Edit: ${name}`,
-        clusterId,
-        mode: 'edit',
-        target,
-        namespace,
-        name,
-        initialYaml: res.yaml,
-        listQueryKey
-      })
-    } finally {
-      hideLoading()
-    }
+    openYamlEditor({
+      title: `Edit: ${name}`,
+      clusterId,
+      mode: 'edit',
+      target,
+      namespace,
+      name,
+      initialYaml: '',
+      listQueryKey
+    })
   }
 
   async function handleDelete(): Promise<void> {
@@ -142,9 +126,8 @@ export function WorkloadResourceRowActions({
         ) : (
           <Tooltip title="You don't have permission to update this resource">Edit YAML</Tooltip>
         ),
-        icon: <EditOutlined />,
-        disabled: !canEdit,
-        onClick: () => openEditor()
+        icon: <Icon icon={Pencil} variant="detail" />,
+        disabled: !canEdit
       })
       return items
     }
@@ -156,10 +139,9 @@ export function WorkloadResourceRowActions({
         ) : (
           <Tooltip title="You don't have permission to delete this resource">{def.label}</Tooltip>
         ),
-        icon: <DeleteOutlined />,
+        icon: <Icon icon={Trash2} variant="detail" />,
         danger: true,
-        disabled: !canDelete,
-        onClick: confirmDelete
+        disabled: !canDelete
       })
       return items
     }
@@ -174,11 +156,16 @@ export function WorkloadResourceRowActions({
       ),
       icon: actionIcons[def.id],
       danger: def.danger,
-      disabled: !allowed,
-      onClick: () => void workload.handleAction(def.id)
+      disabled: !allowed
     })
     return items
   })
+
+  function handleMenuClick({ key }: { key: string }): void {
+    if (key === 'editYaml') openEditor()
+    else if (key === 'delete') confirmDelete()
+    else void workload.handleAction(key as WorkloadActionId)
+  }
 
   const quickActions = workload.visibleActions.filter((a) => QUICK_ACTIONS.has(a.id) && workload.isActionAllowed(a.id))
 
@@ -200,8 +187,8 @@ export function WorkloadResourceRowActions({
           ))}
         </Space>
       ) : null}
-      <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-        <Button size="small" icon={<MoreOutlined />} />
+      <Dropdown menu={{ items: menuItems, onClick: handleMenuClick }} trigger={['click']} placement="bottomRight">
+        <Button size="small" icon={<Icon icon={MoreHorizontal} variant="detail" />} />
       </Dropdown>
       <WorkloadActionModals clusterId={clusterId} kind={kind} namespace={namespace} name={name} workload={workload} />
     </>

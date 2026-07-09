@@ -1,5 +1,5 @@
 import { Button, Descriptions, Tabs, Tag, Typography, theme } from 'antd'
-import { CloseOutlined } from '@ant-design/icons'
+import { X } from 'lucide-react'
 import type { ColumnsType } from 'antd/es/table'
 import type { ResourceKind } from '@shared/resourceKinds'
 import { isPodDetailData } from '@shared/types/pod'
@@ -24,13 +24,14 @@ import { LoadingState } from './EmptyErrorStates'
 import { WorkloadDetailToolbar } from '../Workload/WorkloadDetailToolbar'
 import { isWorkloadKind } from '@shared/types/workload'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { Icon } from '../ui/Icon'
 
 interface ResourceDetailPanelProps {
   clusterId: string
   kind: ResourceKind
   item: ResourceListItem
   isActive: boolean
-  layout?: 'sidebar' | 'bottom'
+  layout?: 'sidebar' | 'bottom' | 'drawer'
   listQueryKey?: unknown[]
   onClose: () => void
 }
@@ -291,34 +292,24 @@ export function ResourceDetailPanel({
 
   return (
     <div
+      className={`ml-resource-detail${layout === 'drawer' ? ' ml-resource-detail--drawer' : ''}${layout === 'sidebar' ? ' ml-resource-detail--sidebar' : ''}`}
       style={{
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        minHeight: 0,
-        background: token.colorBgContainer,
-        borderLeft: layout === 'sidebar' ? `1px solid ${token.colorBorderSecondary}` : undefined
+        minHeight: 0
       }}
     >
-      <div
-        style={{
-          flexShrink: 0,
-          padding: '12px 16px',
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}
-      >
+      <div className="ml-resource-detail-header">
         <div>
-          <Typography.Text strong>{item.name}</Typography.Text>
+          <Typography.Text strong style={{ fontSize: 15 }}>{item.name}</Typography.Text>
           {item.namespace ? (
-            <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
+            <Typography.Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
               {item.namespace}
             </Typography.Text>
           ) : null}
         </div>
-        <Button type="text" size="small" icon={<CloseOutlined />} onClick={onClose} />
+        <Button type="text" size="small" icon={<Icon icon={X} variant="action" />} onClick={onClose} />
       </div>
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {isWorkloadKind(kind) && listQueryKey ? (

@@ -1,5 +1,6 @@
 import { Avatar } from 'antd'
-import { ClusterOutlined } from '@ant-design/icons'
+import { Layers } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 
 interface ClusterAvatarProps {
   logoUrl?: string
@@ -11,10 +12,10 @@ export function ClusterAvatar({ logoUrl, name, size = 32 }: ClusterAvatarProps):
   if (logoUrl) {
     return <Avatar src={logoUrl} size={size} shape="square" />
   }
-  const initial = name.trim().charAt(0).toUpperCase() || <ClusterOutlined />
+  const initial = name.trim().charAt(0).toUpperCase()
   return (
     <Avatar size={size} shape="square" style={{ backgroundColor: 'var(--ml-primary)' }}>
-      {initial}
+      {initial || <Icon icon={Layers} size={size * 0.45} />}
     </Avatar>
   )
 }

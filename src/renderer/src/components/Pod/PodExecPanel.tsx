@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Select, Space, Tag } from 'antd'
-import { ReloadOutlined } from '@ant-design/icons'
+import { RefreshCw } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
@@ -134,7 +135,7 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
           />
         )}
         {statusTag}
-        <Button size="small" icon={<ReloadOutlined />} onClick={() => setRestartToken((t) => t + 1)}>
+        <Button size="small" icon={<Icon icon={RefreshCw} variant="detail" />} onClick={() => setRestartToken((t) => t + 1)}>
           Restart session
         </Button>
       </Space>

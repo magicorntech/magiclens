@@ -1,14 +1,7 @@
 import { useState } from 'react'
 import { Button, List, Popconfirm, Space, Tag, Tooltip, Typography } from 'antd'
-import {
-  CheckCircleOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  ExportOutlined,
-  ReloadOutlined,
-  StarFilled,
-  StarOutlined
-} from '@ant-design/icons'
+import { CheckCircle2, ExternalLink, Pencil, RefreshCw, Star, Trash2 } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import type { ClusterEntry } from '../../stores/clusterStore'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useResourceList } from '../../queries/useResourceList'
@@ -53,7 +46,7 @@ export function ClusterListRow({ cluster, searchQuery, onEdit }: ClusterListRowP
         <Space orientation="vertical" size={4} align="end" style={{ minWidth: 220 }}>
           <ConnectionStatusBadge status={cluster.status} errorMessage={cluster.errorMessage} />
           <Space wrap size={4}>
-            {cluster.serverVersion && <Tag icon={<CheckCircleOutlined />}>{cluster.serverVersion}</Tag>}
+            {cluster.serverVersion && <Tag icon={<Icon icon={CheckCircle2} variant="micro" />}>{cluster.serverVersion}</Tag>}
             {cluster.namespaces && <Tag>{cluster.namespaces.length} namespaces</Tag>}
             {nodeCount !== undefined && <Tag>{nodeCount} nodes</Tag>}
           </Space>
@@ -68,18 +61,25 @@ export function ClusterListRow({ cluster, searchQuery, onEdit }: ClusterListRowP
         <Tooltip title={cluster.isFavorite ? 'Unfavorite' : 'Favorite'} key="fav">
           <Button
             type="text"
-            icon={cluster.isFavorite ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
+            icon={
+              <Icon
+                icon={Star}
+                size={14}
+                fill={cluster.isFavorite ? '#faad14' : 'none'}
+                color={cluster.isFavorite ? '#faad14' : undefined}
+              />
+            }
             onClick={() => toggleFavorite(cluster.id)}
           />
         </Tooltip>,
         <Tooltip title="Edit" key="edit">
-          <Button type="text" icon={<EditOutlined />} onClick={() => onEdit(cluster)} />
+          <Button type="text" icon={<Icon icon={Pencil} variant="detail" />} onClick={() => onEdit(cluster)} />
         </Tooltip>,
         <Tooltip title="Test connection" key="test">
-          <Button type="text" icon={<ReloadOutlined />} loading={testing} onClick={handleTestConnection} />
+          <Button type="text" icon={<Icon icon={RefreshCw} variant="detail" />} loading={testing} onClick={handleTestConnection} />
         </Tooltip>,
         <Tooltip title="Open dashboard" key="open">
-          <Button type="text" icon={<ExportOutlined />} onClick={() => openClusterTab(cluster.id)} />
+          <Button type="text" icon={<Icon icon={ExternalLink} variant="detail" />} onClick={() => openClusterTab(cluster.id)} />
         </Tooltip>,
         <Popconfirm
           key="delete"
@@ -89,7 +89,7 @@ export function ClusterListRow({ cluster, searchQuery, onEdit }: ClusterListRowP
           okText="Remove"
           okButtonProps={{ danger: true }}
         >
-          <Button type="text" danger icon={<DeleteOutlined />} />
+          <Button type="text" danger icon={<Icon icon={Trash2} variant="detail" />} />
         </Popconfirm>
       ]}
     >

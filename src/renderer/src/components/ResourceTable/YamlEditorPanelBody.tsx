@@ -1,14 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Spin, message } from 'antd'
 import { useQueryClient } from '@tanstack/react-query'
-import { Button, Space, Typography, message } from 'antd'
-import { SaveOutlined, SearchOutlined } from '@ant-design/icons'
-import CodeMirror from '@uiw/react-codemirror'
-import type { EditorView } from '@codemirror/view'
-import { yaml as yamlLang } from '@codemirror/lang-yaml'
-import { openSearchPanel, search } from '@codemirror/search'
-import { githubDark, githubLight } from '@uiw/codemirror-theme-github'
-import { useResolvedDarkMode } from '../../stores/useResolvedDarkMode'
 import type { YamlTabState } from '../Layout/BottomPanelContext'
+import { YamlMonacoEditor } from '../Editor/YamlMonacoEditor'
 
 interface YamlEditorPanelBodyProps {
   tab: YamlTabState
@@ -17,17 +11,67 @@ interface YamlEditorPanelBodyProps {
 
 export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): React.JSX.Element {
   const queryClient = useQueryClient()
-  const isDark = useResolvedDarkMode()
   const [value, setValue] = useState(tab.initialYaml)
+  const [loading, setLoading] = useState(tab.mode === 'edit')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const viewRef = useRef<EditorView | null>(null)
 
-  function handleSearch(): void {
-    if (viewRef.current) openSearchPanel(viewRef.current)
-  }
+  useEffect(() => {
+    setValue(tab.initialYaml)
+    setError(null)
+
+    if (tab.mode !== 'edit' || !tab.target || !tab.name) {
+      setLoading(false)
+      return
+    }
+
+    const resourceName = tab.name
+    let cancelled = false
+    setLoading(true)
+
+    void (async () => {
+      try {
+        const res = await window.api.resource.getManifest({
+          clusterId: tab.clusterId,
+          namespace: tab.namespace,
+          name: resourceName,
+          target: tab.target!
+        })
+        if (cancelled) return
+        if ('error' in res) {
+          setError(res.error)
+          message.error(`Failed to load manifest: ${res.error}`)
+          return
+        }
+        if (res.yaml?.trim()) {
+          setValue(res.yaml)
+        }
+      } catch (err) {
+        if (cancelled) return
+        const msg = err instanceof Error ? err.message : String(err)
+        setError(msg)
+        message.error(`Failed to load manifest: ${msg}`)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [tab.id, tab.mode, tab.clusterId, tab.namespace, tab.name, tab.target, tab.initialYaml])
+
+  const resourceLabel =
+    tab.mode === 'create'
+      ? tab.title
+      : `${tab.name ?? 'resource'}${tab.namespace ? ` · ${tab.namespace}` : ''}`
 
   async function handleSave(): Promise<void> {
+    if (!value.trim()) {
+      setError('Manifest is empty')
+      return
+    }
+
     setSaving(true)
     setError(null)
     try {
@@ -57,50 +101,26 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
     }
   }
 
+  if (loading) {
+    return (
+      <div className="ml-yaml-editor-loading">
+        <Spin tip="Loading manifest…" />
+      </div>
+    )
+  }
+
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div
-        style={{
-          flexShrink: 0,
-          padding: '6px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          borderBottom: '1px solid var(--ml-border-secondary)'
-        }}
-      >
-        <Typography.Text style={{ color: 'var(--ml-text-secondary)', fontSize: 12 }} ellipsis>
-          {tab.mode === 'create' ? 'New resource' : `Editing ${tab.name}${tab.namespace ? ` — ${tab.namespace}` : ''}`}
-        </Typography.Text>
-        <Space>
-          {error && (
-            <Typography.Text type="danger" style={{ fontSize: 12, maxWidth: 420 }} ellipsis={{ tooltip: error }}>
-              {error}
-            </Typography.Text>
-          )}
-          <Button size="small" icon={<SearchOutlined />} onClick={handleSearch}>
-            Search
-          </Button>
-          <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>
-            {tab.mode === 'create' ? 'Create' : 'Save'}
-          </Button>
-        </Space>
-      </div>
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <CodeMirror
-          value={value}
-          height="100%"
-          style={{ height: '100%' }}
-          theme={isDark ? githubDark : githubLight}
-          extensions={[yamlLang(), search({ top: true })]}
-          onChange={setValue}
-          onCreateEditor={(view) => {
-            viewRef.current = view
-          }}
-          basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: true }}
-        />
-      </div>
+    <div className="ml-yaml-editor-body">
+      <YamlMonacoEditor
+        key={tab.id}
+        value={value}
+        onChange={setValue}
+        mode={tab.mode}
+        resourceLabel={resourceLabel}
+        saving={saving}
+        error={error}
+        onSave={() => void handleSave()}
+      />
     </div>
   )
 }

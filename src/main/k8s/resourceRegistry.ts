@@ -36,6 +36,56 @@ function baseMeta(obj: { metadata?: V1ObjectMeta }) {
   }
 }
 
+function ownerKind(obj: { metadata?: V1ObjectMeta }): string {
+  const owner = obj.metadata?.ownerReferences?.[0]
+  if (!owner) return '-'
+  return owner.kind
+}
+
+function ownerReference(obj: { metadata?: V1ObjectMeta }): string {
+  const owner = obj.metadata?.ownerReferences?.[0]
+  if (!owner) return '-'
+  return `${owner.kind}/${owner.name}`
+}
+
+function nodeRoles(labels: Record<string, string> | undefined): string {
+  if (!labels) return 'worker'
+  const roles = Object.keys(labels)
+    .filter((key) => key.startsWith('node-role.kubernetes.io/'))
+    .map((key) => key.replace('node-role.kubernetes.io/', ''))
+  return roles.length > 0 ? roles.join(', ') : 'worker'
+}
+
+function podContainerStatuses(pod: {
+  status?: {
+    initContainerStatuses?: Array<{
+      ready?: boolean
+      state?: { waiting?: unknown; running?: unknown; terminated?: unknown }
+    }>
+    containerStatuses?: Array<{
+      ready?: boolean
+      state?: { waiting?: unknown; running?: unknown; terminated?: unknown }
+    }>
+  }
+}): string {
+  const toDot = (
+    status: { ready?: boolean; state?: { waiting?: unknown; running?: unknown; terminated?: unknown } },
+    init: boolean
+  ) => ({
+    ready: status.ready ?? false,
+    waiting: !!status.state?.waiting,
+    running: !!status.state?.running,
+    terminated: !!status.state?.terminated,
+    init
+  })
+
+  const dots = [
+    ...(pod.status?.initContainerStatuses ?? []).map((s) => toDot(s, true)),
+    ...(pod.status?.containerStatuses ?? []).map((s) => toDot(s, false))
+  ]
+  return JSON.stringify(dots)
+}
+
 function defineKind<T>(
   gvk: ResourceGvk,
   listRaw: (clients: ClusterClients, namespace: string | 'ALL') => Promise<RawList<T>>,
@@ -65,7 +115,7 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
         statusText: isReady ? 'Ready' : 'NotReady',
         statusColor: isReady ? 'green' : 'red',
         columns: {
-          roles: node.metadata?.labels?.['kubernetes.io/role'] ?? 'worker',
+          roles: nodeRoles(node.metadata?.labels),
           version: node.status?.nodeInfo?.kubeletVersion ?? '-'
         }
       }
@@ -102,9 +152,12 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
         statusColor: status.statusColor,
         statusDetail: status.statusDetail,
         columns: {
+          containers: podContainerStatuses(pod),
           ready: `${readyCount}/${containers.length}`,
           restarts: String(restarts),
-          node: pod.spec?.nodeName ?? '-'
+          controlledBy: ownerKind(pod),
+          node: pod.spec?.nodeName ?? '-',
+          qos: pod.status?.qosClass ?? '-'
         }
       }
     }
@@ -123,7 +176,7 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
         ...baseMeta(dep),
         statusText: ready === desired && desired > 0 ? 'Available' : 'Progressing',
         statusColor: ready === desired && desired > 0 ? 'green' : 'gold',
-        columns: { ready: `${ready}/${desired}` }
+        columns: { ready: `${ready}/${desired}`, controlledBy: ownerReference(dep) }
       }
     }
   ),
@@ -141,7 +194,7 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
         ...baseMeta(sts),
         statusText: ready === desired && desired > 0 ? 'Available' : 'Progressing',
         statusColor: ready === desired && desired > 0 ? 'green' : 'gold',
-        columns: { ready: `${ready}/${desired}` }
+        columns: { ready: `${ready}/${desired}`, controlledBy: ownerReference(sts) }
       }
     }
   ),
@@ -159,7 +212,7 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
         ...baseMeta(ds),
         statusText: ready === desired && desired > 0 ? 'Available' : 'Progressing',
         statusColor: ready === desired && desired > 0 ? 'green' : 'gold',
-        columns: { ready: `${ready}/${desired}` }
+        columns: { ready: `${ready}/${desired}`, controlledBy: ownerReference(ds) }
       }
     }
   ),
@@ -177,7 +230,7 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
         ...baseMeta(rs),
         statusText: ready === desired && desired > 0 ? 'Available' : 'Progressing',
         statusColor: ready === desired && desired > 0 ? 'green' : 'gold',
-        columns: { ready: `${ready}/${desired}` }
+        columns: { ready: `${ready}/${desired}`, controlledBy: ownerReference(rs) }
       }
     }
   ),
@@ -195,7 +248,7 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
         ...baseMeta(rc),
         statusText: ready === desired && desired > 0 ? 'Available' : 'Progressing',
         statusColor: ready === desired && desired > 0 ? 'green' : 'gold',
-        columns: { ready: `${ready}/${desired}` }
+        columns: { ready: `${ready}/${desired}`, controlledBy: ownerReference(rc) }
       }
     }
   ),

@@ -1,25 +1,64 @@
-import { Layout } from 'antd'
+import { useState } from 'react'
+import { Drawer, Layout } from 'antd'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useResponsiveLayoutEffects } from '../../hooks/useResponsiveLayoutEffects'
+import { usesOverlayNavigation, useLayoutMode } from '../../hooks/useLayoutMode'
 import { ClusterListPage } from '../../pages/ClusterListPage'
 import { ClusterTabBar } from '../ClusterTabs/ClusterTabBar'
+import { AddClusterModal } from '../ClusterTabs/AddClusterModal'
 import { LeftSidebar } from './LeftSidebar'
+import { MobileAppBar } from './MobileAppBar'
+import { AppTopBar } from './AppTopBar'
 
 export function AppLayout(): React.JSX.Element {
   const activeView = useClusterStore((s) => s.activeView)
+  const addClusterModalOpen = useClusterStore((s) => s.addClusterModalOpen)
+  const setAddClusterModalOpen = useClusterStore((s) => s.setAddClusterModalOpen)
+  const layoutMode = useLayoutMode()
+  const overlayNav = usesOverlayNavigation(layoutMode)
+  const [navOpen, setNavOpen] = useState(false)
+
+  useResponsiveLayoutEffects()
+
+  const mainContent = (
+    <div className="app-layout-content">
+      <div className="app-layout-content-inner">
+        {activeView === 'clusters' ? <ClusterListPage /> : <ClusterTabBar />}
+      </div>
+    </div>
+  )
+
+  if (overlayNav) {
+    return (
+      <Layout className="app-layout app-layout--overlay-nav">
+        <MobileAppBar onMenuClick={() => setNavOpen(true)} />
+        <div className="app-layout-main">
+          {mainContent}
+        </div>
+        <Drawer
+          title={null}
+          placement="left"
+          open={navOpen}
+          onClose={() => setNavOpen(false)}
+          width={280}
+          className="mobile-nav-drawer"
+          styles={{ body: { padding: 0, height: '100%' } }}
+        >
+          <LeftSidebar variant="drawer" onNavigate={() => setNavOpen(false)} />
+        </Drawer>
+        <AddClusterModal open={addClusterModalOpen} onClose={() => setAddClusterModalOpen(false)} />
+      </Layout>
+    )
+  }
 
   return (
-    <Layout style={{ height: '100vh', flexDirection: 'row' }}>
-      <LeftSidebar />
-      {/* position:relative + an absolutely-filled child gives a hard-guaranteed viewport size
-          that never grows with content, regardless of how percentage-height/flex propagates
-          through the nested antd Layout/Tabs tree beneath it. Scrolling then happens strictly
-          inside that fixed box (ClusterListPage / AppShell's own Content), so the sidebar,
-          cluster tab bar, and per-cluster header never move when a resource table scrolls. */}
-      <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          {activeView === 'clusters' ? <ClusterListPage /> : <ClusterTabBar />}
-        </div>
+    <Layout className="app-layout">
+      <AppTopBar />
+      <div className="app-layout-body">
+        <LeftSidebar />
+        {mainContent}
       </div>
+      <AddClusterModal open={addClusterModalOpen} onClose={() => setAddClusterModalOpen(false)} />
     </Layout>
   )
 }

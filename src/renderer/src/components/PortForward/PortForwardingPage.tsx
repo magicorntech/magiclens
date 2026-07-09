@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Button, Empty, Space, Tag, Tooltip, Typography, message } from 'antd'
-import { LinkOutlined, StopOutlined } from '@ant-design/icons'
+import { Link, Square } from 'lucide-react'
 import type { ColumnsType } from 'antd/es/table'
 import type { PortForwardSession } from '@shared/types/portForward'
 import { usePortForwards } from '../../queries/usePortForwards'
 import { useQueryClient } from '@tanstack/react-query'
-import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { Icon } from '../ui/Icon'
 import { ResizableTable } from '../../utils/ResizableTable'
 
 interface PortForwardingPageProps {
@@ -56,14 +56,14 @@ export function PortForwardingPage({ clusterId }: PortForwardingPageProps): Reac
           <Tooltip title={`Open http://localhost:${s.localPort}`}>
             <Button
               size="small"
-              icon={<LinkOutlined />}
+              icon={<Icon icon={Link} variant="detail" />}
               onClick={() => window.open(`http://localhost:${s.localPort}`, '_blank')}
             />
           </Tooltip>
           <Button
             size="small"
             danger
-            icon={<StopOutlined />}
+            icon={<Icon icon={Square} variant="detail" />}
             loading={stoppingId === s.id}
             onClick={() => handleStop(s.id)}
           >
@@ -74,8 +74,6 @@ export function PortForwardingPage({ clusterId }: PortForwardingPageProps): Reac
     }
   ]
 
-  if (isLoading) return <LoadingState />
-
   const sessions = data?.sessions ?? []
 
   return (
@@ -83,7 +81,7 @@ export function PortForwardingPage({ clusterId }: PortForwardingPageProps): Reac
       <Typography.Title level={4} style={{ marginTop: 0 }}>
         Port Forwarding
       </Typography.Title>
-      {sessions.length === 0 ? (
+      {!isLoading && sessions.length === 0 ? (
         <Empty
           description="No active port forwards. Start one from a Pod's Network tab or a Service's Port Forward tab."
           style={{ marginTop: 48 }}
@@ -94,6 +92,7 @@ export function PortForwardingPage({ clusterId }: PortForwardingPageProps): Reac
           rowKey="id"
           columns={columns}
           dataSource={sessions}
+          loading={isLoading}
           pagination={false}
           size="middle"
         />

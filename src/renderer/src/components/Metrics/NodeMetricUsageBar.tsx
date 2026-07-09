@@ -1,20 +1,22 @@
 import { useState } from 'react'
-import { Popover, Progress, Typography } from 'antd'
+import { Popover } from 'antd'
 import { DEFAULT_METRICS_TIME_RANGE, type MetricsTimeRange } from '@shared/metricsTimeRange'
 import { useNodeMetricsRange } from '../../queries/useMetricsRange'
 import { nodeResourcePercent } from '../../format'
 import { MetricsHistoryPopoverContent } from './MetricsHistoryPopoverContent'
+import { ProgressBar } from '../ui/ProgressBar'
 
 interface NodeMetricUsageBarProps {
   usage?: number
   allocatable: number
   capacity: number
   formatValue: (value: number) => string
-  compact?: boolean
+  label?: string
   clusterId?: string
   nodeName?: string
   metric?: 'cpu' | 'memory'
   isActive?: boolean
+  variant?: 'default' | 'table'
 }
 
 export function NodeMetricUsageBar({
@@ -22,11 +24,12 @@ export function NodeMetricUsageBar({
   allocatable,
   capacity,
   formatValue,
-  compact = false,
+  label,
   clusterId,
   nodeName,
   metric,
-  isActive = false
+  isActive = false,
+  variant = 'default'
 }: NodeMetricUsageBarProps): React.JSX.Element {
   const [timeRange, setTimeRange] = useState<MetricsTimeRange>(DEFAULT_METRICS_TIME_RANGE)
   const [open, setOpen] = useState(false)
@@ -41,21 +44,24 @@ export function NodeMetricUsageBar({
   const total = allocatable > 0 ? allocatable : capacity
   const percent = nodeResourcePercent(usage, allocatable, capacity)
 
-  const bar = (
-    <div style={{ minWidth: compact ? 150 : undefined }}>
-      {percent !== undefined ? (
-        <Progress
-          percent={percent}
-          size={compact ? 'small' : 'default'}
-          format={(p) => `${p}%`}
-          status={percent >= 90 ? 'exception' : undefined}
-        />
-      ) : null}
-      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-        {usage !== undefined ? `${formatValue(usage)} / ${formatValue(total)}` : '-'}
-      </Typography.Text>
-    </div>
-  )
+  const bar =
+    variant === 'table' ? (
+      <div className="ml-node-metric-cell ml-node-metric-cell--table">
+        <ProgressBar label="" percent={percent} accent={metric === 'memory' ? '#6366f1' : 'var(--ml-primary)'} size="sm" />
+        <span className="ml-node-metric-cell-pct">{percent !== undefined ? `${Math.round(percent)}%` : '—'}</span>
+        <span className="ml-node-metric-cell-detail">
+          {usage !== undefined ? `${formatValue(usage)} / ${formatValue(total)}` : '—'}
+        </span>
+      </div>
+    ) : (
+      <ProgressBar
+        size="sm"
+        label={label ?? ''}
+        percent={percent}
+        detail={usage !== undefined ? `${formatValue(usage)} / ${formatValue(total)}` : '—'}
+        accent={metric === 'memory' ? '#6366f1' : 'var(--ml-primary)'}
+      />
+    )
 
   if (!showHistory) return bar
 
@@ -80,7 +86,7 @@ export function NodeMetricUsageBar({
         />
       }
     >
-      <div style={{ cursor: 'default' }} onClick={(e) => e.stopPropagation()}>
+      <div className="ml-node-metric-cell-wrap" onClick={(e) => e.stopPropagation()}>
         {bar}
       </div>
     </Popover>

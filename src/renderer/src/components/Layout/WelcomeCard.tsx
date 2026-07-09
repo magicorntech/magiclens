@@ -1,5 +1,6 @@
 import { Button, Modal, Space, Typography } from 'antd'
-import { ApiOutlined, ClusterOutlined, CodeOutlined, ContainerOutlined, DashboardOutlined } from '@ant-design/icons'
+import { Box, Cable, LayoutDashboard, Layers, Terminal } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import logo from '../../assets/logo.png'
 
 interface WelcomeCardProps {
@@ -9,27 +10,27 @@ interface WelcomeCardProps {
 
 const features: { icon: React.ReactNode; title: string; description: string }[] = [
   {
-    icon: <ClusterOutlined />,
+    icon: <Icon icon={Layers} variant="default" />,
     title: 'Multi-cluster management',
     description: 'Add clusters from kubeconfig files or folders and switch between them instantly.'
   },
   {
-    icon: <ContainerOutlined />,
+    icon: <Icon icon={Box} variant="default" />,
     title: 'Full resource explorer',
     description: 'Browse Workloads, Config, Network, Storage and Cluster resources in one organized sidebar.'
   },
   {
-    icon: <DashboardOutlined />,
+    icon: <Icon icon={LayoutDashboard} variant="default" />,
     title: 'Live metrics',
     description: 'See cluster-wide and per-node CPU/memory usage, plus live pod metrics.'
   },
   {
-    icon: <CodeOutlined />,
+    icon: <Icon icon={Terminal} variant="default" />,
     title: 'Logs, exec & terminal',
     description: 'Tail and download pod logs, exec into containers, or open local terminal tabs at the bottom.'
   },
   {
-    icon: <ApiOutlined />,
+    icon: <Icon icon={Cable} variant="default" />,
     title: 'Port forwarding',
     description: 'Forward a Pod or Service to a local port and jump straight into the browser.'
   }
@@ -57,7 +58,7 @@ export function WelcomeCard({ open, onClose }: WelcomeCardProps): React.JSX.Elem
       <Space direction="vertical" size={16} style={{ width: '100%', marginBottom: 24 }}>
         {features.map((feature) => (
           <div key={feature.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <div style={{ fontSize: 20, color: 'var(--ml-primary)', marginTop: 2 }}>{feature.icon}</div>
+            <div style={{ color: 'var(--ml-primary)', marginTop: 2 }}>{feature.icon}</div>
             <div>
               <Typography.Text strong>{feature.title}</Typography.Text>
               <div>

@@ -1,7 +1,7 @@
 import type { ReactNode, RefObject } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Button, Layout, Space, Splitter, Tag, theme, Typography } from 'antd'
-import { CodeOutlined } from '@ant-design/icons'
+import { Drawer, Layout, Splitter } from 'antd'
+import { Menu, Terminal } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ClusterEntry } from '../../stores/clusterStore'
 import { useClusterStore } from '../../stores/clusterStore'
@@ -10,6 +10,11 @@ import { ResourceMenu } from './ResourceMenu'
 import { NamespaceSelector } from './NamespaceSelector'
 import { BottomPanel } from './BottomPanel'
 import { BottomPanelProvider, useBottomPanel } from './BottomPanelContext'
+import { usesOverlayNavigation, useLayoutMode } from '../../hooks/useLayoutMode'
+import { Icon } from '../ui/Icon'
+import { StatusBadge } from '../ui/StatusBadge'
+import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
+import { useResourceWatchDisplayStore } from '../../stores/resourceWatchDisplayStore'
 
 const TERMINAL_LABEL_MIN_WIDTH = 480
 
@@ -26,10 +31,12 @@ function useCompactToolbar(ref: RefObject<HTMLElement | null>): boolean {
   }, [ref])
   return compact
 }
-const { Header, Sider, Content } = Layout
+
+const { Sider, Content } = Layout
 
 interface AppShellProps {
   cluster: ClusterEntry
+  splitPane?: 'left' | 'right'
   onNamespaceChange: (namespace: string) => void
   onSelectKind: (kind: ResourceKind) => void
   selectedVirtualPage: VirtualPageKey | null
@@ -47,19 +54,23 @@ export function AppShell(props: AppShellProps): React.JSX.Element {
 
 function AppShellInner({
   cluster,
+  splitPane,
   onNamespaceChange,
   onSelectKind,
   selectedVirtualPage,
   onSelectVirtualPage,
   children
 }: AppShellProps): React.JSX.Element {
-  const { token } = theme.useToken()
+  const layoutMode = useLayoutMode()
+  const overlayResourceNav = usesOverlayNavigation(layoutMode)
   const resourceMenuCollapsed = useClusterStore((s) => s.resourceMenuCollapsed)
   const setResourceMenuCollapsed = useClusterStore((s) => s.setResourceMenuCollapsed)
   const splitView = useClusterStore((s) => s.splitView)
   const headerInnerRef = useRef<HTMLDivElement>(null)
   const compactToolbar = useCompactToolbar(headerInnerRef)
   const { tabs, addTerminalTab, setActiveTab } = useBottomPanel()
+  const [resourceNavOpen, setResourceNavOpen] = useState(false)
+  const resourceWatchDisplay = useResourceWatchDisplayStore((s) => s.byCluster[cluster.id])
 
   const hasTerminalTab = tabs.some((t) => t.kind === 'terminal')
 
@@ -69,84 +80,84 @@ function AppShellInner({
     else addTerminalTab()
   }
 
+  function handleSelectKind(kind: ResourceKind): void {
+    onSelectKind(kind)
+    setResourceNavOpen(false)
+  }
+
+  function handleSelectVirtualPage(key: VirtualPageKey): void {
+    onSelectVirtualPage(key)
+    setResourceNavOpen(false)
+  }
+
   return (
-    <Layout style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <Header
-        style={{
-          background: token.colorBgContainer,
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          boxShadow: 'var(--ml-shadow-sm)',
-          padding: splitView ? '0 10px' : '0 16px',
-          height: splitView ? 36 : 56,
-          lineHeight: splitView ? '36px' : '56px',
-          flexShrink: 0,
-          zIndex: 1
-        }}
+    <Layout className="ml-app-shell">
+      <header
+        className={`ml-workspace-header${splitView ? ' ml-workspace-header--compact' : ''}${splitPane === 'left' ? ' ml-workspace-header--pane-left' : ''}${splitPane === 'right' ? ' ml-workspace-header--pane-right' : ''}`}
       >
-        <div
-          ref={headerInnerRef}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: splitView ? 'flex-end' : 'space-between',
-            width: '100%',
-            height: '100%'
-          }}
-        >
-        {!splitView && (
-          <Space>
-            <Typography.Text strong>{cluster.customName}</Typography.Text>
-            {cluster.serverVersion && <Tag color="blue">{cluster.serverVersion}</Tag>}
-          </Space>
-        )}
-        <Space size={splitView ? 'small' : 'middle'}>
-          <Button
-            type={hasTerminalTab ? 'primary' : 'default'}
-            size={splitView ? 'small' : 'middle'}
-            icon={<CodeOutlined />}
-            onClick={handleTerminalClick}
-          >
-            {!compactToolbar && 'Terminal'}
-          </Button>
-          <NamespaceSelector clusterId={cluster.id} value={cluster.selectedNamespace} onChange={onNamespaceChange} />
-        </Space>
+        <div ref={headerInnerRef} className="ml-workspace-header-inner">
+          {!splitView && (
+            <div className="ml-workspace-header-leading">
+              {overlayResourceNav && (
+                <button type="button" className="ml-icon-btn" onClick={() => setResourceNavOpen(true)} aria-label="Resources">
+                  <Icon icon={Menu} variant="toolbar" />
+                </button>
+              )}
+              <span className="ml-workspace-cluster-name">{cluster.customName}</span>
+              {!overlayResourceNav && (cluster.serverVersion || (!selectedVirtualPage && resourceWatchDisplay)) && (
+                <div className="ml-workspace-header-meta">
+                  {cluster.serverVersion && <StatusBadge label={cluster.serverVersion} variant="info" size="sm" />}
+                  {!selectedVirtualPage && resourceWatchDisplay && (
+                    <WatchStatusBadge
+                      isError={resourceWatchDisplay.isError}
+                      watchStatus={resourceWatchDisplay.watchStatus}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="ml-workspace-header-actions">
+            <button
+              type="button"
+              className={`ml-btn ml-btn--secondary${hasTerminalTab ? ' ml-btn--active' : ''}`}
+              onClick={handleTerminalClick}
+            >
+              <Icon icon={Terminal} variant="action" />
+              {!compactToolbar && <span>Terminal</span>}
+            </button>
+            <NamespaceSelector clusterId={cluster.id} value={cluster.selectedNamespace} onChange={onNamespaceChange} />
+          </div>
         </div>
-      </Header>
-      <Layout style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <Sider
-          width={220}
-          theme="dark"
-          collapsible
-          collapsed={resourceMenuCollapsed}
-          onCollapse={setResourceMenuCollapsed}
-          collapsedWidth={56}
-          style={{ overflow: 'auto' }}
-        >
-          <ResourceMenu
-            clusterId={cluster.id}
-            selectedKind={cluster.selectedResourceKind}
-            selectedVirtualPage={selectedVirtualPage}
-            onSelect={onSelectKind}
-            onSelectVirtualPage={onSelectVirtualPage}
-          />
-        </Sider>
-        <Content
-          style={{
-            flex: 1,
-            minHeight: 0,
-            minWidth: 0,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            padding: 16,
-            background: token.colorBgLayout
-          }}
-        >
-          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      </header>
+
+      <Layout className="ml-workspace-body">
+        {!overlayResourceNav && (
+          <Sider
+            width={260}
+            collapsible
+            collapsed={resourceMenuCollapsed}
+            onCollapse={setResourceMenuCollapsed}
+            collapsedWidth={56}
+            className="ml-resource-sider"
+            theme="light"
+          >
+            <ResourceMenu
+              clusterId={cluster.id}
+              selectedKind={cluster.selectedResourceKind}
+              selectedVirtualPage={selectedVirtualPage}
+              onSelect={onSelectKind}
+              onSelectVirtualPage={onSelectVirtualPage}
+              collapsed={resourceMenuCollapsed}
+            />
+          </Sider>
+        )}
+        <Content className="ml-workspace-content">
+          <div className="ml-workspace-content-inner">
             {tabs.length > 0 ? (
               <Splitter layout="vertical" style={{ height: '100%' }}>
                 <Splitter.Panel defaultSize="65%" min="25%">
-                  <div style={{ height: '100%', overflow: 'hidden' }}>{children}</div>
+                  <div className="ml-workspace-main">{children}</div>
                 </Splitter.Panel>
                 <Splitter.Panel defaultSize="35%" min="15%" max="75%">
                   <BottomPanel />
@@ -158,6 +169,26 @@ function AppShellInner({
           </div>
         </Content>
       </Layout>
+
+      {overlayResourceNav && (
+        <Drawer
+          title="Resources"
+          placement="left"
+          open={resourceNavOpen}
+          onClose={() => setResourceNavOpen(false)}
+          width={300}
+          className="resource-nav-drawer"
+          styles={{ body: { padding: 0 } }}
+        >
+          <ResourceMenu
+            clusterId={cluster.id}
+            selectedKind={cluster.selectedResourceKind}
+            selectedVirtualPage={selectedVirtualPage}
+            onSelect={handleSelectKind}
+            onSelectVirtualPage={handleSelectVirtualPage}
+          />
+        </Drawer>
+      )}
     </Layout>
   )
 }

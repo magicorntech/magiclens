@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Empty, Input, Modal, Tag, Typography, message } from 'antd'
-import { DeleteOutlined } from '@ant-design/icons'
+import { Trash2 } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmChartSummary } from '@shared/types/helm'
 import { useHelmCharts, useHelmUninstallChart } from '../../queries/useHelm'
-import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { HelmRowActions } from './HelmRowActions'
@@ -89,7 +89,7 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
             {
               key: 'uninstall',
               label: 'Uninstall',
-              icon: <DeleteOutlined />,
+              icon: <Icon icon={Trash2} variant="detail" />,
               danger: true,
               onClick: () => confirmUninstall(chart)
             }
@@ -98,8 +98,6 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
       )
     }
   ]
-
-  if (isLoading) return <LoadingState />
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
@@ -112,8 +110,6 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
       </Typography.Paragraph>
       {error ? (
         <Empty description={error} />
-      ) : charts.length === 0 ? (
-        <Empty description="No Helm charts found in this cluster" />
       ) : (
         <>
           <Input.Search
@@ -123,14 +119,15 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
             allowClear
             style={{ width: 360, marginBottom: 12 }}
           />
-          {filteredCharts.length === 0 ? (
-            <Empty description="No charts match your search" />
+          {!isLoading && filteredCharts.length === 0 ? (
+            <Empty description={charts.length === 0 ? 'No Helm charts found in this cluster' : 'No charts match your search'} />
           ) : (
             <ResizableTable
               tableKey="helm-charts"
               rowKey="id"
               columns={columns}
               dataSource={filteredCharts}
+              loading={isLoading}
               pagination={paginationProps(filteredCharts.length)}
               onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
               size="middle"

@@ -1,4 +1,4 @@
-import { Tag, Tooltip } from 'antd'
+import { StatusBadge, antColorToVariant, statusTextToVariant } from '../ui/StatusBadge'
 
 interface StatusTagProps {
   text: string
@@ -7,7 +7,7 @@ interface StatusTagProps {
 }
 
 export function StatusTag({ text, color, detail }: StatusTagProps): React.JSX.Element {
-  const tag = <Tag color={color}>{text}</Tag>
-  if (!detail) return tag
-  return <Tooltip title={detail}>{tag}</Tooltip>
+  const variant = statusTextToVariant(text)
+  const resolved = variant === 'default' ? antColorToVariant(color) : variant
+  return <StatusBadge label={text} variant={resolved} detail={detail} />
 }
