@@ -1,8 +1,8 @@
 {
   "name": "magiclens",
   "productName": "MagicLens",
-  "version": "0.1.8",
-  "buildNumber": "9",
+  "version": "0.1.9",
+  "buildNumber": "10",
   "description": "A simple, fast Kubernetes cluster manager",
   "main": "./out/main/index.js",
   "author": {
@@ -62,6 +62,7 @@
     "electron-store": "^8.2.0",
     "electron-updater": "^6.3.9",
     "framer-motion": "^12.42.2",
+    "i18next": "^26.3.6",
     "lucide-react": "^1.23.0",
     "monaco-editor": "^0.55.1",
     "monaco-yaml": "^5.5.1",
@@ -70,6 +71,7 @@
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "react-easy-crop": "^6.1.0",
+    "react-i18next": "^17.0.10",
     "react-simple-maps": "^3.0.0",
     "recharts": "^3.9.2",
     "yaml": "^2.6.1",

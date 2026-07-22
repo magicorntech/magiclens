@@ -33,6 +33,7 @@ import { useVpnStore } from '../stores/vpnStore'
 import { useVpnSessionStore } from '../stores/vpnSessionStore'
 import { VpnConnectionPanel } from '../components/Vpn/VpnConnectionPanel'
 import { VpnDottedWorldMap } from '../components/Vpn/VpnDottedWorldMap'
+import { useTranslation } from 'react-i18next'
 import { Icon } from '../components/ui/Icon'
 
 type ProfileDraft = {
@@ -57,12 +58,22 @@ function statusTone(
   return 'idle'
 }
 
-function serverLabel(row: VpnProfileSummary): string {
+function serverLabel(row: VpnProfileSummary, noServerLabel: string): string {
   if (row.serverName && row.serverHost) return `${row.serverName} · ${row.serverHost}`
-  return row.serverHost || row.serverName || 'No server set'
+  return row.serverHost || row.serverName || noServerLabel
+}
+
+function providerOptions(t: (key: string) => string): { value: string; label: string }[] {
+  return [
+    { value: 'openvpn', label: t('vpn.draft.providers.openvpn') },
+    { value: 'pritunl', label: t('vpn.draft.providers.pritunl') },
+    { value: 'wireguard', label: t('vpn.draft.providers.wireguard') },
+    { value: 'generic', label: t('vpn.draft.providers.generic') }
+  ]
 }
 
 export function VpnPage(): React.JSX.Element {
+  const { t } = useTranslation()
   const profiles = useVpnStore((s) => s.profiles)
   const status = useVpnStore((s) => s.status)
   const loading = useVpnStore((s) => s.loading)
@@ -136,8 +147,8 @@ export function VpnPage(): React.JSX.Element {
       setBusyId(row.id)
       try {
         const res = await connect(row.id, { preferExternal })
-        if (res.ok) message.success(preferExternal ? 'Opened in system VPN app' : 'Connected')
-        else message.error(res.error ?? 'Connect failed')
+        if (res.ok) message.success(preferExternal ? t('vpn.openedExternalToast') : t('vpn.connectedToast'))
+        else message.error(res.error ?? t('vpn.connectFailed'))
       } finally {
         setBusyId(null)
       }
@@ -188,18 +199,18 @@ export function VpnPage(): React.JSX.Element {
       {
         key: 'edit',
         icon: <Icon icon={Pencil} variant="detail" />,
-        label: 'Edit profile',
+        label: t('vpn.menu.editProfile'),
         onClick: () => openEdit(row)
       },
       {
         key: 'reveal',
         icon: <Icon icon={FolderOpen} variant="detail" />,
-        label: 'Reveal file',
+        label: t('vpn.menu.revealFile'),
         onClick: () => void reveal(row.id)
       },
       {
         key: 'external',
-        label: 'Open externally',
+        label: t('vpn.menu.openExternally'),
         disabled: !row.hasConfig,
         onClick: () => void openConnect(row, true)
       }
@@ -210,10 +221,10 @@ export function VpnPage(): React.JSX.Element {
         key: 'delete',
         danger: true,
         icon: <Icon icon={Trash2} variant="detail" />,
-        label: 'Delete',
+        label: t('vpn.menu.delete'),
         onClick: async () => {
           await remove(row.id)
-          message.success('Removed')
+          message.success(t('vpn.removedToast'))
         }
       })
     }
@@ -234,10 +245,10 @@ export function VpnPage(): React.JSX.Element {
               <div className="ml-vpn-hero__copy">
                 <div className="ml-vpn-hero__eyebrow">
                   <Icon icon={Network} variant="action" />
-                  <span>Secure tunnel</span>
+                  <span>{t('vpn.heroEyebrow')}</span>
                 </div>
                 <Typography.Title level={2} className="ml-vpn-hero__title">
-                  VPN
+                  {t('vpn.title')}
                 </Typography.Title>
               </div>
 
@@ -246,18 +257,18 @@ export function VpnPage(): React.JSX.Element {
                 <div className="ml-vpn-status-pill__text">
                   <strong>
                     {tone === 'connected'
-                      ? 'Connected'
+                      ? t('vpn.status.connected')
                       : tone === 'connecting'
-                        ? 'Connecting'
+                        ? t('vpn.status.connecting')
                         : tone === 'error'
-                          ? 'Error'
-                          : 'Disconnected'}
+                          ? t('vpn.status.error')
+                          : t('vpn.status.disconnected')}
                   </strong>
                   <span>
                     {status?.message ||
                       (connectedIds.size > 1
-                        ? `${connectedIds.size} tunnels up`
-                        : activeProfile?.name || 'No active profile')}
+                        ? t('vpn.tunnelsUp', { count: connectedIds.size })
+                        : activeProfile?.name || t('vpn.noActiveProfile'))}
                   </span>
                 </div>
                 {anyConnected && (
@@ -267,10 +278,10 @@ export function VpnPage(): React.JSX.Element {
                     icon={<Icon icon={Unplug} variant="action" />}
                     onClick={async () => {
                       await disconnect()
-                      message.success('Disconnected')
+                      message.success(t('vpn.disconnectedToast'))
                     }}
                   >
-                    Disconnect
+                    {t('vpn.disconnect')}
                   </Button>
                 )}
               </div>
@@ -283,8 +294,8 @@ export function VpnPage(): React.JSX.Element {
                 className="ml-vpn-tools-alert"
                 type="info"
                 showIcon
-                message="No VPN tools detected"
-                description="Install OpenVPN (brew install openvpn), Tunnelblick, WireGuard.app, or wireguard-tools."
+                message={t('vpn.noToolsTitle')}
+                description={t('vpn.noToolsDesc')}
               />
             )}
 
@@ -297,12 +308,15 @@ export function VpnPage(): React.JSX.Element {
             <div className="ml-vpn-sidebar__head">
               <div>
                 <Typography.Title level={4} className="ml-vpn-section__title">
-                  VPN profiles
+                  {t('vpn.profilesTitle')}
                 </Typography.Title>
                 <Typography.Text type="secondary" className="ml-vpn-sidebar__count">
                   {profiles.length === 0
-                    ? 'Add a config to get started'
-                    : `${filteredProfiles.length} of ${profiles.length}`}
+                    ? t('vpn.addToStart')
+                    : t('vpn.filteredCount', {
+                        filtered: filteredProfiles.length,
+                        total: profiles.length
+                      })}
                 </Typography.Text>
               </div>
             </div>
@@ -311,7 +325,7 @@ export function VpnPage(): React.JSX.Element {
               allowClear
               className="ml-vpn-sidebar__search"
               prefix={<Icon icon={Search} variant="action" />}
-              placeholder="Search profiles…"
+              placeholder={t('vpn.searchPlaceholder')}
               value={profileQuery}
               onChange={(e) => setProfileQuery(e.target.value)}
             />
@@ -322,19 +336,19 @@ export function VpnPage(): React.JSX.Element {
                 icon={<Icon icon={FilePlus2} variant="action" />}
                 onClick={() => void startAddFromFile()}
               >
-                Add file
+                {t('vpn.addFile')}
               </Button>
               <Button
                 icon={<Icon icon={ClipboardPaste} variant="action" />}
                 onClick={() => setPasteOpen(true)}
               >
-                Paste
+                {t('vpn.paste')}
               </Button>
               <Button
                 icon={<Icon icon={RefreshCw} variant="action" />}
                 onClick={() => void refresh()}
                 loading={loading}
-                aria-label="Refresh"
+                aria-label={t('vpn.refresh')}
               />
             </div>
 
@@ -343,18 +357,14 @@ export function VpnPage(): React.JSX.Element {
                 <div className="ml-vpn-empty">
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={
-                      <span>
-                        Drop in an <strong>.ovpn</strong> or WireGuard <strong>.conf</strong>
-                      </span>
-                    }
+                    description={t('vpn.emptyDesc')}
                   >
                     <Space wrap>
                       <Button type="primary" size="small" onClick={() => void startAddFromFile()}>
-                        Choose file
+                        {t('vpn.chooseFile')}
                       </Button>
                       <Button size="small" onClick={() => setPasteOpen(true)}>
-                        Paste
+                        {t('vpn.paste')}
                       </Button>
                     </Space>
                   </Empty>
@@ -363,7 +373,7 @@ export function VpnPage(): React.JSX.Element {
                 <div className="ml-vpn-empty">
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={`No profiles match “${profileQuery.trim()}”`}
+                    description={t('vpn.noMatch', { query: profileQuery.trim() })}
                   />
                 </div>
               ) : (
@@ -383,10 +393,11 @@ export function VpnPage(): React.JSX.Element {
                             <Typography.Text strong className="ml-vpn-profile-card__name">
                               {row.name}
                             </Typography.Text>
-                            {isLive && <Tag color="success">Live</Tag>}
+                            {isLive && <Tag color="success">{t('vpn.live')}</Tag>}
                           </div>
                           <Typography.Text type="secondary" className="ml-vpn-profile-card__meta">
-                            {row.username || 'Username not set'} · {serverLabel(row)}
+                            {row.username || t('vpn.usernameNotSet')} ·{' '}
+                            {serverLabel(row, t('vpn.noServerSet'))}
                           </Typography.Text>
                         </div>
                         <Dropdown menu={profileMenu(row)} trigger={['click']}>
@@ -394,7 +405,7 @@ export function VpnPage(): React.JSX.Element {
                             type="text"
                             className="ml-vpn-profile-card__more"
                             icon={<Icon icon={MoreHorizontal} variant="action" />}
-                            aria-label="More actions"
+                            aria-label={t('vpn.moreActions')}
                           />
                         </Dropdown>
                       </div>
@@ -416,13 +427,13 @@ export function VpnPage(): React.JSX.Element {
                               setBusyId(row.id)
                               try {
                                 await disconnect(row.id)
-                                message.success('Disconnected')
+                                message.success(t('vpn.disconnectedToast'))
                               } finally {
                                 setBusyId(null)
                               }
                             }}
                           >
-                            Disconnect
+                            {t('vpn.disconnect')}
                           </Button>
                         ) : (
                           <Button
@@ -432,11 +443,11 @@ export function VpnPage(): React.JSX.Element {
                             loading={busyId === row.id}
                             onClick={() => void openConnect(row, false)}
                           >
-                            Connect
+                            {t('vpn.connect')}
                           </Button>
                         )}
                         <Button block onClick={() => openEdit(row)}>
-                          Edit
+                          {t('vpn.edit')}
                         </Button>
                       </div>
                     </article>
@@ -449,7 +460,9 @@ export function VpnPage(): React.JSX.Element {
       </div>
 
       <Modal
-        title={draft?.mode === 'edit' ? 'Edit VPN profile' : 'Review VPN profile'}
+        title={
+          draft?.mode === 'edit' ? t('vpn.draft.editTitle') : t('vpn.draft.reviewTitle')
+        }
         open={!!draft}
         onCancel={() => setDraft(null)}
         footer={null}
@@ -460,8 +473,8 @@ export function VpnPage(): React.JSX.Element {
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="Correct auto-detected fields"
-          description="Username / organization / server are parsed from the .ovpn and are often wrong — edit them before saving."
+          message={t('vpn.draft.correctFields')}
+          description={t('vpn.draft.correctFieldsDesc')}
         />
         <Form
           form={draftForm}
@@ -479,13 +492,13 @@ export function VpnPage(): React.JSX.Element {
                 protocol: values.protocol?.trim() || ''
               })
               if (!res.ok) {
-                message.error(res.error ?? 'Update failed')
+                message.error(res.error ?? t('vpn.draft.updateFailed'))
                 return
               }
-              message.success('Profile updated')
+              message.success(t('vpn.draft.updated'))
             } else {
               if (!draft.config) {
-                message.error('Missing config')
+                message.error(t('vpn.draft.missingConfig'))
                 return
               }
               await addFromDraft({
@@ -498,53 +511,46 @@ export function VpnPage(): React.JSX.Element {
                 serverName: values.serverName?.trim() || '',
                 protocol: values.protocol?.trim() || ''
               })
-              message.success('VPN profile added')
+              message.success(t('vpn.draft.added'))
             }
             setDraft(null)
           }}
         >
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+          <Form.Item name="name" label={t('vpn.draft.name')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
           {draft?.mode === 'create' && (
-            <Form.Item name="provider" label="Provider">
-              <Select
-                options={[
-                  { value: 'openvpn', label: 'OpenVPN (.ovpn)' },
-                  { value: 'pritunl', label: 'Pritunl (.ovpn)' },
-                  { value: 'wireguard', label: 'WireGuard (.conf)' },
-                  { value: 'generic', label: 'Auto-detect' }
-                ]}
-              />
+            <Form.Item name="provider" label={t('vpn.draft.provider')}>
+              <Select options={providerOptions(t)} />
             </Form.Item>
           )}
           <Form.Item
             name="username"
-            label="Username"
-            rules={[{ required: true, message: 'Enter VPN username' }]}
+            label={t('vpn.draft.username')}
+            rules={[{ required: true, message: t('vpn.draft.usernameRequired') }]}
           >
             <Input placeholder="user@company.com" autoFocus />
           </Form.Item>
-          <Form.Item name="organization" label="Organization">
-            <Input placeholder="Organization name" />
+          <Form.Item name="organization" label={t('vpn.draft.organization')}>
+            <Input placeholder={t('vpn.draft.organizationPlaceholder')} />
           </Form.Item>
-          <Form.Item name="serverName" label="Server name">
+          <Form.Item name="serverName" label={t('vpn.draft.serverName')}>
             <Input placeholder="master" />
           </Form.Item>
-          <Form.Item name="serverHost" label="Server host">
+          <Form.Item name="serverHost" label={t('vpn.draft.serverHost')}>
             <Input placeholder="34.107.68.139" />
           </Form.Item>
-          <Form.Item name="protocol" label="Protocol">
-            <Input placeholder="udp / tcp" />
+          <Form.Item name="protocol" label={t('vpn.draft.protocol')}>
+            <Input placeholder={t('vpn.draft.protocolPlaceholder')} />
           </Form.Item>
           <Button type="primary" htmlType="submit" block>
-            {draft?.mode === 'edit' ? 'Save changes' : 'Save profile'}
+            {draft?.mode === 'edit' ? t('vpn.draft.saveChanges') : t('vpn.draft.saveProfile')}
           </Button>
         </Form>
       </Modal>
 
       <Modal
-        title={`Connect · ${authProfile?.name ?? ''}`}
+        title={t('vpn.auth.title', { name: authProfile?.name ?? '' })}
         open={!!authProfile}
         onCancel={() => setAuthProfile(null)}
         footer={null}
@@ -554,16 +560,18 @@ export function VpnPage(): React.JSX.Element {
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="PIN + MFA only"
-          description="Username / server / organization come from the profile. Use Edit if they are wrong."
+          message={t('vpn.auth.pinMfaOnly')}
+          description={t('vpn.auth.pinMfaDesc')}
         />
         <div style={{ marginBottom: 16, lineHeight: 1.7 }}>
           <div>
-            <Typography.Text type="secondary">User: </Typography.Text>
-            <Typography.Text strong>{authProfile?.username || 'not set — edit profile'}</Typography.Text>
+            <Typography.Text type="secondary">{t('vpn.auth.user')} </Typography.Text>
+            <Typography.Text strong>
+              {authProfile?.username || t('vpn.auth.notSetEdit')}
+            </Typography.Text>
           </div>
           <div>
-            <Typography.Text type="secondary">Server: </Typography.Text>
+            <Typography.Text type="secondary">{t('vpn.auth.server')} </Typography.Text>
             <Typography.Text strong>
               {authProfile?.serverName && authProfile?.serverHost
                 ? `${authProfile.serverName} (${authProfile.serverHost})`
@@ -571,7 +579,7 @@ export function VpnPage(): React.JSX.Element {
             </Typography.Text>
           </div>
           <div>
-            <Typography.Text type="secondary">Organization: </Typography.Text>
+            <Typography.Text type="secondary">{t('vpn.auth.organization')} </Typography.Text>
             <Typography.Text strong>{authProfile?.organization || '—'}</Typography.Text>
           </div>
         </div>
@@ -582,7 +590,7 @@ export function VpnPage(): React.JSX.Element {
             if (!authProfile) return
             const username = authProfile.username || values.username
             if (!username) {
-              message.error('Set username via Edit first, or enter it below')
+              message.error(t('vpn.auth.setUsernameFirst'))
               return
             }
             setBusyId(authProfile.id)
@@ -600,10 +608,10 @@ export function VpnPage(): React.JSX.Element {
                   pin: values.pin,
                   mfaCode: values.mfaCode
                 })
-                message.success('Connected')
+                message.success(t('vpn.connectedToast'))
                 setAuthProfile(null)
               } else {
-                message.error(res.error ?? 'Connect failed')
+                message.error(res.error ?? t('vpn.connectFailed'))
               }
             } finally {
               setBusyId(null)
@@ -611,23 +619,31 @@ export function VpnPage(): React.JSX.Element {
           }}
         >
           {!authProfile?.username && (
-            <Form.Item name="username" label="Username" rules={[{ required: true }]}>
+            <Form.Item
+              name="username"
+              label={t('vpn.draft.username')}
+              rules={[{ required: true }]}
+            >
               <Input autoFocus placeholder="user@company.com" />
             </Form.Item>
           )}
-          <Form.Item name="pin" label="PIN" rules={[{ required: true, message: 'Enter your PIN' }]}>
-            <Input.Password autoFocus={!!authProfile?.username} placeholder="VPN PIN" />
+          <Form.Item
+            name="pin"
+            label={t('vpn.auth.pin')}
+            rules={[{ required: true, message: t('vpn.auth.pinRequired') }]}
+          >
+            <Input.Password autoFocus={!!authProfile?.username} placeholder={t('vpn.auth.pinPlaceholder')} />
           </Form.Item>
           <Form.Item
             name="mfaCode"
-            label="MFA / OTP code"
-            rules={[{ required: true, message: 'Enter your MFA/OTP code' }]}
+            label={t('vpn.auth.mfa')}
+            rules={[{ required: true, message: t('vpn.auth.mfaRequired') }]}
           >
-            <Input placeholder="6-digit code" inputMode="numeric" autoComplete="one-time-code" />
+            <Input placeholder={t('vpn.auth.mfaPlaceholder')} inputMode="numeric" autoComplete="one-time-code" />
           </Form.Item>
           <Space style={{ width: '100%' }} direction="vertical">
             <Button type="primary" htmlType="submit" block loading={busyId === authProfile?.id}>
-              Connect
+              {t('vpn.connect')}
             </Button>
             <Button
               block
@@ -638,13 +654,18 @@ export function VpnPage(): React.JSX.Element {
                 }
               }}
             >
-              Edit profile fields
+              {t('vpn.auth.editFields')}
             </Button>
           </Space>
         </Form>
       </Modal>
 
-      <Modal title="Paste VPN config" open={pasteOpen} onCancel={() => setPasteOpen(false)} footer={null}>
+      <Modal
+        title={t('vpn.pasteModal.title')}
+        open={pasteOpen}
+        onCancel={() => setPasteOpen(false)}
+        footer={null}
+      >
         <Form
           layout="vertical"
           initialValues={{ provider: 'openvpn' }}
@@ -664,24 +685,17 @@ export function VpnPage(): React.JSX.Element {
             })
           }}
         >
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
-            <Input placeholder="Office VPN" />
+          <Form.Item name="name" label={t('vpn.draft.name')} rules={[{ required: true }]}>
+            <Input placeholder={t('vpn.pasteModal.namePlaceholder')} />
           </Form.Item>
-          <Form.Item name="provider" label="Provider">
-            <Select
-              options={[
-                { value: 'openvpn', label: 'OpenVPN (.ovpn)' },
-                { value: 'pritunl', label: 'Pritunl (.ovpn)' },
-                { value: 'wireguard', label: 'WireGuard (.conf)' },
-                { value: 'generic', label: 'Auto-detect' }
-              ]}
-            />
+          <Form.Item name="provider" label={t('vpn.draft.provider')}>
+            <Select options={providerOptions(t)} />
           </Form.Item>
-          <Form.Item name="config" label="Config" rules={[{ required: true }]}>
-            <Input.TextArea rows={12} placeholder="Paste .ovpn or WireGuard config" />
+          <Form.Item name="config" label={t('vpn.pasteModal.config')} rules={[{ required: true }]}>
+            <Input.TextArea rows={12} placeholder={t('vpn.pasteModal.configPlaceholder')} />
           </Form.Item>
           <Button type="primary" htmlType="submit" block>
-            Continue — review fields
+            {t('vpn.pasteModal.continue')}
           </Button>
         </Form>
       </Modal>

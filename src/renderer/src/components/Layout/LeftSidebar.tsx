@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Empty, Tooltip } from 'antd'
-import { ChevronLeft, ChevronRight, Layers, Network } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Layers, Network } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import logo from '../../assets/logo.png'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useVpnStore } from '../../stores/vpnStore'
 import { useClusterVpnStore } from '../../stores/clusterVpnStore'
-import { resolveUserScope, favoritesHeightKey } from '../../workspace'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
+import { resolveUserScope, favoritesExpandedKey, favoritesHeightKey } from '../../workspace'
 import { applyClusterFilterAndSearch } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
+import { SidebarWorkspaces } from './SidebarWorkspaces'
 import { Icon } from '../ui/Icon'
 
 const COLLAPSED_WIDTH = 60
@@ -33,13 +36,25 @@ function loadFavoritesHeight(scope: string): number {
   }
 }
 
+function loadFavoritesExpanded(scope: string): boolean {
+  try {
+    const raw = localStorage.getItem(favoritesExpandedKey(scope))
+    if (raw === null) return true
+    return raw !== '0' && raw !== 'false'
+  } catch {
+    return true
+  }
+}
+
 export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps): React.JSX.Element {
+  const { t } = useTranslation()
   const clusters = useClusterStore((s) => s.clusters)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
   const activeView = useClusterStore((s) => s.activeView)
   const storedCollapsed = useClusterStore((s) => s.leftSidebarCollapsed)
   const setCollapsed = useClusterStore((s) => s.setLeftSidebarCollapsed)
   const setActiveView = useClusterStore((s) => s.setActiveView)
+  const showFavoritesSection = useDisplaySettingsStore((s) => s.showFavoritesSection)
   const vpnStatus = useVpnStore((s) => s.status)
   const vpnProfiles = useVpnStore((s) => s.profiles)
   const clusterVpnLinks = useClusterVpnStore((s) => s.links)
@@ -49,6 +64,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
 
   const [favoriteSearch, setFavoriteSearch] = useState('')
   const [favoritesHeight, setFavoritesHeight] = useState(() => loadFavoritesHeight(userScope))
+  const [favoritesExpanded, setFavoritesExpanded] = useState(() => loadFavoritesExpanded(userScope))
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null)
 
   const favorites = useMemo(
@@ -77,20 +93,21 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
     ? vpnConnected
       ? displayProfile.name
       : vpnConnecting
-        ? `${displayProfile.name} · Connecting…`
+        ? `${displayProfile.name} · ${t('common.connecting')}`
         : vpnError
-          ? vpnStatus?.message ?? 'Error'
+          ? vpnStatus?.message ?? t('common.error')
           : displayProfile.name
     : vpnStatus?.status === 'connected'
-      ? vpnProfiles.find((p) => p.id === vpnStatus.activeProfileId)?.name ?? 'Connected'
+      ? vpnProfiles.find((p) => p.id === vpnStatus.activeProfileId)?.name ?? t('common.connected')
       : vpnStatus?.status === 'connecting'
-        ? 'Connecting…'
+        ? t('common.connecting')
         : vpnStatus?.status === 'error'
-          ? vpnStatus?.message ?? 'Error'
-          : 'Disconnected'
+          ? vpnStatus?.message ?? t('common.error')
+          : t('common.disconnected')
 
   useEffect(() => {
     setFavoritesHeight(loadFavoritesHeight(userScope))
+    setFavoritesExpanded(loadFavoritesExpanded(userScope))
   }, [userScope])
 
   function handleNavigate(action: () => void): void {
@@ -124,6 +141,14 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
     }
   }, [favoritesHeight, userScope])
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(favoritesExpandedKey(userScope), favoritesExpanded ? '1' : '0')
+    } catch {
+      // ignore
+    }
+  }, [favoritesExpanded, userScope])
+
   function startResize(e: React.MouseEvent): void {
     e.preventDefault()
     dragRef.current = { startY: e.clientY, startHeight: favoritesHeight }
@@ -134,6 +159,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   }
 
   const width = isDrawer ? '100%' : collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH
+  const favoritesBodyOpen = favoritesExpanded || collapsed
 
   return (
     <motion.aside
@@ -160,7 +186,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
       </div>
 
       <div className="ml-sidebar-actions titlebar-no-drag">
-        <Tooltip title="Manage clusters" placement="right">
+        <Tooltip title={t('chrome.manageClusters')} placement="right">
           <button
             type="button"
             className={`ml-sidebar-hub-btn${activeView === 'clusters' ? ' ml-sidebar-hub-btn--active' : ''}`}
@@ -171,9 +197,9 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
             </span>
             {!collapsed && (
               <span className="ml-sidebar-hub-btn-text">
-                <span className="ml-sidebar-hub-btn-title">Clusters</span>
+                <span className="ml-sidebar-hub-btn-title">{t('common.clusters')}</span>
                 <span className="ml-sidebar-hub-btn-meta">
-                  {clusters.length} total · {connectedCount} connected
+                  {t('chrome.clustersMeta', { total: clusters.length, connected: connectedCount })}
                 </span>
               </span>
             )}
@@ -186,10 +212,10 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
         <Tooltip
           title={
             vpnConnected
-              ? `Connected · ${displayProfile?.name ?? 'VPN'}`
+              ? t('chrome.vpnConnected', { name: displayProfile?.name ?? 'VPN' })
               : vpnConnecting
-                ? `Connecting · ${displayProfile?.name ?? 'VPN'}`
-                : 'VPN profiles (OpenVPN, Pritunl, WireGuard)'
+                ? t('chrome.vpnConnecting', { name: displayProfile?.name ?? 'VPN' })
+                : t('chrome.vpnTooltip')
           }
           placement="right"
         >
@@ -211,64 +237,95 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
             </span>
             {!collapsed && (
               <span className="ml-sidebar-hub-btn-text">
-                <span className="ml-sidebar-hub-btn-title">VPN</span>
+                <span className="ml-sidebar-hub-btn-title">{t('common.vpn')}</span>
                 <span className="ml-sidebar-hub-btn-meta">{vpnMeta}</span>
               </span>
             )}
           </button>
         </Tooltip>
-
       </div>
 
-      <div
-        className="ml-sidebar-section"
-        style={collapsed ? undefined : { height: favoritesHeight, flex: 'none' }}
-      >
-        {!collapsed && <div className="ml-sidebar-section-label">Favorites</div>}
-        {!collapsed && (
-          <div className="ml-sidebar-search">
-            <ClusterSearchInput
-              value={favoriteSearch}
-              onChange={setFavoriteSearch}
-              placeholder="Search favorites"
-              size="small"
-            />
-          </div>
-        )}
-        <div className="ml-sidebar-list">
-          {favorites.length === 0 ? (
-            !collapsed && (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={<span className="ml-sidebar-empty">No favorite clusters</span>}
-              />
-            )
-          ) : (
-            favorites.map((cluster) => (
-              <FavoriteClusterBox
-                key={cluster.id}
-                cluster={cluster}
-                active={cluster.id === activeClusterId}
-                compact={collapsed}
-                onActivate={onNavigate}
-              />
-            ))
+      {showFavoritesSection ? (
+        <div
+          className={`ml-sidebar-section ml-sidebar-section--favorites${
+            favoritesExpanded ? '' : ' ml-sidebar-section--favorites-collapsed'
+          }`}
+          style={
+            collapsed
+              ? undefined
+              : favoritesExpanded
+                ? { height: favoritesHeight, flex: 'none' }
+                : { height: 'auto', flex: 'none' }
+          }
+        >
+          {!collapsed && (
+            <button
+              type="button"
+              className="ml-sidebar-section-toggle"
+              aria-expanded={favoritesExpanded}
+              onClick={() => setFavoritesExpanded((open) => !open)}
+            >
+              <Icon icon={favoritesExpanded ? ChevronDown : ChevronRight} variant="micro" />
+              <span className="ml-sidebar-section-label">{t('common.favorites')}</span>
+              <span className="ml-sidebar-workspace__count">{favorites.length}</span>
+            </button>
+          )}
+          {favoritesBodyOpen && (
+            <>
+              {!collapsed && (
+                <div className="ml-sidebar-search">
+                  <ClusterSearchInput
+                    value={favoriteSearch}
+                    onChange={setFavoriteSearch}
+                    placeholder={t('chrome.searchFavorites')}
+                    size="small"
+                  />
+                </div>
+              )}
+              <div className="ml-sidebar-list">
+                {favorites.length === 0 ? (
+                  !collapsed && (
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <span className="ml-sidebar-empty">{t('chrome.noFavoriteClusters')}</span>
+                      }
+                    />
+                  )
+                ) : (
+                  favorites.map((cluster) => (
+                    <FavoriteClusterBox
+                      key={cluster.id}
+                      cluster={cluster}
+                      active={cluster.id === activeClusterId}
+                      compact={collapsed}
+                      onActivate={onNavigate}
+                    />
+                  ))
+                )}
+              </div>
+              {!collapsed && !isDrawer && favoritesExpanded && (
+                <div
+                  className="ml-sidebar-section-resize"
+                  role="separator"
+                  aria-orientation="horizontal"
+                  aria-label="Resize favorites section"
+                  onMouseDown={startResize}
+                />
+              )}
+            </>
           )}
         </div>
-        {!collapsed && !isDrawer && (
-          <div
-            className="ml-sidebar-section-resize"
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Resize favorites section"
-            onMouseDown={startResize}
-          />
-        )}
-      </div>
+      ) : null}
+
+      <SidebarWorkspaces collapsed={collapsed} onNavigate={onNavigate} />
 
       <div className="ml-sidebar-footer titlebar-no-drag">
         {!isDrawer && (
-          <Tooltip title={collapsed ? 'Expand' : 'Collapse'} placement="right">
+          <Tooltip
+            title={collapsed ? t('chrome.expandSidebar') : t('chrome.collapseSidebar')}
+            placement="right"
+          >
             <button type="button" className="ml-sidebar-btn ml-sidebar-btn--ghost" onClick={() => setCollapsed(!collapsed)}>
               <Icon icon={collapsed ? ChevronRight : ChevronLeft} variant="action" />
             </button>

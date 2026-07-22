@@ -248,6 +248,25 @@ const api = {
     removeLink: (clusterId: string): Promise<{ ok: true; links: Record<string, string> }> =>
       ipcRenderer.invoke(IPC.CLUSTER_VPN_LINKS_REMOVE, { clusterId })
   },
+  clusterGroups: {
+    list: (): Promise<import('@shared/types/clusterGroup').ClusterGroupsState> =>
+      ipcRenderer.invoke(IPC.CLUSTER_GROUPS_LIST),
+    save: (
+      groups: import('@shared/types/clusterGroup').ClusterGroupsState
+    ): Promise<import('@shared/types/clusterGroup').ClusterGroupsState> =>
+      ipcRenderer.invoke(IPC.CLUSTER_GROUPS_SAVE, groups),
+    create: (name: string): Promise<import('@shared/types/clusterGroup').ClusterGroupsState> =>
+      ipcRenderer.invoke(IPC.CLUSTER_GROUPS_CREATE, { name }),
+    update: (
+      id: string,
+      patch: Partial<
+        Pick<import('@shared/types/clusterGroup').ClusterGroup, 'name' | 'clusterIds' | 'collapsed'>
+      >
+    ): Promise<import('@shared/types/clusterGroup').ClusterGroupsState> =>
+      ipcRenderer.invoke(IPC.CLUSTER_GROUPS_UPDATE, { id, patch }),
+    remove: (id: string): Promise<import('@shared/types/clusterGroup').ClusterGroupsState> =>
+      ipcRenderer.invoke(IPC.CLUSTER_GROUPS_REMOVE, { id })
+  },
   uiState: {
     get: (): Promise<PersistedUiState> => ipcRenderer.invoke(IPC.UI_STATE_GET),
     set: (state: PersistedUiState): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.UI_STATE_SET, state)

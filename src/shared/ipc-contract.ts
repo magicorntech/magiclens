@@ -39,6 +39,12 @@ export const IPC = {
   CLUSTER_VPN_LINKS_SET: 'clusterVpn:linksSet',
   CLUSTER_VPN_LINKS_REMOVE: 'clusterVpn:linksRemove',
 
+  CLUSTER_GROUPS_LIST: 'clusterGroups:list',
+  CLUSTER_GROUPS_SAVE: 'clusterGroups:save',
+  CLUSTER_GROUPS_CREATE: 'clusterGroups:create',
+  CLUSTER_GROUPS_UPDATE: 'clusterGroups:update',
+  CLUSTER_GROUPS_REMOVE: 'clusterGroups:remove',
+
   UI_STATE_GET: 'uiState:get',
   UI_STATE_SET: 'uiState:set',
 

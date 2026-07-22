@@ -1,6 +1,8 @@
 import Store from 'electron-store'
 import type { UpdateSettings } from '@shared/types/update'
 import { defaultDisplaySettings, type DisplaySettings } from '@shared/types/app'
+import { normalizeKeyboardShortcuts } from '@shared/types/keyboardShortcuts'
+import { normalizeAppLocale } from '@shared/types/locale'
 import { normalizeNodesDashboardPrefs } from '@shared/types/nodesDashboard'
 
 interface AppSettings {
@@ -71,7 +73,9 @@ export function getDisplaySettings(): DisplaySettings {
   return {
     ...defaultDisplaySettings,
     ...stored,
-    nodesDashboard: normalizeNodesDashboardPrefs(stored?.nodesDashboard)
+    nodesDashboard: normalizeNodesDashboardPrefs(stored?.nodesDashboard),
+    keyboardShortcuts: normalizeKeyboardShortcuts(stored?.keyboardShortcuts),
+    locale: normalizeAppLocale(stored?.locale)
   }
 }
 
@@ -82,7 +86,11 @@ export function setDisplaySettings(patch: Partial<DisplaySettings>): DisplaySett
     ...patch,
     nodesDashboard: patch.nodesDashboard
       ? normalizeNodesDashboardPrefs({ ...current.nodesDashboard, ...patch.nodesDashboard })
-      : current.nodesDashboard
+      : current.nodesDashboard,
+    keyboardShortcuts: patch.keyboardShortcuts
+      ? normalizeKeyboardShortcuts({ ...current.keyboardShortcuts, ...patch.keyboardShortcuts })
+      : current.keyboardShortcuts,
+    locale: normalizeAppLocale(patch.locale ?? current.locale)
   }
   store.set('displaySettings', next)
   return next

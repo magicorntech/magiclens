@@ -1,7 +1,10 @@
 import { Empty, Splitter } from 'antd'
+import { Layers } from 'lucide-react'
+import logo from '../../assets/logo.png'
 import { useClusterStore } from '../../stores/clusterStore'
 import { canUseSplitLayouts, useLayoutMode } from '../../hooks/useLayoutMode'
 import { ClusterView } from '../../pages/ClusterView'
+import { Icon } from '../ui/Icon'
 import { ClusterTabStrip } from './ClusterTabStrip'
 import { SplitClusterPane } from './SplitClusterPane'
 
@@ -30,7 +33,17 @@ export function ClusterTabBar(): React.JSX.Element {
         ) : activeClusterId ? (
           <ClusterView clusterId={activeClusterId} />
         ) : (
-          <Empty description="Open a cluster tab to get started" className="ml-cluster-empty" />
+          <div className="ml-cluster-empty">
+            <img src={logo} alt="" className="ml-cluster-empty__logo" width={64} height={64} />
+            <div className="ml-cluster-empty__icon">
+              <Icon icon={Layers} variant="action" />
+            </div>
+            <h3 className="ml-cluster-empty__title">Open a cluster tab to get started</h3>
+            <p className="ml-cluster-empty__desc">
+              Pick a favorite or workspace cluster from the sidebar, or open one from the Clusters page.
+            </p>
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={false} />
+          </div>
         )}
       </div>
     </div>

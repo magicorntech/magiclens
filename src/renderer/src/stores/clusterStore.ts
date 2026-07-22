@@ -18,6 +18,9 @@ export interface ClusterEntry {
   source: KubeconfigSource
   endpoint?: string
   logoUrl?: string
+  backgroundId?: string
+  backgroundCustomUrl?: string
+  backgroundPanelOpacity?: number
   prometheusUrl?: string
   isFavorite: boolean
   status: ConnectionStatus
@@ -65,7 +68,17 @@ interface ClusterStoreState {
   toggleFavorite: (id: string) => void
   updateClusterMeta: (
     id: string,
-    patch: Partial<Pick<ClusterEntry, 'customName' | 'logoUrl' | 'prometheusUrl'>>
+    patch: Partial<
+      Pick<
+        ClusterEntry,
+        | 'customName'
+        | 'logoUrl'
+        | 'prometheusUrl'
+        | 'backgroundId'
+        | 'backgroundCustomUrl'
+        | 'backgroundPanelOpacity'
+      >
+    >
   ) => void
   updateClusterSource: (id: string, source: KubeconfigSource) => void
   setClusterStatus: (id: string, status: ConnectionStatus, errorMessage?: string) => void
@@ -213,6 +226,9 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
           source: updated.source,
           endpoint: updated.endpoint,
           logoUrl: updated.logoUrl,
+          backgroundId: updated.backgroundId,
+          backgroundCustomUrl: updated.backgroundCustomUrl,
+          backgroundPanelOpacity: updated.backgroundPanelOpacity,
           prometheusUrl: updated.prometheusUrl,
           isFavorite: updated.isFavorite,
           selectedNamespace: updated.selectedNamespace,
@@ -389,6 +405,9 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         source: entry.source,
         endpoint: entry.endpoint,
         logoUrl: entry.logoUrl,
+        backgroundId: entry.backgroundId,
+        backgroundCustomUrl: entry.backgroundCustomUrl,
+        backgroundPanelOpacity: entry.backgroundPanelOpacity,
         prometheusUrl: entry.prometheusUrl,
         isFavorite: entry.isFavorite,
         status: 'idle',

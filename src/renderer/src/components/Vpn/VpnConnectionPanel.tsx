@@ -3,6 +3,7 @@ import { Card, Col, Progress, Row, Space, Tag, Typography } from 'antd'
 import { CheckCircle2, Circle, Laptop, Router, Server, Shield } from 'lucide-react'
 import type { VpnProfileSummary, VpnRuntimeStatus } from '@shared/types/vpn'
 import { formatBitrate, formatByteSize } from '@shared/types/vpn'
+import { useTranslation } from 'react-i18next'
 import { Icon } from '../../components/ui/Icon'
 
 const MAX_BAR_BPS = 10 * 1024 * 1024
@@ -47,6 +48,7 @@ export function VpnConnectionPanel({
   status: VpnRuntimeStatus | null
   activeProfile?: VpnProfileSummary
 }): React.JSX.Element {
+  const { t } = useTranslation()
   const connected = status?.status === 'connected'
   const connecting = status?.status === 'connecting'
   const stats = status?.stats
@@ -66,24 +68,24 @@ export function VpnConnectionPanel({
 
   const checks = [
     {
-      label: 'VPN process running',
+      key: 'process',
+      label: t('vpn.panel.checkProcess'),
       ok: connected || connecting
     },
     {
-      label: 'Tunnel interface with IP',
+      key: 'interface',
+      label: t('vpn.panel.checkInterface'),
       ok: connected && !!stats?.interfaceName
     },
     {
-      label: 'Traffic flowing',
+      key: 'traffic',
+      label: t('vpn.panel.checkTraffic'),
       ok: connected && (rxRate > 0 || txRate > 0 || (stats?.rxBytes ?? 0) > 0)
     }
   ]
 
   const allOk = connected && checks.every((c) => c.ok)
-  const falsePositive =
-    connected && !stats?.interfaceName
-      ? 'Marked connected but no tunnel IP yet — private clusters will time out until the route is up.'
-      : null
+  const falsePositive = connected && !stats?.interfaceName ? t('vpn.panel.falsePositive') : null
 
   return (
     <Card
@@ -91,15 +93,17 @@ export function VpnConnectionPanel({
       className="ml-vpn-connection-panel"
       title={
         <Space>
-          <span>Connection status</span>
+          <span>{t('vpn.panel.connectionStatus')}</span>
           {connected ? (
-            <Tag color={allOk ? 'success' : 'warning'}>{allOk ? 'Healthy tunnel' : 'Connected — verifying'}</Tag>
+            <Tag color={allOk ? 'success' : 'warning'}>
+              {allOk ? t('vpn.panel.healthyTunnel') : t('vpn.panel.verifying')}
+            </Tag>
           ) : connecting ? (
-            <Tag color="processing">Connecting…</Tag>
+            <Tag color="processing">{t('vpn.panel.connecting')}</Tag>
           ) : status?.status === 'error' ? (
-            <Tag color="error">Error</Tag>
+            <Tag color="error">{t('vpn.panel.error')}</Tag>
           ) : (
-            <Tag>Disconnected</Tag>
+            <Tag>{t('vpn.panel.disconnected')}</Tag>
           )}
         </Space>
       }
@@ -109,7 +113,7 @@ export function VpnConnectionPanel({
         <StepNode
           icon={<Icon icon={Laptop} variant="detail" />}
           label="MagicLens"
-          sub={activeProfile?.username || 'local'}
+          sub={activeProfile?.username || t('vpn.panel.local')}
           ok={connected}
           active={connected}
         />
@@ -123,8 +127,8 @@ export function VpnConnectionPanel({
         </div>
         <StepNode
           icon={<Icon icon={Shield} variant="detail" />}
-          label="VPN tunnel"
-          sub={stats?.interfaceName ?? (connecting ? 'opening…' : '—')}
+          label={t('vpn.panel.tunnel')}
+          sub={stats?.interfaceName ?? (connecting ? t('vpn.panel.opening') : '—')}
           ok={connected && !!stats?.interfaceName}
           active={connected}
         />
@@ -133,7 +137,7 @@ export function VpnConnectionPanel({
         </div>
         <StepNode
           icon={<Icon icon={Router} variant="detail" />}
-          label="VPN server"
+          label={t('vpn.panel.server')}
           sub={
             activeProfile?.serverName && activeProfile?.serverHost
               ? `${activeProfile.serverName} (${activeProfile.serverHost})`
@@ -146,8 +150,8 @@ export function VpnConnectionPanel({
         </div>
         <StepNode
           icon={<Icon icon={Server} variant="detail" />}
-          label="Private network"
-          sub={activeProfile?.organization || 'cluster endpoints'}
+          label={t('vpn.panel.privateNetwork')}
+          sub={activeProfile?.organization || t('vpn.panel.clusterEndpoints')}
           ok={connected}
         />
       </div>
@@ -156,7 +160,7 @@ export function VpnConnectionPanel({
         <>
           <Row gutter={[16, 12]} style={{ marginTop: 20 }}>
             <Col xs={24} md={12}>
-              <Typography.Text type="secondary">Download</Typography.Text>
+              <Typography.Text type="secondary">{t('vpn.panel.download')}</Typography.Text>
               <div className="ml-vpn-traffic-row">
                 <Progress
                   percent={barPercent(rxRate)}
@@ -168,11 +172,11 @@ export function VpnConnectionPanel({
                 <Typography.Text strong>{formatBitrate(rxRate)}</Typography.Text>
               </div>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Total {formatByteSize(stats?.rxBytes ?? 0)}
+                {t('vpn.panel.total', { size: formatByteSize(stats?.rxBytes ?? 0) })}
               </Typography.Text>
             </Col>
             <Col xs={24} md={12}>
-              <Typography.Text type="secondary">Upload</Typography.Text>
+              <Typography.Text type="secondary">{t('vpn.panel.upload')}</Typography.Text>
               <div className="ml-vpn-traffic-row">
                 <Progress
                   percent={barPercent(txRate)}
@@ -184,14 +188,14 @@ export function VpnConnectionPanel({
                 <Typography.Text strong>{formatBitrate(txRate)}</Typography.Text>
               </div>
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Total {formatByteSize(stats?.txBytes ?? 0)}
+                {t('vpn.panel.total', { size: formatByteSize(stats?.txBytes ?? 0) })}
               </Typography.Text>
             </Col>
           </Row>
 
           <div className="ml-vpn-checklist" style={{ marginTop: 16 }}>
             {checks.map((c) => (
-              <div key={c.label} className="ml-vpn-checklist__item">
+              <div key={c.key} className="ml-vpn-checklist__item">
                 {c.ok ? (
                   <Icon icon={CheckCircle2} variant="detail" className="ml-vpn-checklist__ok" />
                 ) : (
@@ -209,8 +213,8 @@ export function VpnConnectionPanel({
           )}
 
           <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>
-            Provider: {status?.provider ?? '—'}
-            {status?.connectedAt ? ` · Connected ${uptime ?? ''} ago` : ''}
+            {t('vpn.panel.providerLine', { provider: status?.provider ?? '—' })}
+            {status?.connectedAt ? ` · ${t('vpn.panel.connectedAgo', { uptime: uptime ?? '' })}` : ''}
             {status?.message ? ` · ${status.message}` : ''}
           </Typography.Paragraph>
         </>
@@ -218,7 +222,7 @@ export function VpnConnectionPanel({
 
       {!connected && status?.status === 'error' && (
         <Typography.Paragraph type="danger" style={{ marginTop: 12, marginBottom: 0 }}>
-          {status.message ?? 'Connection failed'}
+          {status.message ?? t('vpn.panel.connectionFailed')}
         </Typography.Paragraph>
       )}
     </Card>

@@ -1,7 +1,9 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc-contract'
-import type { KubeconfigSource, PersistedClusterEntry } from '@shared/types/cluster'
+import type { PersistedClusterEntry } from '@shared/types/cluster'
+import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import { removeClusterVpnLink } from '../persistence/clusterVpnLinks'
+import { removeClusterFromAllGroups } from '../persistence/clusterGroups'
 import {
   addCluster,
   listClusters,
@@ -30,6 +32,7 @@ export function registerClusterStoreHandlers(): void {
   ipcMain.handle(IPC.CLUSTER_STORE_REMOVE, async (_e, req: { id: string }) => {
     removeCluster(req.id)
     removeClusterVpnLink(req.id)
+    removeClusterFromAllGroups(req.id)
     return { ok: true as const }
   })
 
@@ -65,7 +68,10 @@ export function registerClusterStoreHandlers(): void {
         new Set(req.remoteIds),
         new Set(req.successfullySyncedOrgIds ?? req.remoteIds.map((id) => id.split(':')[0]!))
       )
-      for (const id of removed) removeClusterVpnLink(id)
+      for (const id of removed) {
+        removeClusterVpnLink(id)
+        removeClusterFromAllGroups(id)
+      }
       return { ok: true as const, removed }
     }
   )

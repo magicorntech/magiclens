@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Input, Modal, Select, Space, Tag, Typography, message } from 'antd'
 import { Clipboard, Eye, RefreshCw, Save, Upload } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Icon } from '../ui/Icon'
 import { useQueryClient } from '@tanstack/react-query'
 import type { PrometheusStatus } from '@shared/types/prometheus'
@@ -9,6 +10,7 @@ import { useClusterStore } from '../../stores/clusterStore'
 import { useClusterVpnStore } from '../../stores/clusterVpnStore'
 import { useVpnStore } from '../../stores/vpnStore'
 import { ClusterAvatar } from './ClusterAvatar'
+import { ClusterBackgroundPicker } from './ClusterBackgroundPicker'
 import { LogoCropModal } from './LogoCropModal'
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import Editor from '@monaco-editor/react'
@@ -40,8 +42,12 @@ function statusTag(status: PrometheusStatus | null): React.JSX.Element {
 }
 
 export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): React.JSX.Element {
+  const { t } = useTranslation()
   const [customName, setCustomName] = useState('')
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined)
+  const [backgroundId, setBackgroundId] = useState<string | undefined>(undefined)
+  const [backgroundCustomUrl, setBackgroundCustomUrl] = useState<string | undefined>(undefined)
+  const [backgroundPanelOpacity, setBackgroundPanelOpacity] = useState<number | undefined>(undefined)
   const [prometheusUrl, setPrometheusUrl] = useState('')
   const [prometheusStatus, setPrometheusStatus] = useState<PrometheusStatus | null>(null)
   const [discovering, setDiscovering] = useState(false)
@@ -67,6 +73,9 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
     if (!cluster) return
     setCustomName(cluster.customName)
     setLogoUrl(cluster.logoUrl)
+    setBackgroundId(cluster.backgroundId)
+    setBackgroundCustomUrl(cluster.backgroundCustomUrl)
+    setBackgroundPanelOpacity(cluster.backgroundPanelOpacity)
     setPrometheusUrl(cluster.prometheusUrl ?? '')
     setPrometheusStatus(null)
     setLinkedVpnProfileId(getVpnLink(cluster.id) ?? null)
@@ -124,7 +133,14 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
   async function handleSave(): Promise<void> {
     if (!cluster) return
     const trimmedPrometheus = prometheusUrl.trim()
-    updateClusterMeta(cluster.id, { customName, logoUrl, prometheusUrl: trimmedPrometheus || undefined })
+    updateClusterMeta(cluster.id, {
+      customName,
+      logoUrl,
+      prometheusUrl: trimmedPrometheus || undefined,
+      backgroundId: backgroundId || undefined,
+      backgroundCustomUrl: backgroundId === 'custom' ? backgroundCustomUrl : undefined,
+      backgroundPanelOpacity: backgroundId ? backgroundPanelOpacity : undefined
+    })
     await window.api.clusterStore.update({
       id: cluster.id,
       customName,
@@ -132,10 +148,19 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
       source: cluster.source,
       endpoint: cluster.endpoint,
       logoUrl,
+      backgroundId: backgroundId || undefined,
+      backgroundCustomUrl: backgroundId === 'custom' ? backgroundCustomUrl : undefined,
+      backgroundPanelOpacity: backgroundId ? backgroundPanelOpacity : undefined,
       prometheusUrl: trimmedPrometheus || undefined,
       isFavorite: cluster.isFavorite,
       selectedNamespace: cluster.selectedNamespace,
-      selectedResourceKind: cluster.selectedResourceKind
+      selectedResourceKind: cluster.selectedResourceKind,
+      origin: cluster.origin,
+      remoteId: cluster.remoteId,
+      orgKubeconfigId: cluster.orgKubeconfigId,
+      environment: cluster.environment,
+      localKubeconfigPath: cluster.localKubeconfigPath,
+      lastOpenedAt: cluster.lastOpenedAt
     })
     if (cluster.status === 'connected') {
       void window.api.prometheus.discover({
@@ -202,6 +227,9 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
         source: nextSource,
         endpoint: cluster.endpoint,
         logoUrl,
+        backgroundId,
+        backgroundCustomUrl,
+        backgroundPanelOpacity,
         prometheusUrl: prometheusUrl.trim() || undefined,
         isFavorite: cluster.isFavorite,
         selectedNamespace: cluster.selectedNamespace,
@@ -281,21 +309,33 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
           </div>
 
           <div>
-            <Typography.Text>VPN profile (auto-connect)</Typography.Text>
+            <ClusterBackgroundPicker
+              backgroundId={backgroundId}
+              backgroundCustomUrl={backgroundCustomUrl}
+              backgroundPanelOpacity={backgroundPanelOpacity}
+              onChange={(next) => {
+                setBackgroundId(next.backgroundId)
+                setBackgroundCustomUrl(next.backgroundCustomUrl)
+                setBackgroundPanelOpacity(next.backgroundPanelOpacity)
+              }}
+            />
+          </div>
+
+          <div>
+            <Typography.Text>{t('vpn.clusterLink.title')}</Typography.Text>
             <Select
               allowClear
-              placeholder="No VPN — connect manually"
+              placeholder={t('vpn.clusterLink.placeholder')}
               style={{ width: '100%', marginTop: 8 }}
               value={linkedVpnProfileId ?? undefined}
               options={vpnProfileOptions}
               onChange={(value) => setLinkedVpnProfileId(value ?? null)}
               notFoundContent={
-                vpnProfileOptions.length === 0 ? 'Add a VPN profile in the VPN page first' : undefined
+                vpnProfileOptions.length === 0 ? t('vpn.clusterLink.empty') : undefined
               }
             />
             <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
-              When you switch to this cluster tab, MagicLens connects this VPN automatically. PIN and MFA are
-              remembered per VPN profile for the day after the first successful connect.
+              {t('vpn.clusterLink.hint')}
             </Typography.Text>
           </div>
 

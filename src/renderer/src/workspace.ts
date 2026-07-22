@@ -1,6 +1,7 @@
 import type { MeResponse } from './enterprise/api'
 import { useClusterStore } from './stores/clusterStore'
 import { useClusterVpnStore } from './stores/clusterVpnStore'
+import { useClusterGroupsStore } from './stores/clusterGroupsStore'
 import { connectCluster, disconnectCluster } from './clusterConnect'
 import { ensureClusterAccess } from './clusterVpn'
 
@@ -82,6 +83,7 @@ export async function switchWorkspace(
   useClusterStore.getState().hydrateFromPersistence(persisted)
   useClusterStore.getState().hydrateUiState(normalized)
   await useClusterVpnStore.getState().hydrate()
+  await useClusterGroupsStore.getState().hydrate()
 
   if (!reconnect) return
 
@@ -128,4 +130,8 @@ export async function reconnectOpenedTabs(): Promise<void> {
 
 export function favoritesHeightKey(scope: string): string {
   return `ml-favorites-section-height:${scope}`
+}
+
+export function favoritesExpandedKey(scope: string): string {
+  return `ml-favorites-section-expanded:${scope}`
 }

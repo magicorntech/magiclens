@@ -7,13 +7,12 @@ import { useVpnStore } from './stores/vpnStore'
 import { resolveUserScope, switchWorkspace, reconnectOpenedTabs } from './workspace'
 import { AppLayout } from './components/Layout/AppLayout'
 import { LoadingScreen } from './components/Layout/LoadingScreen'
-import { SplashIntroScreen } from './components/Layout/SplashIntroScreen'
-import { WelcomeCard } from './components/Layout/WelcomeCard'
+import { FeatureTourScreen } from './components/Layout/FeatureTourScreen'
 import { UpdateNotificationBanner } from './components/Update/UpdateNotificationBanner'
 import { UpdateCenterModal } from './components/Update/UpdateCenterModal'
 import { GlobalSearchModal } from './components/Search/GlobalSearchModal'
 import { VpnSessionPromptModal } from './components/Vpn/VpnSessionPromptModal'
-import { useGlobalSearchShortcut } from './hooks/useGlobalSearchShortcut'
+import { useAppShortcuts } from './hooks/useAppShortcuts'
 
 export function App(): React.JSX.Element {
   const initUpdates = useUpdateStore((s) => s.init)
@@ -21,11 +20,10 @@ export function App(): React.JSX.Element {
   const hydrateAuth = useAuthStore((s) => s.hydrate)
   const authHydrated = useAuthStore((s) => s.hydrated)
   const [ready, setReady] = useState(false)
-  const [showSplash, setShowSplash] = useState(false)
-  const [splashDismissed, setSplashDismissed] = useState(false)
-  const [showWelcome, setShowWelcome] = useState(false)
+  const [showTour, setShowTour] = useState(false)
+  const [tourDismissed, setTourDismissed] = useState(false)
 
-  useGlobalSearchShortcut()
+  useAppShortcuts()
 
   useEffect(() => {
     initUpdates()
@@ -48,8 +46,8 @@ export function App(): React.JSX.Element {
         if (cancelled) return
 
         const welcomeStateResult = await window.api.app.getWelcomeState()
-        if (!welcomeStateResult.hasSeenWelcome) setShowWelcome(true)
-        setShowSplash(welcomeStateResult.showSplash)
+        // First launch or first open after an update → feature card slider
+        setShowTour(welcomeStateResult.showSplash)
       } catch (err) {
         console.error('[magiclens] boot failed:', err)
       } finally {
@@ -86,26 +84,21 @@ export function App(): React.JSX.Element {
     return unsubscribe
   }, [ready])
 
-  function handleCloseWelcome(): void {
-    setShowWelcome(false)
-    void window.api.app.setWelcomeSeen()
-  }
-
-  function handleStartFromSplash(): void {
-    setSplashDismissed(true)
+  function handleFinishTour(): void {
+    setTourDismissed(true)
     void window.api.app.setSplashSeen()
+    void window.api.app.setWelcomeSeen()
   }
 
   if (!ready || !authHydrated) return <LoadingScreen />
 
-  if (showSplash && !splashDismissed) {
-    return <SplashIntroScreen onStart={handleStartFromSplash} />
+  if (showTour && !tourDismissed) {
+    return <FeatureTourScreen onFinish={handleFinishTour} />
   }
 
   return (
     <>
       <AppLayout />
-      <WelcomeCard open={showWelcome} onClose={handleCloseWelcome} />
       <UpdateNotificationBanner />
       <UpdateCenterModal />
       <GlobalSearchModal />

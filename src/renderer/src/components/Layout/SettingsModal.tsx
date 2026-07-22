@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Button,
   ColorPicker,
@@ -18,10 +18,12 @@ import {
   Check,
   CloudDownload,
   Info,
+  Keyboard,
   LayoutDashboard,
   Palette,
   RefreshCw
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Icon } from '../ui/Icon'
 import { refreshIntervalOptions, useLiveRefreshStore } from '../../stores/liveRefreshStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
@@ -29,26 +31,12 @@ import { useUpdateStore } from '../../stores/updateStore'
 import { useThemeStore } from '../../stores/themeStore'
 import { COLOR_SCHEME_DEFINITIONS } from '../../theme/schemes'
 import type { AppInfoResponse } from '@shared/types/app'
+import { APP_LOCALES, APP_LOCALE_LABELS, type AppLocale } from '@shared/types/locale'
 import { useLayoutMode } from '../../hooks/useLayoutMode'
 import { NodesDashboardSettings } from '../Nodes/NodesDashboardSettings'
+import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 
-type SettingsSection = 'general' | 'updates' | 'display' | 'appearance' | 'about'
-
-const MENU_ITEMS: MenuProps['items'] = [
-  { key: 'general', icon: <Icon icon={RefreshCw} variant="detail" />, label: 'General' },
-  { key: 'updates', icon: <Icon icon={CloudDownload} variant="detail" />, label: 'Updates' },
-  { key: 'display', icon: <Icon icon={LayoutDashboard} variant="detail" />, label: 'Display' },
-  { key: 'appearance', icon: <Icon icon={Palette} variant="detail" />, label: 'Appearance' },
-  { key: 'about', icon: <Icon icon={Info} variant="detail" />, label: 'About' }
-]
-
-const SECTION_TITLES: Record<SettingsSection, string> = {
-  general: 'General',
-  updates: 'Updates',
-  display: 'Display',
-  appearance: 'Appearance',
-  about: 'About'
-}
+type SettingsSection = 'general' | 'updates' | 'display' | 'keyboard' | 'appearance' | 'about'
 
 interface SettingsModalProps {
   open: boolean
@@ -56,6 +44,7 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.Element {
+  const { t } = useTranslation()
   const { token } = theme.useToken()
   const layoutMode = useLayoutMode()
   const isMobileSettings = layoutMode === 'mobile'
@@ -76,10 +65,40 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const openUpdateCenter = useUpdateStore((s) => s.openCenter)
   const showClusterTabLogos = useDisplaySettingsStore((s) => s.showClusterTabLogos)
   const showResourceTabIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
+  const showFavoritesSection = useDisplaySettingsStore((s) => s.showFavoritesSection)
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
+  const locale = useDisplaySettingsStore((s) => s.locale)
   const setShowClusterTabLogos = useDisplaySettingsStore((s) => s.setShowClusterTabLogos)
   const setShowResourceTabIcons = useDisplaySettingsStore((s) => s.setShowResourceTabIcons)
+  const setShowFavoritesSection = useDisplaySettingsStore((s) => s.setShowFavoritesSection)
   const setResourceDetailPlacement = useDisplaySettingsStore((s) => s.setResourceDetailPlacement)
+  const setLocale = useDisplaySettingsStore((s) => s.setLocale)
+
+  const menuItems: MenuProps['items'] = useMemo(
+    () => [
+      { key: 'general', icon: <Icon icon={RefreshCw} variant="detail" />, label: t('settings.sections.general') },
+      { key: 'updates', icon: <Icon icon={CloudDownload} variant="detail" />, label: t('settings.sections.updates') },
+      { key: 'display', icon: <Icon icon={LayoutDashboard} variant="detail" />, label: t('settings.sections.display') },
+      { key: 'keyboard', icon: <Icon icon={Keyboard} variant="detail" />, label: t('settings.sections.keyboard') },
+      { key: 'appearance', icon: <Icon icon={Palette} variant="detail" />, label: t('settings.sections.appearance') },
+      { key: 'about', icon: <Icon icon={Info} variant="detail" />, label: t('settings.sections.about') }
+    ],
+    [t]
+  )
+
+  const intervalOptions = useMemo(
+    () =>
+      refreshIntervalOptions.map((opt) => ({
+        ...opt,
+        label: opt.value === 'manual' ? t('common.manual') : opt.label
+      })),
+    [t]
+  )
+
+  const languageOptions = useMemo(
+    () => APP_LOCALES.map((code) => ({ value: code, label: APP_LOCALE_LABELS[code] })),
+    []
+  )
 
   useEffect(() => {
     if (!open) return
@@ -98,18 +117,31 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
         return (
           <Space orientation="vertical" style={{ width: '100%' }} size="middle">
             <div>
-              <Typography.Text strong>Resource refresh interval</Typography.Text>
+              <Typography.Text strong>{t('settings.language.title')}</Typography.Text>
+              <div style={{ marginTop: 8 }}>
+                <Select
+                  value={locale}
+                  onChange={(value: AppLocale) => void setLocale(value)}
+                  options={languageOptions}
+                  style={{ width: 240 }}
+                />
+              </div>
+              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                {t('settings.language.hint')}
+              </Typography.Text>
+            </div>
+            <div>
+              <Typography.Text strong>{t('settings.general.refreshTitle')}</Typography.Text>
               <div style={{ marginTop: 8 }}>
                 <Select
                   value={interval}
                   onChange={setInterval_}
-                  options={refreshIntervalOptions}
+                  options={intervalOptions}
                   style={{ width: 200 }}
                 />
               </div>
               <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                How often resource lists and metrics refresh automatically. Applies to every open cluster tab; pausing
-                live refresh is still available per resource view.
+                {t('settings.general.refreshHint')}
               </Typography.Text>
             </div>
           </Space>
@@ -119,24 +151,24 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
         return (
           <Space orientation="vertical" style={{ width: '100%' }} size={12}>
             {updateState?.latestVersion && updateState.phase !== 'not-available' && (
-              <Tag color="blue">v{updateState.latestVersion} available</Tag>
+              <Tag color="blue">{t('settings.updates.available', { version: updateState.latestVersion })}</Tag>
             )}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography.Text>Check for updates automatically</Typography.Text>
+              <Typography.Text>{t('settings.updates.checkAutomatically')}</Typography.Text>
               <Switch
                 checked={updateSettings?.checkAutomatically ?? true}
                 onChange={(checked) => void saveUpdateSettings({ checkAutomatically: checked })}
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography.Text>Check on startup</Typography.Text>
+              <Typography.Text>{t('settings.updates.checkOnStartup')}</Typography.Text>
               <Switch
                 checked={updateSettings?.checkOnStartup ?? true}
                 onChange={(checked) => void saveUpdateSettings({ checkOnStartup: checked })}
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography.Text>Include pre-release versions</Typography.Text>
+              <Typography.Text>{t('settings.updates.includePrerelease')}</Typography.Text>
               <Switch
                 checked={updateSettings?.includePrerelease ?? false}
                 onChange={(checked) => void saveUpdateSettings({ includePrerelease: checked })}
@@ -144,20 +176,19 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             </div>
             {updateState?.manualDownloadOnly ? (
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Automatic download/install isn't available on macOS without a paid Apple Developer ID certificate. When
-                an update is found, MagicLens links out to the GitHub release for a manual DMG download instead.
+                {t('settings.updates.macosManual')}
               </Typography.Text>
             ) : (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography.Text>Auto-download updates</Typography.Text>
+                  <Typography.Text>{t('settings.updates.autoDownload')}</Typography.Text>
                   <Switch
                     checked={updateSettings?.autoDownload ?? false}
                     onChange={(checked) => void saveUpdateSettings({ autoDownload: checked })}
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography.Text>Ask before install</Typography.Text>
+                  <Typography.Text>{t('settings.updates.askBeforeInstall')}</Typography.Text>
                   <Switch
                     checked={updateSettings?.askBeforeInstall ?? true}
                     onChange={(checked) => void saveUpdateSettings({ askBeforeInstall: checked })}
@@ -172,10 +203,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 loading={updateState?.phase === 'checking'}
                 onClick={() => void check()}
               >
-                Check for updates now
+                {t('settings.updates.checkNow')}
               </Button>
               <Button size="small" onClick={() => openUpdateCenter()}>
-                Open Update Center
+                {t('settings.updates.openCenter')}
               </Button>
             </Space>
           </Space>
@@ -185,43 +216,56 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
         return (
           <Space orientation="vertical" style={{ width: '100%' }} size="large">
             <div>
-              <Typography.Text strong>Resource details</Typography.Text>
+              <Typography.Text strong>{t('settings.display.detailsTitle')}</Typography.Text>
               <div style={{ marginTop: 8 }}>
                 <Select
                   value={resourceDetailPlacement}
                   onChange={(value) => void setResourceDetailPlacement(value)}
                   options={[
-                    { value: 'drawer', label: 'Right drawer (recommended)' },
-                    { value: 'right', label: 'Right panel (split view)' },
-                    { value: 'bottom', label: 'Bottom tab' }
+                    { value: 'drawer', label: t('settings.display.placementDrawer') },
+                    { value: 'right', label: t('settings.display.placementRight') },
+                    { value: 'bottom', label: t('settings.display.placementBottom') }
                   ]}
                   style={{ width: '100%', maxWidth: 360 }}
                 />
               </div>
               <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                Choose whether clicking a resource opens its detail view in a right-side panel or as a tab in the
-                bottom dock (alongside Terminal and YAML editor).
+                {t('settings.display.detailsHint')}
               </Typography.Text>
             </div>
             <div>
-              <Typography.Text strong>Nodes page layout</Typography.Text>
+              <Typography.Text strong>{t('settings.display.nodesTitle')}</Typography.Text>
               <div style={{ marginTop: 10 }}>
                 <NodesDashboardSettings />
               </div>
               <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                Toggle sections on or off and drag to reorder. The table section stays flexible and fills remaining
-                space when visible.
+                {t('settings.display.nodesHint')}
               </Typography.Text>
             </div>
             <div>
-              <Typography.Text strong>Tab icons</Typography.Text>
+              <Typography.Text strong>{t('settings.display.sidebarTitle')}</Typography.Text>
               <Space orientation="vertical" style={{ width: '100%', marginTop: 8 }} size={8}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography.Text>Show logos on cluster tabs</Typography.Text>
+                  <Typography.Text>{t('settings.display.showFavorites')}</Typography.Text>
+                  <Switch
+                    checked={showFavoritesSection}
+                    onChange={(checked) => void setShowFavoritesSection(checked)}
+                  />
+                </div>
+              </Space>
+              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                {t('settings.display.showFavoritesHint')}
+              </Typography.Text>
+            </div>
+            <div>
+              <Typography.Text strong>{t('settings.display.tabIconsTitle')}</Typography.Text>
+              <Space orientation="vertical" style={{ width: '100%', marginTop: 8 }} size={8}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography.Text>{t('settings.display.showClusterLogos')}</Typography.Text>
                   <Switch checked={showClusterTabLogos} onChange={(checked) => void setShowClusterTabLogos(checked)} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography.Text>Show icons on resource tabs</Typography.Text>
+                  <Typography.Text>{t('settings.display.showResourceIcons')}</Typography.Text>
                   <Switch
                     checked={showResourceTabIcons}
                     onChange={(checked) => void setShowResourceTabIcons(checked)}
@@ -229,19 +273,20 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 </div>
               </Space>
               <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                Cluster tabs use the cluster logo you set when adding a cluster. Resource tabs use the same icons as
-                the left menu.
+                {t('settings.display.tabIconsHint')}
               </Typography.Text>
             </div>
           </Space>
         )
 
+      case 'keyboard':
+        return <KeyboardShortcutsSettings />
+
       case 'appearance':
         return (
           <Space orientation="vertical" style={{ width: '100%' }} size="middle">
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              Pick a preset or choose your own accent color. Sidebar, resource menu, and panels all follow the active
-              theme. Use the header toggle for light / dark mode.
+              {t('settings.appearance.intro')}
             </Typography.Text>
             <div
               style={{
@@ -320,13 +365,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                   <Icon icon={Palette} variant="detail" style={{ color: token.colorTextSecondary }} />
                 </div>
                 <Typography.Text strong style={{ fontSize: 13 }}>
-                  Custom
+                  {t('common.custom')}
                   {colorScheme === 'custom' ? (
                     <Icon icon={Check} variant="detail" style={{ marginLeft: 6, color: token.colorPrimary }} />
                   ) : null}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
-                  Your own accent color
+                  {t('settings.appearance.customSwatch')}
                 </Typography.Text>
               </button>
             </div>
@@ -344,10 +389,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             >
               <div>
                 <Typography.Text strong style={{ display: 'block' }}>
-                  Custom accent
+                  {t('settings.appearance.customAccent')}
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  Applies to sidebars, buttons, highlights, and chart accents.
+                  {t('settings.appearance.customAccentHint')}
                 </Typography.Text>
               </div>
               <ColorPicker
@@ -362,8 +407,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
       case 'about':
         return (
           <Descriptions size="small" column={1} bordered style={{ maxWidth: 400 }}>
-            <Descriptions.Item label="Version">{appInfo?.version ?? '-'}</Descriptions.Item>
-            <Descriptions.Item label="Build">{appInfo?.buildNumber ?? '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('common.version')}>{appInfo?.version ?? '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('common.build')}>{appInfo?.buildNumber ?? '-'}</Descriptions.Item>
             <Descriptions.Item label="Electron">{appInfo?.electronVersion ?? '-'}</Descriptions.Item>
             <Descriptions.Item label="Chromium">{appInfo?.chromeVersion ?? '-'}</Descriptions.Item>
             <Descriptions.Item label="Node.js">{appInfo?.nodeVersion ?? '-'}</Descriptions.Item>
@@ -374,7 +419,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
 
   return (
     <Modal
-      title="Settings"
+      title={t('settings.title')}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -388,7 +433,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
         <Menu
           mode={isMobileSettings ? 'horizontal' : 'inline'}
           selectedKeys={[section]}
-          items={MENU_ITEMS}
+          items={menuItems}
           onClick={({ key }) => setSection(key as SettingsSection)}
           className="settings-modal-menu"
           style={
@@ -411,7 +456,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
         />
         <div className="settings-modal-content">
           <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
-            {SECTION_TITLES[section]}
+            {t(`settings.sections.${section}`)}
           </Typography.Title>
           {renderSection()}
         </div>

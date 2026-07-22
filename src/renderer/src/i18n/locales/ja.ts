@@ -1,0 +1,284 @@
+import type { TranslationResources } from './en'
+
+export const ja: TranslationResources = {
+  common: {
+    settings: '設定',
+    custom: 'カスタム',
+    version: 'バージョン',
+    build: 'ビルド',
+    manual: '手動',
+    connected: '接続済み',
+    connecting: '接続中…',
+    disconnected: '未接続',
+    error: 'エラー',
+    total: '合計',
+    clusters: 'クラスター',
+    vpn: 'VPN',
+    favorites: 'お気に入り'
+  },
+  chrome: {
+    searchPlaceholder: 'クラスター、リソース、名前空間を検索…',
+    manageClusters: 'クラスターを管理',
+    clustersMeta: '{{total}} 合計 · {{connected}} 接続中',
+    vpnTooltip: 'VPN プロファイル（OpenVPN、Pritunl、WireGuard）',
+    vpnConnected: '接続済み · {{name}}',
+    vpnConnecting: '接続中 · {{name}}',
+    searchFavorites: 'お気に入りを検索',
+    searchWorkspaces: 'ワークスペースを検索…',
+    noWorkspaceMatch: '一致するワークスペースはありません',
+    noFavoriteClusters: 'お気に入りのクラスターはありません',
+    collapseSidebar: 'サイドバーを折りたたむ',
+    expandSidebar: 'サイドバーを展開'
+  },
+  settings: {
+    title: '設定',
+    sections: {
+      general: '一般',
+      updates: 'アップデート',
+      display: '表示',
+      keyboard: 'キーボード',
+      appearance: '外観',
+      about: '情報'
+    },
+    language: {
+      title: '言語',
+      hint: 'アプリの言語を選択します。Ant Design の UI と日付表示もこれに従います。'
+    },
+    general: {
+      refreshTitle: 'リソースの更新間隔',
+      refreshHint:
+        'リソース一覧とメトリクスの自動更新頻度です。開いているすべてのクラスタータブに適用されます。リソース画面ごとにライブ更新を一時停止できます。'
+    },
+    updates: {
+      available: 'v{{version}} が利用可能',
+      checkAutomatically: 'アップデートを自動で確認',
+      checkOnStartup: '起動時に確認',
+      includePrerelease: 'プレリリースを含める',
+      macosManual:
+        '有料の Apple Developer ID 証明書がない場合、macOS では自動ダウンロード／インストールは利用できません。アップデートが見つかると MagicLens は GitHub のリリースへ案内し、DMG を手動でダウンロードします。',
+      autoDownload: 'アップデートを自動ダウンロード',
+      askBeforeInstall: 'インストール前に確認',
+      checkNow: '今すぐアップデートを確認',
+      openCenter: 'アップデートセンターを開く'
+    },
+    display: {
+      detailsTitle: 'リソースの詳細',
+      detailsHint:
+        'リソースをクリックしたときに、右側パネルで開くか、下部ドックのタブ（ターミナルと YAML エディターと並ぶ）で開くかを選べます。',
+      placementDrawer: '右ドロワー（推奨）',
+      placementRight: '右パネル（分割表示）',
+      placementBottom: '下部タブ',
+      nodesTitle: 'Nodes ページのレイアウト',
+      nodesHint:
+        'セクションの表示／非表示を切り替え、ドラッグで並べ替えます。テーブルは表示時に残りの領域を埋めます。',
+      nodesChooser: 'Nodes ページに表示するセクションを選び、ドラッグで並べ替えます。',
+      sidebarTitle: 'サイドバー',
+      showFavorites: 'お気に入りセクションを表示',
+      showFavoritesHint:
+        '有効にすると、左サイドバーの Workspaces の上にお気に入りが表示されます。見出しをクリックして折りたたみ／展開できます。',
+      tabIconsTitle: 'タブのアイコン',
+      showClusterLogos: 'クラスタータブにロゴを表示',
+      showResourceIcons: 'リソースタブにアイコンを表示',
+      tabIconsHint:
+        'クラスタータブは追加時に設定したロゴを使います。リソースタブは左メニューと同じアイコンを使います。'
+    },
+    nodesSections: {
+      health: 'クラスターの健全性',
+      resources: 'リソース使用状況',
+      quickInsights: 'クイックインサイト',
+      topConsumers: '上位コンシューマー',
+      table: 'ノードテーブル',
+      events: 'イベントパネル'
+    },
+    keyboard: {
+      hint: 'ショートカットをクリックして新しい組み合わせを録音します。競合は自動で入れ替わります。Esc でキャンセル。',
+      reset: 'デフォルトに戻す',
+      pressKeys: 'キーを押してください…',
+      recordError: '⌘/Ctrl（または Alt）付きのショートカットを使うか、Esc でキャンセル',
+      changeAria: '{{label}} のショートカットを変更',
+      actions: {
+        globalSearch: {
+          label: 'グローバル検索',
+          description: 'クラスター／リソース検索パレットを開閉'
+        },
+        toggleSplitView: {
+          label: '分割表示の切替',
+          description: '2 つのクラスタータブを並べて比較'
+        },
+        goToClusters: {
+          label: 'クラスターへ',
+          description: 'クラスター一覧を開く'
+        },
+        goToVpn: {
+          label: 'VPN へ',
+          description: 'VPN プロファイルページを開く'
+        },
+        toggleSidebar: {
+          label: 'サイドバーの切替',
+          description: '左サイドバーを折りたたむ／展開する'
+        },
+        openSettings: {
+          label: '設定を開く',
+          description: '設定ウィンドウを開く'
+        }
+      }
+    },
+    appearance: {
+      intro:
+        'プリセットを選ぶか、独自のアクセントカラーを設定します。サイドバー、リソースメニュー、パネルはアクティブなテーマに従います。ライト／ダークはヘッダーの切替を使います。',
+      customAccent: 'カスタムアクセント',
+      customAccentHint: 'サイドバー、ボタン、ハイライト、チャートのアクセントに適用されます。',
+      customSwatch: '独自のアクセントカラー'
+    }
+  },
+  vpn: {
+    heroEyebrow: 'セキュアトンネル',
+    title: 'VPN',
+    status: {
+      connected: '接続済み',
+      connecting: '接続中',
+      error: 'エラー',
+      disconnected: '未接続'
+    },
+    tunnelsUp: '{{count}} 本のトンネル稼働中',
+    noActiveProfile: 'アクティブなプロファイルなし',
+    disconnect: '切断',
+    connect: '接続',
+    edit: '編集',
+    disconnectedToast: '切断しました',
+    connectedToast: '接続しました',
+    openedExternalToast: 'システムの VPN アプリで開きました',
+    connectFailed: '接続に失敗しました',
+    removedToast: '削除しました',
+    noToolsTitle: 'VPN ツールが見つかりません',
+    noToolsDesc:
+      'OpenVPN（brew install openvpn）、Tunnelblick、WireGuard.app、または wireguard-tools をインストールしてください。',
+    profilesTitle: 'VPN プロファイル',
+    addToStart: '設定を追加して開始',
+    filteredCount: '{{filtered}} / {{total}}',
+    searchPlaceholder: 'プロファイルを検索…',
+    addFile: 'ファイルを追加',
+    paste: '貼り付け',
+    refresh: '更新',
+    emptyDesc: '.ovpn または WireGuard .conf を追加',
+    chooseFile: 'ファイルを選択',
+    noMatch: '「{{query}}」に一致するプロファイルはありません',
+    live: '稼働中',
+    usernameNotSet: 'ユーザー名未設定',
+    noServerSet: 'サーバー未設定',
+    moreActions: 'その他の操作',
+    menu: {
+      editProfile: 'プロファイルを編集',
+      revealFile: 'ファイルを表示',
+      openExternally: '外部で開く',
+      delete: '削除'
+    },
+    draft: {
+      editTitle: 'VPN プロファイルを編集',
+      reviewTitle: 'VPN プロファイルを確認',
+      correctFields: '自動検出された項目を修正',
+      correctFieldsDesc:
+        'ユーザー名 / 組織 / サーバーは .ovpn から読み取られ、しばしば誤っています — 保存前に編集してください。',
+      name: '名前',
+      provider: 'プロバイダー',
+      username: 'ユーザー名',
+      usernameRequired: 'VPN ユーザー名を入力',
+      organization: '組織',
+      organizationPlaceholder: '組織名',
+      serverName: 'サーバー名',
+      serverHost: 'サーバーホスト',
+      protocol: 'プロトコル',
+      protocolPlaceholder: 'udp / tcp',
+      saveChanges: '変更を保存',
+      saveProfile: 'プロファイルを保存',
+      updated: 'プロファイルを更新しました',
+      updateFailed: '更新に失敗しました',
+      missingConfig: '設定がありません',
+      added: 'VPN プロファイルを追加しました',
+      providers: {
+        openvpn: 'OpenVPN (.ovpn)',
+        pritunl: 'Pritunl (.ovpn)',
+        wireguard: 'WireGuard (.conf)',
+        generic: '自動検出'
+      }
+    },
+    auth: {
+      title: '接続 · {{name}}',
+      pinMfaOnly: 'PIN + MFA のみ',
+      pinMfaDesc: 'ユーザー名 / サーバー / 組織はプロファイルから取得されます。誤りがあれば編集してください。',
+      user: 'ユーザー:',
+      server: 'サーバー:',
+      organization: '組織:',
+      notSetEdit: '未設定 — プロファイルを編集',
+      setUsernameFirst: '先に編集でユーザー名を設定するか、下に入力してください',
+      pin: 'PIN',
+      pinRequired: 'PIN を入力',
+      pinPlaceholder: 'VPN PIN',
+      mfa: 'MFA / OTP コード',
+      mfaRequired: 'MFA/OTP コードを入力',
+      mfaPlaceholder: '6桁のコード',
+      editFields: 'プロファイル項目を編集'
+    },
+    pasteModal: {
+      title: 'VPN 設定を貼り付け',
+      namePlaceholder: 'オフィス VPN',
+      config: '設定',
+      configPlaceholder: '.ovpn または WireGuard 設定を貼り付け',
+      continue: '続行 — 項目を確認'
+    },
+    panel: {
+      connectionStatus: '接続状態',
+      healthyTunnel: '正常なトンネル',
+      verifying: '接続済み — 確認中',
+      connecting: '接続中…',
+      error: 'エラー',
+      disconnected: '未接続',
+      tunnel: 'VPN トンネル',
+      opening: '開いています…',
+      server: 'VPN サーバー',
+      privateNetwork: 'プライベートネットワーク',
+      clusterEndpoints: 'クラスターエンドポイント',
+      local: 'ローカル',
+      download: 'ダウンロード',
+      upload: 'アップロード',
+      total: '合計 {{size}}',
+      checkProcess: 'VPN プロセスが実行中',
+      checkInterface: 'IP 付きトンネルインターフェース',
+      checkTraffic: 'トラフィックが流れている',
+      falsePositive:
+        '接続済みと表示されていますがトンネル IP がまだありません — ルートが確立されるまでプライベートクラスターはタイムアウトします。',
+      providerLine: 'プロバイダー: {{provider}}',
+      connectedAgo: '{{uptime}} 前に接続',
+      connectionFailed: '接続に失敗しました'
+    },
+    session: {
+      titleForCluster: '{{cluster}} の VPN',
+      titleConnect: 'VPN 接続 · {{name}}',
+      alertTitle: 'VPN セッション',
+      pinKnownDesc:
+        'PIN は約 5 時間記憶されます。トンネルを開始するには新しい MFA コードを入力してください。接続後、トンネルが稼働中はクラスター切替で再入力を求めません。',
+      pinUnknownDesc:
+        'VPN ごとに一度認証します。MagicLens はトンネルを維持します（Pritunl と同様）。約 5 時間はクラスター切替で再ログイン不要です。',
+      profile: 'プロファイル:',
+      user: 'ユーザー:',
+      pin: 'PIN',
+      pinPlaceholder: 'VPN PIN',
+      mfa: 'MFA / OTP',
+      mfaPlaceholder: '6桁のコード',
+      connectContinue: '接続して続行'
+    },
+    badge: {
+      missing: 'VPN なし',
+      missingTooltip: 'リンクされた VPN プロファイルが見つかりません — クラスター編集で再割り当て',
+      connected: 'VPN 接続済み · {{name}}',
+      connecting: 'VPN 接続中 · {{name}}',
+      autoConnect: '自動接続 · {{name}}'
+    },
+    clusterLink: {
+      title: 'VPN プロファイル（自動接続）',
+      placeholder: 'VPN なし — 手動で接続',
+      empty: '先に VPN ページでプロファイルを追加してください',
+      hint: 'このクラスタータブに切り替えると MagicLens がこの VPN に自動接続します。PIN と MFA は初回成功後、その日のうちプロファイルごとに記憶されます。'
+    }
+  }
+}

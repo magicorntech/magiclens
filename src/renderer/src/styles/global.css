@@ -285,6 +285,178 @@ body,
   }
 }
 
+/* Feature tour card slider (first launch / after update) */
+.ml-feature-tour {
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: #0a0610;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.ml-feature-tour__inner {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 22px;
+}
+
+.ml-feature-tour__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ml-feature-tour__logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.ml-feature-tour__brand-name {
+  font-size: 18px !important;
+  font-weight: 650 !important;
+  color: #fff !important;
+  letter-spacing: 0.02em;
+}
+
+.ml-feature-tour__stage {
+  min-height: 280px;
+  display: flex;
+  align-items: stretch;
+}
+
+.ml-feature-tour__card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 28px 28px 32px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+}
+
+.ml-feature-tour__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.ml-feature-tour__eyebrow {
+  font-size: 11px !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.ml-feature-tour__title {
+  margin: 0 !important;
+  color: #fff !important;
+  font-size: clamp(22px, 4vw, 28px) !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em;
+}
+
+.ml-feature-tour__body {
+  margin: 0 !important;
+  color: rgba(255, 255, 255, 0.68) !important;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.ml-feature-tour__dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ml-feature-tour__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.22);
+  transition:
+    width 0.2s ease,
+    background 0.2s ease;
+}
+
+.ml-feature-tour__dot--active {
+  width: 22px;
+  background: #fff;
+}
+
+.ml-feature-tour__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ml-feature-tour__skip {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.ml-feature-tour__skip:hover {
+  color: #fff !important;
+}
+
+.ml-feature-tour__nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ml-feature-tour__nav-right .ant-btn-default {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.ml-feature-tour__nav-right .ant-btn-default:disabled {
+  opacity: 0.35;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 560px) {
+  .ml-feature-tour__card {
+    padding: 22px 20px 26px;
+  }
+
+  .ml-feature-tour__nav {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .ml-feature-tour__nav-right {
+    width: 100%;
+  }
+
+  .ml-feature-tour__nav-right .ant-btn {
+    flex: 1;
+  }
+}
+
 /* Draggable column resize handles on data tables */
 .ml-table-col-resize-handle {
   position: absolute;
@@ -1850,6 +2022,35 @@ body,
   text-transform: uppercase;
   color: var(--ml-sidebar-muted);
   padding: 6px 8px 4px;
+}
+
+.ml-sidebar-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 2px 4px 2px 2px;
+  margin: 0 0 2px;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+  border-radius: 6px;
+}
+
+.ml-sidebar-section-toggle:hover {
+  background: var(--ml-sidebar-hover);
+}
+
+.ml-sidebar-section-toggle .ml-sidebar-section-label {
+  padding: 4px 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.ml-sidebar-section--favorites-collapsed {
+  overflow: visible;
 }
 
 .ml-sidebar-search {
@@ -4608,4 +4809,312 @@ body,
 
 .ml-admin-content {
   box-shadow: 0 8px 24px color-mix(in srgb, #000 4%, transparent);
+}
+
+/* Cluster empty state */
+.ml-cluster-empty {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.ml-cluster-empty__logo {
+  border-radius: 16px;
+  box-shadow: 0 12px 32px color-mix(in srgb, #000 12%, transparent);
+}
+
+.ml-cluster-empty__icon {
+  color: var(--ml-text-secondary);
+  opacity: 0.7;
+}
+
+.ml-cluster-empty__title {
+  margin: 8px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ml-text);
+}
+
+.ml-cluster-empty__desc {
+  margin: 0;
+  max-width: 360px;
+  font-size: 13px;
+  color: var(--ml-text-secondary);
+}
+
+.ml-cluster-empty .ant-empty {
+  margin-block: 4px;
+}
+
+/* Per-cluster wallpaper */
+.ml-cluster-view {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ml-cluster-view__bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ml-cluster-view__bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ml-bg-layout) 28%, transparent);
+}
+
+.ml-cluster-view__fg {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-cluster-view__center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+/* Ant Layout defaults are opaque — punch through so wallpaper shows */
+.ml-cluster-view--has-bg {
+  --ml-bg-panel-mix: 70%;
+}
+
+.ml-cluster-view--has-bg .ml-app-shell,
+.ml-cluster-view--has-bg .ml-app-shell.ant-layout,
+.ml-cluster-view--has-bg .ml-workspace-body,
+.ml-cluster-view--has-bg .ml-workspace-body.ant-layout,
+.ml-cluster-view--has-bg .ant-layout {
+  background: transparent !important;
+}
+
+.ml-cluster-view--has-bg .ml-workspace-header {
+  background: color-mix(in srgb, var(--ml-bg-container) var(--ml-bg-panel-mix), transparent) !important;
+  backdrop-filter: blur(10px);
+}
+
+.ml-cluster-view--has-bg .ml-resource-sider {
+  background: color-mix(in srgb, var(--ml-resource-sider-bg) var(--ml-bg-panel-mix), transparent) !important;
+  backdrop-filter: blur(10px);
+}
+
+.ml-cluster-view--has-bg .ml-resource-nav-search {
+  background: color-mix(in srgb, var(--ml-bg-spotlight) var(--ml-bg-panel-mix), transparent) !important;
+}
+
+.ml-cluster-view--has-bg .ml-workspace-content {
+  background: color-mix(in srgb, var(--ml-bg-layout) var(--ml-bg-panel-mix), transparent) !important;
+}
+
+.ml-cluster-view--has-bg .ml-workspace-main,
+.ml-cluster-view--has-bg .ml-workspace-content-inner {
+  background: transparent;
+}
+
+.ml-cluster-view--has-bg .resource-kind-tabs-root {
+  background: color-mix(in srgb, var(--ml-bg-container) var(--ml-bg-panel-mix), transparent) !important;
+  backdrop-filter: blur(8px);
+}
+
+.ml-cluster-view--has-bg .resource-kind-tabs-root > .resource-kind-tabs-bar.ant-tabs {
+  background: color-mix(in srgb, var(--ml-bg-elevated) var(--ml-bg-panel-mix), transparent) !important;
+}
+
+.ml-cluster-view--has-bg .resource-kind-tabs-root > .resource-kind-tabs-content {
+  background: color-mix(in srgb, var(--ml-bg-layout) var(--ml-bg-panel-mix), transparent) !important;
+}
+
+.ml-cluster-view--has-bg .resource-kind-tabs-bar .ant-tabs-tab-active {
+  background: color-mix(in srgb, var(--ml-bg-layout) var(--ml-bg-panel-mix), transparent) !important;
+}
+
+.ml-cluster-view--has-bg .ml-table-wrap,
+.ml-cluster-view--has-bg .ml-table-wrap .ant-table,
+.ml-cluster-view--has-bg .ml-table-wrap .ant-table-container,
+.ml-cluster-view--has-bg .ml-table-wrap .ant-table-content,
+.ml-cluster-view--has-bg .ml-table .ant-table {
+  background: transparent !important;
+}
+
+.ml-cluster-view--has-bg .ml-table .ant-table-thead > tr > th {
+  background: color-mix(in srgb, var(--ml-bg-container) var(--ml-bg-panel-mix), transparent) !important;
+  backdrop-filter: blur(8px);
+}
+
+.ml-cluster-view--has-bg .ml-table .ant-table-tbody > tr > td {
+  background: color-mix(in srgb, var(--ml-bg-container) var(--ml-bg-panel-mix), transparent) !important;
+}
+
+.ml-cluster-view--has-bg .ml-table .ant-table-tbody > tr:nth-child(even) > td {
+  background: color-mix(in srgb, var(--ml-bg-spotlight) var(--ml-bg-panel-mix), transparent) !important;
+}
+
+.ml-cluster-view--has-bg .ml-table .ant-table-tbody > tr:hover > td,
+.ml-cluster-view--has-bg .ml-table .ant-table-tbody > tr:nth-child(even):hover > td {
+  background: color-mix(in srgb, var(--ml-bg-elevated) var(--ml-bg-panel-mix), transparent) !important;
+}
+
+.ml-cluster-view--has-bg .ml-table-wrap .ant-table-pagination {
+  background: color-mix(in srgb, var(--ml-bg-container) var(--ml-bg-panel-mix), transparent) !important;
+  backdrop-filter: blur(8px);
+}
+
+.ml-cluster-view--has-bg .ant-card,
+.ml-cluster-view--has-bg .ant-card .ant-card-head,
+.ml-cluster-view--has-bg .ant-card .ant-card-body {
+  background: color-mix(in srgb, var(--ml-bg-container) var(--ml-bg-panel-mix), transparent) !important;
+}
+
+.ml-cluster-view--has-bg .ant-card {
+  backdrop-filter: blur(8px);
+}
+
+/* Background picker in Edit Cluster */
+.ml-cluster-bg-picker__preview {
+  height: 96px;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 8px;
+  border: 1px solid var(--ml-border);
+}
+
+.ml-cluster-bg-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.ml-cluster-bg-picker__thumb {
+  position: relative;
+  height: 64px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0;
+  font: inherit;
+}
+
+.ml-cluster-bg-picker__thumb span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 4px 6px;
+  font-size: 10px;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  text-align: left;
+}
+
+.ml-cluster-bg-picker__thumb--selected {
+  border-color: var(--ml-primary);
+  box-shadow: 0 0 0 1px var(--ml-primary);
+}
+
+/* Sidebar workspaces */
+.ml-sidebar-section-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 2px;
+}
+
+.ml-sidebar-section--workspaces {
+  flex: 1;
+  min-height: 140px;
+  margin-top: 8px;
+  padding-bottom: 8px;
+}
+
+.ml-sidebar-section--workspaces.ml-sidebar-section--compact {
+  flex: 0;
+  min-height: auto;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.ml-sidebar-workspaces {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 4px;
+}
+
+.ml-sidebar-workspace {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ml-sidebar-hover) 80%, transparent);
+}
+
+.ml-sidebar-workspace__head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 2px 2px 4px;
+}
+
+.ml-sidebar-workspace__toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--ml-sidebar-text);
+  cursor: pointer;
+  padding: 6px 4px;
+  border-radius: 6px;
+  font: inherit;
+  text-align: left;
+}
+
+.ml-sidebar-workspace__toggle:hover {
+  background: var(--ml-sidebar-hover);
+}
+
+.ml-sidebar-workspace__count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ml-sidebar-muted);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent);
+  border-radius: 999px;
+  padding: 0 6px;
+  line-height: 18px;
+}
+
+.ml-sidebar-workspace__list {
+  padding: 0 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Drawer, Layout } from 'antd'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useVpnStore } from '../../stores/vpnStore'
+import { useSettingsUiStore } from '../../stores/settingsUiStore'
 import { ensureClusterAccess } from '../../clusterVpn'
 import { useResponsiveLayoutEffects } from '../../hooks/useResponsiveLayoutEffects'
 import { usesOverlayNavigation, useLayoutMode } from '../../hooks/useLayoutMode'
@@ -12,12 +13,15 @@ import { AddClusterModal } from '../ClusterTabs/AddClusterModal'
 import { LeftSidebar } from './LeftSidebar'
 import { MobileAppBar } from './MobileAppBar'
 import { AppTopBar } from './AppTopBar'
+import { SettingsModal } from './SettingsModal'
 
 export function AppLayout(): React.JSX.Element {
   const activeView = useClusterStore((s) => s.activeView)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
   const addClusterModalOpen = useClusterStore((s) => s.addClusterModalOpen)
   const setAddClusterModalOpen = useClusterStore((s) => s.setAddClusterModalOpen)
+  const settingsOpen = useSettingsUiStore((s) => s.open)
+  const setSettingsOpen = useSettingsUiStore((s) => s.setOpen)
   const layoutMode = useLayoutMode()
   const overlayNav = usesOverlayNavigation(layoutMode)
   const [navOpen, setNavOpen] = useState(false)
@@ -49,13 +53,15 @@ export function AppLayout(): React.JSX.Element {
     </div>
   )
 
+  const settingsModal = (
+    <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+  )
+
   if (overlayNav) {
     return (
       <Layout className="app-layout app-layout--overlay-nav">
         <MobileAppBar onMenuClick={() => setNavOpen(true)} />
-        <div className="app-layout-main">
-          {mainContent}
-        </div>
+        <div className="app-layout-main">{mainContent}</div>
         <Drawer
           title={null}
           placement="left"
@@ -68,6 +74,7 @@ export function AppLayout(): React.JSX.Element {
           <LeftSidebar variant="drawer" onNavigate={() => setNavOpen(false)} />
         </Drawer>
         <AddClusterModal open={addClusterModalOpen} onClose={() => setAddClusterModalOpen(false)} />
+        {settingsModal}
       </Layout>
     )
   }
@@ -80,6 +87,7 @@ export function AppLayout(): React.JSX.Element {
         {mainContent}
       </div>
       <AddClusterModal open={addClusterModalOpen} onClose={() => setAddClusterModalOpen(false)} />
+      {settingsModal}
     </Layout>
   )
 }

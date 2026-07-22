@@ -14,7 +14,9 @@ import { GLOBAL_SEARCH_TYPES, type GlobalSearchGroup, type GlobalSearchResult, t
 import { HighlightText } from '../ClusterTabs/ClusterSearchInput'
 import { matchesSearch } from '../../clusterFilter'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useGlobalSearchStore } from '../../stores/globalSearchStore'
+import { shortcutParts } from '@shared/types/keyboardShortcuts'
 import { kindIcons } from '../../resourceConfig/kinds.renderer'
 
 const FLAT_ITEM_ATTR = 'data-global-search-index'
@@ -79,6 +81,9 @@ export function GlobalSearchModal(): React.JSX.Element {
   const setQuery = useGlobalSearchStore((s) => s.setQuery)
   const typeFilter = useGlobalSearchStore((s) => s.typeFilter)
   const toggleTypeFilter = useGlobalSearchStore((s) => s.toggleTypeFilter)
+  const searchShortcut = useDisplaySettingsStore((s) => s.keyboardShortcuts.globalSearch)
+  const isMac = navigator.platform.includes('Mac')
+  const searchShortcutParts = shortcutParts(searchShortcut, isMac)
 
   const clusters = useClusterStore((s) => s.clusters)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
@@ -399,7 +404,12 @@ export function GlobalSearchModal(): React.JSX.Element {
           <kbd>Esc</kbd> close
         </span>
         <span style={{ marginLeft: 'auto' }}>
-          <kbd>Ctrl</kbd>+<kbd>K</kbd>
+          {searchShortcutParts.map((part, i) => (
+            <span key={`${part}-${i}`}>
+              {i > 0 && !isMac ? '+' : null}
+              <kbd>{part}</kbd>
+            </span>
+          ))}
         </span>
       </div>
     </Modal>

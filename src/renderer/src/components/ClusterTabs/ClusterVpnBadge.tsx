@@ -1,5 +1,6 @@
 import { Tag, Tooltip } from 'antd'
 import { Shield } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Icon } from '../ui/Icon'
 import { useClusterVpnStore } from '../../stores/clusterVpnStore'
 import { useVpnStore } from '../../stores/vpnStore'
@@ -11,6 +12,7 @@ interface ClusterVpnBadgeProps {
 }
 
 export function ClusterVpnBadge({ clusterId, compact }: ClusterVpnBadgeProps): React.JSX.Element | null {
+  const { t } = useTranslation()
   const vpnProfileId = useClusterVpnStore((s) => s.links[clusterId])
   const profiles = useVpnStore((s) => s.profiles)
   const status = useVpnStore((s) => s.status)
@@ -25,9 +27,9 @@ export function ClusterVpnBadge({ clusterId, compact }: ClusterVpnBadgeProps): R
 
   if (!profile) {
     return (
-      <Tooltip title="Linked VPN profile not found — reassign in Edit Cluster">
+      <Tooltip title={t('vpn.badge.missingTooltip')}>
         <Tag color="warning" icon={<Icon icon={Shield} variant="micro" />} style={compact ? compactTagStyle : undefined}>
-          {compact ? null : 'VPN missing'}
+          {compact ? null : t('vpn.badge.missing')}
         </Tag>
       </Tooltip>
     )
@@ -35,10 +37,10 @@ export function ClusterVpnBadge({ clusterId, compact }: ClusterVpnBadgeProps): R
 
   const color = isActive ? 'success' : isConnecting ? 'processing' : 'purple'
   const tooltip = isActive
-    ? `VPN connected · ${profile.name}`
+    ? t('vpn.badge.connected', { name: profile.name })
     : isConnecting
-      ? `VPN connecting · ${profile.name}`
-      : `Auto-connect · ${profile.name}`
+      ? t('vpn.badge.connecting', { name: profile.name })
+      : t('vpn.badge.autoConnect', { name: profile.name })
 
   if (compact) {
     return (

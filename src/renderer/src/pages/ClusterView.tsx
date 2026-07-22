@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button, Result, Spin } from 'antd'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceFocus } from '@shared/types/navigation'
 import { useClusterStore } from '../stores/clusterStore'
 import { connectCluster } from '../clusterConnect'
 import { clusterNeedsVpn } from '../clusterVpn'
+import { cssBackgroundImage, normalizeBackgroundPanelOpacity, resolveClusterBackgroundUrl } from '../clusterBackgrounds'
 import { AppShell } from '../components/Layout/AppShell'
 import { ResourceKindTabs } from '../components/ResourceTable/ResourceKindTabs'
 import { PortForwardingPage } from '../components/PortForward/PortForwardingPage'
@@ -32,6 +33,18 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
     import('@shared/types/navigation').DynamicResourceFocus | null
   >(null)
 
+  const backgroundUrl = useMemo(
+    () =>
+      cluster
+        ? resolveClusterBackgroundUrl({
+            backgroundId: cluster.backgroundId,
+            backgroundCustomUrl: cluster.backgroundCustomUrl
+          })
+        : undefined,
+    [cluster?.backgroundId, cluster?.backgroundCustomUrl]
+  )
+  const panelOpacity = normalizeBackgroundPanelOpacity(cluster?.backgroundPanelOpacity)
+
   useEffect(() => {
     if (!cluster?.pendingNavigation) return
     const pending = cluster.pendingNavigation
@@ -41,9 +54,6 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
     clearPendingNavigation(clusterId)
   }, [cluster?.pendingNavigation, clusterId, clearPendingNavigation])
 
-  // New clusters start as idle and connect when the tab is first opened.
-  // If a VPN is linked, wait for ensureClusterAccess (VPN first) instead of racing.
-  // Explicit disconnect sets status to disconnected — user must connect manually.
   useEffect(() => {
     if (cluster?.status !== 'idle') return
     if (clusterNeedsVpn(cluster.id)) return
@@ -59,6 +69,9 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
       source: cluster.source,
       endpoint: cluster.endpoint,
       logoUrl: cluster.logoUrl,
+      backgroundId: cluster.backgroundId,
+      backgroundCustomUrl: cluster.backgroundCustomUrl,
+      backgroundPanelOpacity: cluster.backgroundPanelOpacity,
       prometheusUrl: cluster.prometheusUrl,
       isFavorite: cluster.isFavorite,
       selectedNamespace: cluster.selectedNamespace,
@@ -67,11 +80,33 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cluster?.selectedNamespace, cluster?.selectedResourceKind])
 
+  function wrapWithBackground(children: React.ReactNode): React.JSX.Element {
+    return (
+      <div
+        className={`ml-cluster-view${backgroundUrl ? ' ml-cluster-view--has-bg' : ''}`}
+        style={
+          backgroundUrl
+            ? ({ ['--ml-bg-panel-mix' as string]: `${panelOpacity}%` } as React.CSSProperties)
+            : undefined
+        }
+      >
+        {backgroundUrl ? (
+          <div
+            className="ml-cluster-view__bg"
+            style={{ backgroundImage: cssBackgroundImage(backgroundUrl) }}
+            aria-hidden
+          />
+        ) : null}
+        <div className="ml-cluster-view__fg">{children}</div>
+      </div>
+    )
+  }
+
   if (!cluster) return <Spin />
 
   if (cluster.status === 'disconnected') {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+    return wrapWithBackground(
+      <div className="ml-cluster-view__center">
         <Result
           status="info"
           title="Cluster disconnected"
@@ -98,8 +133,8 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
         : cluster.status === 'error'
           ? cluster.errorMessage
           : 'Connecting…'
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+    return wrapWithBackground(
+      <div className="ml-cluster-view__center">
         <Spin description={description} />
       </div>
     )
@@ -163,7 +198,7 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
     }
   }
 
-  return (
+  return wrapWithBackground(
     <AppShell
       cluster={cluster}
       splitPane={splitPane}

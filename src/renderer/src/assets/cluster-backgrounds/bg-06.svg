@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 3840 2160" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0.2" y1="0.1" x2="0.8" y2="0.9">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#a5f3fc" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="72%" cy="28%" r="18%">
+      <stop offset="0%" stop-color="#a5f3fc" stop-opacity="0.95"/>
+      <stop offset="45%" stop-color="#22d3ee" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="3840" height="2160" fill="url(#sky)"/>
+  <rect width="3840" height="2160" fill="url(#glow)"/>
+  <circle cx="2760" cy="600" r="420" fill="url(#sun)"/>
+  <path d="M0 1480 C480 1320 860 1560 1280 1420 C1680 1300 1960 1520 2360 1400 C2760 1280 3120 1500 3840 1360 L3840 2160 L0 2160 Z" fill="#0f172a" opacity="0.55"/>
+  <path d="M0 1620 C520 1500 920 1700 1400 1580 C1880 1460 2280 1680 2800 1560 C3280 1450 3560 1640 3840 1520 L3840 2160 L0 2160 Z" fill="#020617" opacity="0.75"/>
+  <path d="M0 1780 C640 1680 1100 1860 1680 1740 C2260 1620 2700 1840 3240 1720 C3560 1650 3720 1760 3840 1700 L3840 2160 L0 2160 Z" fill="#020617"/>
+  <rect x="0" y="1980" width="3840" height="180" fill="#020617" opacity="0.85"/>
+  <!-- soft stars / sparkle -->
+  <g fill="#a5f3fc" opacity="0.35">
+    <circle cx="420" cy="280" r="3"/><circle cx="980" cy="180" r="2"/><circle cx="1520" cy="360" r="2.5"/>
+    <circle cx="2100" cy="140" r="2"/><circle cx="3200" cy="240" r="3"/><circle cx="3500" cy="420" r="2"/>
+  </g>
+</svg>

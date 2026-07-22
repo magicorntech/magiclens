@@ -21,6 +21,7 @@ import { registerEnterpriseHandlers } from './enterprise.handlers'
 import { registerVpnHandlers } from './vpn.handlers'
 import { registerSessionHandlers } from './session.handlers'
 import { registerClusterVpnHandlers } from './clusterVpn.handlers'
+import { registerClusterGroupsHandlers } from './clusterGroups.handlers'
 
 export function registerIpcHandlers(): void {
   registerSessionHandlers()
@@ -29,6 +30,7 @@ export function registerIpcHandlers(): void {
   registerResourceHandlers()
   registerClusterStoreHandlers()
   registerClusterVpnHandlers()
+  registerClusterGroupsHandlers()
   registerUiStateHandlers()
   registerMetricsHandlers()
   registerPrometheusHandlers()
