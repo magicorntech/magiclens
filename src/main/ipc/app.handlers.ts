@@ -17,7 +17,8 @@ export function registerAppHandlers(): void {
     buildNumber: packageJson.buildNumber ?? '-',
     electronVersion: process.versions.electron ?? '-',
     chromeVersion: process.versions.chrome ?? '-',
-    nodeVersion: process.versions.node ?? '-'
+    nodeVersion: process.versions.node ?? '-',
+    platform: process.platform
   }))
 
   ipcMain.handle(IPC.APP_GET_WELCOME_STATE, async (): Promise<WelcomeStateResponse> => {

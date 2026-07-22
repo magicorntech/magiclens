@@ -62,8 +62,30 @@ class VpnManager {
     return []
   }
 
+  private windowsProgramDirs(): string[] {
+    if (process.platform !== 'win32') return []
+    const pf = process.env.ProgramFiles ?? 'C:\\Program Files'
+    const pf86 = process.env['ProgramFiles(x86)'] ?? 'C:\\Program Files (x86)'
+    return [pf, pf86]
+  }
+
+  private windowsOpenVpnCandidates(): string[] {
+    // Community OpenVPN CLI only — never OpenVPN Connect (no Magiclens PIN/MFA support).
+    return this.windowsProgramDirs().map((root) => join(root, 'OpenVPN', 'bin', 'openvpn.exe'))
+  }
+
+  private windowsWireGuardCandidates(): string[] {
+    return this.windowsProgramDirs().map((root) => join(root, 'WireGuard', 'wireguard.exe'))
+  }
+
   private enrichedEnv(): NodeJS.ProcessEnv {
-    const extras = this.homebrewPrefixes().map((p) => join(p, 'bin'))
+    const extras = [
+      ...this.homebrewPrefixes().map((p) => join(p, 'bin')),
+      ...this.windowsProgramDirs().flatMap((root) => [
+        join(root, 'OpenVPN', 'bin'),
+        join(root, 'WireGuard')
+      ])
+    ]
     const pathKey = process.platform === 'win32' ? 'Path' : 'PATH'
     const current = process.env[pathKey] ?? process.env.PATH ?? ''
     return {
@@ -87,13 +109,30 @@ class VpnManager {
   }
 
   private async resolveBin(bin: string): Promise<string | undefined> {
-    const fromPath = await this.which(bin)
-    if (fromPath) return fromPath
-    for (const prefix of this.homebrewPrefixes()) {
-      const candidate = join(prefix, 'bin', bin)
-      if (existsSync(candidate)) return candidate
+    const names =
+      process.platform === 'win32' && !bin.endsWith('.exe') ? [bin, `${bin}.exe`] : [bin]
+    for (const name of names) {
+      const fromPath = await this.which(name)
+      if (fromPath) return fromPath
+      for (const prefix of this.homebrewPrefixes()) {
+        const candidate = join(prefix, 'bin', name)
+        if (existsSync(candidate)) return candidate
+      }
+    }
+    if (bin === 'openvpn' || bin === 'openvpn.exe') {
+      for (const candidate of this.windowsOpenVpnCandidates()) {
+        if (existsSync(candidate)) return candidate
+      }
     }
     return undefined
+  }
+
+  private detectWireGuardApp(): boolean {
+    if (process.platform === 'darwin') return existsSync('/Applications/WireGuard.app')
+    if (process.platform === 'win32') {
+      return this.windowsWireGuardCandidates().some((p) => existsSync(p))
+    }
+    return false
   }
 
   private async detectTools(): Promise<VpnRuntimeStatus['tools']> {
@@ -101,16 +140,27 @@ class VpnManager {
     const wgQuickPath = await this.resolveBin('wg-quick')
     const tunnelblick =
       process.platform === 'darwin' && existsSync('/Applications/Tunnelblick.app')
-    const wireguardApp =
-      process.platform === 'darwin' && existsSync('/Applications/WireGuard.app')
+    const wireguardApp = this.detectWireGuardApp()
     return {
       openvpn: !!openvpnPath,
       openvpnPath,
-      wireguard: !!wgQuickPath,
+      wireguard: !!wgQuickPath || wireguardApp,
       wgQuickPath,
       tunnelblick,
       wireguardApp
     }
+  }
+
+  private writeAskpassScript(body: string): string {
+    mkdirSync(this.vpnDir(), { recursive: true })
+    const askpassPath = join(this.vpnDir(), 'brew-askpass.sh')
+    writeFileSync(askpassPath, body, { encoding: 'utf8', mode: 0o700 })
+    try {
+      chmodSync(askpassPath, 0o700)
+    } catch {
+      // ignore
+    }
+    return askpassPath
   }
 
   /**
@@ -138,11 +188,7 @@ class VpnManager {
 
     try {
       if (process.platform === 'darwin') {
-        mkdirSync(this.vpnDir(), { recursive: true })
-        const askpassPath = join(this.vpnDir(), 'brew-askpass.sh')
-        writeFileSync(
-          askpassPath,
-          `#!/bin/bash
+        const askpassPath = this.writeAskpassScript(`#!/bin/bash
 osascript <<'APPLESCRIPT'
 tell application "System Events"
   activate
@@ -150,14 +196,7 @@ tell application "System Events"
 end tell
 return thePass
 APPLESCRIPT
-`,
-          { encoding: 'utf8', mode: 0o700 }
-        )
-        try {
-          chmodSync(askpassPath, 0o700)
-        } catch {
-          // ignore
-        }
+`)
         await execFileAsync('/bin/bash', ['-lc', installCmd], {
           timeout: 900_000,
           env: {
@@ -167,9 +206,25 @@ APPLESCRIPT
           }
         })
       } else {
+        const askpassPath = this.writeAskpassScript(`#!/bin/bash
+if command -v zenity >/dev/null 2>&1; then
+  zenity --password --title="MagicLens" --text="MagicLens needs your password to install Homebrew (required for OpenVPN)."
+elif command -v kdialog >/dev/null 2>&1; then
+  kdialog --title "MagicLens" --password "MagicLens needs your password to install Homebrew (required for OpenVPN)."
+elif command -v ssh-askpass >/dev/null 2>&1; then
+  ssh-askpass "MagicLens needs your password to install Homebrew (required for OpenVPN)."
+else
+  echo "No GUI askpass (zenity/kdialog) available" >&2
+  exit 1
+fi
+`)
         await execFileAsync('/bin/bash', ['-lc', installCmd], {
           timeout: 900_000,
-          env: this.enrichedEnv()
+          env: {
+            ...this.enrichedEnv(),
+            SUDO_ASKPASS: askpassPath,
+            SUDO_ASKPASS_REQUIRE: 'force'
+          }
         })
       }
     } catch (err) {
@@ -223,24 +278,180 @@ APPLESCRIPT
     }
   }
 
+  /** Prefer distro packages on Linux (apt/dnf/pacman/zypper) before falling back to Homebrew. */
+  private async linuxNativeInstall(
+    packages: string[],
+    label: string
+  ): Promise<{ ok: boolean; error?: string }> {
+    if (process.platform !== 'linux') {
+      return { ok: false, error: 'Native package install is only supported on Linux.' }
+    }
+
+    const managers: Array<{ bin: string; installCmd: (pkgs: string[]) => string }> = [
+      {
+        bin: 'apt-get',
+        installCmd: (pkgs) =>
+          `export DEBIAN_FRONTEND=noninteractive; apt-get update -qq && apt-get install -y ${pkgs.join(' ')}`
+      },
+      {
+        bin: 'dnf',
+        installCmd: (pkgs) => `dnf install -y ${pkgs.join(' ')}`
+      },
+      {
+        bin: 'yum',
+        installCmd: (pkgs) => `yum install -y ${pkgs.join(' ')}`
+      },
+      {
+        bin: 'pacman',
+        installCmd: (pkgs) => `pacman -Sy --noconfirm ${pkgs.join(' ')}`
+      },
+      {
+        bin: 'zypper',
+        installCmd: (pkgs) => `zypper --non-interactive install ${pkgs.join(' ')}`
+      }
+    ]
+
+    let manager: (typeof managers)[number] | null = null
+    for (const candidate of managers) {
+      if (await this.which(candidate.bin)) {
+        manager = candidate
+        break
+      }
+    }
+    if (!manager) {
+      return { ok: false, error: 'No supported Linux package manager found (apt/dnf/pacman/zypper).' }
+    }
+
+    this.setState(
+      'connecting',
+      `Installing ${label} via ${manager.bin}… You may be asked for your password.`
+    )
+    try {
+      await this.runElevated(manager.installCmd(packages))
+      return { ok: true }
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err)
+      return { ok: false, error: `Failed to install ${label} with ${manager.bin}: ${detail}` }
+    }
+  }
+
+  /** Windows: winget → Chocolatey → Scoop (Community OpenVPN CLI / WireGuard, not OpenVPN Connect). */
+  private async windowsInstall(
+    kind: 'openvpn' | 'wireguard'
+  ): Promise<{ ok: boolean; error?: string }> {
+    if (process.platform !== 'win32') {
+      return { ok: false, error: 'Windows package install is only supported on Windows.' }
+    }
+
+    const label = kind === 'openvpn' ? 'OpenVPN CLI' : 'WireGuard'
+    const wingetId = kind === 'openvpn' ? 'OpenVPNTechnologies.OpenVPN' : 'WireGuard.WireGuard'
+    const chocoPkg = kind === 'openvpn' ? 'openvpn' : 'wireguard'
+    const scoopPkg = kind === 'openvpn' ? 'openvpn' : 'wireguard'
+
+    this.setState('connecting', `Installing ${label}… This may take a few minutes.`)
+
+    const winget = await this.which('winget')
+    if (winget) {
+      try {
+        await execFileAsync(
+          winget,
+          [
+            'install',
+            '-e',
+            '--id',
+            wingetId,
+            '--silent',
+            '--accept-package-agreements',
+            '--accept-source-agreements',
+            '--disable-interactivity'
+          ],
+          { timeout: 600_000, env: this.enrichedEnv() }
+        )
+        return { ok: true }
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err)
+        // Fall through to other package managers when winget fails.
+        this.setState('connecting', `winget failed (${detail}). Trying Chocolatey/Scoop…`)
+      }
+    }
+
+    const choco = await this.which('choco')
+    if (choco) {
+      try {
+        await execFileAsync(choco, ['install', chocoPkg, '-y'], {
+          timeout: 600_000,
+          env: this.enrichedEnv()
+        })
+        return { ok: true }
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err)
+        this.setState('connecting', `Chocolatey failed (${detail}). Trying Scoop…`)
+      }
+    }
+
+    const scoop = await this.which('scoop')
+    if (scoop) {
+      try {
+        await execFileAsync(scoop, ['install', scoopPkg], {
+          timeout: 600_000,
+          env: this.enrichedEnv()
+        })
+        return { ok: true }
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err)
+        return { ok: false, error: `Failed to install ${label} with Scoop: ${detail}` }
+      }
+    }
+
+    return {
+      ok: false,
+      error:
+        kind === 'openvpn'
+          ? 'OpenVPN CLI not found. Install with winget: winget install OpenVPNTechnologies.OpenVPN (Community edition — not OpenVPN Connect), or from https://openvpn.net/community-downloads/'
+          : 'WireGuard not found. Install with winget: winget install WireGuard.WireGuard — or from https://www.wireguard.com/install/'
+    }
+  }
+
+  private async installVpnTool(
+    kind: 'openvpn' | 'wireguard'
+  ): Promise<{ ok: boolean; error?: string }> {
+    if (process.platform === 'win32') {
+      return this.windowsInstall(kind)
+    }
+
+    if (process.platform === 'linux') {
+      const pkgs = kind === 'openvpn' ? ['openvpn'] : ['wireguard-tools']
+      const label = kind === 'openvpn' ? 'OpenVPN CLI' : 'WireGuard tools'
+      const native = await this.linuxNativeInstall(pkgs, label)
+      if (native.ok) return native
+      // Fall back to Homebrew when distro packages are unavailable.
+      this.setState(
+        'connecting',
+        `${native.error ?? 'Native install failed'}. Trying Homebrew…`
+      )
+    }
+
+    if (process.platform === 'darwin' || process.platform === 'linux') {
+      return this.brewInstall(
+        kind === 'openvpn' ? 'openvpn' : 'wireguard-tools',
+        kind === 'openvpn' ? 'OpenVPN CLI' : 'WireGuard tools'
+      )
+    }
+
+    return { ok: false, error: 'Automatic VPN tool install is not supported on this platform.' }
+  }
+
   private async ensureOpenVpnCli(): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
     let tools = await this.detectTools()
     if (tools.openvpnPath) return { ok: true, path: tools.openvpnPath }
 
-    if (process.platform !== 'darwin' && process.platform !== 'linux') {
-      return {
-        ok: false,
-        error: 'OpenVPN CLI not found. Install OpenVPN and retry.'
-      }
-    }
-
-    const installed = await this.brewInstall('openvpn', 'OpenVPN CLI')
+    const installed = await this.installVpnTool('openvpn')
     if (!installed.ok) {
       return {
         ok: false,
         error:
           installed.error ??
-          'OpenVPN CLI not found. Install with: brew install openvpn — or install Tunnelblick'
+          'OpenVPN CLI not found. Install OpenVPN Community edition and retry.'
       }
     }
 
@@ -259,37 +470,26 @@ APPLESCRIPT
     let tools = await this.detectTools()
     if (tools.wgQuickPath) return { ok: true, path: tools.wgQuickPath }
     if (tools.wireguardApp) {
-      // App-only is fine for external path; CLI ensure is best-effort.
-      return {
-        ok: false,
-        error: 'WireGuard CLI (wg-quick) not found. Install with: brew install wireguard-tools'
-      }
+      // App-only is enough for the external connect path (macOS/Windows).
+      return { ok: true, path: 'wireguard-app' }
     }
 
-    if (process.platform !== 'darwin' && process.platform !== 'linux') {
-      return {
-        ok: false,
-        error: 'WireGuard tools not found. Install with: brew install wireguard-tools'
-      }
-    }
-
-    const installed = await this.brewInstall('wireguard-tools', 'WireGuard tools')
+    const installed = await this.installVpnTool('wireguard')
     if (!installed.ok) {
       return {
         ok: false,
-        error: installed.error ?? 'WireGuard tools not found. Install with: brew install wireguard-tools'
+        error: installed.error ?? 'WireGuard tools not found.'
       }
     }
 
     tools = await this.detectTools()
-    if (!tools.wgQuickPath) {
-      return {
-        ok: false,
-        error:
-          'WireGuard tools were installed but MagicLens still cannot find wg-quick. Quit and reopen MagicLens, then retry.'
-      }
+    if (tools.wgQuickPath) return { ok: true, path: tools.wgQuickPath }
+    if (tools.wireguardApp) return { ok: true, path: 'wireguard-app' }
+    return {
+      ok: false,
+      error:
+        'WireGuard was installed but MagicLens still cannot find it. Quit and reopen MagicLens, then retry.'
     }
-    return { ok: true, path: tools.wgQuickPath }
   }
 
   async getStatus(): Promise<VpnRuntimeStatus> {
@@ -783,7 +983,7 @@ APPLESCRIPT
     this.focusProfileId = profileId
     this.setState('connecting', `Connecting ${profile.name}…`)
 
-    // Prefer in-process CLI (PIN+MFA). Auto-install via Homebrew when missing.
+    // Prefer in-process CLI (PIN+MFA). Auto-install via brew/apt/winget when missing.
     if (!preferExternal) {
       if (effectiveProvider === 'openvpn') {
         const ensured = await this.ensureOpenVpnCli()
@@ -1236,6 +1436,59 @@ APPLESCRIPT
       }
     }
 
+    if (process.platform === 'win32') {
+      if (provider === 'wireguard') {
+        const wgExe = this.windowsWireGuardCandidates().find((p) => existsSync(p))
+        if (wgExe) {
+          try {
+            await execFileAsync(wgExe, ['/installtunnelservice', configPath], {
+              timeout: 30_000,
+              env: this.enrichedEnv()
+            })
+            return { ok: true, message: 'Opened with WireGuard' }
+          } catch {
+            try {
+              await execFileAsync(wgExe, [configPath], { timeout: 15_000, env: this.enrichedEnv() })
+              return { ok: true, message: 'Opened with WireGuard' }
+            } catch {
+              return {
+                ok: false,
+                error:
+                  'WireGuard is installed but failed to open the profile. Import the config in WireGuard, then retry.'
+              }
+            }
+          }
+        }
+        return {
+          ok: false,
+          error:
+            'WireGuard not found. Install with: winget install WireGuard.WireGuard'
+        }
+      }
+      // Never shell-open .ovpn on Windows — it often launches OpenVPN Connect without PIN/MFA.
+      return {
+        ok: false,
+        error:
+          'OpenVPN CLI not found. Install Community edition with: winget install OpenVPNTechnologies.OpenVPN (not OpenVPN Connect).'
+      }
+    }
+
+    // Linux: prefer CLI; avoid generic MIME open for .ovpn (may open GUI-only clients).
+    if (provider === 'openvpn' || provider === 'pritunl') {
+      return {
+        ok: false,
+        error:
+          'OpenVPN CLI not found. Install with: sudo apt install openvpn  (or: brew install openvpn)'
+      }
+    }
+    if (provider === 'wireguard') {
+      return {
+        ok: false,
+        error:
+          'WireGuard tools not found. Install with: sudo apt install wireguard-tools  (or: brew install wireguard-tools)'
+      }
+    }
+
     const result = await shell.openPath(configPath)
     if (result) return { ok: false, error: result }
     return { ok: true, message: 'Opened config with system default app' }
@@ -1347,6 +1600,40 @@ APPLESCRIPT
       this.startStatsPolling()
     }
     this.broadcast()
+  }
+
+  /** Install OpenVPN or WireGuard from Settings → VPN Extensions (or before connect). */
+  async installTool(
+    kind: 'openvpn' | 'wireguard'
+  ): Promise<{ ok: boolean; error?: string; tools: VpnRuntimeStatus['tools'] }> {
+    const result = await this.installVpnTool(kind)
+    const tools = (await this.detectTools())
+    if (!result.ok) {
+      if (this.sessions.size === 0) {
+        this.setState('error', result.error)
+      }
+      this.broadcast()
+      return { ok: false, error: result.error, tools }
+    }
+
+    const ready =
+      kind === 'openvpn' ? !!tools.openvpnPath : !!(tools.wgQuickPath || tools.wireguardApp)
+    if (!ready) {
+      const error =
+        'Install finished but MagicLens still cannot find the tool. Quit and reopen MagicLens, then retry.'
+      if (this.sessions.size === 0) this.setState('error', error)
+      this.broadcast()
+      return { ok: false, error, tools }
+    }
+
+    const label = kind === 'openvpn' ? 'OpenVPN CLI' : 'WireGuard'
+    if (this.sessions.size === 0) {
+      this.setState('disconnected', `${label} is ready`)
+    } else {
+      this.message = `${label} is ready`
+      this.broadcast()
+    }
+    return { ok: true, tools }
   }
 }
 

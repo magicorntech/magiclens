@@ -28,7 +28,7 @@ export function AppTopBar(): React.JSX.Element {
       <div className="app-top-bar-actions titlebar-no-drag">
         <ThemeToggle compact />
         <Tooltip title={t('common.settings')}>
-          <button type="button" className="ml-icon-btn" aria-label={t('common.settings')} onClick={openSettings}>
+          <button type="button" className="ml-icon-btn" aria-label={t('common.settings')} onClick={() => openSettings()}>
             <Icon icon={Settings} variant="toolbar" />
           </button>
         </Tooltip>

@@ -20,6 +20,7 @@ import {
   Info,
   Keyboard,
   LayoutDashboard,
+  Network,
   Palette,
   RefreshCw
 } from 'lucide-react'
@@ -35,8 +36,8 @@ import { APP_LOCALES, APP_LOCALE_LABELS, type AppLocale } from '@shared/types/lo
 import { useLayoutMode } from '../../hooks/useLayoutMode'
 import { NodesDashboardSettings } from '../Nodes/NodesDashboardSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
-
-type SettingsSection = 'general' | 'updates' | 'display' | 'keyboard' | 'appearance' | 'about'
+import { VpnExtensionsSettings } from './VpnExtensionsSettings'
+import { type SettingsSection, useSettingsUiStore } from '../../stores/settingsUiStore'
 
 interface SettingsModalProps {
   open: boolean
@@ -49,7 +50,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const layoutMode = useLayoutMode()
   const isMobileSettings = layoutMode === 'mobile'
   const modalWidth = layoutMode === 'mobile' ? 'calc(100vw - 16px)' : layoutMode === 'compact' ? 560 : 760
-  const [section, setSection] = useState<SettingsSection>('general')
+  const section = useSettingsUiStore((s) => s.section)
+  const setSection = useSettingsUiStore((s) => s.setSection)
   const interval = useLiveRefreshStore((s) => s.interval)
   const setInterval_ = useLiveRefreshStore((s) => s.setInterval)
   const colorScheme = useThemeStore((s) => s.colorScheme)
@@ -81,6 +83,11 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
       { key: 'general', icon: <Icon icon={RefreshCw} variant="detail" />, label: t('settings.sections.general') },
       { key: 'updates', icon: <Icon icon={CloudDownload} variant="detail" />, label: t('settings.sections.updates') },
       { key: 'display', icon: <Icon icon={LayoutDashboard} variant="detail" />, label: t('settings.sections.display') },
+      {
+        key: 'vpnExtensions',
+        icon: <Icon icon={Network} variant="detail" />,
+        label: t('settings.sections.vpnExtensions')
+      },
       { key: 'keyboard', icon: <Icon icon={Keyboard} variant="detail" />, label: t('settings.sections.keyboard') },
       { key: 'appearance', icon: <Icon icon={Palette} variant="detail" />, label: t('settings.sections.appearance') },
       { key: 'about', icon: <Icon icon={Info} variant="detail" />, label: t('settings.sections.about') }
@@ -413,6 +420,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
           </Space>
         )
 
+      case 'vpnExtensions':
+        return <VpnExtensionsSettings />
+
       case 'about':
         return (
           <Descriptions size="small" column={1} bordered style={{ maxWidth: 400 }}>
@@ -421,6 +431,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             <Descriptions.Item label="Electron">{appInfo?.electronVersion ?? '-'}</Descriptions.Item>
             <Descriptions.Item label="Chromium">{appInfo?.chromeVersion ?? '-'}</Descriptions.Item>
             <Descriptions.Item label="Node.js">{appInfo?.nodeVersion ?? '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('settings.about.platform')}>
+              {appInfo?.platform ?? '-'}
+            </Descriptions.Item>
           </Descriptions>
         )
     }

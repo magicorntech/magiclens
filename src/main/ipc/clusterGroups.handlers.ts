@@ -24,7 +24,10 @@ export function registerClusterGroupsHandlers(): void {
     IPC.CLUSTER_GROUPS_UPDATE,
     async (
       _e,
-      req: { id: string; patch: Partial<Pick<ClusterGroup, 'name' | 'clusterIds' | 'collapsed'>> }
+      req: {
+        id: string
+        patch: Partial<Pick<ClusterGroup, 'name' | 'clusterIds' | 'collapsed' | 'shortcut'>>
+      }
     ): Promise<ClusterGroupsState> => updateClusterGroup(req.id, req.patch)
   )
 

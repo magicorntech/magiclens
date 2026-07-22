@@ -39,6 +39,7 @@ export const zh: TranslationOverrides = {
       general: '通用',
       updates: '更新',
       display: '显示',
+      vpnExtensions: 'VPN 扩展',
       keyboard: '键盘',
       appearance: '外观',
       about: '关于'
@@ -97,6 +98,10 @@ export const zh: TranslationOverrides = {
       pressKeys: '请按键…',
       recordError: '请使用带 ⌘/Ctrl（或 Alt）的快捷键，或按 Esc 取消',
       changeAria: '更改 {{label}} 的快捷键',
+      workspacesTitle: '工作区',
+      workspacesHint: '为工作区分配快捷键（展开并打开其中的集群）。也可在编辑工作区时设置。',
+      workspacesEmpty: '请先在侧边栏创建工作区，再分配快捷键。',
+      workspaceOpenDesc: '打开工作区 · {{count}} 个集群',
       actions: {
         globalSearch: {
           label: '全局搜索',
@@ -129,6 +134,61 @@ export const zh: TranslationOverrides = {
       customAccent: '自定义强调色',
       customAccentHint: '应用于侧边栏、按钮、高亮与图表强调色。',
       customSwatch: '你自己的强调色'
+    },
+    about: {
+      platform: '平台'
+    },
+    vpnExtensions: {
+      intro: '安装并检查 MagicLens 进行 PIN + MFA 隧道所需的 VPN CLI 工具。不支持 OpenVPN Connect。',
+      platformLabel: '检测到的平台：{{platform}}',
+      platformHint: {
+        darwin: 'macOS 通过 Homebrew 安装 OpenVPN / WireGuard CLI。Tunnelblick 与 WireGuard.app 为可选备用。',
+        win32: 'Windows 通过 winget 安装 OpenVPN Community CLI 与 WireGuard（备用：Chocolatey/Scoop）。请勿使用 OpenVPN Connect。',
+        linux: 'Linux 优先使用发行版软件包（apt/dnf/pacman/zypper）。失败时回退到 Homebrew。',
+        other: '此平台上自动安装可能受限。请使用下方手动命令。'
+      },
+      statusTitle: '已检测工具',
+      ready: '就绪',
+      missing: '缺失',
+      rescan: '重新扫描工具',
+      installTitle: '用 MagicLens 安装',
+      installHint: '可能会要求输入密码 / UAC 批准。安装可能需要几分钟。',
+      installOpenVpn: '安装 OpenVPN CLI',
+      installWireGuard: '安装 WireGuard',
+      installSuccess: '{{tool}} 安装成功',
+      installFailed: '安装失败',
+      packagesTitle: '软件包 / 命令',
+      packagesHint: '可复制这些命令在终端中手动安装。',
+      manualTitle: '手动安装步骤',
+      manual: {
+        darwin: [
+          '如需要，请从 https://brew.sh 安装 Homebrew。',
+          '运行：brew install openvpn',
+          '可选：brew install wireguard-tools',
+          '可选 GUI：brew install --cask tunnelblick 或 WireGuard.app',
+          '重启 MagicLens，然后使用 PIN + MFA 重新连接。'
+        ],
+        win32: [
+          '打开 PowerShell 或终端。',
+          '安装 Community OpenVPN（不是 Connect）：winget install -e --id OpenVPNTechnologies.OpenVPN',
+          '安装 WireGuard：winget install -e --id WireGuard.WireGuard',
+          '备选：choco install openvpn -y  /  choco install wireguard -y',
+          '重启 MagicLens，以便在 Program Files\\OpenVPN\\bin 下找到 openvpn.exe。'
+        ],
+        linux: [
+          'Debian/Ubuntu：sudo apt-get install -y openvpn wireguard-tools',
+          'Fedora/RHEL：sudo dnf install -y openvpn wireguard-tools',
+          'Arch：sudo pacman -Sy openvpn wireguard-tools',
+          '或使用 Homebrew：brew install openvpn wireguard-tools',
+          '重启 MagicLens，然后使用 PIN + MFA 连接。'
+        ],
+        other: [
+          '为你的操作系统安装 OpenVPN community CLI。',
+          '若使用 WireGuard 配置，请安装 wg-quick 工具。',
+          '重启 MagicLens 并重试连接。'
+        ]
+      },
+      connectNote: '工具就绪后，返回 VPN 页面进行连接。若工具缺失，连接时也会尝试自动安装。'
     }
   },
   vpn: {
@@ -151,7 +211,11 @@ export const zh: TranslationOverrides = {
     connectFailed: '连接失败',
     removedToast: '已删除',
     noToolsTitle: '未检测到 VPN 工具',
-    noToolsDesc: '请安装 OpenVPN（brew install openvpn）、Tunnelblick、WireGuard.app 或 wireguard-tools。',
+    noToolsDesc:
+      'PIN + MFA 需要 OpenVPN Community CLI（或 WireGuard 工具）。请打开设置 → VPN 扩展进行安装，或按手动步骤操作。不支持 OpenVPN Connect。',
+    openVpnExtensions: 'VPN 扩展',
+    connectHelpTitle: '无法连接',
+    connectHelpDesc: '若工具缺失或安装失败，请打开 VPN 扩展以安装 OpenVPN / WireGuard，并查看对应系统步骤。',
     profilesTitle: 'VPN 配置',
     addToStart: '添加配置以开始使用',
     filteredCount: '{{filtered}} / {{total}}',

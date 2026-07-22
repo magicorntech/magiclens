@@ -4,7 +4,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, Layers, Network } from 'lucide-
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import logo from '../../assets/logo.png'
-import { useClusterStore } from '../../stores/clusterStore'
+import { useClusterStore, type ClusterEntry } from '../../stores/clusterStore'
 import { useVpnStore } from '../../stores/vpnStore'
 import { useClusterVpnStore } from '../../stores/clusterVpnStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
@@ -12,6 +12,7 @@ import { resolveUserScope, favoritesExpandedKey, favoritesHeightKey } from '../.
 import { applyClusterFilterAndSearch } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
+import { EditClusterModal } from '../ClusterTabs/EditClusterModal'
 import { SidebarWorkspaces } from './SidebarWorkspaces'
 import { Icon } from '../ui/Icon'
 
@@ -66,6 +67,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const [favoriteSearch, setFavoriteSearch] = useState('')
   const [favoritesHeight, setFavoritesHeight] = useState(() => loadFavoritesHeight(userScope))
   const [favoritesExpanded, setFavoritesExpanded] = useState(() => loadFavoritesExpanded(userScope))
+  const [editingCluster, setEditingCluster] = useState<ClusterEntry | null>(null)
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null)
 
   const favorites = useMemo(
@@ -302,6 +304,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
                       active={cluster.id === activeClusterId}
                       compact={collapsed}
                       onActivate={onNavigate}
+                      onEdit={setEditingCluster}
                     />
                   ))
                 )}
@@ -321,7 +324,11 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
       ) : null}
 
       {showWorkspacesSection ? (
-        <SidebarWorkspaces collapsed={collapsed} onNavigate={onNavigate} />
+        <SidebarWorkspaces
+          collapsed={collapsed}
+          onNavigate={onNavigate}
+          onEditCluster={setEditingCluster}
+        />
       ) : null}
 
       <div className="ml-sidebar-footer titlebar-no-drag">
@@ -336,6 +343,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
           </Tooltip>
         )}
       </div>
+      <EditClusterModal cluster={editingCluster} onClose={() => setEditingCluster(null)} />
     </motion.aside>
   )
 }

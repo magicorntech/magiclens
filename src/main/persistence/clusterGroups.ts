@@ -1,6 +1,7 @@
 import Store from 'electron-store'
 import { randomUUID } from 'crypto'
 import type { ClusterGroup, ClusterGroupsState } from '@shared/types/clusterGroup'
+import { normalizeGroupShortcut } from '@shared/types/clusterGroup'
 import { getSessionScope } from './sessionScope'
 
 interface StoreSchema {
@@ -23,17 +24,23 @@ function writeScopeGroups(groups: ClusterGroupsState): void {
   store.set('scopes', scopes)
 }
 
-export function listClusterGroups(): ClusterGroupsState {
-  return scopeGroups().map((g) => ({ ...g, clusterIds: [...g.clusterIds] }))
-}
-
-export function saveClusterGroups(groups: ClusterGroupsState): ClusterGroupsState {
-  const cleaned = groups.map((g) => ({
+function normalizeGroup(g: ClusterGroup): ClusterGroup {
+  const shortcut = normalizeGroupShortcut(g.shortcut)
+  return {
     id: g.id,
     name: g.name.trim() || 'Workspace',
     clusterIds: [...new Set(g.clusterIds)],
-    collapsed: g.collapsed
-  }))
+    collapsed: g.collapsed,
+    ...(shortcut !== undefined ? { shortcut } : {})
+  }
+}
+
+export function listClusterGroups(): ClusterGroupsState {
+  return scopeGroups().map((g) => normalizeGroup({ ...g, clusterIds: [...g.clusterIds] }))
+}
+
+export function saveClusterGroups(groups: ClusterGroupsState): ClusterGroupsState {
+  const cleaned = groups.map((g) => normalizeGroup(g))
   writeScopeGroups(cleaned)
   return listClusterGroups()
 }
@@ -44,14 +51,15 @@ export function createClusterGroup(name: string): ClusterGroupsState {
     id: randomUUID(),
     name: name.trim() || 'Workspace',
     clusterIds: [],
-    collapsed: false
+    collapsed: false,
+    shortcut: null
   })
   return saveClusterGroups(groups)
 }
 
 export function updateClusterGroup(
   id: string,
-  patch: Partial<Pick<ClusterGroup, 'name' | 'clusterIds' | 'collapsed'>>
+  patch: Partial<Pick<ClusterGroup, 'name' | 'clusterIds' | 'collapsed' | 'shortcut'>>
 ): ClusterGroupsState {
   const groups = listClusterGroups().map((g) => (g.id === id ? { ...g, ...patch } : g))
   return saveClusterGroups(groups)

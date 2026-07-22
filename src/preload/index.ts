@@ -260,7 +260,10 @@ const api = {
     update: (
       id: string,
       patch: Partial<
-        Pick<import('@shared/types/clusterGroup').ClusterGroup, 'name' | 'clusterIds' | 'collapsed'>
+        Pick<
+          import('@shared/types/clusterGroup').ClusterGroup,
+          'name' | 'clusterIds' | 'collapsed' | 'shortcut'
+        >
       >
     ): Promise<import('@shared/types/clusterGroup').ClusterGroupsState> =>
       ipcRenderer.invoke(IPC.CLUSTER_GROUPS_UPDATE, { id, patch }),
@@ -554,6 +557,10 @@ const api = {
     remove: (id: string): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.VPN_REMOVE, { id }),
     syncOrgIds: (remoteIds: string[]): Promise<{ ok: true; removed: string[] }> =>
       ipcRenderer.invoke(IPC.VPN_SYNC_ORG_IDS, { remoteIds }),
+    installTool: (
+      kind: 'openvpn' | 'wireguard'
+    ): Promise<{ ok: boolean; error?: string; tools: VpnRuntimeStatus['tools'] }> =>
+      ipcRenderer.invoke(IPC.VPN_INSTALL_TOOL, { kind }),
     onStatusChanged: (cb: (status: VpnRuntimeStatus) => void): (() => void) => {
       const listener = (_e: Electron.IpcRendererEvent, status: VpnRuntimeStatus): void => cb(status)
       ipcRenderer.on(IPC.VPN_STATUS_CHANGED, listener)

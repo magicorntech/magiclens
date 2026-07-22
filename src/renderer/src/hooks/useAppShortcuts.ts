@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { matchesShortcut } from '@shared/types/keyboardShortcuts'
 import { useClusterStore } from '../stores/clusterStore'
+import { useClusterGroupsStore } from '../stores/clusterGroupsStore'
 import { useDisplaySettingsStore } from '../stores/displaySettingsStore'
 import { useGlobalSearchStore } from '../stores/globalSearchStore'
 import { useSettingsUiStore } from '../stores/settingsUiStore'
@@ -64,6 +65,15 @@ export function useAppShortcuts(): void {
       if (matchesShortcut(event, shortcuts.openSettings)) {
         event.preventDefault()
         useSettingsUiStore.getState().openSettings()
+        return
+      }
+
+      const workspace = useClusterGroupsStore
+        .getState()
+        .groups.find((g) => g.shortcut && matchesShortcut(event, g.shortcut))
+      if (workspace) {
+        event.preventDefault()
+        void useClusterGroupsStore.getState().activateWorkspace(workspace.id)
       }
     }
 

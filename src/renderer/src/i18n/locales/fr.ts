@@ -39,6 +39,7 @@ export const fr: TranslationOverrides = {
       general: 'Général',
       updates: 'Mises à jour',
       display: 'Affichage',
+      vpnExtensions: 'Extensions VPN',
       keyboard: 'Clavier',
       appearance: 'Apparence',
       about: 'À propos'
@@ -102,6 +103,11 @@ export const fr: TranslationOverrides = {
       pressKeys: 'Appuyez sur les touches…',
       recordError: 'Utilisez un raccourci avec ⌘/Ctrl (ou Alt), ou Échap pour annuler',
       changeAria: 'Modifier le raccourci pour {{label}}',
+      workspacesTitle: 'Workspaces',
+      workspacesHint:
+        'Attribuez un raccourci pour ouvrir un workspace (l’ouvre et ses clusters). Aussi possible en modifiant le workspace.',
+      workspacesEmpty: 'Créez un workspace dans la barre latérale pour lui attribuer un raccourci.',
+      workspaceOpenDesc: 'Ouvrir le workspace · {{count}} clusters',
       actions: {
         globalSearch: {
           label: 'Recherche globale',
@@ -135,6 +141,66 @@ export const fr: TranslationOverrides = {
       customAccent: 'Accent personnalisé',
       customAccentHint: 'S’applique aux barres latérales, boutons, surbrillances et accents de graphiques.',
       customSwatch: 'Votre propre couleur d’accent'
+    },
+    about: {
+      platform: 'Plateforme'
+    },
+    vpnExtensions: {
+      intro:
+        'Installez et vérifiez les outils CLI VPN dont MagicLens a besoin pour les tunnels PIN + MFA. OpenVPN Connect n’est pas pris en charge.',
+      platformLabel: 'Plateforme détectée : {{platform}}',
+      platformHint: {
+        darwin:
+          'Sur macOS, Homebrew installe les CLI OpenVPN / WireGuard. Tunnelblick et WireGuard.app sont des solutions de repli optionnelles.',
+        win32:
+          'Sous Windows, MagicLens installe OpenVPN Community CLI et WireGuard via winget (repli Chocolatey/Scoop). N’utilisez pas OpenVPN Connect.',
+        linux:
+          'Sous Linux, les paquets de distribution (apt/dnf/pacman/zypper) sont préférés. Sinon, repli sur Homebrew.',
+        other: 'L’installation automatique peut être limitée. Utilisez les commandes manuelles ci-dessous.'
+      },
+      statusTitle: 'Outils détectés',
+      ready: 'prêt',
+      missing: 'manquant',
+      rescan: 'Rescanner les outils',
+      installTitle: 'Installer avec MagicLens',
+      installHint: 'Un mot de passe / UAC peut être demandé. L’installation peut prendre plusieurs minutes.',
+      installOpenVpn: 'Installer OpenVPN CLI',
+      installWireGuard: 'Installer WireGuard',
+      installSuccess: '{{tool}} installé avec succès',
+      installFailed: 'Échec de l’installation',
+      packagesTitle: 'Paquets / commandes',
+      packagesHint: 'Copiez ces commandes pour installer manuellement dans un terminal.',
+      manualTitle: 'Étapes d’installation manuelle',
+      manual: {
+        darwin: [
+          'Installez Homebrew depuis https://brew.sh si besoin.',
+          'Exécutez : brew install openvpn',
+          'Optionnel : brew install wireguard-tools',
+          'GUI optionnelle : brew install --cask tunnelblick ou WireGuard.app',
+          'Redémarrez MagicLens, puis reconnectez avec PIN + MFA.'
+        ],
+        win32: [
+          'Ouvrez PowerShell ou Terminal.',
+          'Installez OpenVPN Community (pas Connect) : winget install -e --id OpenVPNTechnologies.OpenVPN',
+          'Installez WireGuard : winget install -e --id WireGuard.WireGuard',
+          'Alternatives : choco install openvpn -y  /  choco install wireguard -y',
+          'Redémarrez MagicLens pour trouver openvpn.exe sous Program Files\\OpenVPN\\bin.'
+        ],
+        linux: [
+          'Debian/Ubuntu : sudo apt-get install -y openvpn wireguard-tools',
+          'Fedora/RHEL : sudo dnf install -y openvpn wireguard-tools',
+          'Arch : sudo pacman -Sy openvpn wireguard-tools',
+          'Ou Homebrew : brew install openvpn wireguard-tools',
+          'Redémarrez MagicLens, puis connectez avec PIN + MFA.'
+        ],
+        other: [
+          'Installez la CLI OpenVPN Community pour votre OS.',
+          'Installez wg-quick si vous utilisez WireGuard.',
+          'Redémarrez MagicLens et réessayez.'
+        ]
+      },
+      connectNote:
+        'Une fois les outils prêts, revenez à la page VPN et connectez-vous. MagicLens peut aussi auto-installer à la connexion si des outils manquent.'
     }
   },
   vpn: {
@@ -158,7 +224,11 @@ export const fr: TranslationOverrides = {
     removedToast: 'Supprimé',
     noToolsTitle: 'Aucun outil VPN détecté',
     noToolsDesc:
-      'Installez OpenVPN (brew install openvpn), Tunnelblick, WireGuard.app ou wireguard-tools.',
+      'MagicLens a besoin de la CLI OpenVPN Community (ou des outils WireGuard) pour PIN + MFA. Ouvrez Paramètres → Extensions VPN pour installer, ou suivez les étapes manuelles. OpenVPN Connect n’est pas pris en charge.',
+    openVpnExtensions: 'Extensions VPN',
+    connectHelpTitle: 'Impossible de se connecter',
+    connectHelpDesc:
+      'Si des outils manquent ou si l’installation a échoué, ouvrez Extensions VPN pour installer OpenVPN / WireGuard et voir les étapes pour votre OS.',
     profilesTitle: 'Profils VPN',
     addToStart: 'Ajoutez une configuration pour commencer',
     filteredCount: '{{filtered}} sur {{total}}',

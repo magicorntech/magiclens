@@ -182,6 +182,10 @@ export function registerVpnHandlers(): void {
     if (!profile) return { ok: false as const, error: 'Not found' }
     return { ok: true as const, config: profile.config, provider: profile.provider }
   })
+
+  ipcMain.handle(IPC.VPN_INSTALL_TOOL, async (_e, req: { kind: 'openvpn' | 'wireguard' }) => {
+    return vpnManager.installTool(req.kind)
+  })
 }
 
 function summarize(entry: VpnProfileEntry) {

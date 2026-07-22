@@ -31,6 +31,7 @@ import type { VpnProfileSummary } from '@shared/types/vpn'
 import { parseVpnConfigMeta } from '@shared/types/vpn'
 import { useVpnStore } from '../stores/vpnStore'
 import { useVpnSessionStore } from '../stores/vpnSessionStore'
+import { useSettingsUiStore } from '../stores/settingsUiStore'
 import { VpnConnectionPanel } from '../components/Vpn/VpnConnectionPanel'
 import { VpnDottedWorldMap } from '../components/Vpn/VpnDottedWorldMap'
 import { useTranslation } from 'react-i18next'
@@ -87,6 +88,7 @@ export function VpnPage(): React.JSX.Element {
   const disconnect = useVpnStore((s) => s.disconnect)
   const reveal = useVpnStore((s) => s.reveal)
   const subscribeStatus = useVpnStore((s) => s.subscribeStatus)
+  const openSettings = useSettingsUiStore((s) => s.openSettings)
   const [pasteOpen, setPasteOpen] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [authProfile, setAuthProfile] = useState<VpnProfileSummary | null>(null)
@@ -292,10 +294,30 @@ export function VpnPage(): React.JSX.Element {
             {tools && !tools.openvpn && !tools.wireguard && !tools.tunnelblick && !tools.wireguardApp && (
               <Alert
                 className="ml-vpn-tools-alert"
-                type="info"
+                type="warning"
                 showIcon
                 message={t('vpn.noToolsTitle')}
                 description={t('vpn.noToolsDesc')}
+                action={
+                  <Button size="small" type="primary" onClick={() => openSettings('vpnExtensions')}>
+                    {t('vpn.openVpnExtensions')}
+                  </Button>
+                }
+              />
+            )}
+
+            {status?.status === 'error' && (
+              <Alert
+                className="ml-vpn-tools-alert"
+                type="error"
+                showIcon
+                message={t('vpn.connectHelpTitle')}
+                description={status.message || t('vpn.connectHelpDesc')}
+                action={
+                  <Button size="small" onClick={() => openSettings('vpnExtensions')}>
+                    {t('vpn.openVpnExtensions')}
+                  </Button>
+                }
               />
             )}
 

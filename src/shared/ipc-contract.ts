@@ -165,5 +165,6 @@ export const IPC = {
   VPN_REVEAL: 'vpn:reveal',
   VPN_UPSERT_ORG: 'vpn:upsertOrg',
   VPN_SYNC_ORG_IDS: 'vpn:syncOrgIds',
-  VPN_GET_CONFIG: 'vpn:getConfig'
+  VPN_GET_CONFIG: 'vpn:getConfig',
+  VPN_INSTALL_TOOL: 'vpn:installTool'
 } as const

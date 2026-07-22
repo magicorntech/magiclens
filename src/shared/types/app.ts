@@ -4,6 +4,7 @@ export interface AppInfoResponse {
   electronVersion: string
   chromeVersion: string
   nodeVersion: string
+  platform: NodeJS.Platform
 }
 
 export interface WelcomeStateResponse {

@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next'
 import {
   bindingFromKeyboardEvent,
   shortcutParts,
-  type ShortcutActionId
+  type ShortcutActionId,
+  type ShortcutBinding
 } from '@shared/types/keyboardShortcuts'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
+import { useClusterGroupsStore } from '../../stores/clusterGroupsStore'
 
 const ACTION_ORDER: ShortcutActionId[] = [
   'globalSearch',
@@ -23,12 +25,15 @@ export function KeyboardShortcutsSettings(): React.JSX.Element {
   const shortcuts = useDisplaySettingsStore((s) => s.keyboardShortcuts)
   const setShortcut = useDisplaySettingsStore((s) => s.setShortcut)
   const resetShortcuts = useDisplaySettingsStore((s) => s.resetShortcuts)
+  const groups = useClusterGroupsStore((s) => s.groups)
+  const setGroupShortcut = useClusterGroupsStore((s) => s.setGroupShortcut)
   const [listening, setListening] = useState<ShortcutActionId | null>(null)
+  const [listeningWorkspaceId, setListeningWorkspaceId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const isMac = navigator.platform.includes('Mac')
 
   useEffect(() => {
-    if (!listening) return
+    if (!listening && !listeningWorkspaceId) return
 
     function onKeyDown(event: KeyboardEvent): void {
       event.preventDefault()
@@ -36,13 +41,26 @@ export function KeyboardShortcutsSettings(): React.JSX.Element {
 
       if (event.key === 'Escape') {
         setListening(null)
+        setListeningWorkspaceId(null)
         setError(null)
         return
       }
 
       const binding = bindingFromKeyboardEvent(event)
       if (!binding) {
-        setError(t('settings.keyboard.recordError'))
+        setError(
+          listeningWorkspaceId
+            ? t('workspaces.shortcutRecordError')
+            : t('settings.keyboard.recordError')
+        )
+        return
+      }
+
+      if (listeningWorkspaceId) {
+        void setGroupShortcut(listeningWorkspaceId, binding).then(() => {
+          setListeningWorkspaceId(null)
+          setError(null)
+        })
         return
       }
 
@@ -54,7 +72,63 @@ export function KeyboardShortcutsSettings(): React.JSX.Element {
 
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [listening, setShortcut, t])
+  }, [listening, listeningWorkspaceId, setShortcut, setGroupShortcut, t])
+
+  function renderBindingButton(
+    key: string,
+    binding: ShortcutBinding | null | undefined,
+    isListening: boolean,
+    onClick: () => void,
+    ariaLabel: string
+  ): React.JSX.Element {
+    const parts = binding ? shortcutParts(binding, isMac) : null
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          flexShrink: 0,
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '6px 10px',
+          borderRadius: token.borderRadiusSM,
+          border: `1px dashed ${isListening ? token.colorPrimary : token.colorBorder}`,
+          background: token.colorBgElevated,
+          color: token.colorText,
+          fontFamily: 'inherit',
+          fontSize: 12,
+          minWidth: 88,
+          justifyContent: 'center'
+        }}
+        aria-label={ariaLabel}
+      >
+        {isListening ? (
+          <span style={{ color: token.colorPrimary }}>{t('settings.keyboard.pressKeys')}</span>
+        ) : parts ? (
+          parts.map((part) => (
+            <kbd
+              key={`${key}-${part}`}
+              style={{
+                display: 'inline-block',
+                padding: '2px 6px',
+                borderRadius: 4,
+                border: `1px solid ${token.colorBorderSecondary}`,
+                background: token.colorFillQuaternary,
+                fontSize: 11,
+                lineHeight: 1.2
+              }}
+            >
+              {part}
+            </kbd>
+          ))
+        ) : (
+          <span style={{ color: token.colorTextSecondary }}>{t('workspaces.shortcutNone')}</span>
+        )}
+      </button>
+    )
+  }
 
   return (
     <Space orientation="vertical" style={{ width: '100%' }} size="middle">
@@ -77,7 +151,6 @@ export function KeyboardShortcutsSettings(): React.JSX.Element {
         {ACTION_ORDER.map((id) => {
           const label = t(`settings.keyboard.actions.${id}.label`)
           const description = t(`settings.keyboard.actions.${id}.description`)
-          const parts = shortcutParts(shortcuts[id], isMac)
           const isListening = listening === id
           return (
             <div
@@ -101,54 +174,87 @@ export function KeyboardShortcutsSettings(): React.JSX.Element {
                   {description}
                 </Typography.Text>
               </div>
-              <button
-                type="button"
-                onClick={() => {
+              {renderBindingButton(
+                id,
+                shortcuts[id],
+                isListening,
+                () => {
                   setError(null)
+                  setListeningWorkspaceId(null)
                   setListening(isListening ? null : id)
-                }}
-                style={{
-                  flexShrink: 0,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '6px 10px',
-                  borderRadius: token.borderRadiusSM,
-                  border: `1px dashed ${isListening ? token.colorPrimary : token.colorBorder}`,
-                  background: token.colorBgElevated,
-                  color: token.colorText,
-                  fontFamily: 'inherit',
-                  fontSize: 12,
-                  minWidth: 88,
-                  justifyContent: 'center'
-                }}
-                aria-label={t('settings.keyboard.changeAria', { label })}
-              >
-                {isListening ? (
-                  <span style={{ color: token.colorPrimary }}>{t('settings.keyboard.pressKeys')}</span>
-                ) : (
-                  parts.map((part) => (
-                    <kbd
-                      key={`${id}-${part}`}
-                      style={{
-                        display: 'inline-block',
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                        border: `1px solid ${token.colorBorderSecondary}`,
-                        background: token.colorFillQuaternary,
-                        fontSize: 11,
-                        lineHeight: 1.2
-                      }}
-                    >
-                      {part}
-                    </kbd>
-                  ))
-                )}
-              </button>
+                },
+                t('settings.keyboard.changeAria', { label })
+              )}
             </div>
           )
         })}
+      </div>
+
+      <div>
+        <Typography.Text strong style={{ display: 'block', marginBottom: 4 }}>
+          {t('settings.keyboard.workspacesTitle')}
+        </Typography.Text>
+        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+          {t('settings.keyboard.workspacesHint')}
+        </Typography.Text>
+        {groups.length === 0 ? (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {t('settings.keyboard.workspacesEmpty')}
+          </Typography.Text>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {groups.map((group) => {
+              const isListening = listeningWorkspaceId === group.id
+              return (
+                <div
+                  key={group.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                    padding: '10px 12px',
+                    borderRadius: token.borderRadius,
+                    border: `1px solid ${isListening ? token.colorPrimary : token.colorBorderSecondary}`,
+                    background: isListening ? token.colorPrimaryBg : token.colorBgContainer
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <Typography.Text strong style={{ display: 'block', fontSize: 13 }}>
+                      {group.name}
+                    </Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {t('settings.keyboard.workspaceOpenDesc', { count: group.clusterIds.length })}
+                    </Typography.Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {renderBindingButton(
+                      group.id,
+                      group.shortcut,
+                      isListening,
+                      () => {
+                        setError(null)
+                        setListening(null)
+                        setListeningWorkspaceId(isListening ? null : group.id)
+                      },
+                      t('settings.keyboard.changeAria', { label: group.name })
+                    )}
+                    {group.shortcut && (
+                      <Button
+                        type="link"
+                        size="small"
+                        danger
+                        onClick={() => void setGroupShortcut(group.id, null)}
+                      >
+                        {t('workspaces.shortcutClear')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </Space>
   )

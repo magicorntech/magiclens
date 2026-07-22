@@ -1,26 +1,36 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button, Empty, Input, Modal, Select, Tooltip, Typography, message } from 'antd'
 import { ChevronDown, ChevronRight, FolderPlus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import type { MenuProps } from 'antd'
 import { Dropdown } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { useClusterStore } from '../../stores/clusterStore'
+import {
+  bindingFromKeyboardEvent,
+  formatShortcutBinding,
+  shortcutParts,
+  type ShortcutBinding
+} from '@shared/types/keyboardShortcuts'
+import { useClusterStore, type ClusterEntry } from '../../stores/clusterStore'
 import { useClusterGroupsStore } from '../../stores/clusterGroupsStore'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
 import { Icon } from '../ui/Icon'
-import type { ClusterEntry } from '../../stores/clusterStore'
 
 interface SidebarWorkspacesProps {
   collapsed: boolean
   onNavigate?: () => void
+  onEditCluster?: (cluster: ClusterEntry) => void
 }
 
 function matchesQuery(text: string, query: string): boolean {
   return text.toLowerCase().includes(query)
 }
 
-export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesProps): React.JSX.Element {
+export function SidebarWorkspaces({
+  collapsed,
+  onNavigate,
+  onEditCluster
+}: SidebarWorkspacesProps): React.JSX.Element {
   const { t } = useTranslation()
   const clusters = useClusterStore((s) => s.clusters)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
@@ -30,12 +40,17 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
   const removeGroup = useClusterGroupsStore((s) => s.removeGroup)
   const setCollapsed = useClusterGroupsStore((s) => s.setCollapsed)
   const setGroupClusters = useClusterGroupsStore((s) => s.setGroupClusters)
+  const setGroupShortcut = useClusterGroupsStore((s) => s.setGroupShortcut)
 
   const [query, setQuery] = useState('')
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
   const [draftClusterIds, setDraftClusterIds] = useState<string[]>([])
+  const [draftShortcut, setDraftShortcut] = useState<ShortcutBinding | null>(null)
+  const [listeningShortcut, setListeningShortcut] = useState(false)
+  const [shortcutError, setShortcutError] = useState<string | null>(null)
+  const isMac = navigator.platform.includes('Mac')
 
   const clusterOptions = useMemo(
     () =>
@@ -94,10 +109,38 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
       .filter((row): row is NonNullable<typeof row> => !!row)
   }, [groups, clusters, query])
 
+  useEffect(() => {
+    if (!listeningShortcut) return
+
+    function onKeyDown(event: KeyboardEvent): void {
+      event.preventDefault()
+      event.stopPropagation()
+      if (event.key === 'Escape') {
+        setListeningShortcut(false)
+        setShortcutError(null)
+        return
+      }
+      const binding = bindingFromKeyboardEvent(event)
+      if (!binding) {
+        setShortcutError(t('workspaces.shortcutRecordError'))
+        return
+      }
+      setDraftShortcut(binding)
+      setListeningShortcut(false)
+      setShortcutError(null)
+    }
+
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [listeningShortcut, t])
+
   function openCreate(): void {
     setEditingId(null)
     setDraftName(t('workspaces.defaultName'))
     setDraftClusterIds([])
+    setDraftShortcut(null)
+    setListeningShortcut(false)
+    setShortcutError(null)
     setEditorOpen(true)
   }
 
@@ -107,6 +150,9 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
     setEditingId(id)
     setDraftName(g.name)
     setDraftClusterIds([...g.clusterIds])
+    setDraftShortcut(g.shortcut ?? null)
+    setListeningShortcut(false)
+    setShortcutError(null)
     setEditorOpen(true)
   }
 
@@ -115,13 +161,16 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
     if (editingId) {
       await renameGroup(editingId, name)
       await setGroupClusters(editingId, draftClusterIds)
+      await setGroupShortcut(editingId, draftShortcut)
       message.success(t('workspaces.updated'))
     } else {
-      await createGroup(name, draftClusterIds)
+      await createGroup(name, draftClusterIds, draftShortcut)
       message.success(t('workspaces.created'))
     }
     setEditorOpen(false)
   }
+
+  const shortcutPartsLabel = draftShortcut ? shortcutParts(draftShortcut, isMac) : null
 
   const editorModal = (
     <Modal
@@ -143,13 +192,58 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
       <Select
         mode="multiple"
         allowClear
-        style={{ width: '100%', marginTop: 8 }}
+        style={{ width: '100%', marginTop: 8, marginBottom: 16 }}
         placeholder={t('workspaces.selectClusters')}
         value={draftClusterIds}
         options={clusterOptions}
         onChange={setDraftClusterIds}
         optionFilterProp="label"
       />
+      <Typography.Text strong>{t('workspaces.shortcut')}</Typography.Text>
+      <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 8 }}>
+        {t('workspaces.shortcutHint')}
+      </Typography.Paragraph>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Button
+          type={listeningShortcut ? 'primary' : 'default'}
+          onClick={() => {
+            setShortcutError(null)
+            setListeningShortcut((v) => !v)
+          }}
+        >
+          {listeningShortcut
+            ? t('workspaces.shortcutListening')
+            : draftShortcut
+              ? formatShortcutBinding(draftShortcut, isMac)
+              : t('workspaces.shortcutAssign')}
+        </Button>
+        {draftShortcut && (
+          <Button
+            type="link"
+            danger
+            onClick={() => {
+              setDraftShortcut(null)
+              setListeningShortcut(false)
+            }}
+          >
+            {t('workspaces.shortcutClear')}
+          </Button>
+        )}
+      </div>
+      {shortcutPartsLabel && !listeningShortcut && (
+        <div style={{ marginTop: 8, display: 'flex', gap: 4 }}>
+          {shortcutPartsLabel.map((part) => (
+            <Typography.Text key={part} code style={{ fontSize: 11 }}>
+              {part}
+            </Typography.Text>
+          ))}
+        </div>
+      )}
+      {shortcutError && (
+        <Typography.Text type="danger" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+          {shortcutError}
+        </Typography.Text>
+      )}
     </Modal>
   )
 
@@ -174,6 +268,7 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
                   active={cluster.id === activeClusterId}
                   compact
                   onActivate={onNavigate}
+                  onEdit={onEditCluster}
                 />
               </div>
             </Tooltip>
@@ -259,10 +354,15 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
                     onClick={() => void setCollapsed(group.id, !isCollapsed)}
                   >
                     <Icon icon={isCollapsed ? ChevronRight : ChevronDown} variant="micro" />
-                    <Typography.Text strong ellipsis style={{ maxWidth: 140 }}>
+                    <Typography.Text strong ellipsis style={{ maxWidth: 120 }}>
                       {group.name}
                     </Typography.Text>
                     <span className="ml-sidebar-workspace__count">{members.length}</span>
+                    {group.shortcut && (
+                      <Typography.Text type="secondary" style={{ fontSize: 10, marginLeft: 4 }}>
+                        {formatShortcutBinding(group.shortcut, isMac)}
+                      </Typography.Text>
+                    )}
                   </button>
                   <Dropdown menu={menu} trigger={['click']}>
                     <button type="button" className="ml-icon-btn" aria-label={t('workspaces.edit')}>
@@ -283,6 +383,7 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
                           cluster={cluster}
                           active={cluster.id === activeClusterId}
                           onActivate={onNavigate}
+                          onEdit={onEditCluster}
                         />
                       ))
                     )}

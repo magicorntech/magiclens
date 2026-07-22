@@ -39,6 +39,7 @@ export const tr: TranslationOverrides = {
       general: 'Genel',
       updates: 'Güncellemeler',
       display: 'Görünüm',
+      vpnExtensions: 'VPN Eklentileri',
       keyboard: 'Klavye',
       appearance: 'Tema',
       about: 'Hakkında'
@@ -102,6 +103,11 @@ export const tr: TranslationOverrides = {
       pressKeys: 'Tuşlara basın…',
       recordError: '⌘/Ctrl (veya Alt) ile bir kısayol kullanın; iptal için Esc',
       changeAria: '{{label}} kısayolunu değiştir',
+      workspacesTitle: 'Workspaces',
+      workspacesHint:
+        'Bir workspace’i açmak için kısayol atayın (genişletir ve kümelerini açar). Workspace düzenlerken de ayarlayabilirsiniz.',
+      workspacesEmpty: 'Kısayol atamak için kenar çubuğunda bir workspace oluşturun.',
+      workspaceOpenDesc: 'Workspace’i aç · {{count}} küme',
       actions: {
         globalSearch: {
           label: 'Genel arama',
@@ -135,6 +141,66 @@ export const tr: TranslationOverrides = {
       customAccent: 'Özel vurgu',
       customAccentHint: 'Kenar çubukları, düğmeler, vurgular ve grafik tonlarına uygulanır.',
       customSwatch: 'Kendi vurgu rengin'
+    },
+    about: {
+      platform: 'Platform'
+    },
+    vpnExtensions: {
+      intro:
+        'PIN + MFA tünelleri için MagicLens’in ihtiyaç duyduğu VPN CLI araçlarını kurun ve doğrulayın. OpenVPN Connect desteklenmez.',
+      platformLabel: 'Algılanan platform: {{platform}}',
+      platformHint: {
+        darwin:
+          'macOS’ta OpenVPN / WireGuard CLI için Homebrew kullanılır. Tunnelblick ve WireGuard.app isteğe bağlı yedeklerdir.',
+        win32:
+          'Windows’ta OpenVPN Community CLI ve WireGuard winget ile kurulur (yedek: Chocolatey/Scoop). OpenVPN Connect kullanmayın.',
+        linux:
+          'Linux’ta önce dağıtım paketleri (apt/dnf/pacman/zypper) tercih edilir. Olmazsa Homebrew’a düşülür.',
+        other: 'Bu platformda otomatik kurulum sınırlı olabilir. Aşağıdaki manuel komutları kullanın.'
+      },
+      statusTitle: 'Algılanan araçlar',
+      ready: 'hazır',
+      missing: 'eksik',
+      rescan: 'Araçları yeniden tara',
+      installTitle: 'MagicLens ile kur',
+      installHint: 'Şifre / UAC onayı istenebilir. Kurulum birkaç dakika sürebilir.',
+      installOpenVpn: 'OpenVPN CLI kur',
+      installWireGuard: 'WireGuard kur',
+      installSuccess: '{{tool}} başarıyla kuruldu',
+      installFailed: 'Kurulum başarısız',
+      packagesTitle: 'Paketler / komutlar',
+      packagesHint: 'Elle kurmak için bu komutları terminale kopyalayın.',
+      manualTitle: 'Manuel kurulum adımları',
+      manual: {
+        darwin: [
+          'Yoksa https://brew.sh adresinden Homebrew kurun.',
+          'Çalıştırın: brew install openvpn',
+          'İsteğe bağlı: brew install wireguard-tools',
+          'İsteğe bağlı GUI: brew install --cask tunnelblick veya WireGuard.app',
+          'MagicLens’i kapatıp açın, ardından PIN + MFA ile tekrar bağlanın.'
+        ],
+        win32: [
+          'PowerShell veya Terminal açın.',
+          'Community OpenVPN kurun (Connect değil): winget install -e --id OpenVPNTechnologies.OpenVPN',
+          'WireGuard kurun: winget install -e --id WireGuard.WireGuard',
+          'Alternatif: choco install openvpn -y  /  choco install wireguard -y',
+          'openvpn.exe’nin Program Files\\OpenVPN\\bin altında bulunması için MagicLens’i yeniden başlatın.'
+        ],
+        linux: [
+          'Debian/Ubuntu: sudo apt-get install -y openvpn wireguard-tools',
+          'Fedora/RHEL: sudo dnf install -y openvpn wireguard-tools',
+          'Arch: sudo pacman -Sy openvpn wireguard-tools',
+          'Veya Homebrew kurup: brew install openvpn wireguard-tools',
+          'MagicLens’i yeniden başlatın, ardından PIN + MFA ile bağlanın.'
+        ],
+        other: [
+          'İşletim sisteminiz için OpenVPN community CLI kurun.',
+          'WireGuard profilleri kullanıyorsanız wg-quick araçlarını kurun.',
+          'MagicLens’i yeniden başlatıp bağlantıyı deneyin.'
+        ]
+      },
+      connectNote:
+        'Araçlar hazır olduktan sonra VPN sayfasına dönüp bağlanın. Araçlar yoksa MagicLens bağlanırken de otomatik kurmayı dener.'
     }
   },
   vpn: {
@@ -158,7 +224,11 @@ export const tr: TranslationOverrides = {
     removedToast: 'Kaldırıldı',
     noToolsTitle: 'VPN aracı bulunamadı',
     noToolsDesc:
-      'Bağlanırken MagicLens gerekirse Homebrew’u, ardından OpenVPN’i kurar. Mac şifreniz sorulabilir. PIN + MFA için OpenVPN Connect desteklenmez.',
+      'PIN + MFA için OpenVPN Community CLI (veya WireGuard araçları) gerekir. Paketleri kurmak için Ayarlar → VPN Eklentileri’ne gidin veya manuel adımları izleyin. OpenVPN Connect desteklenmez.',
+    openVpnExtensions: 'VPN Eklentileri',
+    connectHelpTitle: 'Bağlanılamadı',
+    connectHelpDesc:
+      'Araçlar eksikse veya kurulum başarısız olduysa OpenVPN / WireGuard kurmak ve işletim sisteminize özel adımları görmek için VPN Eklentileri’ni açın.',
     profilesTitle: 'VPN profilleri',
     addToStart: 'Başlamak için bir yapılandırma ekleyin',
     filteredCount: '{{filtered}} / {{total}}',
@@ -353,6 +423,13 @@ export const tr: TranslationOverrides = {
     name: 'Ad',
     clusters: 'Kümeler',
     selectClusters: 'Bu workspace için küme seçin',
+    shortcut: 'Klavye kısayolu',
+    shortcutHint: 'Bu workspace’i ve kümelerini açar. ⌘/Ctrl (veya Alt) ile bir tuş kullanın.',
+    shortcutAssign: 'Kısayol ata',
+    shortcutListening: 'Tuşlara basın…',
+    shortcutClear: 'Temizle',
+    shortcutNone: 'Yok',
+    shortcutRecordError: '⌘/Ctrl (veya Alt) ile bir kısayol kullanın; iptal için Esc',
     save: 'Kaydet',
     created: 'Workspace oluşturuldu',
     updated: 'Workspace güncellendi'

@@ -39,6 +39,7 @@ export const ja: TranslationOverrides = {
       general: '一般',
       updates: 'アップデート',
       display: '表示',
+      vpnExtensions: 'VPN 拡張機能',
       keyboard: 'キーボード',
       appearance: '外観',
       about: '情報'
@@ -102,6 +103,11 @@ export const ja: TranslationOverrides = {
       pressKeys: 'キーを押してください…',
       recordError: '⌘/Ctrl（または Alt）付きのショートカットを使うか、Esc でキャンセル',
       changeAria: '{{label}} のショートカットを変更',
+      workspacesTitle: 'Workspaces',
+      workspacesHint:
+        'ワークスペースを開くショートカットを割り当てます（展開してクラスタを開きます）。編集画面でも設定できます。',
+      workspacesEmpty: 'ショートカットを割り当てるにはサイドバーでワークスペースを作成してください。',
+      workspaceOpenDesc: 'ワークスペースを開く · {{count}} クラスタ',
       actions: {
         globalSearch: {
           label: 'グローバル検索',
@@ -135,6 +141,66 @@ export const ja: TranslationOverrides = {
       customAccent: 'カスタムアクセント',
       customAccentHint: 'サイドバー、ボタン、ハイライト、チャートのアクセントに適用されます。',
       customSwatch: '独自のアクセントカラー'
+    },
+    about: {
+      platform: 'プラットフォーム'
+    },
+    vpnExtensions: {
+      intro:
+        'PIN + MFA トンネルに必要な VPN CLI ツールをインストールして確認します。OpenVPN Connect はサポートされません。',
+      platformLabel: '検出されたプラットフォーム: {{platform}}',
+      platformHint: {
+        darwin:
+          'macOS では Homebrew で OpenVPN / WireGuard CLI を入れます。Tunnelblick と WireGuard.app は任意の代替です。',
+        win32:
+          'Windows では winget で OpenVPN Community CLI と WireGuard を入れます（代替: Chocolatey/Scoop）。OpenVPN Connect は使わないでください。',
+        linux:
+          'Linux では配布パッケージ（apt/dnf/pacman/zypper）を優先します。失敗時は Homebrew にフォールバックします。',
+        other: 'この環境では自動インストールが制限される場合があります。下の手動コマンドを使ってください。'
+      },
+      statusTitle: '検出されたツール',
+      ready: '準備完了',
+      missing: '未検出',
+      rescan: 'ツールを再スキャン',
+      installTitle: 'MagicLens でインストール',
+      installHint: 'パスワード / UAC の確認が求められる場合があります。数分かかることがあります。',
+      installOpenVpn: 'OpenVPN CLI をインストール',
+      installWireGuard: 'WireGuard をインストール',
+      installSuccess: '{{tool}} をインストールしました',
+      installFailed: 'インストールに失敗しました',
+      packagesTitle: 'パッケージ / コマンド',
+      packagesHint: '手動インストール用にターミナルへコピーできます。',
+      manualTitle: '手動セットアップ手順',
+      manual: {
+        darwin: [
+          '必要なら https://brew.sh から Homebrew をインストールします。',
+          '実行: brew install openvpn',
+          '任意: brew install wireguard-tools',
+          '任意 GUI: brew install --cask tunnelblick または WireGuard.app',
+          'MagicLens を再起動し、PIN + MFA で再接続します。'
+        ],
+        win32: [
+          'PowerShell または Terminal を開きます。',
+          'Community OpenVPN をインストール（Connect ではない）: winget install -e --id OpenVPNTechnologies.OpenVPN',
+          'WireGuard をインストール: winget install -e --id WireGuard.WireGuard',
+          '代替: choco install openvpn -y  /  choco install wireguard -y',
+          'Program Files\\OpenVPN\\bin の openvpn.exe を検出できるよう MagicLens を再起動します。'
+        ],
+        linux: [
+          'Debian/Ubuntu: sudo apt-get install -y openvpn wireguard-tools',
+          'Fedora/RHEL: sudo dnf install -y openvpn wireguard-tools',
+          'Arch: sudo pacman -Sy openvpn wireguard-tools',
+          'または Homebrew: brew install openvpn wireguard-tools',
+          'MagicLens を再起動し、PIN + MFA で接続します。'
+        ],
+        other: [
+          'OS 向けの OpenVPN community CLI をインストールします。',
+          'WireGuard プロファイルを使う場合は wg-quick を入れます。',
+          'MagicLens を再起動して再接続します。'
+        ]
+      },
+      connectNote:
+        'ツールの準備ができたら VPN ページに戻り接続してください。不足時は接続時に自動インストールも試します。'
     }
   },
   vpn: {
@@ -158,7 +224,11 @@ export const ja: TranslationOverrides = {
     removedToast: '削除しました',
     noToolsTitle: 'VPN ツールが見つかりません',
     noToolsDesc:
-      'OpenVPN（brew install openvpn）、Tunnelblick、WireGuard.app、または wireguard-tools をインストールしてください。',
+      'PIN + MFA には OpenVPN Community CLI（または WireGuard ツール）が必要です。設定 → VPN 拡張機能でインストールするか、手動手順に従ってください。OpenVPN Connect は未対応です。',
+    openVpnExtensions: 'VPN 拡張機能',
+    connectHelpTitle: '接続できませんでした',
+    connectHelpDesc:
+      'ツール不足やインストール失敗の場合は、VPN 拡張機能を開いて OpenVPN / WireGuard の導入と OS 別手順を確認してください。',
     profilesTitle: 'VPN プロファイル',
     addToStart: '設定を追加して開始',
     filteredCount: '{{filtered}} / {{total}}',

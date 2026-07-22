@@ -39,6 +39,7 @@ export const ko: TranslationOverrides = {
       general: '일반',
       updates: '업데이트',
       display: '표시',
+      vpnExtensions: 'VPN 확장',
       keyboard: '키보드',
       appearance: '모양',
       about: '정보'
@@ -102,6 +103,11 @@ export const ko: TranslationOverrides = {
       pressKeys: '키를 누르세요…',
       recordError: '⌘/Ctrl(또는 Alt)이 포함된 단축키를 사용하거나 Esc로 취소하세요',
       changeAria: '{{label}} 단축키 변경',
+      workspacesTitle: 'Workspaces',
+      workspacesHint:
+        '워크스페이스를 여는 단축키를 지정하세요(펼치고 클러스터를 엽니다). 워크스페이스 편집에서도 설정할 수 있습니다.',
+      workspacesEmpty: '단축키를 지정하려면 사이드바에서 워크스페이스를 만드세요.',
+      workspaceOpenDesc: '워크스페이스 열기 · 클러스터 {{count}}개',
       actions: {
         globalSearch: {
           label: '전역 검색',
@@ -135,6 +141,66 @@ export const ko: TranslationOverrides = {
       customAccent: '사용자 지정 강조색',
       customAccentHint: '사이드바, 버튼, 하이라이트 및 차트 강조색에 적용됩니다.',
       customSwatch: '나만의 강조 색'
+    },
+    about: {
+      platform: '플랫폼'
+    },
+    vpnExtensions: {
+      intro:
+        'PIN + MFA 터널에 필요한 VPN CLI 도구를 설치하고 확인하세요. OpenVPN Connect는 지원되지 않습니다.',
+      platformLabel: '감지된 플랫폼: {{platform}}',
+      platformHint: {
+        darwin:
+          'macOS에서는 Homebrew로 OpenVPN / WireGuard CLI를 설치합니다. Tunnelblick과 WireGuard.app은 선택적 대안입니다.',
+        win32:
+          'Windows에서는 winget으로 OpenVPN Community CLI와 WireGuard를 설치합니다(대체: Chocolatey/Scoop). OpenVPN Connect는 사용하지 마세요.',
+        linux:
+          'Linux에서는 배포판 패키지(apt/dnf/pacman/zypper)를 우선합니다. 실패 시 Homebrew로 대체합니다.',
+        other: '이 플랫폼에서는 자동 설치가 제한될 수 있습니다. 아래 수동 명령을 사용하세요.'
+      },
+      statusTitle: '감지된 도구',
+      ready: '준비됨',
+      missing: '없음',
+      rescan: '도구 다시 검색',
+      installTitle: 'MagicLens로 설치',
+      installHint: '비밀번호 / UAC 승인이 필요할 수 있습니다. 설치에 몇 분이 걸릴 수 있습니다.',
+      installOpenVpn: 'OpenVPN CLI 설치',
+      installWireGuard: 'WireGuard 설치',
+      installSuccess: '{{tool}} 설치 완료',
+      installFailed: '설치 실패',
+      packagesTitle: '패키지 / 명령',
+      packagesHint: '수동 설치를 위해 터미널에 이 명령을 복사하세요.',
+      manualTitle: '수동 설치 단계',
+      manual: {
+        darwin: [
+          '필요하면 https://brew.sh 에서 Homebrew를 설치하세요.',
+          '실행: brew install openvpn',
+          '선택: brew install wireguard-tools',
+          '선택 GUI: brew install --cask tunnelblick 또는 WireGuard.app',
+          'MagicLens를 다시 시작한 뒤 PIN + MFA로 연결하세요.'
+        ],
+        win32: [
+          'PowerShell 또는 터미널을 엽니다.',
+          'Community OpenVPN 설치(Connect 아님): winget install -e --id OpenVPNTechnologies.OpenVPN',
+          'WireGuard 설치: winget install -e --id WireGuard.WireGuard',
+          '대체: choco install openvpn -y  /  choco install wireguard -y',
+          'Program Files\\OpenVPN\\bin의 openvpn.exe를 찾도록 MagicLens를 다시 시작하세요.'
+        ],
+        linux: [
+          'Debian/Ubuntu: sudo apt-get install -y openvpn wireguard-tools',
+          'Fedora/RHEL: sudo dnf install -y openvpn wireguard-tools',
+          'Arch: sudo pacman -Sy openvpn wireguard-tools',
+          '또는 Homebrew: brew install openvpn wireguard-tools',
+          'MagicLens를 다시 시작한 뒤 PIN + MFA로 연결하세요.'
+        ],
+        other: [
+          'OS용 OpenVPN community CLI를 설치하세요.',
+          'WireGuard 프로필을 쓰면 wg-quick 도구를 설치하세요.',
+          'MagicLens를 다시 시작하고 다시 연결하세요.'
+        ]
+      },
+      connectNote:
+        '도구가 준비되면 VPN 페이지로 돌아가 연결하세요. 도구가 없으면 연결 시 자동 설치도 시도합니다.'
     }
   },
   vpn: {
@@ -158,7 +224,11 @@ export const ko: TranslationOverrides = {
     removedToast: '삭제됨',
     noToolsTitle: 'VPN 도구를 찾을 수 없음',
     noToolsDesc:
-      'OpenVPN(brew install openvpn), Tunnelblick, WireGuard.app 또는 wireguard-tools를 설치하세요.',
+      'PIN + MFA에는 OpenVPN Community CLI(또는 WireGuard 도구)가 필요합니다. 설정 → VPN 확장에서 설치하거나 수동 단계를 따르세요. OpenVPN Connect는 지원되지 않습니다.',
+    openVpnExtensions: 'VPN 확장',
+    connectHelpTitle: '연결할 수 없음',
+    connectHelpDesc:
+      '도구가 없거나 설치에 실패했다면 VPN 확장을 열어 OpenVPN / WireGuard를 설치하고 OS별 단계를 확인하세요.',
     profilesTitle: 'VPN 프로필',
     addToStart: '시작하려면 구성을 추가하세요',
     filteredCount: '{{filtered}} / {{total}}',
