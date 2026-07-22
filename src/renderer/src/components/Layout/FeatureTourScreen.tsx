@@ -7,106 +7,74 @@ import {
   Box,
   Cable,
   Columns2,
+  Globe,
   Layers,
   Network,
   Search,
   Terminal
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Icon } from '../ui/Icon'
 import logo from '../../assets/logo.png'
+import { APP_LOCALES, APP_LOCALE_LABELS, type AppLocale } from '@shared/types/locale'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 
 interface FeatureTourScreenProps {
   onFinish: () => void
 }
 
-type TourSlide = {
-  id: string
-  eyebrow: string
-  title: string
-  body: string
+type TourPhase = 'language' | 'slides'
+
+type SlideMeta = {
+  id: 'welcome' | 'clusters' | 'split' | 'search' | 'resources' | 'vpn' | 'ops' | 'forward'
   icon: typeof Layers
   accent: string
 }
 
-const SLIDES: TourSlide[] = [
-  {
-    id: 'welcome',
-    eyebrow: 'Welcome',
-    title: 'MagicLens for Kubernetes',
-    body: 'A fast desktop client to manage clusters, resources, VPN tunnels, logs, and terminals in one place — offline-first on your machine.',
-    icon: Layers,
-    accent: '#8b5cf6'
-  },
-  {
-    id: 'clusters',
-    eyebrow: 'Clusters',
-    title: 'Multi-cluster, one workspace',
-    body: 'Import kubeconfigs, pin favorites, and switch tabs instantly across every cluster you work with.',
-    icon: Layers,
-    accent: '#6366f1'
-  },
-  {
-    id: 'split',
-    eyebrow: 'Split view',
-    title: 'Compare two clusters at once',
-    body: 'Open split view to keep two cluster tabs side by side — perfect for staging vs production or checking the same resource across environments.',
-    icon: Columns2,
-    accent: '#14b8a6'
-  },
-  {
-    id: 'search',
-    eyebrow: 'Search',
-    title: 'Find anything fast',
-    body: 'Global search jumps to clusters, namespaces, and resources in one shortcut (⌘K / Ctrl+K by default — change it anytime in Settings → Keyboard).',
-    icon: Search,
-    accent: '#38bdf8'
-  },
-  {
-    id: 'resources',
-    eyebrow: 'Explorer',
-    title: 'Browse every resource',
-    body: 'Workloads, Config, Network, Storage, and more — live watch, YAML edit, batch actions, and a focused detail panel.',
-    icon: Box,
-    accent: '#0ea5e9'
-  },
-  {
-    id: 'vpn',
-    eyebrow: 'VPN',
-    title: 'Private clusters, your tunnels',
-    body: 'Upload OpenVPN / Pritunl / WireGuard profiles, link them to clusters, and keep multiple tunnels up while you switch tabs.',
-    icon: Network,
-    accent: '#22c55e'
-  },
-  {
-    id: 'ops',
-    eyebrow: 'Day-to-day',
-    title: 'Logs, exec & terminals',
-    body: 'Tail and download pod logs, exec into containers, open local terminals, and keep everything handy in the bottom panel.',
-    icon: Terminal,
-    accent: '#f59e0b'
-  },
-  {
-    id: 'forward',
-    eyebrow: 'Access',
-    title: 'Port forwarding made simple',
-    body: 'Forward a Pod or Service to a local port in a couple of clicks — MagicLens keeps the session visible while you work.',
-    icon: Cable,
-    accent: '#ec4899'
-  }
+const SLIDES: SlideMeta[] = [
+  { id: 'welcome', icon: Layers, accent: '#8b5cf6' },
+  { id: 'clusters', icon: Layers, accent: '#6366f1' },
+  { id: 'split', icon: Columns2, accent: '#14b8a6' },
+  { id: 'search', icon: Search, accent: '#38bdf8' },
+  { id: 'resources', icon: Box, accent: '#0ea5e9' },
+  { id: 'vpn', icon: Network, accent: '#22c55e' },
+  { id: 'ops', icon: Terminal, accent: '#f59e0b' },
+  { id: 'forward', icon: Cable, accent: '#ec4899' }
 ]
 
 /**
  * Full-screen feature card slider shown on first launch and again after an app update
- * (same timing as the previous splash intro).
+ * (same timing as the previous splash intro). Language is chosen first, then slides
+ * render in that locale.
  */
 export function FeatureTourScreen({ onFinish }: FeatureTourScreenProps): React.JSX.Element {
+  const { t } = useTranslation()
+  const locale = useDisplaySettingsStore((s) => s.locale)
+  const setLocale = useDisplaySettingsStore((s) => s.setLocale)
+  const [phase, setPhase] = useState<TourPhase>('language')
+  const [draftLocale, setDraftLocale] = useState<AppLocale>(locale)
   const [index, setIndex] = useState(0)
+
   const slide = SLIDES[index]!
   const isLast = index === SLIDES.length - 1
   const isFirst = index === 0
 
   useEffect(() => {
+    setDraftLocale(locale)
+  }, [locale])
+
+  useEffect(() => {
     function onKey(e: KeyboardEvent): void {
+      if (phase === 'language') {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          void goToSlides()
+        } else if (e.key === 'Escape') {
+          onFinish()
+        }
+        return
+      }
+
       if (e.key === 'ArrowRight' || e.key === 'Enter') {
         e.preventDefault()
         if (isLast) onFinish()
@@ -120,7 +88,16 @@ export function FeatureTourScreen({ onFinish }: FeatureTourScreenProps): React.J
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [isLast, onFinish])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, isLast, onFinish, draftLocale])
+
+  async function goToSlides(): Promise<void> {
+    if (draftLocale !== locale) {
+      await setLocale(draftLocale)
+    }
+    setIndex(0)
+    setPhase('slides')
+  }
 
   return (
     <div className="ml-feature-tour">
@@ -139,80 +116,157 @@ export function FeatureTourScreen({ onFinish }: FeatureTourScreenProps): React.J
 
         <div className="ml-feature-tour__stage">
           <AnimatePresence mode="wait">
-            <motion.article
-              key={slide.id}
-              className="ml-feature-tour__card"
-              initial={{ opacity: 0, x: 36, scale: 0.98 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -36, scale: 0.98 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <div
-                className="ml-feature-tour__icon"
-                style={{
-                  background: `color-mix(in srgb, ${slide.accent} 22%, transparent)`,
-                  color: slide.accent,
-                  boxShadow: `0 0 0 1px color-mix(in srgb, ${slide.accent} 35%, transparent)`
-                }}
+            {phase === 'language' ? (
+              <motion.article
+                key="language"
+                className="ml-feature-tour__card"
+                initial={{ opacity: 0, x: 36, scale: 0.98 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -36, scale: 0.98 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               >
-                <Icon icon={slide.icon} variant="action" />
-              </div>
-              <Typography.Text className="ml-feature-tour__eyebrow">{slide.eyebrow}</Typography.Text>
-              <Typography.Title level={2} className="ml-feature-tour__title">
-                {slide.title}
-              </Typography.Title>
-              <Typography.Paragraph className="ml-feature-tour__body">{slide.body}</Typography.Paragraph>
-            </motion.article>
+                <div
+                  className="ml-feature-tour__icon"
+                  style={{
+                    background: 'color-mix(in srgb, #38bdf8 22%, transparent)',
+                    color: '#38bdf8',
+                    boxShadow: '0 0 0 1px color-mix(in srgb, #38bdf8 35%, transparent)'
+                  }}
+                >
+                  <Icon icon={Globe} variant="action" />
+                </div>
+                <Typography.Text className="ml-feature-tour__eyebrow">
+                  {APP_LOCALE_LABELS[draftLocale]}
+                </Typography.Text>
+                <Typography.Title level={2} className="ml-feature-tour__title">
+                  {t('tour.chooseLanguage')}
+                </Typography.Title>
+                <Typography.Paragraph className="ml-feature-tour__body">
+                  {t('tour.languageHint')}
+                </Typography.Paragraph>
+                <div className="ml-feature-tour__langs" role="listbox" aria-label={t('tour.chooseLanguage')}>
+                  {APP_LOCALES.map((code) => {
+                    const selected = draftLocale === code
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        className={`ml-feature-tour__lang${selected ? ' ml-feature-tour__lang--selected' : ''}`}
+                        onClick={() => {
+                          setDraftLocale(code)
+                          void setLocale(code)
+                        }}
+                      >
+                        <span className="ml-feature-tour__lang-code">{code.toUpperCase()}</span>
+                        <span className="ml-feature-tour__lang-label">{APP_LOCALE_LABELS[code]}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </motion.article>
+            ) : (
+              <motion.article
+                key={slide.id}
+                className="ml-feature-tour__card"
+                initial={{ opacity: 0, x: 36, scale: 0.98 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -36, scale: 0.98 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div
+                  className="ml-feature-tour__icon"
+                  style={{
+                    background: `color-mix(in srgb, ${slide.accent} 22%, transparent)`,
+                    color: slide.accent,
+                    boxShadow: `0 0 0 1px color-mix(in srgb, ${slide.accent} 35%, transparent)`
+                  }}
+                >
+                  <Icon icon={slide.icon} variant="action" />
+                </div>
+                <Typography.Text className="ml-feature-tour__eyebrow">
+                  {t(`tour.slides.${slide.id}.eyebrow`)}
+                </Typography.Text>
+                <Typography.Title level={2} className="ml-feature-tour__title">
+                  {t(`tour.slides.${slide.id}.title`)}
+                </Typography.Title>
+                <Typography.Paragraph className="ml-feature-tour__body">
+                  {t(`tour.slides.${slide.id}.body`)}
+                </Typography.Paragraph>
+              </motion.article>
+            )}
           </AnimatePresence>
         </div>
 
-        <div className="ml-feature-tour__dots" role="tablist" aria-label="Feature slides">
-          {SLIDES.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              role="tab"
-              aria-selected={i === index}
-              className={`ml-feature-tour__dot${i === index ? ' ml-feature-tour__dot--active' : ''}`}
-              onClick={() => setIndex(i)}
-            />
-          ))}
-        </div>
+        {phase === 'slides' ? (
+          <div className="ml-feature-tour__dots" role="tablist" aria-label={t('tour.slidesAria')}>
+            {SLIDES.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                role="tab"
+                aria-selected={i === index}
+                className={`ml-feature-tour__dot${i === index ? ' ml-feature-tour__dot--active' : ''}`}
+                onClick={() => setIndex(i)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="ml-feature-tour__dots ml-feature-tour__dots--spacer" aria-hidden />
+        )}
 
         <div className="ml-feature-tour__nav">
           <Button type="text" className="ml-feature-tour__skip" onClick={onFinish}>
-            Skip
+            {t('tour.skip')}
           </Button>
           <div className="ml-feature-tour__nav-right">
-            <Button
-              disabled={isFirst}
-              icon={<Icon icon={ArrowLeft} variant="action" />}
-              onClick={() => setIndex((i) => Math.max(0, i - 1))}
-            >
-              Back
-            </Button>
-            {isLast ? (
+            {phase === 'language' ? (
               <Button
                 type="primary"
                 size="large"
                 shape="round"
                 icon={<Icon icon={ArrowRight} variant="action" />}
                 iconPosition="end"
-                onClick={onFinish}
+                onClick={() => void goToSlides()}
               >
-                Get started
+                {t('tour.continue')}
               </Button>
             ) : (
-              <Button
-                type="primary"
-                size="large"
-                shape="round"
-                icon={<Icon icon={ArrowRight} variant="action" />}
-                iconPosition="end"
-                onClick={() => setIndex((i) => Math.min(SLIDES.length - 1, i + 1))}
-              >
-                Next
-              </Button>
+              <>
+                <Button
+                  icon={<Icon icon={ArrowLeft} variant="action" />}
+                  onClick={() => {
+                    if (isFirst) setPhase('language')
+                    else setIndex((i) => Math.max(0, i - 1))
+                  }}
+                >
+                  {t('tour.back')}
+                </Button>
+                {isLast ? (
+                  <Button
+                    type="primary"
+                    size="large"
+                    shape="round"
+                    icon={<Icon icon={ArrowRight} variant="action" />}
+                    iconPosition="end"
+                    onClick={onFinish}
+                  >
+                    {t('tour.getStarted')}
+                  </Button>
+                ) : (
+                  <Button
+                    type="primary"
+                    size="large"
+                    shape="round"
+                    icon={<Icon icon={ArrowRight} variant="action" />}
+                    iconPosition="end"
+                    onClick={() => setIndex((i) => Math.min(SLIDES.length - 1, i + 1))}
+                  >
+                    {t('tour.next')}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>

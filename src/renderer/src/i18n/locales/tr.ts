@@ -1,6 +1,6 @@
-import type { TranslationResources } from './en'
+import type { TranslationOverrides } from './en'
 
-export const tr: TranslationResources = {
+export const tr: TranslationOverrides = {
   common: {
     settings: 'Ayarlar',
     custom: 'Özel',
@@ -11,6 +11,9 @@ export const tr: TranslationResources = {
     connecting: 'Bağlanıyor…',
     disconnected: 'Bağlı değil',
     error: 'Hata',
+    connectionError: 'Connection error',
+    idle: 'Idle',
+    allNamespaces: 'All namespaces',
     total: 'toplam',
     clusters: 'Kümeler',
     vpn: 'VPN',
@@ -76,6 +79,9 @@ export const tr: TranslationResources = {
       showFavorites: 'Favoriler bölümünü göster',
       showFavoritesHint:
         'Açıkken Favoriler, sol kenar çubuğunda Workspaces’in üstünde görünür. Başlığa tıklayarak kapatıp açabilirsiniz.',
+      showWorkspaces: 'Workspaces bölümünü göster',
+      showWorkspacesHint:
+        'Açıkken Workspaces sol kenar çubuğunda görünür. Daraltılmış sidebar’da W işareti workspace kümelerinin üzerindedir.',
       tabIconsTitle: 'Sekme simgeleri',
       showClusterLogos: 'Küme sekmelerinde logo göster',
       showResourceIcons: 'Kaynak sekmelerinde simge göster',
@@ -280,5 +286,75 @@ export const tr: TranslationResources = {
       empty: 'Önce VPN sayfasından bir profil ekleyin',
       hint: 'Bu küme sekmesine geçince MagicLens bu VPN’e otomatik bağlanır. PIN ve MFA, ilk başarılı bağlantıdan sonra gün boyu profil bazında hatırlanır.'
     }
+  },
+  tour: {
+    skip: 'Atla',
+    back: 'Geri',
+    next: 'İleri',
+    getStarted: 'Başla',
+    continue: 'Devam',
+    chooseLanguage: 'Dilinizi seçin',
+    languageHint: 'Bunu istediğiniz zaman Ayarlar’dan değiştirebilirsiniz. Özellik kartları seçtiğiniz dilde açılır.',
+    slidesAria: 'Özellik slaytları',
+    slides: {
+      welcome: {
+        eyebrow: 'Hoş geldiniz',
+        title: 'Kubernetes için MagicLens',
+        body: 'Kümeleri, kaynakları, VPN tünellerini, logları ve terminalleri tek yerden yöneten hızlı bir masaüstü istemcisi — makinenizde offline-first.'
+      },
+      clusters: {
+        eyebrow: 'Kümeler',
+        title: 'Çoklu küme, tek çalışma alanı',
+        body: 'Kubeconfig içe aktarın, favorilere sabitleyin ve çalıştığınız her küme arasında anında sekme değiştirin.'
+      },
+      split: {
+        eyebrow: 'Bölünmüş görünüm',
+        title: 'İki kümeyi aynı anda karşılaştırın',
+        body: 'İki küme sekmesini yan yana tutmak için bölünmüş görünümü açın — staging vs production veya aynı kaynağı ortamlar arasında kontrol etmek için ideal.'
+      },
+      search: {
+        eyebrow: 'Arama',
+        title: 'Her şeyi hızlı bulun',
+        body: 'Global arama tek kısayolla kümelere, namespace’lere ve kaynaklara atlar (varsayılan ⌘K / Ctrl+K — Ayarlar → Klavye’den değiştirebilirsiniz).'
+      },
+      resources: {
+        eyebrow: 'Gezgin',
+        title: 'Her kaynağa göz atın',
+        body: 'Workload, Config, Network, Storage ve daha fazlası — canlı izleme, YAML düzenleme, toplu işlemler ve odaklı detay paneli.'
+      },
+      vpn: {
+        eyebrow: 'VPN',
+        title: 'Özel kümeler, sizin tünelleriniz',
+        body: 'OpenVPN / Pritunl / WireGuard profilleri yükleyin, kümelere bağlayın ve sekmeler arasında geçerken birden fazla tüneli açık tutun.'
+      },
+      ops: {
+        eyebrow: 'Günlük iş',
+        title: 'Log, exec ve terminaller',
+        body: 'Pod loglarını izleyin ve indirin, container’lara exec yapın, yerel terminaller açın — hepsi alt panelde elinizin altında.'
+      },
+      forward: {
+        eyebrow: 'Erişim',
+        title: 'Port yönlendirme kolay',
+        body: 'Bir Pod veya Service’i birkaç tıkla yerel porta yönlendirin — MagicLens oturumu çalışırken görünür tutar.'
+      }
+    }
+  },
+  workspaces: {
+    title: 'Workspaces',
+    compactMark: 'W',
+    compactTooltip: 'Workspaces',
+    new: 'Yeni workspace',
+    newTooltip: 'Yeni workspace',
+    edit: 'Workspace düzenle',
+    delete: 'Workspace sil',
+    empty: 'Kümeleri workspace’lerde gruplayın',
+    noClusters: 'Henüz küme yok — eklemek için workspace’i düzenleyin.',
+    defaultName: 'Workspace',
+    name: 'Ad',
+    clusters: 'Kümeler',
+    selectClusters: 'Bu workspace için küme seçin',
+    save: 'Kaydet',
+    created: 'Workspace oluşturuldu',
+    updated: 'Workspace güncellendi'
   }
 }

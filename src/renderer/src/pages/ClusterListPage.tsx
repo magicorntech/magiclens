@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Empty, List } from 'antd'
 import { Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useClusterStore } from '../stores/clusterStore'
 import type { ClusterEntry } from '../stores/clusterStore'
 import { applyClusterFilterAndSearch } from '../clusterFilter'
@@ -12,6 +13,7 @@ import { EditClusterModal } from '../components/ClusterTabs/EditClusterModal'
 import { Icon } from '../components/ui/Icon'
 
 export function ClusterListPage(): React.JSX.Element {
+  const { t } = useTranslation()
   const clusters = useClusterStore((s) => s.clusters)
   const setAddClusterModalOpen = useClusterStore((s) => s.setAddClusterModalOpen)
   const [search, setSearch] = useState('')
@@ -32,34 +34,32 @@ export function ClusterListPage(): React.JSX.Element {
       <header className="ml-cluster-hub-header">
         <div className="ml-cluster-hub-header-main">
           <div>
-            <h1 className="ml-cluster-hub-title">Clusters</h1>
-            <p className="ml-cluster-hub-subtitle">
-              Add, connect, and manage all Kubernetes clusters from one place.
-            </p>
+            <h1 className="ml-cluster-hub-title">{t('clustersHub.title')}</h1>
+            <p className="ml-cluster-hub-subtitle">{t('clustersHub.subtitle')}</p>
           </div>
           <button type="button" className="ml-btn ml-btn--primary" onClick={() => setAddClusterModalOpen(true)}>
             <Icon icon={Plus} variant="action" />
-            <span>Add cluster</span>
+            <span>{t('clustersHub.add')}</span>
           </button>
         </div>
 
         <div className="ml-cluster-hub-stats">
           <div className="ml-cluster-hub-stat">
             <span className="ml-cluster-hub-stat-value">{stats.total}</span>
-            <span className="ml-cluster-hub-stat-label">Total</span>
+            <span className="ml-cluster-hub-stat-label">{t('clustersHub.statTotal')}</span>
           </div>
           <div className="ml-cluster-hub-stat">
             <span className="ml-cluster-hub-stat-value">{stats.connected}</span>
-            <span className="ml-cluster-hub-stat-label">Connected</span>
+            <span className="ml-cluster-hub-stat-label">{t('clustersHub.statConnected')}</span>
           </div>
           <div className="ml-cluster-hub-stat">
             <span className="ml-cluster-hub-stat-value">{stats.favorites}</span>
-            <span className="ml-cluster-hub-stat-label">Favorites</span>
+            <span className="ml-cluster-hub-stat-label">{t('clustersHub.statFavorites')}</span>
           </div>
           {stats.issues > 0 && (
             <div className="ml-cluster-hub-stat ml-cluster-hub-stat--warning">
               <span className="ml-cluster-hub-stat-value">{stats.issues}</span>
-              <span className="ml-cluster-hub-stat-label">Needs attention</span>
+              <span className="ml-cluster-hub-stat-label">{t('clustersHub.statIssues')}</span>
             </div>
           )}
         </div>
@@ -68,7 +68,7 @@ export function ClusterListPage(): React.JSX.Element {
           <ClusterSearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Search by name, context, endpoint, namespace, version…"
+            placeholder={t('clustersHub.searchPlaceholder')}
           />
           <ClusterFilterBar value={filter} onChange={setFilter} />
         </div>
@@ -79,15 +79,13 @@ export function ClusterListPage(): React.JSX.Element {
           <div className="ml-cluster-hub-empty">
             <Empty
               description={
-                clusters.length === 0
-                  ? 'No clusters yet. Add your first cluster to get started.'
-                  : 'No clusters match your search or filter.'
+                clusters.length === 0 ? t('clustersHub.empty') : t('clustersHub.noMatch')
               }
             />
             {clusters.length === 0 && (
               <button type="button" className="ml-btn ml-btn--primary" onClick={() => setAddClusterModalOpen(true)}>
                 <Icon icon={Plus} variant="action" />
-                <span>Add your first cluster</span>
+                <span>{t('clustersHub.addFirst')}</span>
               </button>
             )}
           </div>

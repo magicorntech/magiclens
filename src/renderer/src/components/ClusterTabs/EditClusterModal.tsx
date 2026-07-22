@@ -33,12 +33,12 @@ function readFileAsDataUrl(file: File): Promise<string> {
   })
 }
 
-function statusTag(status: PrometheusStatus | null): React.JSX.Element {
-  if (!status) return <Tag>Unknown</Tag>
+function statusTag(status: PrometheusStatus | null, t: (key: string, opts?: Record<string, string>) => string): React.JSX.Element {
+  if (!status) return <Tag>{t('clusterEdit.prometheusUnknown')}</Tag>
   if (status.available) {
-    return <Tag color="green">Connected ({status.discoveryMethod})</Tag>
+    return <Tag color="green">{t('clusterEdit.prometheusConnected', { method: status.discoveryMethod })}</Tag>
   }
-  return <Tag color="default">Not found</Tag>
+  return <Tag color="default">{t('clusterEdit.prometheusNotFound')}</Tag>
 }
 
 export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): React.JSX.Element {
@@ -200,7 +200,7 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
     try {
       const yaml = kubeconfigYaml || (await loadKubeconfigYaml(cluster.source))
       await navigator.clipboard.writeText(yaml)
-      message.success('Kubeconfig copied to clipboard')
+      message.success(t('clusterEdit.kubeconfigCopied'))
     } catch (err) {
       message.error(err instanceof Error ? err.message : String(err))
     }
@@ -210,7 +210,7 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
     if (!cluster) return
     if (!kubeconfigEditable) return
     if (kubeconfigDraft.trim() === kubeconfigYaml.trim()) {
-      message.info('No changes to save')
+      message.info(t('clusterEdit.noKubeconfigChanges'))
       return
     }
 
@@ -235,11 +235,11 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
         selectedNamespace: cluster.selectedNamespace,
         selectedResourceKind: cluster.selectedResourceKind
       })
-      message.success('Kubeconfig saved for this cluster')
+      message.success(t('clusterEdit.kubeconfigSaved'))
       setKubeconfigYaml(kubeconfigDraft)
 
       if (cluster.status === 'connected') {
-        message.info('Reconnect the cluster to apply kubeconfig changes')
+        message.info(t('clusterEdit.reconnectHint'))
       }
     } catch (err) {
       message.error(err instanceof Error ? err.message : String(err))
@@ -250,12 +250,12 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
 
   return (
     <>
-      <Modal title="Edit Cluster" open={!!cluster} onCancel={onClose} onOk={handleSave} okText="Save">
+      <Modal title={t('clusterEdit.title')} open={!!cluster} onCancel={onClose} onOk={handleSave} okText={t('clusterEdit.save')}>
         <Space orientation="vertical" style={{ width: '100%' }} size="middle">
           <Space align="center">
             <ClusterAvatar logoUrl={logoUrl} name={customName} size={48} />
             <Button icon={<Icon icon={Upload} variant="detail" />} onClick={() => fileInputRef.current?.click()}>
-              Change logo
+              {t('clusterEdit.changeLogo')}
             </Button>
             <input
               ref={fileInputRef}
@@ -266,22 +266,25 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
             />
           </Space>
           <div>
-            <Typography.Text>Display name</Typography.Text>
-            <Input value={customName} onChange={(e) => setCustomName(e.target.value)} />
+            <Typography.Text>{t('clusterEdit.displayName')}</Typography.Text>
+            <Input
+              value={customName}
+              onChange={(e) => setCustomName(e.target.value)}
+              placeholder={t('clusterEdit.displayNamePlaceholder')}
+            />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Typography.Text>Prometheus</Typography.Text>
-              {statusTag(prometheusStatus)}
+              <Typography.Text>{t('clusterEdit.prometheus')}</Typography.Text>
+              {statusTag(prometheusStatus, t)}
             </div>
             <Input
               value={prometheusUrl}
               onChange={(e) => setPrometheusUrl(e.target.value)}
-              placeholder="Auto-discover, or paste URL / API proxy path"
+              placeholder={t('clusterEdit.prometheusPlaceholder')}
             />
             <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
-              Leave empty to auto-discover via the Kubernetes API proxy. For external Prometheus, paste the full URL
-              (e.g. https://prometheus.example.com).
+              {t('clusterEdit.prometheusHint')}
             </Typography.Text>
             {cluster?.status === 'connected' ? (
               <Button
@@ -291,14 +294,14 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
                 style={{ marginTop: 8 }}
                 onClick={() => void handleDiscover()}
               >
-                Test connection
+                {t('clusterActions.testConnection')}
               </Button>
             ) : (
               <Alert
                 type="info"
                 showIcon
                 style={{ marginTop: 8 }}
-                message="Connect to this cluster to test Prometheus discovery."
+                message={t('clusterEdit.prometheusConnectHint')}
               />
             )}
             {prometheusStatus && !prometheusStatus.available && prometheusStatus.error ? (
@@ -341,8 +344,12 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Typography.Text>Kubeconfig</Typography.Text>
-              <Tag>{cluster?.source.type === 'file' ? 'Scoped (from file)' : 'Scoped (inline)'}</Tag>
+              <Typography.Text>{t('clusterEdit.kubeconfig')}</Typography.Text>
+              <Tag>
+                {cluster?.source.type === 'file'
+                  ? t('clusterEdit.kubeconfigScopedFile')
+                  : t('clusterEdit.kubeconfigScopedInline')}
+              </Tag>
             </div>
             <Space wrap>
               <Button
@@ -350,14 +357,14 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
                 loading={kubeconfigBusy}
                 onClick={() => void openKubeconfig({ editable: false })}
               >
-                View
+                {t('clusterEdit.view')}
               </Button>
               <Button
                 icon={<Icon icon={Clipboard} variant="detail" />}
                 loading={kubeconfigBusy}
                 onClick={() => void handleCopyKubeconfig()}
               >
-                Copy
+                {t('clusterEdit.copy')}
               </Button>
               <Button
                 icon={<Icon icon={Save} variant="detail" />}
@@ -365,11 +372,11 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
                 disabled={!kubeconfigCanEdit}
                 onClick={() => void openKubeconfig({ editable: true })}
               >
-                Edit
+                {t('clusterEdit.editYaml')}
               </Button>
             </Space>
             <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
-              MagicLens shows a scoped kubeconfig for only this cluster (single context). Saving will store it for this cluster entry.
+              {t('clusterEdit.kubeconfigHint')}
             </Typography.Text>
           </div>
         </Space>
@@ -378,15 +385,15 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
       <LogoCropModal imageSrc={cropSource} onCancel={() => setCropSource(null)} onSave={handleCropSave} />
 
       <Modal
-        title="Kubeconfig"
+        title={t('clusterEdit.kubeconfig')}
         open={kubeconfigOpen}
         onCancel={() => setKubeconfigOpen(false)}
         width={980}
-        okText="Save"
+        okText={t('clusterEdit.save')}
         okButtonProps={{ disabled: !kubeconfigEditable || kubeconfigBusy }}
         confirmLoading={kubeconfigBusy}
         onOk={() => void handleSaveKubeconfig()}
-        cancelText="Close"
+        cancelText={t('clusterEdit.close')}
       >
         <div style={{ height: 520, border: '1px solid var(--ml-border-secondary)', borderRadius: 8, overflow: 'hidden' }}>
           <Editor

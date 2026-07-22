@@ -1,6 +1,7 @@
 import { Dropdown, Tag, Tooltip, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { MoreHorizontal, Star, Unplug } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { ClusterEntry } from '../../stores/clusterStore'
 import { useClusterStore } from '../../stores/clusterStore'
 import { disconnectCluster } from '../../clusterConnect'
@@ -22,6 +23,7 @@ export function FavoriteClusterBox({
   compact = false,
   onActivate
 }: FavoriteClusterBoxProps): React.JSX.Element {
+  const { t } = useTranslation()
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
   const toggleFavorite = useClusterStore((s) => s.toggleFavorite)
   const removeCluster = useClusterStore((s) => s.removeCluster)
@@ -29,13 +31,17 @@ export function FavoriteClusterBox({
   const canDisconnect = cluster.status === 'connected' || cluster.status === 'connecting' || cluster.status === 'error'
 
   const menuItems: MenuProps['items'] = [
-    { key: 'open', label: 'Open' },
+    { key: 'open', label: t('clusterActions.open') },
     ...(canDisconnect
-      ? [{ key: 'disconnect', label: 'Disconnect', icon: <Icon icon={Unplug} variant="detail" /> }]
+      ? [{ key: 'disconnect', label: t('clusterActions.disconnect'), icon: <Icon icon={Unplug} variant="detail" /> }]
       : []),
     { type: 'divider' },
-    { key: 'unfavorite', label: 'Remove from favorites', icon: <Icon icon={Star} variant="detail" fill="currentColor" /> },
-    { key: 'remove', label: 'Remove cluster', danger: true }
+    {
+      key: 'unfavorite',
+      label: t('clusterActions.removeFavorite'),
+      icon: <Icon icon={Star} variant="detail" fill="currentColor" />
+    },
+    { key: 'remove', label: t('clusterActions.removeCluster'), danger: true }
   ]
 
   function handleOpen(): void {

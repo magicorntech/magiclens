@@ -1,6 +1,7 @@
 import { Tabs, Tooltip } from 'antd'
 import type { TabsProps } from 'antd'
 import { Columns2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { canUseSplitLayouts, useLayoutMode } from '../../hooks/useLayoutMode'
@@ -19,6 +20,7 @@ export function ClusterPaneTabStrip({
   pane,
   showSplitControl = false
 }: ClusterPaneTabStripProps): React.JSX.Element | null {
+  const { t } = useTranslation()
   const clusters = useClusterStore((s) => s.clusters)
   const setActiveCluster = useClusterStore((s) => s.setActiveCluster)
   const closeClusterTab = useClusterStore((s) => s.closeClusterTab)
@@ -69,12 +71,12 @@ export function ClusterPaneTabStrip({
         tabBarStyle={{ margin: 0 }}
       />
       {showSplitControl && allowClusterSplit && (
-        <Tooltip title="Exit split view">
+        <Tooltip title={t('clusterActions.exitSplit')}>
           <button
             type="button"
             className="ml-icon-btn ml-icon-btn--sm ml-icon-btn--active"
             onClick={disableSplitView}
-            aria-label="Exit split view"
+            aria-label={t('clusterActions.exitSplit')}
           >
             <Icon icon={Columns2} variant="action" />
           </button>

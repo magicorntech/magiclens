@@ -1,6 +1,7 @@
 import { Tabs, Tooltip } from 'antd'
 import type { TabsProps } from 'antd'
 import { Columns2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { canUseSplitLayouts, useLayoutMode } from '../../hooks/useLayoutMode'
@@ -9,6 +10,7 @@ import { ClusterAvatar } from './ClusterAvatar'
 
 /** Browser-style cluster tabs rendered in the global header (left zone). */
 export function ClusterHeaderTabs(): React.JSX.Element | null {
+  const { t } = useTranslation()
   const clusters = useClusterStore((s) => s.clusters)
   const openedTabs = useClusterStore((s) => s.openedTabs)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
@@ -59,7 +61,7 @@ export function ClusterHeaderTabs(): React.JSX.Element | null {
         tabBarStyle={{ margin: 0 }}
       />
       {allowClusterSplit && (
-        <Tooltip title={splitView ? 'Exit split view' : 'Split screen'}>
+        <Tooltip title={splitView ? t('clusterActions.exitSplit') : t('clusterActions.splitScreen')}>
           <button
             type="button"
             className={`ml-icon-btn ml-icon-btn--sm${splitView ? ' ml-icon-btn--active' : ''}`}

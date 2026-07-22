@@ -2,13 +2,13 @@ import type { ClusterEntry } from './stores/clusterStore'
 
 export type ClusterFilter = 'all' | 'favorites' | 'connected' | 'disconnected' | 'error' | 'recent'
 
-export const clusterFilterOptions: { label: string; value: ClusterFilter }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Favorites', value: 'favorites' },
-  { label: 'Connected', value: 'connected' },
-  { label: 'Disconnected', value: 'disconnected' },
-  { label: 'Error', value: 'error' },
-  { label: 'Recently opened', value: 'recent' }
+export const clusterFilterValues: ClusterFilter[] = [
+  'all',
+  'favorites',
+  'connected',
+  'disconnected',
+  'error',
+  'recent'
 ]
 
 export function matchesFilter(cluster: ClusterEntry, filter: ClusterFilter): boolean {

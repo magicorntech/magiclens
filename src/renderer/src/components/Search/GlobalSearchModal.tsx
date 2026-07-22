@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Empty, Input, Modal, Spin, Tag, Typography } from 'antd'
 import type { InputRef } from 'antd'
 import { Bell, Box, Cloud, FileText, HardDrive, Layers, Lock, Rocket, Search, Share2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Icon } from '../ui/Icon'
 import type { ResourceKind } from '@shared/resourceKinds'
 import {
@@ -75,6 +76,7 @@ function builtinIcon(kind: ResourceKind): React.ReactNode {
 }
 
 export function GlobalSearchModal(): React.JSX.Element {
+  const { t } = useTranslation()
   const open = useGlobalSearchStore((s) => s.open)
   const closeSearch = useGlobalSearchStore((s) => s.closeSearch)
   const query = useGlobalSearchStore((s) => s.query)
@@ -297,7 +299,7 @@ export function GlobalSearchModal(): React.JSX.Element {
         <Input
           ref={inputRef}
           prefix={<Icon icon={Search} variant="detail" />}
-          placeholder="Search clusters, pods, deployments, helm…  Try pod:nginx or @deploy api"
+          placeholder={t('search.placeholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleInputKeyDown}
@@ -328,7 +330,7 @@ export function GlobalSearchModal(): React.JSX.Element {
       <div className="global-search-body" ref={listRef}>
         {loading && (
           <div className="global-search-loading">
-            <Spin size="small" /> Searching…
+            <Spin size="small" /> {t('search.searching')}
           </div>
         )}
 
@@ -340,23 +342,22 @@ export function GlobalSearchModal(): React.JSX.Element {
 
         {showHint && (
           <div className="global-search-hint">
-            <Typography.Text type="secondary">
-              Type to search. Use keywords like <code>pod:nginx</code>, <code>@deploy api</code>, or click a type
-              filter above.
-            </Typography.Text>
+            <Typography.Text type="secondary">{t('search.typeHint')}</Typography.Text>
             {targetCluster ? (
               <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-                Searching resources in: <strong>{targetCluster.customName}</strong>
+                {t('search.searchingIn', { cluster: targetCluster.customName })}
               </Typography.Text>
             ) : (
               <Typography.Text type="warning" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-                Connect a cluster to search Kubernetes resources.
+                {t('search.connectHint')}
               </Typography.Text>
             )}
           </div>
         )}
 
-        {showEmpty && <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No results" style={{ margin: 24 }} />}
+        {showEmpty && (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('search.noResults')} style={{ margin: 24 }} />
+        )}
 
         {allGroups.map((group) => {
           let offset = 0
@@ -394,15 +395,7 @@ export function GlobalSearchModal(): React.JSX.Element {
       </div>
 
       <div className="global-search-footer">
-        <span>
-          <kbd>↑</kbd> <kbd>↓</kbd> navigate
-        </span>
-        <span>
-          <kbd>Enter</kbd> open
-        </span>
-        <span>
-          <kbd>Esc</kbd> close
-        </span>
+        <span>{t('search.hint')}</span>
         <span style={{ marginLeft: 'auto' }}>
           {searchShortcutParts.map((part, i) => (
             <span key={`${part}-${i}`}>

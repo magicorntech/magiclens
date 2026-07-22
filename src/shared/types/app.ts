@@ -46,6 +46,8 @@ export interface DisplaySettings {
   showResourceTabIcons: boolean
   /** Left sidebar Favorites section visibility (default on). */
   showFavoritesSection: boolean
+  /** Left sidebar Workspaces section visibility (default on). */
+  showWorkspacesSection: boolean
   resourceDetailPlacement: ResourceDetailPlacement
   showNodesPageEvents: boolean
   nodesDashboard: NodesDashboardPrefs
@@ -57,6 +59,7 @@ export const defaultDisplaySettings: DisplaySettings = {
   showClusterTabLogos: true,
   showResourceTabIcons: true,
   showFavoritesSection: true,
+  showWorkspacesSection: true,
   resourceDetailPlacement: 'drawer',
   showNodesPageEvents: true,
   nodesDashboard: defaultNodesDashboardPrefs,

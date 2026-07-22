@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Result, Spin } from 'antd'
+import { useTranslation } from 'react-i18next'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceFocus } from '@shared/types/navigation'
 import { useClusterStore } from '../stores/clusterStore'
@@ -22,6 +23,7 @@ interface ClusterViewProps {
 }
 
 export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.JSX.Element {
+  const { t } = useTranslation()
   const cluster = useClusterStore((s) => s.clusters.find((c) => c.id === clusterId))
   const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const openResourceKind = useClusterStore((s) => s.openResourceKind)
@@ -109,14 +111,14 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
       <div className="ml-cluster-view__center">
         <Result
           status="info"
-          title="Cluster disconnected"
-          subTitle="Reconnect when you are ready to use this cluster again."
+          title={t('clusterView.disconnectedTitle')}
+          subTitle={t('clusterView.disconnectedBody')}
           extra={
             <Button
               type="primary"
               onClick={() => void connectCluster(cluster.id, cluster.source, cluster.contextName)}
             >
-              Connect
+              {t('clusterView.connect')}
             </Button>
           }
         />
@@ -127,12 +129,12 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
   if (cluster.status !== 'connected') {
     const waitingVpn = clusterNeedsVpn(cluster.id)
     const description = waitingVpn
-      ? 'Connecting VPN…'
+      ? t('clusterView.connectingVpn')
       : cluster.status === 'connecting' && cluster.errorMessage
         ? cluster.errorMessage
         : cluster.status === 'error'
           ? cluster.errorMessage
-          : 'Connecting…'
+          : t('clusterView.connecting')
     return wrapWithBackground(
       <div className="ml-cluster-view__center">
         <Spin description={description} />

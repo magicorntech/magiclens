@@ -55,6 +55,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const setCollapsed = useClusterStore((s) => s.setLeftSidebarCollapsed)
   const setActiveView = useClusterStore((s) => s.setActiveView)
   const showFavoritesSection = useDisplaySettingsStore((s) => s.showFavoritesSection)
+  const showWorkspacesSection = useDisplaySettingsStore((s) => s.showWorkspacesSection)
   const vpnStatus = useVpnStore((s) => s.status)
   const vpnProfiles = useVpnStore((s) => s.profiles)
   const clusterVpnLinks = useClusterVpnStore((s) => s.links)
@@ -159,7 +160,8 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   }
 
   const width = isDrawer ? '100%' : collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH
-  const favoritesBodyOpen = favoritesExpanded || collapsed
+  const favoritesBodyOpen = favoritesExpanded
+  const showFavoritesInRail = showFavoritesSection && (!collapsed || favoritesExpanded)
 
   return (
     <motion.aside
@@ -245,7 +247,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
         </Tooltip>
       </div>
 
-      {showFavoritesSection ? (
+      {showFavoritesInRail ? (
         <div
           className={`ml-sidebar-section ml-sidebar-section--favorites${
             favoritesExpanded ? '' : ' ml-sidebar-section--favorites-collapsed'
@@ -318,7 +320,9 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
         </div>
       ) : null}
 
-      <SidebarWorkspaces collapsed={collapsed} onNavigate={onNavigate} />
+      {showWorkspacesSection ? (
+        <SidebarWorkspaces collapsed={collapsed} onNavigate={onNavigate} />
+      ) : null}
 
       <div className="ml-sidebar-footer titlebar-no-drag">
         {!isDrawer && (

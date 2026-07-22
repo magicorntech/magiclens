@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, Empty, Input, Modal, Select, Typography, message } from 'antd'
+import { Button, Empty, Input, Modal, Select, Tooltip, Typography, message } from 'antd'
 import { ChevronDown, ChevronRight, FolderPlus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import type { MenuProps } from 'antd'
 import { Dropdown } from 'antd'
@@ -46,6 +46,26 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
     [clusters]
   )
 
+  /** Clusters that belong to any workspace, with workspace names for tooltips (collapsed rail). */
+  const compactWorkspaceClusters = useMemo(() => {
+    const byId = new Map<string, { cluster: ClusterEntry; workspaceNames: string[] }>()
+    for (const group of groups) {
+      for (const id of group.clusterIds) {
+        const cluster = clusters.find((c) => c.id === id)
+        if (!cluster) continue
+        const existing = byId.get(id)
+        if (existing) {
+          if (!existing.workspaceNames.includes(group.name)) {
+            existing.workspaceNames.push(group.name)
+          }
+        } else {
+          byId.set(id, { cluster, workspaceNames: [group.name] })
+        }
+      }
+    }
+    return [...byId.values()]
+  }, [groups, clusters])
+
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase()
     return groups
@@ -76,7 +96,7 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
 
   function openCreate(): void {
     setEditingId(null)
-    setDraftName('Workspace')
+    setDraftName(t('workspaces.defaultName'))
     setDraftClusterIds([])
     setEditorOpen(true)
   }
@@ -91,29 +111,85 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
   }
 
   async function saveEditor(): Promise<void> {
-    const name = draftName.trim() || 'Workspace'
+    const name = draftName.trim() || t('workspaces.defaultName')
     if (editingId) {
       await renameGroup(editingId, name)
       await setGroupClusters(editingId, draftClusterIds)
-      message.success('Workspace updated')
+      message.success(t('workspaces.updated'))
     } else {
       await createGroup(name, draftClusterIds)
-      message.success('Workspace created')
+      message.success(t('workspaces.created'))
     }
     setEditorOpen(false)
   }
 
+  const editorModal = (
+    <Modal
+      title={editingId ? t('workspaces.edit') : t('workspaces.new')}
+      open={editorOpen}
+      onCancel={() => setEditorOpen(false)}
+      onOk={() => void saveEditor()}
+      okText={t('workspaces.save')}
+      destroyOnClose
+    >
+      <Typography.Text strong>{t('workspaces.name')}</Typography.Text>
+      <Input
+        value={draftName}
+        onChange={(e) => setDraftName(e.target.value)}
+        placeholder="Production"
+        style={{ marginTop: 8, marginBottom: 16 }}
+      />
+      <Typography.Text strong>{t('workspaces.clusters')}</Typography.Text>
+      <Select
+        mode="multiple"
+        allowClear
+        style={{ width: '100%', marginTop: 8 }}
+        placeholder={t('workspaces.selectClusters')}
+        value={draftClusterIds}
+        options={clusterOptions}
+        onChange={setDraftClusterIds}
+        optionFilterProp="label"
+      />
+    </Modal>
+  )
+
   if (collapsed) {
     return (
       <div className="ml-sidebar-section ml-sidebar-section--workspaces ml-sidebar-section--compact">
-        <button
-          type="button"
-          className="ml-sidebar-btn ml-sidebar-btn--ghost"
-          aria-label="New workspace"
-          onClick={openCreate}
-        >
-          <Icon icon={FolderPlus} variant="action" />
-        </button>
+        <Tooltip title={t('workspaces.compactTooltip')} placement="right">
+          <div className="ml-sidebar-compact-mark" aria-label={t('workspaces.compactTooltip')}>
+            {t('workspaces.compactMark')}
+          </div>
+        </Tooltip>
+        <div className="ml-sidebar-list ml-sidebar-list--compact-workspaces">
+          {compactWorkspaceClusters.map(({ cluster, workspaceNames }) => (
+            <Tooltip
+              key={cluster.id}
+              title={`${cluster.customName || cluster.contextName} · ${workspaceNames.join(', ')}`}
+              placement="right"
+            >
+              <div>
+                <FavoriteClusterBox
+                  cluster={cluster}
+                  active={cluster.id === activeClusterId}
+                  compact
+                  onActivate={onNavigate}
+                />
+              </div>
+            </Tooltip>
+          ))}
+        </div>
+        <Tooltip title={t('workspaces.newTooltip')} placement="right">
+          <button
+            type="button"
+            className="ml-sidebar-btn ml-sidebar-btn--ghost"
+            aria-label={t('workspaces.new')}
+            onClick={openCreate}
+          >
+            <Icon icon={FolderPlus} variant="action" />
+          </button>
+        </Tooltip>
+        {editorModal}
       </div>
     )
   }
@@ -121,12 +197,12 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
   return (
     <div className="ml-sidebar-section ml-sidebar-section--workspaces">
       <div className="ml-sidebar-section-label-row">
-        <div className="ml-sidebar-section-label">Workspaces</div>
+        <div className="ml-sidebar-section-label">{t('workspaces.title')}</div>
         <Button
           type="text"
           size="small"
           icon={<Icon icon={FolderPlus} variant="detail" />}
-          aria-label="New workspace"
+          aria-label={t('workspaces.new')}
           onClick={openCreate}
         />
       </div>
@@ -145,7 +221,7 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
       {groups.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={<span className="ml-sidebar-empty">Group clusters into workspaces</span>}
+          description={<span className="ml-sidebar-empty">{t('workspaces.empty')}</span>}
         />
       ) : filteredGroups.length === 0 ? (
         <Empty
@@ -161,14 +237,14 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
                 {
                   key: 'edit',
                   icon: <Icon icon={Pencil} variant="detail" />,
-                  label: 'Edit workspace',
+                  label: t('workspaces.edit'),
                   onClick: () => openEdit(group.id)
                 },
                 {
                   key: 'delete',
                   danger: true,
                   icon: <Icon icon={Trash2} variant="detail" />,
-                  label: 'Delete workspace',
+                  label: t('workspaces.delete'),
                   onClick: () => void removeGroup(group.id)
                 }
               ]
@@ -189,7 +265,7 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
                     <span className="ml-sidebar-workspace__count">{members.length}</span>
                   </button>
                   <Dropdown menu={menu} trigger={['click']}>
-                    <button type="button" className="ml-icon-btn" aria-label="Workspace actions">
+                    <button type="button" className="ml-icon-btn" aria-label={t('workspaces.edit')}>
                       <Icon icon={MoreHorizontal} variant="detail" />
                     </button>
                   </Dropdown>
@@ -198,7 +274,7 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
                   <div className="ml-sidebar-workspace__list">
                     {members.length === 0 ? (
                       <Typography.Text type="secondary" style={{ fontSize: 12, padding: '4px 8px' }}>
-                        No clusters yet — edit workspace to add some.
+                        {t('workspaces.noClusters')}
                       </Typography.Text>
                     ) : (
                       members.map((cluster) => (
@@ -218,33 +294,7 @@ export function SidebarWorkspaces({ collapsed, onNavigate }: SidebarWorkspacesPr
         </div>
       )}
 
-      <Modal
-        title={editingId ? 'Edit workspace' : 'New workspace'}
-        open={editorOpen}
-        onCancel={() => setEditorOpen(false)}
-        onOk={() => void saveEditor()}
-        okText="Save"
-        destroyOnClose
-      >
-        <Typography.Text strong>Name</Typography.Text>
-        <Input
-          value={draftName}
-          onChange={(e) => setDraftName(e.target.value)}
-          placeholder="Production"
-          style={{ marginTop: 8, marginBottom: 16 }}
-        />
-        <Typography.Text strong>Clusters</Typography.Text>
-        <Select
-          mode="multiple"
-          allowClear
-          style={{ width: '100%', marginTop: 8 }}
-          placeholder="Select clusters for this workspace"
-          value={draftClusterIds}
-          options={clusterOptions}
-          onChange={setDraftClusterIds}
-          optionFilterProp="label"
-        />
-      </Modal>
+      {editorModal}
     </div>
   )
 }

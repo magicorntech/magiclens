@@ -1,12 +1,21 @@
 import { Badge, Tooltip, Typography } from 'antd'
+import { useTranslation } from 'react-i18next'
 import type { ConnectionStatus } from '@shared/types/cluster'
 
-const statusConfig: Record<ConnectionStatus, { status: 'success' | 'processing' | 'error' | 'default'; label: string }> = {
-  idle: { status: 'default', label: 'Idle' },
-  disconnected: { status: 'default', label: 'Disconnected' },
-  connecting: { status: 'processing', label: 'Connecting…' },
-  connected: { status: 'success', label: 'Connected' },
-  error: { status: 'error', label: 'Connection error' }
+const statusBadge: Record<ConnectionStatus, 'success' | 'processing' | 'error' | 'default'> = {
+  idle: 'default',
+  disconnected: 'default',
+  connecting: 'processing',
+  connected: 'success',
+  error: 'error'
+}
+
+const statusKeys: Record<ConnectionStatus, string> = {
+  idle: 'common.idle',
+  disconnected: 'common.disconnected',
+  connecting: 'common.connecting',
+  connected: 'common.connected',
+  error: 'common.connectionError'
 }
 
 interface ConnectionStatusBadgeProps {
@@ -24,18 +33,20 @@ export function ConnectionStatusBadge({
   compact,
   textColor
 }: ConnectionStatusBadgeProps): React.JSX.Element {
-  const config = statusConfig[status]
-  const title = status === 'error' && errorMessage ? errorMessage : config.label
+  const { t } = useTranslation()
+  const label = t(statusKeys[status])
+  const badgeStatus = statusBadge[status]
+  const title = status === 'error' && errorMessage ? errorMessage : label
 
   if (compact) {
     return (
       <Tooltip title={title}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
-          <Badge status={config.status} />
+          <Badge status={badgeStatus} />
           <Typography.Text
             style={{ fontSize: 11, lineHeight: '14px', color: textColor ?? 'var(--ml-sidebar-muted)', whiteSpace: 'nowrap' }}
           >
-            {config.label}
+            {label}
           </Typography.Text>
         </span>
       </Tooltip>
@@ -44,7 +55,7 @@ export function ConnectionStatusBadge({
 
   return (
     <Tooltip title={title}>
-      <Badge status={config.status} text={config.label} />
+      <Badge status={badgeStatus} text={label} />
     </Tooltip>
   )
 }

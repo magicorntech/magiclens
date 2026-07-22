@@ -66,11 +66,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const showClusterTabLogos = useDisplaySettingsStore((s) => s.showClusterTabLogos)
   const showResourceTabIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
   const showFavoritesSection = useDisplaySettingsStore((s) => s.showFavoritesSection)
+  const showWorkspacesSection = useDisplaySettingsStore((s) => s.showWorkspacesSection)
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
   const locale = useDisplaySettingsStore((s) => s.locale)
   const setShowClusterTabLogos = useDisplaySettingsStore((s) => s.setShowClusterTabLogos)
   const setShowResourceTabIcons = useDisplaySettingsStore((s) => s.setShowResourceTabIcons)
   const setShowFavoritesSection = useDisplaySettingsStore((s) => s.setShowFavoritesSection)
+  const setShowWorkspacesSection = useDisplaySettingsStore((s) => s.setShowWorkspacesSection)
   const setResourceDetailPlacement = useDisplaySettingsStore((s) => s.setResourceDetailPlacement)
   const setLocale = useDisplaySettingsStore((s) => s.setLocale)
 
@@ -252,9 +254,16 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                     onChange={(checked) => void setShowFavoritesSection(checked)}
                   />
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography.Text>{t('settings.display.showWorkspaces')}</Typography.Text>
+                  <Switch
+                    checked={showWorkspacesSection}
+                    onChange={(checked) => void setShowWorkspacesSection(checked)}
+                  />
+                </div>
               </Space>
               <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                {t('settings.display.showFavoritesHint')}
+                {t('settings.display.showFavoritesHint')} {t('settings.display.showWorkspacesHint')}
               </Typography.Text>
             </div>
             <div>

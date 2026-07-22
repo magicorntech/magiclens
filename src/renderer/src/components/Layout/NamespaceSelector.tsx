@@ -1,4 +1,5 @@
 import { Select } from 'antd'
+import { useTranslation } from 'react-i18next'
 import { useNamespaces } from '../../queries/useNamespaces'
 
 interface NamespaceSelectorProps {
@@ -8,10 +9,11 @@ interface NamespaceSelectorProps {
 }
 
 export function NamespaceSelector({ clusterId, value, onChange }: NamespaceSelectorProps): React.JSX.Element {
+  const { t } = useTranslation()
   const { data, isLoading, refetch, isFetching } = useNamespaces(clusterId)
 
   const options = [
-    { value: 'ALL', label: 'All namespaces' },
+    { value: 'ALL', label: t('common.allNamespaces') },
     ...(data?.namespaces ?? []).map((ns) => ({ value: ns, label: ns }))
   ]
 

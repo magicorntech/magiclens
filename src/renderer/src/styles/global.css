@@ -382,10 +382,64 @@ body,
   line-height: 1.55;
 }
 
+.ml-feature-tour__langs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin-top: 18px;
+}
+
+.ml-feature-tour__lang {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ml-feature-tour__lang:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ml-feature-tour__lang--selected {
+  border-color: rgba(56, 189, 248, 0.75);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.14);
+}
+
+.ml-feature-tour__lang-code {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ml-feature-tour__lang-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .ml-feature-tour__dots {
   display: flex;
   justify-content: center;
   gap: 8px;
+}
+
+.ml-feature-tour__dots--spacer {
+  height: 8px;
 }
 
 .ml-feature-tour__dot {
@@ -5054,10 +5108,41 @@ body,
 }
 
 .ml-sidebar-section--workspaces.ml-sidebar-section--compact {
-  flex: 0;
-  min-height: auto;
+  flex: 1;
+  min-height: 0;
   align-items: center;
-  padding: 8px 0;
+  padding: 8px 0 4px;
+  gap: 4px;
+}
+
+.ml-sidebar-compact-mark {
+  flex-shrink: 0;
+  width: 32px;
+  height: 22px;
+  margin: 2px 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ml-sidebar-muted);
+  background: color-mix(in srgb, var(--ml-sidebar-hover) 90%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ml-border-secondary) 80%, transparent);
+  cursor: default;
+  user-select: none;
+}
+
+.ml-sidebar-compact-mark:hover {
+  color: var(--ml-primary);
+  background: color-mix(in srgb, var(--ml-primary) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ml-primary) 35%, transparent);
+}
+
+.ml-sidebar-list--compact-workspaces {
+  width: 100%;
+  align-items: center;
 }
 
 .ml-sidebar-workspaces {

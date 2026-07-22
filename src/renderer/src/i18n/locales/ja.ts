@@ -1,6 +1,6 @@
-import type { TranslationResources } from './en'
+import type { TranslationOverrides } from './en'
 
-export const ja: TranslationResources = {
+export const ja: TranslationOverrides = {
   common: {
     settings: '設定',
     custom: 'カスタム',
@@ -11,6 +11,9 @@ export const ja: TranslationResources = {
     connecting: '接続中…',
     disconnected: '未接続',
     error: 'エラー',
+    connectionError: 'Connection error',
+    idle: 'Idle',
+    allNamespaces: 'All namespaces',
     total: '合計',
     clusters: 'クラスター',
     vpn: 'VPN',
@@ -76,6 +79,9 @@ export const ja: TranslationResources = {
       showFavorites: 'お気に入りセクションを表示',
       showFavoritesHint:
         '有効にすると、左サイドバーの Workspaces の上にお気に入りが表示されます。見出しをクリックして折りたたみ／展開できます。',
+      showWorkspaces: 'Workspaces セクションを表示',
+      showWorkspacesHint:
+        '有効にすると左サイドバーに Workspaces が表示されます。折りたたみ時は W マーカーがワークスペースのクラスター上に出ます。',
       tabIconsTitle: 'タブのアイコン',
       showClusterLogos: 'クラスタータブにロゴを表示',
       showResourceIcons: 'リソースタブにアイコンを表示',
@@ -279,6 +285,58 @@ export const ja: TranslationResources = {
       placeholder: 'VPN なし — 手動で接続',
       empty: '先に VPN ページでプロファイルを追加してください',
       hint: 'このクラスタータブに切り替えると MagicLens がこの VPN に自動接続します。PIN と MFA は初回成功後、その日のうちプロファイルごとに記憶されます。'
+    }
+  },
+  tour: {
+    skip: 'スキップ',
+    back: '戻る',
+    next: '次へ',
+    getStarted: 'はじめる',
+    continue: '続ける',
+    chooseLanguage: '言語を選択',
+    languageHint: '設定からいつでも変更できます。ヒントはこの言語で表示されます。',
+    slidesAria: '機能スライド',
+    slides: {
+      welcome: {
+        eyebrow: 'ようこそ',
+        title: 'Kubernetes 向け MagicLens',
+        body: 'クラスター、リソース、VPN、ログ、ターミナルを一箇所で管理する高速デスクトップクライアント — オフラインファースト。'
+      },
+      clusters: {
+        eyebrow: 'クラスター',
+        title: '複数クラスター、一つのワークスペース',
+        body: 'kubeconfig を取り込み、お気に入りに固定し、クラスター間を瞬時に切り替え。'
+      },
+      split: {
+        eyebrow: '分割表示',
+        title: '2つのクラスターを同時に比較',
+        body: '分割表示で2つのタブを並べて表示 — staging と production の比較に最適。'
+      },
+      search: {
+        eyebrow: '検索',
+        title: 'すばやく見つける',
+        body: 'グローバル検索でクラスター、ネームスペース、リソースへジャンプ（既定 ⌘K / Ctrl+K — 設定 → キーボードで変更可）。'
+      },
+      resources: {
+        eyebrow: 'エクスプローラー',
+        title: 'すべてのリソースを閲覧',
+        body: 'Workload、Config、Network、Storage など — ライブ監視、YAML 編集、一括操作、詳細パネル。'
+      },
+      vpn: {
+        eyebrow: 'VPN',
+        title: 'プライベートクラスターとトンネル',
+        body: 'OpenVPN / Pritunl / WireGuard を追加しクラスターに紐づけ、タブ切替中も複数トンネルを維持。'
+      },
+      ops: {
+        eyebrow: '日常',
+        title: 'ログ、exec、ターミナル',
+        body: 'Pod ログの追跡・ダウンロード、コンテナへの exec、ローカルターミナル — 下部パネルに集約。'
+      },
+      forward: {
+        eyebrow: 'アクセス',
+        title: 'ポートフォワードが簡単',
+        body: 'Pod / Service を数クリックでローカルポートへ — 作業中もセッションを表示。'
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
-import type { TranslationResources } from './en'
+import type { TranslationOverrides } from './en'
 
-export const zh: TranslationResources = {
+export const zh: TranslationOverrides = {
   common: {
     settings: '设置',
     custom: '自定义',
@@ -11,6 +11,9 @@ export const zh: TranslationResources = {
     connecting: '正在连接…',
     disconnected: '未连接',
     error: '错误',
+    connectionError: 'Connection error',
+    idle: 'Idle',
+    allNamespaces: 'All namespaces',
     total: '总计',
     clusters: '集群',
     vpn: 'VPN',
@@ -73,6 +76,8 @@ export const zh: TranslationResources = {
       sidebarTitle: '侧边栏',
       showFavorites: '显示收藏部分',
       showFavoritesHint: '启用后，收藏会显示在左侧边栏的 Workspaces 上方。点击标题可折叠或展开。',
+      showWorkspaces: '显示 Workspaces 部分',
+      showWorkspacesHint: '启用后，Workspaces 会出现在左侧边栏。折叠时用 W 标记工作区集群。',
       tabIconsTitle: '标签图标',
       showClusterLogos: '在集群标签上显示徽标',
       showResourceIcons: '在资源标签上显示图标',
@@ -271,6 +276,58 @@ export const zh: TranslationResources = {
       placeholder: '无 VPN — 手动连接',
       empty: '请先在 VPN 页面添加配置',
       hint: '切换到此集群标签时，MagicLens 会自动连接此 VPN。首次成功连接后，PIN 和 MFA 会按配置在当天内记住。'
+    }
+  },
+  tour: {
+    skip: '跳过',
+    back: '返回',
+    next: '下一步',
+    getStarted: '开始使用',
+    continue: '继续',
+    chooseLanguage: '选择语言',
+    languageHint: '可随时在设置中更改。功能介绍将使用所选语言。',
+    slidesAria: '功能幻灯片',
+    slides: {
+      welcome: {
+        eyebrow: '欢迎',
+        title: '面向 Kubernetes 的 MagicLens',
+        body: '在一台桌面客户端中管理集群、资源、VPN、日志与终端 — 本机优先的离线体验。'
+      },
+      clusters: {
+        eyebrow: '集群',
+        title: '多集群，一个工作区',
+        body: '导入 kubeconfig、固定收藏，并在集群标签间即时切换。'
+      },
+      split: {
+        eyebrow: '分屏',
+        title: '同时比较两个集群',
+        body: '分屏让两个集群标签并排显示 — 适合对比预发与生产。'
+      },
+      search: {
+        eyebrow: '搜索',
+        title: '快速查找一切',
+        body: '全局搜索一键跳到集群、命名空间与资源（默认 ⌘K / Ctrl+K — 可在设置 → 键盘中修改）。'
+      },
+      resources: {
+        eyebrow: '资源浏览器',
+        title: '浏览每类资源',
+        body: '工作负载、配置、网络、存储等 — 实时监视、YAML 编辑、批量操作与详情面板。'
+      },
+      vpn: {
+        eyebrow: 'VPN',
+        title: '私有集群与隧道',
+        body: '上传 OpenVPN / Pritunl / WireGuard，关联到集群，切换标签时保持多条隧道。'
+      },
+      ops: {
+        eyebrow: '日常运维',
+        title: '日志、exec 与终端',
+        body: '跟踪并下载 Pod 日志、进入容器、打开本地终端 — 都在底部面板。'
+      },
+      forward: {
+        eyebrow: '访问',
+        title: '端口转发更简单',
+        body: '几步将 Pod 或 Service 转到本地端口 — 会话在工作时保持可见。'
+      }
     }
   }
 }

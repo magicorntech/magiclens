@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Alert, Button, Form, Input, Typography, message } from 'antd'
+import { useTranslation } from 'react-i18next'
 import logo from '../../assets/logo.png'
 import { useAuthStore } from '../../stores/authStore'
 import { useClusterStore } from '../../stores/clusterStore'
@@ -11,6 +12,7 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ onAuthenticated }: LoginScreenProps): React.JSX.Element {
+  const { t } = useTranslation()
   const login = useAuthStore((s) => s.login)
   const continueOffline = useAuthStore((s) => s.continueOffline)
   const apiBase = useAuthStore((s) => s.apiBase)
@@ -26,11 +28,10 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps): React.JSX.El
       <div className="ml-login-card">
         <img src={logo} alt="" className="ml-login-logo" />
         <Typography.Title level={3} style={{ marginBottom: 4 }}>
-          Sign in to MagicLens
+          {t('auth.signInTitle')}
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ marginTop: 0 }}>
-          Use your organization email and password. Admins open Admin Console; members open their
-          profile. You can also continue offline with local kubeconfigs only.
+          {t('auth.signInBody')}
         </Typography.Paragraph>
 
         {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}
@@ -49,12 +50,14 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps): React.JSX.El
                 const synced = await syncOrgAssignments()
                 if (synced.kubeconfigs > 0 || synced.vpn > 0) {
                   message.success(
-                    `Synced ${synced.kubeconfigs} cluster context(s) and ${synced.vpn} VPN profile(s)`
+                    t('auth.syncedToast', { kubeconfigs: synced.kubeconfigs, vpn: synced.vpn })
                   )
                 }
               } catch (err) {
                 message.warning(
-                  `Signed in, but sync failed: ${err instanceof Error ? err.message : String(err)}`
+                  t('auth.syncFailedToast', {
+                    error: err instanceof Error ? err.message : String(err)
+                  })
                 )
               }
               if (auth.mustChangePassword) setActiveView('profile')
@@ -69,27 +72,27 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps): React.JSX.El
             }
           }}
         >
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-            <Input autoFocus placeholder="you@company.com" />
+          <Form.Item name="email" label={t('auth.email')} rules={[{ required: true, type: 'email' }]}>
+            <Input autoFocus placeholder={t('auth.emailPlaceholder')} />
           </Form.Item>
-          <Form.Item name="password" label="Password" rules={[{ required: true, min: 8 }]}>
-            <Input.Password placeholder="Password" />
+          <Form.Item name="password" label={t('auth.password')} rules={[{ required: true, min: 8 }]}>
+            <Input.Password placeholder={t('auth.passwordPlaceholder')} />
           </Form.Item>
 
           {showAdvanced && (
-            <Form.Item name="apiBase" label="API base URL">
-              <Input placeholder="http://localhost:3000" />
+            <Form.Item name="apiBase" label={t('auth.apiBase')}>
+              <Input placeholder={t('auth.apiBasePlaceholder')} />
             </Form.Item>
           )}
 
           <Button type="primary" htmlType="submit" block loading={busy || loading} size="large">
-            Sign in
+            {t('auth.signIn')}
           </Button>
         </Form>
 
         <div className="ml-login-actions">
           <Button type="link" onClick={() => setShowAdvanced((v) => !v)}>
-            {showAdvanced ? 'Hide API settings' : 'API settings'}
+            {showAdvanced ? t('auth.hideApiSettings') : t('auth.apiSettings')}
           </Button>
           <Button
             type="link"
@@ -100,7 +103,7 @@ export function LoginScreen({ onAuthenticated }: LoginScreenProps): React.JSX.El
               onAuthenticated()
             }}
           >
-            Continue offline
+            {t('auth.continueOffline')}
           </Button>
         </div>
       </div>

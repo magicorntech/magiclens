@@ -1,8 +1,8 @@
 import { useRef } from 'react'
 import { Button, Slider, Space, Typography } from 'antd'
 import { ImagePlus, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import {
-  DEFAULT_BACKGROUND_PANEL_OPACITY,
   DEFAULT_CLUSTER_BACKGROUNDS,
   compressBackgroundToDataUrl,
   cssBackgroundImage,
@@ -28,6 +28,7 @@ export function ClusterBackgroundPicker({
   backgroundPanelOpacity,
   onChange
 }: ClusterBackgroundPickerProps): React.JSX.Element {
+  const { t } = useTranslation()
   const fileRef = useRef<HTMLInputElement>(null)
   const preview = resolveClusterBackgroundUrl({ backgroundId, backgroundCustomUrl })
   const opacity = normalizeBackgroundPanelOpacity(backgroundPanelOpacity)
@@ -44,9 +45,9 @@ export function ClusterBackgroundPicker({
 
   return (
     <div className="ml-cluster-bg-picker">
-      <Typography.Text strong>Workspace background</Typography.Text>
+      <Typography.Text strong>{t('clusterBg.title')}</Typography.Text>
       <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4, marginBottom: 10 }}>
-        Shown when this cluster tab is open. Pick a default landscape or upload PNG / JPG.
+        {t('clusterBg.hint')}
       </Typography.Text>
 
       {preview ? (
@@ -66,7 +67,7 @@ export function ClusterBackgroundPicker({
               })
             }
           >
-            Remove
+            {t('clusterBg.remove')}
           </Button>
         </div>
       ) : null}
@@ -97,7 +98,7 @@ export function ClusterBackgroundPicker({
 
       <Space style={{ marginTop: 10 }}>
         <Button icon={<Icon icon={ImagePlus} variant="detail" />} onClick={() => fileRef.current?.click()}>
-          Upload PNG / JPG
+          {t('clusterBg.upload')}
         </Button>
         <input
           ref={fileRef}
@@ -115,9 +116,9 @@ export function ClusterBackgroundPicker({
       {hasBg ? (
         <div style={{ marginTop: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 6 }}>
-            <Typography.Text strong>Panel transparency</Typography.Text>
+            <Typography.Text strong>{t('clusterBg.panelTransparency')}</Typography.Text>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {opacity}% solid
+              {t('clusterBg.solidPct', { opacity })}
             </Typography.Text>
           </div>
           <Slider
@@ -131,10 +132,14 @@ export function ClusterBackgroundPicker({
                 backgroundPanelOpacity: normalizeBackgroundPanelOpacity(value)
               })
             }
-            marks={{ 15: 'Clear', 70: 'Default', 100: 'Solid' }}
+            marks={{
+              15: t('clusterBg.clear'),
+              70: t('clusterBg.default'),
+              100: t('clusterBg.solid')
+            }}
           />
           <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-            Controls how see-through resource menus, tables (Pods, Deployments, …), and headers are over the wallpaper.
+            {t('clusterBg.panelHint')}
           </Typography.Text>
         </div>
       ) : null}

@@ -26,6 +26,7 @@ interface DisplaySettingsState extends DisplaySettings {
   setShowClusterTabLogos: (value: boolean) => Promise<void>
   setShowResourceTabIcons: (value: boolean) => Promise<void>
   setShowFavoritesSection: (value: boolean) => Promise<void>
+  setShowWorkspacesSection: (value: boolean) => Promise<void>
   setResourceDetailPlacement: (value: ResourceDetailPlacement) => Promise<void>
   setShowNodesPageEvents: (value: boolean) => Promise<void>
   setNodesDashboardPrefs: (prefs: NodesDashboardPrefs) => Promise<void>
@@ -72,6 +73,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
   },
   setShowFavoritesSection: async (value) => {
     const next = await window.api.app.setDisplaySettings({ showFavoritesSection: value })
+    set(applyDisplay(next))
+  },
+  setShowWorkspacesSection: async (value) => {
+    const next = await window.api.app.setDisplaySettings({ showWorkspacesSection: value })
     set(applyDisplay(next))
   },
   setResourceDetailPlacement: async (value) => {

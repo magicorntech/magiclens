@@ -1,6 +1,6 @@
-import type { TranslationResources } from './en'
+import type { TranslationOverrides } from './en'
 
-export const fr: TranslationResources = {
+export const fr: TranslationOverrides = {
   common: {
     settings: 'Paramètres',
     custom: 'Personnalisé',
@@ -11,6 +11,9 @@ export const fr: TranslationResources = {
     connecting: 'Connexion…',
     disconnected: 'Déconnecté',
     error: 'Erreur',
+    connectionError: 'Connection error',
+    idle: 'Idle',
+    allNamespaces: 'All namespaces',
     total: 'au total',
     clusters: 'Clusters',
     vpn: 'VPN',
@@ -76,6 +79,9 @@ export const fr: TranslationResources = {
       showFavorites: 'Afficher la section Favoris',
       showFavoritesHint:
         'Lorsqu’elle est activée, Favoris apparaît au-dessus des Workspaces dans la barre latérale. Cliquez sur l’en-tête pour la replier ou la déplier.',
+      showWorkspaces: 'Afficher la section Workspaces',
+      showWorkspacesHint:
+        'Lorsqu’elle est activée, Workspaces apparaît dans la barre latérale. En mode réduit, un W marque les clusters de workspace.',
       tabIconsTitle: 'Icônes des onglets',
       showClusterLogos: 'Afficher les logos sur les onglets cluster',
       showResourceIcons: 'Afficher les icônes sur les onglets ressource',
@@ -280,6 +286,58 @@ export const fr: TranslationResources = {
       placeholder: 'Pas de VPN — connexion manuelle',
       empty: 'Ajoutez d’abord un profil VPN dans la page VPN',
       hint: 'En passant à cet onglet cluster, MagicLens connecte ce VPN automatiquement. Le PIN et le MFA sont mémorisés par profil pour la journée après la première connexion réussie.'
+    }
+  },
+  tour: {
+    skip: 'Passer',
+    back: 'Retour',
+    next: 'Suivant',
+    getStarted: 'Commencer',
+    continue: 'Continuer',
+    chooseLanguage: 'Choisissez votre langue',
+    languageHint: 'Modifiable à tout moment dans Réglages. Les conseils suivront votre choix.',
+    slidesAria: 'Diapositives des fonctionnalités',
+    slides: {
+      welcome: {
+        eyebrow: 'Bienvenue',
+        title: 'MagicLens pour Kubernetes',
+        body: 'Un client bureau rapide pour gérer clusters, ressources, tunnels VPN, logs et terminaux — offline-first sur votre machine.'
+      },
+      clusters: {
+        eyebrow: 'Clusters',
+        title: 'Multi-cluster, un espace de travail',
+        body: 'Importez des kubeconfigs, épinglez des favoris et changez d’onglet instantanément entre vos clusters.'
+      },
+      split: {
+        eyebrow: 'Vue partagée',
+        title: 'Comparez deux clusters à la fois',
+        body: 'La vue partagée garde deux onglets côte à côte — idéal staging vs production.'
+      },
+      search: {
+        eyebrow: 'Recherche',
+        title: 'Trouvez tout rapidement',
+        body: 'La recherche globale ouvre clusters, namespaces et ressources d’un raccourci (⌘K / Ctrl+K — modifiable dans Réglages → Clavier).'
+      },
+      resources: {
+        eyebrow: 'Explorateur',
+        title: 'Parcourez chaque ressource',
+        body: 'Workloads, Config, Network, Storage et plus — surveillance live, YAML, actions en lot et panneau de détail.'
+      },
+      vpn: {
+        eyebrow: 'VPN',
+        title: 'Clusters privés, vos tunnels',
+        body: 'Chargez des profils OpenVPN / Pritunl / WireGuard, liez-les aux clusters et gardez plusieurs tunnels actifs.'
+      },
+      ops: {
+        eyebrow: 'Au quotidien',
+        title: 'Logs, exec et terminaux',
+        body: 'Suivez et téléchargez les logs de pods, exec dans les conteneurs, ouvrez des terminaux locaux — tout dans le panneau bas.'
+      },
+      forward: {
+        eyebrow: 'Accès',
+        title: 'Port forwarding simplifié',
+        body: 'Transférez un Pod ou Service vers un port local en quelques clics — la session reste visible.'
+      }
     }
   }
 }

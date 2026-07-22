@@ -1,6 +1,6 @@
-import type { TranslationResources } from './en'
+import type { TranslationOverrides } from './en'
 
-export const ko: TranslationResources = {
+export const ko: TranslationOverrides = {
   common: {
     settings: '설정',
     custom: '사용자 지정',
@@ -11,6 +11,9 @@ export const ko: TranslationResources = {
     connecting: '연결 중…',
     disconnected: '연결 끊김',
     error: '오류',
+    connectionError: 'Connection error',
+    idle: 'Idle',
+    allNamespaces: 'All namespaces',
     total: '전체',
     clusters: '클러스터',
     vpn: 'VPN',
@@ -76,6 +79,9 @@ export const ko: TranslationResources = {
       showFavorites: '즐겨찾기 섹션 표시',
       showFavoritesHint:
         '켜면 왼쪽 사이드바의 Workspaces 위에 즐겨찾기가 표시됩니다. 제목을 클릭해 접거나 펼칠 수 있습니다.',
+      showWorkspaces: 'Workspaces 섹션 표시',
+      showWorkspacesHint:
+        '켜면 왼쪽 사이드바에 Workspaces가 표시됩니다. 접힌 상태에서는 W 표시가 워크스페이스 클러스터 위에 나타납니다.',
       tabIconsTitle: '탭 아이콘',
       showClusterLogos: '클러스터 탭에 로고 표시',
       showResourceIcons: '리소스 탭에 아이콘 표시',
@@ -279,6 +285,58 @@ export const ko: TranslationResources = {
       placeholder: 'VPN 없음 — 수동 연결',
       empty: '먼저 VPN 페이지에서 프로필을 추가하세요',
       hint: '이 클러스터 탭으로 전환하면 MagicLens가 이 VPN에 자동 연결합니다. PIN과 MFA는 첫 성공 연결 후 하루 동안 프로필별로 기억됩니다.'
+    }
+  },
+  tour: {
+    skip: '건너뛰기',
+    back: '뒤로',
+    next: '다음',
+    getStarted: '시작하기',
+    continue: '계속',
+    chooseLanguage: '언어 선택',
+    languageHint: '설정에서 언제든 바꿀 수 있습니다. 기능 안내가 선택한 언어로 표시됩니다.',
+    slidesAria: '기능 슬라이드',
+    slides: {
+      welcome: {
+        eyebrow: '환영합니다',
+        title: 'Kubernetes용 MagicLens',
+        body: '클러스터, 리소스, VPN, 로그, 터미널을 한곳에서 관리하는 빠른 데스크톱 클라이언트 — 오프라인 우선.'
+      },
+      clusters: {
+        eyebrow: '클러스터',
+        title: '다중 클러스터, 하나의 워크스페이스',
+        body: 'kubeconfig를 가져오고 즐겨찾기를 고정한 뒤 클러스터 탭을 즉시 전환하세요.'
+      },
+      split: {
+        eyebrow: '분할 보기',
+        title: '두 클러스터를 동시에 비교',
+        body: '분할 보기로 두 탭을 나란히 — 스테이징 vs 프로덕션 비교에 적합합니다.'
+      },
+      search: {
+        eyebrow: '검색',
+        title: '빠르게 찾기',
+        body: '전역 검색으로 클러스터, 네임스페이스, 리소스로 이동 (기본 ⌘K / Ctrl+K — 설정 → 키보드에서 변경).'
+      },
+      resources: {
+        eyebrow: '탐색기',
+        title: '모든 리소스 살펴보기',
+        body: '워크로드, Config, Network, Storage 등 — 라이브 감시, YAML 편집, 일괄 작업, 상세 패널.'
+      },
+      vpn: {
+        eyebrow: 'VPN',
+        title: '프라이빗 클러스터와 터널',
+        body: 'OpenVPN / Pritunl / WireGuard 프로필을 추가하고 클러스터에 연결한 뒤 여러 터널을 유지하세요.'
+      },
+      ops: {
+        eyebrow: '일상',
+        title: '로그, exec, 터미널',
+        body: 'Pod 로그 추적·다운로드, 컨테이너 exec, 로컬 터미널 — 하단 패널에 모았습니다.'
+      },
+      forward: {
+        eyebrow: '액세스',
+        title: '포트 포워딩이 간단',
+        body: '몇 번의 클릭으로 Pod/Service를 로컬 포트로 — 작업 중에도 세션이 보입니다.'
+      }
     }
   }
 }

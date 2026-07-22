@@ -2,6 +2,7 @@ import type { ReactNode, RefObject } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { Drawer, Layout, Splitter } from 'antd'
 import { Menu, Terminal } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ClusterEntry } from '../../stores/clusterStore'
 import { useClusterStore } from '../../stores/clusterStore'
@@ -61,6 +62,7 @@ function AppShellInner({
   onSelectVirtualPage,
   children
 }: AppShellProps): React.JSX.Element {
+  const { t } = useTranslation()
   const layoutMode = useLayoutMode()
   const overlayResourceNav = usesOverlayNavigation(layoutMode)
   const resourceMenuCollapsed = useClusterStore((s) => s.resourceMenuCollapsed)
@@ -72,10 +74,10 @@ function AppShellInner({
   const [resourceNavOpen, setResourceNavOpen] = useState(false)
   const resourceWatchDisplay = useResourceWatchDisplayStore((s) => s.byCluster[cluster.id])
 
-  const hasTerminalTab = tabs.some((t) => t.kind === 'terminal')
+  const hasTerminalTab = tabs.some((tab) => tab.kind === 'terminal')
 
   function handleTerminalClick(): void {
-    const existing = tabs.find((t) => t.kind === 'terminal')
+    const existing = tabs.find((tab) => tab.kind === 'terminal')
     if (existing) setActiveTab(existing.id)
     else addTerminalTab()
   }
@@ -99,7 +101,7 @@ function AppShellInner({
           {!splitView && (
             <div className="ml-workspace-header-leading">
               {overlayResourceNav && (
-                <button type="button" className="ml-icon-btn" onClick={() => setResourceNavOpen(true)} aria-label="Resources">
+                <button type="button" className="ml-icon-btn" onClick={() => setResourceNavOpen(true)} aria-label={t('resourceNav.aria')}>
                   <Icon icon={Menu} variant="toolbar" />
                 </button>
               )}
@@ -124,7 +126,7 @@ function AppShellInner({
               onClick={handleTerminalClick}
             >
               <Icon icon={Terminal} variant="action" />
-              {!compactToolbar && <span>Terminal</span>}
+              {!compactToolbar && <span>{t('chromeExtra.terminal')}</span>}
             </button>
             <NamespaceSelector clusterId={cluster.id} value={cluster.selectedNamespace} onChange={onNamespaceChange} />
           </div>
@@ -172,7 +174,7 @@ function AppShellInner({
 
       {overlayResourceNav && (
         <Drawer
-          title="Resources"
+          title={t('resourceNav.aria')}
           placement="left"
           open={resourceNavOpen}
           onClose={() => setResourceNavOpen(false)}

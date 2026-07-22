@@ -3,6 +3,8 @@ import { Dropdown, Input, Popover, Tooltip, type MenuProps } from 'antd'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import { ChevronDown, Pin, Search, Star } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { VirtualPageKey } from '@shared/types/navigation'
 import { useClusterStore } from '../../stores/clusterStore'
@@ -12,7 +14,6 @@ import {
   favoritesSectionIcon,
   findSectionForSelection,
   navEntryKey,
-  navEntryLabel,
   resourceNavLayout,
   type NavCollapsibleSection,
   type NavEntry,
@@ -21,6 +22,16 @@ import {
 import { kindIconLucide, virtualPageIcons } from '../../icons/resourceKindIcons'
 import { Icon } from '../ui/Icon'
 import { HighlightText } from '../ClusterTabs/ClusterSearchInput'
+
+function resolveNavEntryLabel(entry: NavEntry, t: TFunction): string {
+  if (entry.type === 'virtual') return t(`resourceNav.virtual.${entry.key}`)
+  if (entry.kind === 'CustomResourceDefinitions') return t('resourceNav.virtual.definitions')
+  return entry.kind
+}
+
+function resolveSectionTitle(sectionId: string, t: TFunction): string {
+  return t(`resourceNav.sections.${sectionId}`)
+}
 
 const EXPANDED_STORAGE_PREFIX = 'ml-resource-nav-expanded:'
 /** Stable empty list so the auth selector does not allocate a new [] / Set every render. */
@@ -67,6 +78,7 @@ export function ResourceMenu({
   onSelectVirtualPage,
   collapsed = false
 }: ResourceMenuProps): React.JSX.Element {
+  const { t } = useTranslation()
   const getResourceTabPrefs = useClusterStore((s) => s.getResourceTabPrefs)
   const updateResourceTabPrefs = useClusterStore((s) => s.updateResourceTabPrefs)
   const [search, setSearch] = useState('')
@@ -190,12 +202,12 @@ export function ResourceMenu({
     return [
       {
         key: 'favorite',
-        label: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+        label: isFavorite ? t('resourceNav.removeFavorite') : t('resourceNav.addFavorite'),
         icon: <Icon icon={Star} variant="detail" fill={isFavorite ? 'currentColor' : 'none'} />
       },
       {
         key: 'pin',
-        label: isPinned ? 'Unpin from tabs' : 'Pin to tabs',
+        label: isPinned ? t('resourceNav.unpin') : t('resourceNav.pin'),
         icon: <Icon icon={Pin} variant="detail" />
       }
     ]
@@ -222,12 +234,15 @@ export function ResourceMenu({
           const label = item.label ?? item.kind
           return matchesSearch(label, q) ? item : null
         }
-        const matchingEntries = item.entries.filter((entry) => matchesSearch(navEntryLabel(entry), q))
-        if (matchingEntries.length === 0) return null
-        return { ...item, entries: matchingEntries }
+        const sectionMatches = matchesSearch(resolveSectionTitle(item.id, t), q)
+        const matchingEntries = item.entries.filter((entry) =>
+          matchesSearch(resolveNavEntryLabel(entry, t), q)
+        )
+        if (!sectionMatches && matchingEntries.length === 0) return null
+        return { ...item, entries: sectionMatches ? item.entries : matchingEntries }
       })
       .filter((item): item is NavLayoutItem => item !== null)
-  }, [search, favoriteKinds, prefsTick, visibleNavLayout, hiddenKinds])
+  }, [search, favoriteKinds, prefsTick, visibleNavLayout, hiddenKinds, t])
 
   const focusableKeys = useMemo(() => {
     const keys: string[] = []
@@ -270,7 +285,7 @@ export function ResourceMenu({
     options?: { indent?: boolean; draggable?: boolean; onReorderTarget?: ResourceKind }
   ): React.ReactNode {
     const key = navEntryKey(entry)
-    const label = navEntryLabel(entry)
+    const label = resolveNavEntryLabel(entry, t)
     const active = isEntryActive(entry)
     const focused = focusIndex >= 0 && focusableKeys[focusIndex] === key
     const lucide = entry.type === 'kind' ? kindIconLucide[entry.kind] : virtualPageIcons[entry.key]
@@ -292,7 +307,7 @@ export function ResourceMenu({
           <HighlightText text={label} query={search} />
         </span>
         {showPin && (
-          <span className="ml-resource-nav-item-pin" title="Pinned to tabs">
+          <span className="ml-resource-nav-item-pin" title={t('resourceNav.pinned')}>
             <Icon icon={Pin} variant="micro" />
           </span>
         )}
@@ -383,12 +398,13 @@ export function ResourceMenu({
   }
 
   function renderSection(section: NavCollapsibleSection): React.ReactNode {
+    const title = resolveSectionTitle(section.id, t)
     const isOpen = expanded.has(section.id) || !!search.trim()
     const hasActiveChild = section.entries.some((entry) => isEntryActive(entry))
-    const sectionMatches = matchesSearch(section.title, search)
+    const sectionMatches = matchesSearch(title, search)
     const visibleEntries =
       search.trim() && !sectionMatches
-        ? section.entries.filter((e) => matchesSearch(navEntryLabel(e), search))
+        ? section.entries.filter((e) => matchesSearch(resolveNavEntryLabel(e, t), search))
         : section.entries
 
     if (search.trim() && visibleEntries.length === 0 && !sectionMatches) return null
@@ -404,7 +420,7 @@ export function ResourceMenu({
           <Icon icon={section.icon} variant="default" color={hasActiveChild ? '#fff' : undefined} />
         </span>
         <span className="ml-resource-nav-group-title">
-          <HighlightText text={section.title} query={search} />
+          <HighlightText text={title} query={search} />
         </span>
         <Icon
           icon={ChevronDown}
@@ -458,7 +474,7 @@ export function ResourceMenu({
           <span className="ml-resource-nav-item-icon">
             <Icon icon={favoritesSectionIcon} variant="default" color={hasActiveFavorite ? '#fff' : 'var(--ml-primary)'} />
           </span>
-          <span className="ml-resource-nav-group-title">Favorites</span>
+          <span className="ml-resource-nav-group-title">{t('resourceNav.favorites')}</span>
           <Icon icon={ChevronDown} variant="toolbar" className="ml-resource-nav-chevron" />
         </button>
         <AnimatePresence initial={false}>
@@ -473,7 +489,7 @@ export function ResourceMenu({
             >
               <div className="ml-resource-nav-group-children-inner">
                 {visibleFavorites.length === 0 ? (
-                  <p className="ml-resource-nav-favorites-empty">Right-click a resource to add favorites.</p>
+                  <p className="ml-resource-nav-favorites-empty">{t('resourceNav.emptyFavorites')}</p>
                 ) : (
                   visibleFavorites.map((kind) =>
                     renderLeaf({ type: 'kind', kind }, { draggable: true, onReorderTarget: kind })
@@ -501,7 +517,7 @@ export function ResourceMenu({
         <div className="ml-resource-nav-flyout-list" role="menu">
           {entries.map((entry) => {
             const entryKey = navEntryKey(entry)
-            const label = navEntryLabel(entry)
+            const label = resolveNavEntryLabel(entry, t)
             const entryActive = isEntryActive(entry)
             const lucide = entry.type === 'kind' ? kindIconLucide[entry.kind] : virtualPageIcons[entry.key]
             return (
@@ -573,11 +589,11 @@ export function ResourceMenu({
 
   if (collapsed) {
     return (
-      <nav className="ml-resource-nav ml-resource-nav--collapsed" aria-label="Resources">
+      <nav className="ml-resource-nav ml-resource-nav--collapsed" aria-label={t('resourceNav.aria')}>
         {favoriteKinds.filter((k) => !hiddenKinds.has(k)).length > 0 &&
           renderCollapsedFlyout(
             FAVORITES_SECTION_ID,
-            'Favorites',
+            t('resourceNav.favorites'),
             favoritesSectionIcon,
             favoriteKinds.some((k) => !hiddenKinds.has(k) && isKindActive(k)),
             favoriteKinds.filter((k) => !hiddenKinds.has(k)).map((kind) => ({ type: 'kind' as const, kind })),
@@ -599,7 +615,7 @@ export function ResourceMenu({
           const hasActive = item.entries.some((e) => isEntryActive(e))
           return renderCollapsedFlyout(
             item.id,
-            item.title,
+            resolveSectionTitle(item.id, t),
             item.icon,
             hasActive,
             item.entries,
@@ -617,7 +633,7 @@ export function ResourceMenu({
     <nav
       ref={navRef}
       className="ml-resource-nav"
-      aria-label="Resources"
+      aria-label={t('resourceNav.aria')}
       role="menu"
       onKeyDown={onKeyDown}
     >
@@ -627,10 +643,10 @@ export function ResourceMenu({
           allowClear
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search resources"
+          placeholder={t('resourceNav.search')}
           variant="borderless"
           className="ml-resource-nav-search-input"
-          aria-label="Search resources"
+          aria-label={t('resourceNav.search')}
         />
       </div>
 

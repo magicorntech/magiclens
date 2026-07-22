@@ -9,6 +9,9 @@ export const en = {
     connecting: 'Connecting…',
     disconnected: 'Disconnected',
     error: 'Error',
+    connectionError: 'Connection error',
+    idle: 'Idle',
+    allNamespaces: 'All namespaces',
     total: 'total',
     clusters: 'Clusters',
     vpn: 'VPN',
@@ -74,6 +77,9 @@ export const en = {
       showFavorites: 'Show Favorites section',
       showFavoritesHint:
         'When enabled, Favorites appear above Workspaces in the left sidebar. Click the Favorites header to collapse or expand it.',
+      showWorkspaces: 'Show Workspaces section',
+      showWorkspacesHint:
+        'When enabled, Workspaces appear in the left sidebar for grouping clusters. Collapsed sidebar shows a W marker above workspace clusters.',
       tabIconsTitle: 'Tab icons',
       showClusterLogos: 'Show logos on cluster tabs',
       showResourceIcons: 'Show icons on resource tabs',
@@ -278,7 +284,286 @@ export const en = {
       empty: 'Add a VPN profile in the VPN page first',
       hint: 'When you switch to this cluster tab, MagicLens connects this VPN automatically. PIN and MFA are remembered per VPN profile for the day after the first successful connect.'
     }
+  },
+  tour: {
+    skip: 'Skip',
+    back: 'Back',
+    next: 'Next',
+    getStarted: 'Get started',
+    continue: 'Continue',
+    chooseLanguage: 'Choose your language',
+    languageHint: 'You can change this anytime in Settings. Feature tips will follow your selection.',
+    slidesAria: 'Feature slides',
+    slides: {
+      welcome: {
+        eyebrow: 'Welcome',
+        title: 'MagicLens for Kubernetes',
+        body: 'A fast desktop client to manage clusters, resources, VPN tunnels, logs, and terminals in one place — offline-first on your machine.'
+      },
+      clusters: {
+        eyebrow: 'Clusters',
+        title: 'Multi-cluster, one workspace',
+        body: 'Import kubeconfigs, pin favorites, and switch tabs instantly across every cluster you work with.'
+      },
+      split: {
+        eyebrow: 'Split view',
+        title: 'Compare two clusters at once',
+        body: 'Open split view to keep two cluster tabs side by side — perfect for staging vs production or checking the same resource across environments.'
+      },
+      search: {
+        eyebrow: 'Search',
+        title: 'Find anything fast',
+        body: 'Global search jumps to clusters, namespaces, and resources in one shortcut (⌘K / Ctrl+K by default — change it anytime in Settings → Keyboard).'
+      },
+      resources: {
+        eyebrow: 'Explorer',
+        title: 'Browse every resource',
+        body: 'Workloads, Config, Network, Storage, and more — live watch, YAML edit, batch actions, and a focused detail panel.'
+      },
+      vpn: {
+        eyebrow: 'VPN',
+        title: 'Private clusters, your tunnels',
+        body: 'Upload OpenVPN / Pritunl / WireGuard profiles, link them to clusters, and keep multiple tunnels up while you switch tabs.'
+      },
+      ops: {
+        eyebrow: 'Day-to-day',
+        title: 'Logs, exec & terminals',
+        body: 'Tail and download pod logs, exec into containers, open local terminals, and keep everything handy in the bottom panel.'
+      },
+      forward: {
+        eyebrow: 'Access',
+        title: 'Port forwarding made simple',
+        body: 'Forward a Pod or Service to a local port in a couple of clicks — MagicLens keeps the session visible while you work.'
+      }
+    }
+  },
+
+  workspaces: {
+    title: 'Workspaces',
+    compactMark: 'W',
+    compactTooltip: 'Workspaces',
+    new: 'New workspace',
+    newTooltip: 'New workspace',
+    edit: 'Edit workspace',
+    delete: 'Delete workspace',
+    empty: 'Group clusters into workspaces',
+    noClusters: 'No clusters yet — edit workspace to add some.',
+    defaultName: 'Workspace',
+    name: 'Name',
+    clusters: 'Clusters',
+    selectClusters: 'Select clusters for this workspace',
+    save: 'Save',
+    created: 'Workspace created',
+    updated: 'Workspace updated'
+  },
+  resourceNav: {
+    search: 'Search resources',
+    favorites: 'Favorites',
+    addFavorite: 'Add to favorites',
+    removeFavorite: 'Remove from favorites',
+    pin: 'Pin to tabs',
+    unpin: 'Unpin from tabs',
+    pinned: 'Pinned to tabs',
+    emptyFavorites: 'Right-click a resource to add favorites.',
+    aria: 'Resources',
+    sections: {
+      workloads: 'Workloads',
+      config: 'Config',
+      network: 'Network',
+      storage: 'Storage',
+      helm: 'Helm',
+      'access-control': 'Access Control',
+      'custom-resources': 'Custom Resources'
+    },
+    virtual: {
+      portForwarding: 'Port Forwarding',
+      helmCharts: 'Charts',
+      helmReleases: 'Releases',
+      operatorResources: 'Installed CRDs',
+      dynamicCustomResources: 'Dynamic Resources',
+      definitions: 'Definitions'
+    }
+  },
+  clustersHub: {
+    title: 'Clusters',
+    subtitle: 'Add, connect, and manage all Kubernetes clusters from one place.',
+    add: 'Add cluster',
+    addFirst: 'Add your first cluster',
+    statTotal: 'Total',
+    statConnected: 'Connected',
+    statFavorites: 'Favorites',
+    statIssues: 'Needs attention',
+    searchPlaceholder: 'Search by name, context, endpoint, namespace, version…',
+    empty: 'No clusters yet. Add your first cluster to get started.',
+    noMatch: 'No clusters match your search or filter.',
+    filters: {
+      all: 'All',
+      favorites: 'Favorites',
+      connected: 'Connected',
+      disconnected: 'Disconnected',
+      error: 'Error',
+      recent: 'Recently opened'
+    }
+  },
+  clusterActions: {
+    open: 'Open',
+    disconnect: 'Disconnect',
+    removeFavorite: 'Remove from favorites',
+    addFavorite: 'Add to favorites',
+    removeCluster: 'Remove cluster',
+    edit: 'Edit',
+    testConnection: 'Test connection',
+    openDashboard: 'Open dashboard',
+    removeConfirm: 'Remove this cluster?',
+    namespacesCount: '{{count}} namespaces',
+    lastOpened: 'Last opened',
+    splitScreen: 'Split screen',
+    exitSplit: 'Exit split view'
+  },
+  clusterEdit: {
+    title: 'Edit Cluster',
+    displayName: 'Display name',
+    displayNamePlaceholder: 'My cluster',
+    changeLogo: 'Change logo',
+    removeLogo: 'Remove logo',
+    prometheus: 'Prometheus URL',
+    prometheusHint: 'Optional. Used for metrics when auto-discovery is unavailable.',
+    prometheusPlaceholder: 'https://prometheus.example.com',
+    prometheusUnknown: 'Unknown',
+    prometheusConnected: 'Connected ({{method}})',
+    prometheusNotFound: 'Not found',
+    prometheusConnectHint: 'Connect to this cluster to test Prometheus discovery.',
+    kubeconfig: 'Kubeconfig',
+    kubeconfigHint: 'View, copy, or edit the kubeconfig used for this cluster.',
+    kubeconfigCopied: 'Kubeconfig copied to clipboard',
+    kubeconfigScopedFile: 'Scoped (from file)',
+    kubeconfigScopedInline: 'Scoped (inline)',
+    view: 'View',
+    copy: 'Copy',
+    editYaml: 'Edit',
+    saveKubeconfig: 'Save kubeconfig',
+    noKubeconfigChanges: 'No changes to save',
+    kubeconfigSaved: 'Kubeconfig saved for this cluster',
+    reconnectHint: 'Reconnect the cluster to apply kubeconfig changes',
+    save: 'Save',
+    cancel: 'Cancel',
+    close: 'Close'
+  },
+  clusterBg: {
+    title: 'Workspace background',
+    hint: 'Shown when this cluster tab is open. Pick a default landscape or upload PNG / JPG.',
+    remove: 'Remove',
+    upload: 'Upload PNG / JPG',
+    panelTransparency: 'Panel transparency',
+    solidPct: '{{opacity}}% solid',
+    clear: 'Clear',
+    default: 'Default',
+    solid: 'Solid',
+    panelHint: 'Controls how see-through resource menus, tables (Pods, Deployments, …), and headers are over the wallpaper.'
+  },
+  clusterView: {
+    disconnectedTitle: 'Cluster disconnected',
+    disconnectedBody: 'Connect to load namespaces and resources for this cluster.',
+    connect: 'Connect',
+    connectingVpn: 'Connecting VPN…',
+    connecting: 'Connecting…'
+  },
+  clusterAdd: {
+    title: 'Add Cluster',
+    pickFile: 'Pick kubeconfig file',
+    pasteYaml: 'Paste YAML',
+    scan: 'Scan',
+    rescan: 'Rescan',
+    selectAllNew: 'Select all new',
+    alreadyAdded: 'Already added',
+    addN: 'Add {{count}} cluster',
+    addN_plural: 'Add {{count}} clusters',
+    noContexts: 'No contexts found in this kubeconfig.',
+    duplicate: 'Already in your list'
+  },
+  auth: {
+    signInTitle: 'Sign in to MagicLens',
+    signInBody: 'Use your organization email and password. Admins open Admin Console; members open their profile. You can also continue offline with local kubeconfigs only.',
+    email: 'Email',
+    emailPlaceholder: 'you@company.com',
+    password: 'Password',
+    passwordPlaceholder: 'Password',
+    apiBase: 'API base URL',
+    apiBasePlaceholder: 'http://localhost:3000',
+    signIn: 'Sign in',
+    apiSettings: 'API settings',
+    hideApiSettings: 'Hide API settings',
+    continueOffline: 'Continue offline',
+    syncedToast: 'Synced {{kubeconfigs}} cluster context(s) and {{vpn}} VPN profile(s)',
+    syncFailedToast: 'Signed in, but sync failed: {{error}}'
+  },
+  search: {
+    placeholder: 'Search clusters, pods…',
+    searching: 'Searching…',
+    noResults: 'No results',
+    connectHint: 'Connect a cluster to search resources across namespaces.',
+    typeHint:
+      'Type to search. Use keywords like pod:nginx, @deploy api, or click a type filter above.',
+    searchingIn: 'Searching resources in: {{cluster}}',
+    recent: 'Recent',
+    clusters: 'Clusters',
+    resources: 'Resources',
+    hint: '↑↓ navigate · Enter open · Esc close'
+  },
+  onboarding: {
+    title: 'Resources assigned to you',
+    body: 'Choose which org kubeconfigs and VPN profiles to sync to this device.',
+    syncSelected: 'Sync selected to this device',
+    notNow: 'Not now',
+    kubeconfigs: 'Kubeconfigs',
+    vpnProfiles: 'VPN profiles',
+    empty: 'No assignments yet'
+  },
+  profile: {
+    title: 'Profile',
+    assignedClusters: 'Assigned clusters',
+    assignedVpn: 'Assigned VPN profiles',
+    syncAssignments: 'Sync assignments',
+    adminConsole: 'Admin Console',
+    updatePassword: 'Update password',
+    notifications: 'Notifications',
+    markAllRead: 'Mark all read',
+    fullAccess: 'Full access',
+    readOnly: 'Read only',
+    noClusters: 'No clusters assigned yet',
+    noVpn: 'No VPN profiles assigned',
+    noNotifications: 'No notifications',
+    currentPassword: 'Current password',
+    newPassword: 'New password',
+    confirmPassword: 'Confirm password'
+  },
+  admin: {
+    title: 'Admin Console',
+    signInRequired: 'Sign in required',
+    accessRequired: 'Admin access required',
+    nav: {
+      dashboard: 'Dashboard',
+      users: 'Users',
+      teams: 'Teams',
+      kubeconfigs: 'Kubeconfigs',
+      vpn: 'VPN',
+      permissions: 'Permissions',
+      invitations: 'Invitations',
+      audit: 'Audit'
+    },
+    dashboard: {
+      pendingInvitations: 'Pending invitations',
+      recentActions: 'Recent administrative actions',
+      users: 'Users',
+      teams: 'Teams'
+    }
+  },
+  chromeExtra: {
+    splitScreen: 'Split screen',
+    exitSplit: 'Exit split view',
+    terminal: 'Terminal'
   }
+
 } as const
 
 /** Same shape as English, with string leaves (any language). */
@@ -287,3 +572,10 @@ type DeepStringify<T> = {
 }
 
 export type TranslationResources = DeepStringify<typeof en>
+
+/** Other locales may omit keys; missing ones fall back to English via deepMerge. */
+export type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends string ? string : DeepPartial<T[K]>
+}
+
+export type TranslationOverrides = DeepPartial<TranslationResources>
