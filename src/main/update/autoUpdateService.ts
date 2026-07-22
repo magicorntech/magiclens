@@ -31,7 +31,7 @@ let initialized = false
 
 let state: UpdateState = {
   phase: 'idle',
-  currentVersion: app.getVersion(),
+  currentVersion: '0.0.0',
   latestVersion: null,
   releaseNotes: null,
   releaseDate: null,
@@ -141,6 +141,8 @@ export function initAutoUpdater(window: BrowserWindow): void {
   mainWindow = window
   if (initialized) return
   initialized = true
+
+  setState({ currentVersion: app.getVersion() })
 
   autoUpdater.forceDevUpdateConfig = false
   autoUpdater.disableWebInstaller = true

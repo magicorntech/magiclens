@@ -1,17 +1,16 @@
 import { safeStorage } from 'electron'
 import Store from 'electron-store'
+import { randomUUID } from 'crypto'
+import { existsSync, unlinkSync, writeFileSync } from 'node:fs'
 import { findExistingCluster } from '@shared/clusterIdentity'
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import type { PersistedClusterEntry } from '@shared/types/cluster'
+import { exportScopedKubeconfigYaml } from '../k8s/kubeconfigExport'
+import { orgKubeconfigFilePath } from '../k8s/kubeconfigPaths'
+import { getSessionScope } from './sessionScope'
 
-// The `source` field (kubeconfig file path or pasted raw YAML) is encrypted at rest via
-// Electron's safeStorage (OS keychain on macOS, DPAPI on Windows, libsecret on Linux).
-// Everything else is plaintext/searchable metadata.
 type StoredEntry = Omit<PersistedClusterEntry, 'source'> & { encryptedSource: string }
 
-// Entries written before the encryption + customName rename (pre-Stage-1) had a plaintext
-// `source` field and `displayName` instead of `customName`. Read defensively so old local
-// stores don't crash the app; they get rewritten in the new format on next save.
 interface LegacyStoredEntry {
   id: string
   displayName?: string
@@ -24,16 +23,16 @@ interface LegacyStoredEntry {
 type RawStoredEntry = StoredEntry | LegacyStoredEntry
 
 interface StoreSchema {
-  clusters: RawStoredEntry[]
+  scopes?: Record<string, RawStoredEntry[]>
+  /** @deprecated legacy flat list — migrated to scopes.offline */
+  clusters?: RawStoredEntry[]
 }
 
 const store = new Store<StoreSchema>({
   name: 'clusters',
-  defaults: { clusters: [] }
+  defaults: { scopes: {} }
 })
 
-// safeStorage.isEncryptionAvailable() requires the app 'ready' event to have fired on
-// Windows/Linux, so this must be checked lazily (at call time via IPC, never at module load).
 let warnedAboutPlaintext = false
 
 function isEncryptionAvailable(): boolean {
@@ -81,14 +80,38 @@ function toStored(entry: PersistedClusterEntry): StoredEntry {
   return { ...rest, encryptedSource: encryptSource(source) }
 }
 
+function migrateLegacyIfNeeded(): void {
+  const legacy = store.get('clusters')
+  if (!legacy?.length) return
+  const scopes = { ...(store.get('scopes') ?? {}) }
+  if (!scopes.offline?.length) {
+    scopes.offline = legacy
+    store.set('scopes', scopes)
+  }
+  store.delete('clusters' as keyof StoreSchema)
+}
+
+function scopeEntries(): RawStoredEntry[] {
+  migrateLegacyIfNeeded()
+  const scopes = store.get('scopes') ?? {}
+  return scopes[getSessionScope()] ?? []
+}
+
+function writeScopeEntries(entries: RawStoredEntry[]): void {
+  migrateLegacyIfNeeded()
+  const scopes = { ...(store.get('scopes') ?? {}) }
+  scopes[getSessionScope()] = entries
+  store.set('scopes', scopes)
+}
+
 export function listClusters(): PersistedClusterEntry[] {
-  return store.get('clusters').map(toPersisted)
+  return scopeEntries().map(toPersisted)
 }
 
 function saveCluster(entry: PersistedClusterEntry): void {
-  const stored = store.get('clusters').filter((c) => c.id !== entry.id)
+  const stored = scopeEntries().filter((c) => c.id !== entry.id)
   stored.push(toStored(entry))
-  store.set('clusters', stored)
+  writeScopeEntries(stored)
 }
 
 export function addCluster(entry: PersistedClusterEntry): 'added' | 'duplicate' {
@@ -105,8 +128,129 @@ export function updateCluster(entry: PersistedClusterEntry): void {
 }
 
 export function removeCluster(id: string): void {
-  store.set(
-    'clusters',
-    store.get('clusters').filter((c) => c.id !== id)
+  writeScopeEntries(scopeEntries().filter((c) => c.id !== id))
+}
+
+function deleteOrgKubeconfigFile(filePath: string | undefined): void {
+  if (!filePath) return
+  if (!filePath.includes('/kubeconfigs/')) return
+  if (existsSync(filePath)) {
+    try {
+      unlinkSync(filePath)
+    } catch {
+      // ignore
+    }
+  }
+}
+
+export function upsertOrgCluster(input: {
+  remoteId: string
+  orgKubeconfigId: string
+  customName: string
+  contextName: string
+  source?: KubeconfigSource
+  yamlContent?: string
+  userEmail?: string
+  endpoint?: string
+  environment?: string
+}): PersistedClusterEntry {
+  const clusters = listClusters()
+  let source = input.source
+  let localKubeconfigPath: string | undefined
+
+  if (input.yamlContent && input.userEmail) {
+    const scopedYaml = exportScopedKubeconfigYaml(
+      { type: 'raw', yaml: input.yamlContent },
+      input.contextName
+    )
+    localKubeconfigPath = orgKubeconfigFilePath(input.userEmail, input.contextName)
+    writeFileSync(localKubeconfigPath, scopedYaml, 'utf-8')
+    // Keep raw in encrypted store so connect works even if the on-disk file is missing.
+    source = { type: 'raw', yaml: scopedYaml }
+  }
+
+  if (!source) throw new Error('upsertOrgCluster requires source or yamlContent+userEmail')
+
+  const existingOrg = clusters.find((c) => c.origin === 'org' && c.remoteId === input.remoteId)
+  const existingLocal = findExistingCluster(
+    clusters.filter((c) => c.origin !== 'org'),
+    { contextName: input.contextName, source, endpoint: input.endpoint },
+    input.endpoint
   )
+  const existing = existingOrg ?? existingLocal
+
+  if (
+    existing?.localKubeconfigPath &&
+    existing.localKubeconfigPath !== localKubeconfigPath
+  ) {
+    deleteOrgKubeconfigFile(existing.localKubeconfigPath)
+  }
+  if (existing?.source.type === 'file' && existing.source.filePath !== localKubeconfigPath) {
+    deleteOrgKubeconfigFile(existing.source.filePath)
+  }
+
+  const entry: PersistedClusterEntry = {
+    id: existing?.id ?? randomUUID(),
+    customName: input.customName,
+    contextName: input.contextName,
+    source,
+    endpoint: input.endpoint,
+    environment: input.environment,
+    logoUrl: existing?.logoUrl,
+    prometheusUrl: existing?.prometheusUrl,
+    isFavorite: existing?.isFavorite ?? false,
+    selectedNamespace: existing?.selectedNamespace ?? 'ALL',
+    selectedResourceKind: existing?.selectedResourceKind ?? null,
+    lastOpenedAt: existing?.lastOpenedAt,
+    origin: 'org',
+    remoteId: input.remoteId,
+    orgKubeconfigId: input.orgKubeconfigId,
+    localKubeconfigPath: localKubeconfigPath ?? existing?.localKubeconfigPath
+  }
+
+  saveCluster(entry)
+  return entry
+}
+
+/**
+ * Prune org clusters that are no longer assigned.
+ * Only remove stale contexts for kubeconfigs that were successfully re-synced —
+ * a failed download must not delete a previously working local file/entry.
+ */
+export function removeOrgClustersMissing(
+  orgKubeconfigIds: Set<string>,
+  syncedRemoteIds: Set<string>,
+  successfullySyncedOrgIds: Set<string>
+): string[] {
+  const removed: string[] = []
+  const kept: RawStoredEntry[] = []
+  for (const raw of scopeEntries()) {
+    const entry = toPersisted(raw)
+    if (entry.origin !== 'org' || !entry.orgKubeconfigId) {
+      kept.push(raw)
+      continue
+    }
+
+    if (!orgKubeconfigIds.has(entry.orgKubeconfigId)) {
+      deleteOrgKubeconfigFile(entry.localKubeconfigPath)
+      if (entry.source.type === 'file') deleteOrgKubeconfigFile(entry.source.filePath)
+      removed.push(entry.id)
+      continue
+    }
+
+    if (
+      successfullySyncedOrgIds.has(entry.orgKubeconfigId) &&
+      entry.remoteId &&
+      !syncedRemoteIds.has(entry.remoteId)
+    ) {
+      deleteOrgKubeconfigFile(entry.localKubeconfigPath)
+      if (entry.source.type === 'file') deleteOrgKubeconfigFile(entry.source.filePath)
+      removed.push(entry.id)
+      continue
+    }
+
+    kept.push(raw)
+  }
+  writeScopeEntries(kept)
+  return removed
 }

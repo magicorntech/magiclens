@@ -1,0 +1,18 @@
+{
+  "name": "@magiclens/permissions",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@magiclens/shared-types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.1.4"
+  }
+}

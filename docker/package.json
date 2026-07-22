@@ -1,0 +1,15 @@
+{
+  "name": "magiclens-backend",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/api",
+    "apps/worker",
+    "apps/admin",
+    "packages/*"
+  ],
+  "scripts": {
+    "prisma:migrate": "npm run prisma:migrate -w @magiclens/database",
+    "prisma:seed": "npm run prisma:seed -w @magiclens/database"
+  }
+}

@@ -46,7 +46,7 @@ interface AppShellProps {
 
 export function AppShell(props: AppShellProps): React.JSX.Element {
   return (
-    <BottomPanelProvider>
+    <BottomPanelProvider clusterId={props.cluster.id}>
       <AppShellInner {...props} />
     </BottomPanelProvider>
   )

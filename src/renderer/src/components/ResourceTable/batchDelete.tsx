@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { Modal, message } from 'antd'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
+import { refreshNamespaces } from '../../queries/useNamespaces'
 
 interface ListLike {
   items: { id: string }[]
@@ -57,6 +58,9 @@ export async function batchDeleteResources(
     queryClient.setQueryData(listQueryKey, previous)
   }
   await queryClient.invalidateQueries({ queryKey: listQueryKey })
+  if (deleted > 0 && target.type === 'builtin' && target.kind === 'Namespaces') {
+    await refreshNamespaces(queryClient, clusterId)
+  }
 
   return { deleted, failed: failed.map((f) => `${f.name}: ${f.error}`) }
 }

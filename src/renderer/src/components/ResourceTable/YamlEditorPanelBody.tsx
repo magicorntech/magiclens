@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Spin, message } from 'antd'
 import { useQueryClient } from '@tanstack/react-query'
 import type { YamlTabState } from '../Layout/BottomPanelContext'
+import { refreshNamespaces } from '../../queries/useNamespaces'
 import { YamlMonacoEditor } from '../Editor/YamlMonacoEditor'
 
 interface YamlEditorPanelBodyProps {
@@ -75,6 +76,7 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
     setSaving(true)
     setError(null)
     try {
+      let namespaceListChanged = false
       if (tab.mode === 'create') {
         const res = await window.api.resource.createManifest({ clusterId: tab.clusterId, yaml: value })
         if ('error' in res) {
@@ -86,6 +88,7 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
         } else {
           message.success(`Created ${res.created.map((c) => `${c.kind}/${c.name}`).join(', ')}`)
         }
+        namespaceListChanged = res.created.some((c) => c.kind === 'Namespace')
       } else {
         const res = await window.api.resource.applyManifest({ clusterId: tab.clusterId, yaml: value })
         if ('error' in res) {
@@ -93,8 +96,12 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
           return
         }
         message.success(`Saved ${res.ref.kind}/${res.ref.name}`)
+        namespaceListChanged = res.ref.kind === 'Namespace'
       }
       await queryClient.invalidateQueries({ queryKey: tab.listQueryKey })
+      if (namespaceListChanged) {
+        await refreshNamespaces(queryClient, tab.clusterId)
+      }
       onDone()
     } finally {
       setSaving(false)

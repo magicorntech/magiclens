@@ -1,0 +1,134 @@
+:root {
+  color-scheme: light;
+  --ml-ink: #102a27;
+  --ml-muted: #5b6f6c;
+  --ml-panel: #ffffff;
+  --ml-line: #d7e3df;
+  --ml-accent: #0f766e;
+  --ml-bg: radial-gradient(1200px 600px at 10% -10%, #d9f3ee 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #e8eef8 0%, transparent 50%),
+    #f4f7f6;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--ml-bg);
+  color: var(--ml-ink);
+}
+
+.ml-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+}
+
+.ml-sidebar {
+  background: linear-gradient(180deg, #0b3b36 0%, #0f766e 100%);
+  color: #e8fffa;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ml-brand {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.ml-brand span {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.75;
+  margin-top: 4px;
+}
+
+.ml-nav a {
+  display: block;
+  color: #d7f5ef;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.ml-nav a.active,
+.ml-nav a:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ml-main {
+  padding: 28px 32px;
+}
+
+.ml-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ml-stat {
+  background: var(--ml-panel);
+  border: 1px solid var(--ml-line);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.ml-stat strong {
+  display: block;
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.ml-stat span {
+  color: var(--ml-muted);
+  font-size: 13px;
+}
+
+.ml-panel {
+  background: var(--ml-panel);
+  border: 1px solid var(--ml-line);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.ml-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.ml-login-card {
+  width: min(420px, 100%);
+  background: var(--ml-panel);
+  border: 1px solid var(--ml-line);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 20px 50px rgba(16, 42, 39, 0.08);
+}
+
+.ml-login-card h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.ml-login-card p {
+  margin: 0 0 20px;
+  color: var(--ml-muted);
+}

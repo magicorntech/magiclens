@@ -8,7 +8,7 @@ interface NamespaceSelectorProps {
 }
 
 export function NamespaceSelector({ clusterId, value, onChange }: NamespaceSelectorProps): React.JSX.Element {
-  const { data, isLoading } = useNamespaces(clusterId)
+  const { data, isLoading, refetch, isFetching } = useNamespaces(clusterId)
 
   const options = [
     { value: 'ALL', label: 'All namespaces' },
@@ -20,10 +20,13 @@ export function NamespaceSelector({ clusterId, value, onChange }: NamespaceSelec
       style={{ width: 220 }}
       value={value}
       onChange={onChange}
-      loading={isLoading}
+      loading={isLoading || isFetching}
       options={options}
       showSearch
       optionFilterProp="label"
+      onOpenChange={(open) => {
+        if (open) void refetch()
+      }}
     />
   )
 }

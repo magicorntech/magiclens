@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Empty, Tooltip } from 'antd'
-import { ChevronLeft, ChevronRight, Layers } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Layers, Network, Shield, UserRound } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import logo from '../../assets/logo.png'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useAuthStore } from '../../stores/authStore'
+import { useVpnStore } from '../../stores/vpnStore'
+import { useClusterVpnStore } from '../../stores/clusterVpnStore'
+import { resolveUserScope, favoritesHeightKey } from '../../workspace'
 import { applyClusterFilterAndSearch } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
@@ -11,7 +15,6 @@ import { Icon } from '../ui/Icon'
 
 const COLLAPSED_WIDTH = 60
 const EXPANDED_WIDTH = 252
-const FAVORITES_HEIGHT_KEY = 'ml-favorites-section-height'
 const DEFAULT_FAVORITES_HEIGHT = 220
 const MIN_FAVORITES_HEIGHT = 100
 const MAX_FAVORITES_HEIGHT = 520
@@ -21,9 +24,9 @@ interface LeftSidebarProps {
   onNavigate?: () => void
 }
 
-function loadFavoritesHeight(): number {
+function loadFavoritesHeight(scope: string): number {
   try {
-    const raw = localStorage.getItem(FAVORITES_HEIGHT_KEY)
+    const raw = localStorage.getItem(favoritesHeightKey(scope))
     const n = raw ? parseInt(raw, 10) : DEFAULT_FAVORITES_HEIGHT
     return Number.isFinite(n) ? Math.min(MAX_FAVORITES_HEIGHT, Math.max(MIN_FAVORITES_HEIGHT, n)) : DEFAULT_FAVORITES_HEIGHT
   } catch {
@@ -38,11 +41,19 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const storedCollapsed = useClusterStore((s) => s.leftSidebarCollapsed)
   const setCollapsed = useClusterStore((s) => s.setLeftSidebarCollapsed)
   const setActiveView = useClusterStore((s) => s.setActiveView)
+  const isAdmin = useAuthStore((s) => s.isAdmin)
+  const me = useAuthStore((s) => s.me)
+  const offlineMode = useAuthStore((s) => s.offlineMode)
+  const vpnStatus = useVpnStore((s) => s.status)
+  const vpnProfiles = useVpnStore((s) => s.profiles)
+  const clusterVpnLinks = useClusterVpnStore((s) => s.links)
+  const requireLogin = useAuthStore((s) => s.requireLogin)
+  const userScope = resolveUserScope(me, offlineMode)
   const isDrawer = variant === 'drawer'
   const collapsed = isDrawer ? false : storedCollapsed
 
   const [favoriteSearch, setFavoriteSearch] = useState('')
-  const [favoritesHeight, setFavoritesHeight] = useState(loadFavoritesHeight)
+  const [favoritesHeight, setFavoritesHeight] = useState(() => loadFavoritesHeight(userScope))
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null)
 
   const favorites = useMemo(
@@ -54,6 +65,38 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
     () => clusters.filter((c) => c.status === 'connected').length,
     [clusters]
   )
+
+  const contextVpnId =
+    activeView === 'tabs' && activeClusterId ? clusterVpnLinks[activeClusterId] : undefined
+  const displayVpnId = contextVpnId ?? vpnStatus?.activeProfileId
+  const displayProfile = vpnProfiles.find((p) => p.id === displayVpnId)
+
+  const vpnConnected = displayVpnId
+    ? (vpnStatus?.connectedProfileIds?.includes(displayVpnId) ?? false) ||
+      (vpnStatus?.activeProfileId === displayVpnId && vpnStatus?.status === 'connected')
+    : vpnStatus?.status === 'connected'
+  const vpnConnecting =
+    vpnStatus?.activeProfileId === displayVpnId && vpnStatus?.status === 'connecting'
+  const vpnError = vpnStatus?.status === 'error' && vpnStatus.activeProfileId === displayVpnId
+  const vpnMeta = displayProfile
+    ? vpnConnected
+      ? displayProfile.name
+      : vpnConnecting
+        ? `${displayProfile.name} · Connecting…`
+        : vpnError
+          ? vpnStatus?.message ?? 'Error'
+          : displayProfile.name
+    : vpnStatus?.status === 'connected'
+      ? vpnProfiles.find((p) => p.id === vpnStatus.activeProfileId)?.name ?? 'Connected'
+      : vpnStatus?.status === 'connecting'
+        ? 'Connecting…'
+        : vpnStatus?.status === 'error'
+          ? vpnStatus?.message ?? 'Error'
+          : 'Disconnected'
+
+  useEffect(() => {
+    setFavoritesHeight(loadFavoritesHeight(userScope))
+  }, [userScope])
 
   function handleNavigate(action: () => void): void {
     action()
@@ -80,11 +123,11 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
 
   useEffect(() => {
     try {
-      localStorage.setItem(FAVORITES_HEIGHT_KEY, String(favoritesHeight))
+      localStorage.setItem(favoritesHeightKey(userScope), String(favoritesHeight))
     } catch {
       // ignore
     }
-  }, [favoritesHeight])
+  }, [favoritesHeight, userScope])
 
   function startResize(e: React.MouseEvent): void {
     e.preventDefault()
@@ -144,6 +187,99 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
             )}
           </button>
         </Tooltip>
+
+        <Tooltip
+          title={
+            vpnConnected
+              ? `Connected · ${displayProfile?.name ?? 'VPN'}`
+              : vpnConnecting
+                ? `Connecting · ${displayProfile?.name ?? 'VPN'}`
+                : 'VPN profiles (OpenVPN, Pritunl, WireGuard)'
+          }
+          placement="right"
+        >
+          <button
+            type="button"
+            className={`ml-sidebar-hub-btn${activeView === 'vpn' ? ' ml-sidebar-hub-btn--active' : ''}`}
+            onClick={() => handleNavigate(() => setActiveView('vpn'))}
+          >
+            <span
+              className={`ml-sidebar-hub-btn-icon${
+                vpnConnected
+                  ? ' ml-sidebar-hub-btn-icon--vpn-connected'
+                  : vpnConnecting
+                    ? ' ml-sidebar-hub-btn-icon--vpn-connecting'
+                    : ''
+              }`}
+            >
+              <Icon icon={Network} variant="action" />
+            </span>
+            {!collapsed && (
+              <span className="ml-sidebar-hub-btn-text">
+                <span className="ml-sidebar-hub-btn-title">VPN</span>
+                <span className="ml-sidebar-hub-btn-meta">{vpnMeta}</span>
+              </span>
+            )}
+          </button>
+        </Tooltip>
+
+        {!me ? (
+          <Tooltip title="Sign in to your organization account" placement="right">
+            <button
+              type="button"
+              className="ml-sidebar-hub-btn"
+              onClick={() => handleNavigate(() => requireLogin())}
+            >
+              <span className="ml-sidebar-hub-btn-icon">
+                <Icon icon={UserRound} variant="action" />
+              </span>
+              {!collapsed && (
+                <span className="ml-sidebar-hub-btn-text">
+                  <span className="ml-sidebar-hub-btn-title">Login</span>
+                  <span className="ml-sidebar-hub-btn-meta">
+                    {offlineMode ? 'Offline mode' : 'Organization account'}
+                  </span>
+                </span>
+              )}
+            </button>
+          </Tooltip>
+        ) : isAdmin() ? (
+          <Tooltip title="Admin Console" placement="right">
+            <button
+              type="button"
+              className={`ml-sidebar-hub-btn${activeView === 'admin' ? ' ml-sidebar-hub-btn--active' : ''}`}
+              onClick={() => handleNavigate(() => setActiveView('admin'))}
+            >
+              <span className="ml-sidebar-hub-btn-icon">
+                <Icon icon={Shield} variant="action" />
+              </span>
+              {!collapsed && (
+                <span className="ml-sidebar-hub-btn-text">
+                  <span className="ml-sidebar-hub-btn-title">Admin</span>
+                  <span className="ml-sidebar-hub-btn-meta">{me.organization?.role ?? 'ADMIN'} access</span>
+                </span>
+              )}
+            </button>
+          </Tooltip>
+        ) : (
+          <Tooltip title="Your assigned clusters and VPN profiles" placement="right">
+            <button
+              type="button"
+              className={`ml-sidebar-hub-btn${activeView === 'profile' ? ' ml-sidebar-hub-btn--active' : ''}`}
+              onClick={() => handleNavigate(() => setActiveView('profile'))}
+            >
+              <span className="ml-sidebar-hub-btn-icon">
+                <Icon icon={UserRound} variant="action" />
+              </span>
+              {!collapsed && (
+                <span className="ml-sidebar-hub-btn-text">
+                  <span className="ml-sidebar-hub-btn-title">Profile</span>
+                  <span className="ml-sidebar-hub-btn-meta">{me.organization?.role ?? 'Member'}</span>
+                </span>
+              )}
+            </button>
+          </Tooltip>
+        )}
       </div>
 
       <div

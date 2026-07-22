@@ -1,0 +1,523 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  DISABLED
+  REMOVED
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum OrganizationRole {
+  OWNER
+  ADMIN
+  TEAM_ADMIN
+  MEMBER
+  READ_ONLY
+}
+
+enum MemberStatus {
+  ACTIVE
+  INVITED
+  REMOVED
+}
+
+enum TeamRole {
+  ADMIN
+  MEMBER
+}
+
+enum KubeconfigVisibility {
+  PERSONAL
+  TEAM
+  ORGANIZATION
+}
+
+enum KubeconfigStatus {
+  ACTIVE
+  DISABLED
+  ERROR
+}
+
+enum PolicyEffect {
+  ALLOW
+  DENY
+}
+
+enum ScopeType {
+  ORGANIZATION
+  TEAM
+  USER
+  CLUSTER
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  DEAD
+}
+
+model Organization {
+  id          String             @id @default(cuid())
+  name        String
+  slug        String             @unique
+  logoUrl     String?
+  ownerUserId String
+  status      OrganizationStatus @default(ACTIVE)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  owner              User                 @relation("OrganizationOwner", fields: [ownerUserId], references: [id])
+  members            OrganizationMember[]
+  teams              Team[]
+  kubeconfigs        Kubeconfig[]
+  permissionPolicies PermissionPolicy[]
+  invitations        Invitation[]
+  auditLogs          AuditLog[]
+  vpnProfiles        VpnProfile[]
+  resourcePackages   ResourcePackage[]
+
+  @@index([ownerUserId])
+  @@index([status])
+}
+
+model User {
+  id                 String       @id @default(cuid())
+  name               String
+  email              String
+  normalizedEmail    String       @unique
+  avatarUrl          String?
+  provider           AuthProvider @default(LOCAL)
+  providerId         String?
+  passwordHash       String?
+  mustChangePassword Boolean      @default(false)
+  status             UserStatus   @default(ACTIVE)
+  lastLoginAt        DateTime?
+  emailVerifiedAt    DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  deletedAt          DateTime?
+
+  ownedOrganizations Organization[]       @relation("OrganizationOwner")
+  memberships        OrganizationMember[] @relation("MemberUser")
+  invitedMembers     OrganizationMember[] @relation("InvitedByUser")
+  createdTeams       Team[]               @relation("TeamCreator")
+  teamMemberships    TeamMember[]
+  ownedKubeconfigs   Kubeconfig[]         @relation("KubeconfigOwner")
+  createdKubeconfigs Kubeconfig[]         @relation("KubeconfigCreator")
+  createdPolicies    PermissionPolicy[]   @relation("PolicyCreator")
+  userPolicies       UserPermissionPolicy[]
+  invitationsSent    Invitation[]         @relation("InvitationSender")
+  refreshTokens      RefreshToken[]
+  auditLogs          AuditLog[]
+  createdVpnProfiles VpnProfile[]         @relation("VpnCreator")
+  vpnAssignments     UserVpnProfile[]
+  notifications      UserNotification[]
+  createdPackages    ResourcePackage[]    @relation("PackageCreator")
+
+  @@unique([provider, providerId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model OrganizationMember {
+  id              String           @id @default(cuid())
+  organizationId  String
+  userId          String
+  role            OrganizationRole @default(MEMBER)
+  status          MemberStatus     @default(ACTIVE)
+  invitedByUserId String?
+  joinedAt        DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation("MemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy    User?        @relation("InvitedByUser", fields: [invitedByUserId], references: [id])
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([role])
+  @@index([status])
+}
+
+model Team {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  createdByUserId String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User                   @relation("TeamCreator", fields: [createdByUserId], references: [id])
+  members      TeamMember[]
+  kubeconfigs  TeamKubeconfig[]
+  vpnProfiles  TeamVpnProfile[]
+  policies     TeamPermissionPolicy[]
+  packages     TeamResourcePackage[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([deletedAt])
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  role      TeamRole @default(MEMBER)
+  createdAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+model Kubeconfig {
+  id               String               @id @default(cuid())
+  organizationId   String
+  ownerUserId      String
+  name             String
+  description      String?
+  visibility       KubeconfigVisibility @default(PERSONAL)
+  encryptedContent String?
+  encryptedDataKey String?
+  contextsJson     Json                 @default("[]")
+  serverEndpoint   String?
+  environment      String?
+  tagsJson         Json                 @default("[]")
+  logoUrl          String?
+  status           KubeconfigStatus     @default(ACTIVE)
+  createdByUserId  String
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        User             @relation("KubeconfigOwner", fields: [ownerUserId], references: [id])
+  createdBy    User             @relation("KubeconfigCreator", fields: [createdByUserId], references: [id])
+  teams        TeamKubeconfig[]
+  packageItems PackageKubeconfigItem[]
+
+  @@index([organizationId])
+  @@index([ownerUserId])
+  @@index([visibility])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model TeamKubeconfig {
+  id           String   @id @default(cuid())
+  teamId       String
+  kubeconfigId String
+  createdAt    DateTime @default(now())
+
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  kubeconfig Kubeconfig @relation(fields: [kubeconfigId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, kubeconfigId])
+  @@index([kubeconfigId])
+}
+
+model PermissionPolicy {
+  id               String       @id @default(cuid())
+  organizationId   String
+  name             String
+  description      String?
+  effect           PolicyEffect @default(ALLOW)
+  scopeType        ScopeType    @default(ORGANIZATION)
+  scopeId          String?
+  clusterId        String?
+  namespacePattern String?
+  apiGroup         String?
+  resourceKind     String?
+  actionsJson      Json         @default("[]")
+  priority         Int          @default(100)
+  createdByUserId  String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User                    @relation("PolicyCreator", fields: [createdByUserId], references: [id])
+  users        UserPermissionPolicy[]
+  teams        TeamPermissionPolicy[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([priority])
+}
+
+model UserPermissionPolicy {
+  id                 String   @id @default(cuid())
+  userId             String
+  permissionPolicyId String
+  createdAt          DateTime @default(now())
+
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  policy PermissionPolicy @relation(fields: [permissionPolicyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionPolicyId])
+  @@index([permissionPolicyId])
+}
+
+model TeamPermissionPolicy {
+  id                 String   @id @default(cuid())
+  teamId             String
+  permissionPolicyId String
+  createdAt          DateTime @default(now())
+
+  team   Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  policy PermissionPolicy @relation(fields: [permissionPolicyId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, permissionPolicyId])
+  @@index([permissionPolicyId])
+}
+
+model Invitation {
+  id              String           @id @default(cuid())
+  organizationId  String
+  email           String
+  normalizedEmail String
+  role            OrganizationRole @default(MEMBER)
+  invitedByUserId String
+  tokenHash       String           @unique
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User         @relation("InvitationSender", fields: [invitedByUserId], references: [id])
+
+  @@index([organizationId, normalizedEmail])
+  @@index([expiresAt])
+  @@index([acceptedAt])
+  @@index([revokedAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  familyId  String
+  deviceId  String?
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  userId         String?
+  action         String
+  result         String
+  resourceType   String?
+  resourceName   String?
+  clusterId      String?
+  namespace      String?
+  metadataJson   Json     @default("{}")
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model BackgroundJob {
+  id           String    @id @default(cuid())
+  type         String
+  status       JobStatus @default(PENDING)
+  payloadJson  Json      @default("{}")
+  attempts     Int       @default(0)
+  errorMessage String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([type, status])
+  @@index([createdAt])
+}
+
+enum VpnProfileStatus {
+  ACTIVE
+  DISABLED
+}
+
+model VpnProfile {
+  id               String           @id @default(cuid())
+  organizationId   String
+  name             String
+  description      String?
+  provider         String           @default("generic")
+  serverHost       String?
+  protocol         String?
+  encryptedConfig  String?
+  encryptedDataKey String?
+  status           VpnProfileStatus @default(ACTIVE)
+  createdByUserId  String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User             @relation("VpnCreator", fields: [createdByUserId], references: [id])
+  users        UserVpnProfile[]
+  teams        TeamVpnProfile[]
+  packageItems PackageVpnProfileItem[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model UserVpnProfile {
+  id           String   @id @default(cuid())
+  userId       String
+  vpnProfileId String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vpnProfile VpnProfile @relation(fields: [vpnProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vpnProfileId])
+  @@index([vpnProfileId])
+}
+
+model TeamVpnProfile {
+  id           String   @id @default(cuid())
+  teamId       String
+  vpnProfileId String
+  createdAt    DateTime @default(now())
+
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  vpnProfile VpnProfile @relation(fields: [vpnProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, vpnProfileId])
+  @@index([vpnProfileId])
+}
+
+model UserNotification {
+  id             String    @id @default(cuid())
+  userId         String
+  organizationId String?
+  type           String
+  title          String
+  body           String?
+  resourceType   String?
+  resourceId     String?
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@index([createdAt])
+}
+
+enum ResourcePackageType {
+  KUBECONFIG
+  VPN
+}
+
+model ResourcePackage {
+  id              String              @id @default(cuid())
+  organizationId  String
+  name            String
+  description     String?
+  type            ResourcePackageType
+  createdByUserId String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  deletedAt       DateTime?
+
+  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User                    @relation("PackageCreator", fields: [createdByUserId], references: [id])
+  kubeconfigs  PackageKubeconfigItem[]
+  vpnProfiles  PackageVpnProfileItem[]
+  teams        TeamResourcePackage[]
+
+  @@unique([organizationId, name, type])
+  @@index([organizationId])
+  @@index([deletedAt])
+}
+
+model PackageKubeconfigItem {
+  id           String   @id @default(cuid())
+  packageId    String
+  kubeconfigId String
+  createdAt    DateTime @default(now())
+
+  package    ResourcePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  kubeconfig Kubeconfig      @relation(fields: [kubeconfigId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, kubeconfigId])
+  @@index([kubeconfigId])
+}
+
+model PackageVpnProfileItem {
+  id           String   @id @default(cuid())
+  packageId    String
+  vpnProfileId String
+  createdAt    DateTime @default(now())
+
+  package    ResourcePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  vpnProfile VpnProfile      @relation(fields: [vpnProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, vpnProfileId])
+  @@index([vpnProfileId])
+}
+
+model TeamResourcePackage {
+  id        String   @id @default(cuid())
+  teamId    String
+  packageId String
+  createdAt DateTime @default(now())
+
+  team    Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  package ResourcePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, packageId])
+  @@index([packageId])
+}

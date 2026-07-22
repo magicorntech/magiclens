@@ -5,6 +5,9 @@ export const IPC = {
   KUBECONFIG_PICK_DIRECTORY: 'kubeconfig:pickDirectory',
   KUBECONFIG_SCAN_DIRECTORY: 'kubeconfig:scanDirectory',
   KUBECONFIG_SCAN_DEFAULT: 'kubeconfig:scanDefault',
+  KUBECONFIG_READ_SOURCE: 'kubeconfig:readSource',
+  KUBECONFIG_WRITE_FILE: 'kubeconfig:writeFile',
+  KUBECONFIG_EXPORT_CONTEXT: 'kubeconfig:exportContext',
 
   CLUSTER_CONNECT: 'cluster:connect',
   CLUSTER_DISCONNECT: 'cluster:disconnect',
@@ -23,10 +26,18 @@ export const IPC = {
   RESOURCE_LIST_EVENTS: 'resource:listEvents',
   RESOURCE_LIST_CLUSTER_EVENTS: 'resource:listClusterEvents',
 
+  SESSION_SET_SCOPE: 'session:setScope',
+
   CLUSTER_STORE_LIST: 'clusterStore:list',
   CLUSTER_STORE_ADD: 'clusterStore:add',
   CLUSTER_STORE_UPDATE: 'clusterStore:update',
   CLUSTER_STORE_REMOVE: 'clusterStore:remove',
+  CLUSTER_STORE_UPSERT_ORG: 'clusterStore:upsertOrg',
+  CLUSTER_STORE_SYNC_ORG_IDS: 'clusterStore:syncOrgIds',
+
+  CLUSTER_VPN_LINKS_GET: 'clusterVpn:linksGet',
+  CLUSTER_VPN_LINKS_SET: 'clusterVpn:linksSet',
+  CLUSTER_VPN_LINKS_REMOVE: 'clusterVpn:linksRemove',
 
   UI_STATE_GET: 'uiState:get',
   UI_STATE_SET: 'uiState:set',
@@ -131,5 +142,22 @@ export const IPC = {
   UPDATE_STATE_CHANGED: 'update:stateChanged',
   UPDATE_OPEN_RELEASE_PAGE: 'update:openReleasePage',
 
-  SEARCH_RESOURCES: 'search:resources'
+  SEARCH_RESOURCES: 'search:resources',
+
+  ENTERPRISE_HTTP: 'enterprise:http',
+
+  VPN_LIST: 'vpn:list',
+  VPN_ADD: 'vpn:add',
+  VPN_UPDATE: 'vpn:update',
+  VPN_REMOVE: 'vpn:remove',
+  VPN_PICK_FILE: 'vpn:pickFile',
+  VPN_CONNECT: 'vpn:connect',
+  VPN_DISCONNECT: 'vpn:disconnect',
+  VPN_GET_STATUS: 'vpn:getStatus',
+  VPN_SET_FOCUS: 'vpn:setFocus',
+  VPN_STATUS_CHANGED: 'vpn:statusChanged',
+  VPN_REVEAL: 'vpn:reveal',
+  VPN_UPSERT_ORG: 'vpn:upsertOrg',
+  VPN_SYNC_ORG_IDS: 'vpn:syncOrgIds',
+  VPN_GET_CONFIG: 'vpn:getConfig'
 } as const

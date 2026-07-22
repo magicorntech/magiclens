@@ -8,6 +8,7 @@ export interface TerminalTabState {
   id: string
   kind: 'terminal'
   title: string
+  clusterId: string
 }
 
 export interface YamlTabState {
@@ -73,7 +74,7 @@ function newId(prefix: string): string {
 
 /** Scoped per `AppShell` instance (i.e. per open cluster tab) — deliberately NOT a global store,
  * so terminal/YAML editor tabs never leak between different clusters' bottom panels. */
-export function BottomPanelProvider({ children }: { children: ReactNode }): React.JSX.Element {
+export function BottomPanelProvider({ children, clusterId }: { children: ReactNode; clusterId: string }): React.JSX.Element {
   const [tabs, setTabs] = useState<BottomPanelTab[]>([])
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const terminalCounterRef = useRef(0)
@@ -81,10 +82,10 @@ export function BottomPanelProvider({ children }: { children: ReactNode }): Reac
   const addTerminalTab = useCallback(() => {
     terminalCounterRef.current += 1
     const id = newId('term')
-    const tab: TerminalTabState = { id, kind: 'terminal', title: `Terminal ${terminalCounterRef.current}` }
+    const tab: TerminalTabState = { id, kind: 'terminal', title: `Terminal ${terminalCounterRef.current}`, clusterId }
     setTabs((prev) => [...prev, tab])
     setActiveTabId(id)
-  }, [])
+  }, [clusterId])
 
   const openYamlEditor = useCallback((params: OpenYamlEditorParams) => {
     const id = newId('yaml')

@@ -6,6 +6,7 @@ import { ChevronDown, Pin, Search, Star } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { VirtualPageKey } from '@shared/types/navigation'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useAuthStore } from '../../stores/authStore'
 import {
   FAVORITES_SECTION_ID,
   favoritesSectionIcon,
@@ -77,6 +78,25 @@ export function ResourceMenu({
   const prefs = getResourceTabPrefs(clusterId)
   const favoriteKinds = prefs.favorites
   const pinnedKinds = prefs.pinned
+  const hiddenKinds = useAuthStore((s) => new Set(s.me?.hiddenResourceKinds ?? []))
+
+  const visibleNavLayout = useMemo((): NavLayoutItem[] => {
+    if (hiddenKinds.size === 0) return resourceNavLayout
+    return resourceNavLayout
+      .map((item) => {
+        if (item === 'favorites') return item
+        if (item.type === 'standalone') {
+          return hiddenKinds.has(item.kind) ? null : item
+        }
+        const entries = item.entries.filter((entry) => {
+          if (entry.type === 'kind') return !hiddenKinds.has(entry.kind)
+          return true
+        })
+        if (entries.length === 0) return null
+        return { ...item, entries }
+      })
+      .filter((item): item is NavLayoutItem => item !== null)
+  }, [hiddenKinds])
 
   useEffect(() => {
     const handler = (event: Event): void => {
@@ -185,13 +205,14 @@ export function ResourceMenu({
 
   const filteredLayout = useMemo(() => {
     const q = search.trim()
-    if (!q) return resourceNavLayout
+    if (!q) return visibleNavLayout
 
-    return resourceNavLayout
+    return visibleNavLayout
       .map((item): NavLayoutItem | null => {
         if (item === 'favorites') {
           const favMatches =
-            favoriteKinds.length > 0 && favoriteKinds.some((k) => matchesSearch(k, q))
+            favoriteKinds.length > 0 &&
+            favoriteKinds.some((k) => !hiddenKinds.has(k) && matchesSearch(k, q))
           return favMatches || !q ? item : null
         }
         if (item.type === 'standalone') {
@@ -203,7 +224,7 @@ export function ResourceMenu({
         return { ...item, entries: matchingEntries }
       })
       .filter((item): item is NavLayoutItem => item !== null)
-  }, [search, favoriteKinds, prefsTick])
+  }, [search, favoriteKinds, prefsTick, visibleNavLayout, hiddenKinds])
 
   const focusableKeys = useMemo(() => {
     const keys: string[] = []
@@ -415,7 +436,9 @@ export function ResourceMenu({
   }
 
   function renderFavorites(): React.ReactNode {
-    const visibleFavorites = favoriteKinds.filter((k) => matchesSearch(k, search))
+    const visibleFavorites = favoriteKinds.filter(
+      (k) => !hiddenKinds.has(k) && matchesSearch(k, search)
+    )
     if (search.trim() && visibleFavorites.length === 0) return null
 
     const hasActiveFavorite = visibleFavorites.some((k) => isKindActive(k))
@@ -548,18 +571,18 @@ export function ResourceMenu({
   if (collapsed) {
     return (
       <nav className="ml-resource-nav ml-resource-nav--collapsed" aria-label="Resources">
-        {favoriteKinds.length > 0 &&
+        {favoriteKinds.filter((k) => !hiddenKinds.has(k)).length > 0 &&
           renderCollapsedFlyout(
             FAVORITES_SECTION_ID,
             'Favorites',
             favoritesSectionIcon,
-            favoriteKinds.some((k) => isKindActive(k)),
-            favoriteKinds.map((kind) => ({ type: 'kind', kind })),
+            favoriteKinds.some((k) => !hiddenKinds.has(k) && isKindActive(k)),
+            favoriteKinds.filter((k) => !hiddenKinds.has(k)).map((kind) => ({ type: 'kind' as const, kind })),
             (entry) => {
               if (entry.type === 'kind') handleSelectKind(entry.kind)
             }
           )}
-        {resourceNavLayout.map((item) => {
+        {visibleNavLayout.map((item) => {
           if (item === 'favorites') return null
           if (item.type === 'standalone') {
             return renderCollapsedIcon(

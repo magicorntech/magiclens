@@ -35,3 +35,26 @@ export interface ScanDirectoryResponse {
   exists: boolean
   files: ScannedKubeconfigFile[]
 }
+
+export interface ReadKubeconfigSourceRequest {
+  source: KubeconfigSource
+}
+
+export interface ReadKubeconfigSourceResponse {
+  ok: true
+  yaml: string
+}
+
+export interface WriteKubeconfigFileRequest {
+  filePath: string
+  yaml: string
+}
+
+export type WriteKubeconfigFileResponse = { ok: true } | { ok: false; error: string }
+
+export interface ExportKubeconfigContextRequest {
+  source: KubeconfigSource
+  contextName: string
+}
+
+export type ExportKubeconfigContextResponse = { ok: true; yaml: string } | { ok: false; error: string }

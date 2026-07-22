@@ -14,7 +14,7 @@ export function BottomPanel(): React.JSX.Element {
     label: tab.title,
     children:
       tab.kind === 'terminal' ? (
-        <TerminalView sessionId={tab.id} isActive={activeTabId === tab.id} />
+        <TerminalView sessionId={tab.id} clusterId={tab.clusterId} isActive={activeTabId === tab.id} />
       ) : tab.kind === 'yaml' ? (
         <YamlEditorPanelBody key={tab.id} tab={tab} onDone={() => closeTab(tab.id)} />
       ) : (

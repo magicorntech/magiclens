@@ -30,13 +30,18 @@ export interface ClusterEntry {
   resourceFocus: ResourceFocus | null
   pendingNavigation: PendingNavigation | null
   lastOpenedAt?: string
+  origin?: 'local' | 'org'
+  remoteId?: string
+  orgKubeconfigId?: string
+  environment?: string
+  localKubeconfigPath?: string
 }
 
 interface ClusterStoreState {
   clusters: ClusterEntry[]
   openedTabs: string[]
   activeClusterId: string | null
-  activeView: 'clusters' | 'tabs'
+  activeView: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn'
   splitView: boolean
   splitLeftClusterId: string | null
   splitRightClusterId: string | null
@@ -50,7 +55,7 @@ interface ClusterStoreState {
   openClusterTab: (id: string) => void
   closeClusterTab: (id: string) => void
   setActiveCluster: (id: string) => void
-  setActiveView: (view: 'clusters' | 'tabs') => void
+  setActiveView: (view: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn') => void
   enableSplitView: () => void
   disableSplitView: () => void
   setFocusedSplitPane: (pane: 'left' | 'right') => void
@@ -62,8 +67,10 @@ interface ClusterStoreState {
     id: string,
     patch: Partial<Pick<ClusterEntry, 'customName' | 'logoUrl' | 'prometheusUrl'>>
   ) => void
+  updateClusterSource: (id: string, source: KubeconfigSource) => void
   setClusterStatus: (id: string, status: ConnectionStatus, errorMessage?: string) => void
   setClusterConnected: (id: string, serverVersion: string, namespaces: string[], endpoint?: string) => void
+  setClusterNamespaces: (id: string, namespaces: string[]) => void
   setSelectedNamespace: (id: string, namespace: string) => void
   setSelectedResourceKind: (id: string, kind: ResourceKind) => void
   openResourceKind: (id: string, kind: ResourceKind) => void
@@ -193,11 +200,31 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
   setAddClusterModalOpen: (open) => set({ addClusterModalOpen: open }),
 
   toggleFavorite: (id) =>
-    set((state) => ({
-      clusters: state.clusters.map((c) => (c.id === id ? { ...c, isFavorite: !c.isFavorite } : c))
-    })),
+    set((state) => {
+      const clusters = state.clusters.map((c) =>
+        c.id === id ? { ...c, isFavorite: !c.isFavorite } : c
+      )
+      const updated = clusters.find((c) => c.id === id)
+      if (updated) {
+        void window.api.clusterStore.update({
+          id: updated.id,
+          customName: updated.customName,
+          contextName: updated.contextName,
+          source: updated.source,
+          endpoint: updated.endpoint,
+          logoUrl: updated.logoUrl,
+          prometheusUrl: updated.prometheusUrl,
+          isFavorite: updated.isFavorite,
+          selectedNamespace: updated.selectedNamespace,
+          selectedResourceKind: updated.selectedResourceKind
+        })
+      }
+      return { clusters }
+    }),
 
   updateClusterMeta: (id, patch) => set((state) => ({ clusters: updateCluster(state.clusters, id, patch) })),
+
+  updateClusterSource: (id, source) => set((state) => ({ clusters: updateCluster(state.clusters, id, { source }) })),
 
   setClusterStatus: (id, status, errorMessage) =>
     set((state) => ({ clusters: updateCluster(state.clusters, id, { status, errorMessage }) })),
@@ -212,6 +239,9 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         errorMessage: undefined
       })
     })),
+
+  setClusterNamespaces: (id, namespaces) =>
+    set((state) => ({ clusters: updateCluster(state.clusters, id, { namespaces }) })),
 
   setSelectedNamespace: (id, namespace) =>
     set((state) => ({ clusters: updateCluster(state.clusters, id, { selectedNamespace: namespace }) })),
@@ -366,7 +396,12 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         selectedResourceKind: entry.selectedResourceKind,
         openResourceKinds: entry.selectedResourceKind ? [entry.selectedResourceKind] : [],
         resourceFocus: null,
-        pendingNavigation: null
+        pendingNavigation: null,
+        origin: entry.origin,
+        remoteId: entry.remoteId,
+        orgKubeconfigId: entry.orgKubeconfigId,
+        environment: entry.environment,
+        localKubeconfigPath: entry.localKubeconfigPath
       }))
     }),
 

@@ -1,9 +1,20 @@
 import { dialog, ipcMain } from 'electron'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { IPC } from '@shared/ipc-contract'
-import type { PickDirectoryResult, PickFileResult, ScanDirectoryResponse } from '@shared/types/kubeconfig'
+import type {
+  ExportKubeconfigContextRequest,
+  ExportKubeconfigContextResponse,
+  PickDirectoryResult,
+  PickFileResult,
+  ReadKubeconfigSourceRequest,
+  ReadKubeconfigSourceResponse,
+  ScanDirectoryResponse,
+  WriteKubeconfigFileRequest,
+  WriteKubeconfigFileResponse
+} from '@shared/types/kubeconfig'
+import { exportScopedKubeconfigYaml } from '../k8s/kubeconfigExport'
 import { parseKubeconfigFile, parseKubeconfigString, scanDirectoryForKubeconfigs } from '../k8s/kubeconfigParser'
 
 function scanDirectorySafely(directoryPath: string): ScanDirectoryResponse {
@@ -52,4 +63,36 @@ export function registerKubeconfigHandlers(): void {
   ipcMain.handle(IPC.KUBECONFIG_SCAN_DEFAULT, async () => {
     return scanDirectorySafely(join(homedir(), '.kube'))
   })
+
+  ipcMain.handle(
+    IPC.KUBECONFIG_READ_SOURCE,
+    async (_e, req: ReadKubeconfigSourceRequest): Promise<ReadKubeconfigSourceResponse> => {
+      if (req.source.type === 'raw') return { ok: true, yaml: req.source.yaml }
+      const yaml = readFileSync(req.source.filePath, 'utf-8')
+      return { ok: true, yaml }
+    }
+  )
+
+  ipcMain.handle(
+    IPC.KUBECONFIG_WRITE_FILE,
+    async (_e, req: WriteKubeconfigFileRequest): Promise<WriteKubeconfigFileResponse> => {
+      try {
+        writeFileSync(req.filePath, req.yaml, 'utf-8')
+        return { ok: true }
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC.KUBECONFIG_EXPORT_CONTEXT,
+    async (_e, req: ExportKubeconfigContextRequest): Promise<ExportKubeconfigContextResponse> => {
+      try {
+        return { ok: true, yaml: exportScopedKubeconfigYaml(req.source, req.contextName) }
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      }
+    }
+  )
 }

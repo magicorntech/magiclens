@@ -4,3 +4,13 @@ dist
 dist-electron
 .DS_Store
 *.log
+.env
+.env.local
+*.env
+!.env.example
+apps/api/dist
+apps/worker/dist
+apps/admin/dist
+packages/*/dist
+coverage
+.turbo

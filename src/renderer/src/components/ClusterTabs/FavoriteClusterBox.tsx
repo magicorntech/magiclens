@@ -6,6 +6,7 @@ import { useClusterStore } from '../../stores/clusterStore'
 import { disconnectCluster } from '../../clusterConnect'
 import { Icon } from '../ui/Icon'
 import { ClusterAvatar } from './ClusterAvatar'
+import { ClusterVpnBadge } from './ClusterVpnBadge'
 import { ConnectionStatusBadge } from '../ResourceTable/ConnectionStatusBadge'
 
 interface FavoriteClusterBoxProps {
@@ -98,6 +99,7 @@ export function FavoriteClusterBox({
         </Typography.Text>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, overflow: 'hidden' }}>
           <ConnectionStatusBadge status={cluster.status} errorMessage={cluster.errorMessage} compact />
+          <ClusterVpnBadge clusterId={cluster.id} compact />
           {cluster.selectedNamespace && cluster.selectedNamespace !== 'ALL' && (
             <Tag
               style={{

@@ -1,6 +1,8 @@
 import type { KubeconfigSource } from './kubeconfig'
 import type { ResourceKind } from '../resourceKinds'
 
+export type ClusterOrigin = 'local' | 'org'
+
 export type ConnectionStatus = 'idle' | 'disconnected' | 'connecting' | 'connected' | 'error'
 
 export interface PersistedClusterEntry {
@@ -16,6 +18,14 @@ export interface PersistedClusterEntry {
   selectedNamespace: string
   selectedResourceKind: ResourceKind | null
   lastOpenedAt?: string
+  origin?: ClusterOrigin
+  /** Stable org import key: `{kubeconfigId}:{contextName}` */
+  remoteId?: string
+  /** Parent org kubeconfig id for sync cleanup */
+  orgKubeconfigId?: string
+  environment?: string
+  /** On-disk per-user kubeconfig written for org sync (email@context.kubeconfig) */
+  localKubeconfigPath?: string
 }
 
 export interface ConnectRequest {
@@ -46,7 +56,7 @@ export interface ClusterVersionResponse {
 export interface PersistedUiState {
   openedTabs: string[]
   activeClusterId: string | null
-  activeView: 'clusters' | 'tabs'
+  activeView: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn'
   splitView?: boolean
   splitLeftClusterId?: string | null
   splitRightClusterId?: string | null

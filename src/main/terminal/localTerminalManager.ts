@@ -1,5 +1,6 @@
 import os from 'node:os'
 import type { WebContents } from 'electron'
+import { unlinkSync } from 'node:fs'
 import * as pty from 'node-pty'
 import { IPC } from '@shared/ipc-contract'
 import type { TerminalStartResponse } from '@shared/types/terminal'
@@ -7,6 +8,7 @@ import type { TerminalStartResponse } from '@shared/types/terminal'
 interface Session {
   proc: pty.IPty
   senderId: number
+  tempPaths?: string[]
 }
 
 function defaultShell(): string {
@@ -19,7 +21,15 @@ function defaultShell(): string {
 class LocalTerminalManager {
   private sessions = new Map<string, Session>()
 
-  start(sessionId: string, cols: number, rows: number, sender: WebContents, cwd?: string): TerminalStartResponse {
+  start(
+    sessionId: string,
+    cols: number,
+    rows: number,
+    sender: WebContents,
+    cwd?: string,
+    env?: Record<string, string>,
+    tempPaths?: string[]
+  ): TerminalStartResponse {
     this.stop(sessionId)
 
     try {
@@ -29,7 +39,7 @@ class LocalTerminalManager {
         cols,
         rows,
         cwd: cwd || os.homedir(),
-        env: process.env as Record<string, string>
+        env: { ...(process.env as Record<string, string>), ...(env ?? {}) }
       })
 
       const send = (channel: string, payload: unknown): void => {
@@ -39,12 +49,26 @@ class LocalTerminalManager {
       proc.onData((chunk) => send(IPC.TERMINAL_DATA, { sessionId, chunk }))
       proc.onExit(({ exitCode }) => {
         this.sessions.delete(sessionId)
+        for (const p of tempPaths ?? []) {
+          try {
+            unlinkSync(p)
+          } catch {
+            // ignore
+          }
+        }
         send(IPC.TERMINAL_EXIT, { sessionId, exitCode })
       })
 
-      this.sessions.set(sessionId, { proc, senderId: sender.id })
+      this.sessions.set(sessionId, { proc, senderId: sender.id, tempPaths })
       return { ok: true }
     } catch (err) {
+      for (const p of tempPaths ?? []) {
+        try {
+          unlinkSync(p)
+        } catch {
+          // ignore
+        }
+      }
       return { ok: false, error: err instanceof Error ? err.message : String(err) }
     }
   }
@@ -68,6 +92,13 @@ class LocalTerminalManager {
       session.proc.kill()
     } catch {
       // Already dead.
+    }
+    for (const p of session.tempPaths ?? []) {
+      try {
+        unlinkSync(p)
+      } catch {
+        // ignore
+      }
     }
     this.sessions.delete(sessionId)
   }

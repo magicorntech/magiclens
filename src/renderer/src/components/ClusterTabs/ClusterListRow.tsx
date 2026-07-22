@@ -4,9 +4,11 @@ import { CheckCircle2, ExternalLink, Pencil, RefreshCw, Star, Trash2 } from 'luc
 import { Icon } from '../ui/Icon'
 import type { ClusterEntry } from '../../stores/clusterStore'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useClusterVpnStore } from '../../stores/clusterVpnStore'
 import { useResourceList } from '../../queries/useResourceList'
 import { connectCluster, disconnectCluster } from '../../clusterConnect'
 import { ClusterAvatar } from './ClusterAvatar'
+import { ClusterVpnBadge } from './ClusterVpnBadge'
 import { ConnectionStatusBadge } from '../ResourceTable/ConnectionStatusBadge'
 import { HighlightText } from './ClusterSearchInput'
 
@@ -38,6 +40,9 @@ export function ClusterListRow({ cluster, searchQuery, onEdit }: ClusterListRowP
     await disconnectCluster(cluster.id)
     await window.api.clusterStore.remove(cluster.id)
     removeCluster(cluster.id)
+    const links = { ...useClusterVpnStore.getState().links }
+    delete links[cluster.id]
+    useClusterVpnStore.setState({ links })
   }
 
   return (
@@ -95,7 +100,13 @@ export function ClusterListRow({ cluster, searchQuery, onEdit }: ClusterListRowP
     >
       <List.Item.Meta
         avatar={<ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={40} />}
-        title={<HighlightText text={cluster.customName} query={searchQuery} />}
+        title={
+          <Space wrap>
+            {cluster.origin === 'org' && <Tag color="blue">org</Tag>}
+            <ClusterVpnBadge clusterId={cluster.id} />
+            <HighlightText text={cluster.customName} query={searchQuery} />
+          </Space>
+        }
         description={
           <Space orientation="vertical" size={2}>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>

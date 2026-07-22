@@ -1,7 +1,15 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc-contract'
-import type { PersistedClusterEntry } from '@shared/types/cluster'
-import { addCluster, listClusters, removeCluster, updateCluster } from '../persistence/clusterStore'
+import type { KubeconfigSource, PersistedClusterEntry } from '@shared/types/cluster'
+import { removeClusterVpnLink } from '../persistence/clusterVpnLinks'
+import {
+  addCluster,
+  listClusters,
+  removeCluster,
+  removeOrgClustersMissing,
+  updateCluster,
+  upsertOrgCluster
+} from '../persistence/clusterStore'
 
 export function registerClusterStoreHandlers(): void {
   ipcMain.handle(IPC.CLUSTER_STORE_LIST, async () => {
@@ -21,6 +29,44 @@ export function registerClusterStoreHandlers(): void {
 
   ipcMain.handle(IPC.CLUSTER_STORE_REMOVE, async (_e, req: { id: string }) => {
     removeCluster(req.id)
+    removeClusterVpnLink(req.id)
     return { ok: true as const }
   })
+
+  ipcMain.handle(
+    IPC.CLUSTER_STORE_UPSERT_ORG,
+    async (
+      _e,
+      input: {
+        remoteId: string
+        orgKubeconfigId: string
+        customName: string
+        contextName: string
+        source?: KubeconfigSource
+        yamlContent?: string
+        userEmail?: string
+        endpoint?: string
+        environment?: string
+      }
+    ) => {
+      const entry = upsertOrgCluster(input)
+      return { ok: true as const, cluster: entry }
+    }
+  )
+
+  ipcMain.handle(
+    IPC.CLUSTER_STORE_SYNC_ORG_IDS,
+    async (
+      _e,
+      req: { orgKubeconfigIds: string[]; remoteIds: string[]; successfullySyncedOrgIds?: string[] }
+    ) => {
+      const removed = removeOrgClustersMissing(
+        new Set(req.orgKubeconfigIds),
+        new Set(req.remoteIds),
+        new Set(req.successfullySyncedOrgIds ?? req.remoteIds.map((id) => id.split(':')[0]!))
+      )
+      for (const id of removed) removeClusterVpnLink(id)
+      return { ok: true as const, removed }
+    }
+  )
 }

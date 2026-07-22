@@ -4,6 +4,7 @@ import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceFocus } from '@shared/types/navigation'
 import { useClusterStore } from '../stores/clusterStore'
 import { connectCluster } from '../clusterConnect'
+import { clusterNeedsVpn } from '../clusterVpn'
 import { AppShell } from '../components/Layout/AppShell'
 import { ResourceKindTabs } from '../components/ResourceTable/ResourceKindTabs'
 import { PortForwardingPage } from '../components/PortForward/PortForwardingPage'
@@ -41,11 +42,12 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
   }, [cluster?.pendingNavigation, clusterId, clearPendingNavigation])
 
   // New clusters start as idle and connect when the tab is first opened.
+  // If a VPN is linked, wait for ensureClusterAccess (VPN first) instead of racing.
   // Explicit disconnect sets status to disconnected — user must connect manually.
   useEffect(() => {
-    if (cluster?.status === 'idle') {
-      void connectCluster(cluster.id, cluster.source, cluster.contextName)
-    }
+    if (cluster?.status !== 'idle') return
+    if (clusterNeedsVpn(cluster.id)) return
+    void connectCluster(cluster.id, cluster.source, cluster.contextName)
   }, [cluster?.id, cluster?.status, cluster?.source, cluster?.contextName])
 
   useEffect(() => {
@@ -88,9 +90,17 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
   }
 
   if (cluster.status !== 'connected') {
+    const waitingVpn = clusterNeedsVpn(cluster.id)
+    const description = waitingVpn
+      ? 'Connecting VPN…'
+      : cluster.status === 'connecting' && cluster.errorMessage
+        ? cluster.errorMessage
+        : cluster.status === 'error'
+          ? cluster.errorMessage
+          : 'Connecting…'
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-        <Spin description={cluster.status === 'error' ? cluster.errorMessage : 'Connecting...'} />
+        <Spin description={description} />
       </div>
     )
   }

@@ -4,6 +4,7 @@ import type { ResourceKind } from '@shared/resourceKinds'
 import type { DynamicResourceItem } from '@shared/types/discovery'
 import type { ResourceListItem } from '@shared/types/resource'
 import type { ResourceWatchEventPayload, ResourceWatchStatus, ResourceWatchTarget } from '@shared/types/resourceWatch'
+import { refreshNamespaces } from './useNamespaces'
 
 type WatchableItem = ResourceListItem | DynamicResourceItem
 
@@ -51,6 +52,9 @@ function useWatchSession(
     const unsubEvent = window.api.resource.watch.onEvent((payload) => {
       if (payload.sessionId !== sessionId) return
       queryClient.setQueryData(queryKey, (prev: unknown) => applyChanges(prev, payload.changes))
+      if (target?.type === 'builtin' && target.kind === 'Namespaces' && payload.changes.length > 0) {
+        void refreshNamespaces(queryClient, clusterId)
+      }
     })
 
     const unsubStatus = window.api.resource.watch.onStatus((payload) => {

@@ -6,6 +6,7 @@ import { Icon } from '../ui/Icon'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
 import { useResourcePermissions } from '../../queries/useMetricsRange'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
+import { refreshNamespaces } from '../../queries/useNamespaces'
 import { batchDeleteResources, removeItemsById } from './batchDelete'
 
 interface ListLike {
@@ -70,6 +71,9 @@ export function ResourceRowActions({
       }
       message.success(`Deleted "${name}"`)
       await queryClient.invalidateQueries({ queryKey: listQueryKey })
+      if (target.type === 'builtin' && target.kind === 'Namespaces') {
+        await refreshNamespaces(queryClient, clusterId)
+      }
     } catch (err) {
       queryClient.setQueryData(listQueryKey, previous)
       message.error(`Delete failed: ${err instanceof Error ? err.message : String(err)}`)

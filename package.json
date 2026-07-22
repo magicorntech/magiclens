@@ -14,6 +14,10 @@
     "url": "https://github.com/magicorntech/magiclens.git"
   },
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
@@ -21,12 +25,24 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
-    "postinstall": "electron-rebuild -f -w node-pty",
+    "postinstall": "node -e \"if (process.env.SKIP_ELECTRON_REBUILD || process.env.DOCKER) process.exit(0); try { require('child_process').execSync('electron-rebuild -f -w node-pty', {stdio:'inherit'}); } catch (e) { console.warn('electron-rebuild skipped:', e.message); process.exit(0); }\"",
     "dist": "npm run build && electron-builder --publish never",
     "dist:mac": "npm run build && electron-builder --mac --publish never",
     "dist:win": "npm run build && electron-builder --win --publish never",
     "dist:linux": "npm run build && electron-builder --linux --publish never",
-    "release": "npm run build && electron-builder --publish always"
+    "release": "npm run build && electron-builder --publish always",
+    "dev:api": "npm run start:dev -w @magiclens/api",
+    "dev:worker": "npm run start:dev -w @magiclens/worker",
+    "dev:admin": "npm run dev -w @magiclens/admin",
+    "dev:desktop": "electron-vite dev",
+    "dev:infra": "docker compose up -d postgres redis mailpit",
+    "dev:infra:down": "docker compose stop postgres redis mailpit",
+    "dev:backend": "npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed && concurrently -k -n api,worker,admin -c teal,magenta,cyan \"npm run dev:api\" \"npm run dev:worker\" \"npm run dev:admin\"",
+    "prisma:generate": "npm run prisma:generate -w @magiclens/database",
+    "prisma:migrate": "npm run prisma:migrate -w @magiclens/database",
+    "prisma:seed": "npm run prisma:seed -w @magiclens/database",
+    "prisma:reset": "PRISMA_SEED_FORCE_RESET=1 npm run prisma:seed",
+    "test:backend": "npm run test -w @magiclens/api && npm run test -w @magiclens/auth"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.2",
@@ -63,6 +79,7 @@
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.2.4",
     "electron": "^43.0.0",
     "electron-builder": "^25.1.8",
     "electron-vite": "5.0.0",

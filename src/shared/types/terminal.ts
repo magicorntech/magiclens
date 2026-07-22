@@ -3,6 +3,8 @@ export interface TerminalStartRequest {
   cols: number
   rows: number
   cwd?: string
+  clusterId?: string
+  env?: Record<string, string>
 }
 
 export type TerminalStartResponse = { ok: true } | { ok: false; error: string }

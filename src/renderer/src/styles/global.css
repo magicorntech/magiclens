@@ -691,6 +691,133 @@ body,
   flex-shrink: 0;
 }
 
+.ml-sidebar-hub-btn-icon--vpn-connected {
+  background: color-mix(in srgb, #22c55e 22%, transparent);
+  color: #22c55e;
+  animation: ml-vpn-pulse 1.6s ease-in-out infinite;
+}
+
+.ml-sidebar-hub-btn-icon--vpn-connecting {
+  background: color-mix(in srgb, var(--ml-primary) 18%, transparent);
+  animation: ml-vpn-pulse 1s ease-in-out infinite;
+}
+
+@keyframes ml-vpn-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, #22c55e 45%, transparent);
+  }
+  50% {
+    opacity: 0.72;
+    box-shadow: 0 0 0 4px color-mix(in srgb, #22c55e 0%, transparent);
+  }
+}
+
+.ml-vpn-connection-panel .ml-vpn-topology {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 4px;
+  padding: 12px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ml-surface-2) 80%, transparent);
+}
+
+.ml-vpn-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 88px;
+  max-width: 120px;
+  text-align: center;
+  gap: 4px;
+  opacity: 0.55;
+}
+
+.ml-vpn-node--active,
+.ml-vpn-node--ok {
+  opacity: 1;
+}
+
+.ml-vpn-node__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--ml-primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ml-border) 60%, transparent);
+}
+
+.ml-vpn-node--ok .ml-vpn-node__icon {
+  border-color: color-mix(in srgb, #22c55e 50%, transparent);
+  background: color-mix(in srgb, #22c55e 14%, transparent);
+}
+
+.ml-vpn-node__label {
+  font-size: 12px !important;
+}
+
+.ml-vpn-node__sub {
+  font-size: 10px !important;
+  line-height: 1.2;
+  word-break: break-all;
+}
+
+.ml-vpn-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+  color: var(--ml-text-muted);
+}
+
+.ml-vpn-link--live .ml-vpn-link__arrow {
+  color: #22c55e;
+  animation: ml-vpn-pulse 2s ease-in-out infinite;
+}
+
+.ml-vpn-link__rate {
+  font-size: 10px;
+  color: var(--ml-text-muted);
+  white-space: nowrap;
+}
+
+.ml-vpn-traffic-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ml-vpn-traffic-row .ant-progress {
+  flex: 1;
+  margin: 4px 0 2px;
+}
+
+.ml-vpn-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.ml-vpn-checklist__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.ml-vpn-checklist__ok {
+  color: #22c55e;
+}
+
+.ml-vpn-checklist__pending {
+  color: var(--ml-text-muted);
+  opacity: 0.5;
+}
+
 .ml-sidebar-hub-btn-text {
   display: flex;
   flex-direction: column;
@@ -3837,4 +3964,188 @@ body,
 .ml-nodes-dashboard-settings-label {
   font-size: 12px;
   color: var(--ml-text);
+}
+
+/* Enterprise login */
+.ml-login-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background:
+    radial-gradient(900px 500px at 10% -10%, color-mix(in srgb, var(--ml-primary) 18%, transparent), transparent 60%),
+    var(--ml-bg-layout);
+}
+
+.ml-login-card {
+  width: min(420px, 100%);
+  background: var(--ml-bg-container);
+  border: 1px solid var(--ml-border);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--ml-text) 8%, transparent);
+}
+
+.ml-login-logo {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 12px;
+}
+
+.ml-login-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+/* In-app Admin Console */
+.ml-admin-page {
+  height: 100%;
+  overflow: auto;
+  padding: 20px 24px 32px;
+}
+
+.ml-admin-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.ml-admin-body {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
+  min-height: 0;
+}
+
+.ml-admin-menu {
+  border: 1px solid var(--ml-border);
+  border-radius: 12px;
+  background: var(--ml-bg-container);
+  padding: 8px;
+  height: fit-content;
+}
+
+.ml-admin-content {
+  border: 1px solid var(--ml-border);
+  border-radius: 12px;
+  background: var(--ml-bg-container);
+  padding: 16px;
+  min-width: 0;
+}
+
+.ml-admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ml-admin-stat {
+  border: 1px solid var(--ml-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--ml-bg-spotlight);
+}
+
+.ml-admin-stat strong {
+  display: block;
+  font-size: 26px;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.ml-admin-stat span {
+  color: var(--ml-text-secondary);
+  font-size: 12px;
+}
+
+.ml-sidebar-hub-btn--muted {
+  opacity: 0.72;
+}
+
+@media (max-width: 900px) {
+  .ml-admin-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Profile */
+.ml-profile-page {
+  height: 100%;
+  overflow: auto;
+  padding: 24px 28px 40px;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, color-mix(in srgb, var(--ml-primary) 12%, transparent), transparent),
+    var(--ml-bg);
+}
+
+.ml-profile-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 20px 22px;
+  border: 1px solid var(--ml-border);
+  border-radius: 16px;
+  background: var(--ml-bg-container);
+}
+
+.ml-profile-hero-main {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  min-width: 0;
+}
+
+.ml-profile-avatar {
+  background: linear-gradient(135deg, var(--ml-primary), color-mix(in srgb, var(--ml-primary) 55%, #111));
+  color: #fff;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ml-profile-name {
+  margin: 0 0 4px !important;
+  letter-spacing: -0.02em;
+}
+
+.ml-profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.ml-profile-card {
+  border-radius: 14px;
+  border: 1px solid var(--ml-border);
+}
+
+.ml-profile-card .ant-card-head {
+  border-bottom-color: var(--ml-border);
+  min-height: 48px;
+}
+
+.ml-admin-page {
+  background:
+    radial-gradient(ellipse 70% 40% at 90% 0%, color-mix(in srgb, var(--ml-primary) 8%, transparent), transparent),
+    var(--ml-bg);
+}
+
+.ml-admin-header {
+  padding-bottom: 4px;
+}
+
+.ml-admin-menu {
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ml-border) 80%, transparent);
+}
+
+.ml-admin-content {
+  box-shadow: 0 8px 24px color-mix(in srgb, #000 4%, transparent);
 }

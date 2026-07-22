@@ -17,12 +17,18 @@ import { registerUiStateHandlers } from './uiState.handlers'
 import { registerUpdateHandlers } from './update.handlers'
 import { registerWorkloadHandlers } from './workload.handlers'
 import { registerSearchHandlers } from './search.handlers'
+import { registerEnterpriseHandlers } from './enterprise.handlers'
+import { registerVpnHandlers } from './vpn.handlers'
+import { registerSessionHandlers } from './session.handlers'
+import { registerClusterVpnHandlers } from './clusterVpn.handlers'
 
 export function registerIpcHandlers(): void {
+  registerSessionHandlers()
   registerKubeconfigHandlers()
   registerClusterHandlers()
   registerResourceHandlers()
   registerClusterStoreHandlers()
+  registerClusterVpnHandlers()
   registerUiStateHandlers()
   registerMetricsHandlers()
   registerPrometheusHandlers()
@@ -38,4 +44,6 @@ export function registerIpcHandlers(): void {
   registerWorkloadHandlers()
   registerUpdateHandlers()
   registerSearchHandlers()
+  registerEnterpriseHandlers()
+  registerVpnHandlers()
 }

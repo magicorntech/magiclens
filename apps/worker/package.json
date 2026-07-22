@@ -1,0 +1,26 @@
+{
+  "name": "@magiclens/worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "start:dev": "tsx watch src/main.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@magiclens/audit": "*",
+    "@magiclens/database": "*",
+    "@magiclens/email": "*",
+    "@magiclens/queue": "*",
+    "@magiclens/shared-types": "*",
+    "bullmq": "^5.49.1",
+    "dotenv": "^16.6.1",
+    "ioredis": "^5.6.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.4",
+    "typescript": "^5.7.2",
+    "vitest": "^3.1.4"
+  }
+}

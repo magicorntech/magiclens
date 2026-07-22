@@ -6,7 +6,8 @@ import { ClusterHeaderTabs } from './ClusterHeaderTabs'
 export function ClusterTabStrip(): React.JSX.Element | null {
   const activeView = useClusterStore((s) => s.activeView)
 
-  if (activeView === 'clusters') return null
+  if (activeView === 'clusters' || activeView === 'admin' || activeView === 'profile' || activeView === 'vpn')
+    return null
 
   return (
     <div className="ml-cluster-tab-strip">

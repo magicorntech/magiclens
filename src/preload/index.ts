@@ -4,7 +4,13 @@ import type {
   ParsedKubeconfigResult,
   PickDirectoryResult,
   PickFileResult,
-  ScanDirectoryResponse
+  ScanDirectoryResponse,
+  ReadKubeconfigSourceRequest,
+  ReadKubeconfigSourceResponse,
+  WriteKubeconfigFileRequest,
+  WriteKubeconfigFileResponse,
+  ExportKubeconfigContextRequest,
+  ExportKubeconfigContextResponse
 } from '@shared/types/kubeconfig'
 import type {
   ClusterIdRequest,
@@ -91,6 +97,13 @@ import type {
 } from '@shared/types/node'
 import type { ServiceDetailResponse, ServiceResourceRequest } from '@shared/types/service'
 import type {
+  VpnAuthCredentials,
+  VpnConnectResult,
+  VpnProfileSummary,
+  VpnProvider,
+  VpnRuntimeStatus
+} from '@shared/types/vpn'
+import type {
   PortForwardListRequest,
   PortForwardListResponse,
   PortForwardStartPodRequest,
@@ -142,7 +155,13 @@ const api = {
     pickDirectory: (): Promise<PickDirectoryResult> => ipcRenderer.invoke(IPC.KUBECONFIG_PICK_DIRECTORY),
     scanDirectory: (req: { directoryPath: string }): Promise<ScanDirectoryResponse> =>
       ipcRenderer.invoke(IPC.KUBECONFIG_SCAN_DIRECTORY, req),
-    scanDefault: (): Promise<ScanDirectoryResponse> => ipcRenderer.invoke(IPC.KUBECONFIG_SCAN_DEFAULT)
+    scanDefault: (): Promise<ScanDirectoryResponse> => ipcRenderer.invoke(IPC.KUBECONFIG_SCAN_DEFAULT),
+    readSource: (req: ReadKubeconfigSourceRequest): Promise<ReadKubeconfigSourceResponse> =>
+      ipcRenderer.invoke(IPC.KUBECONFIG_READ_SOURCE, req),
+    writeFile: (req: WriteKubeconfigFileRequest): Promise<WriteKubeconfigFileResponse> =>
+      ipcRenderer.invoke(IPC.KUBECONFIG_WRITE_FILE, req),
+    exportContext: (req: ExportKubeconfigContextRequest): Promise<ExportKubeconfigContextResponse> =>
+      ipcRenderer.invoke(IPC.KUBECONFIG_EXPORT_CONTEXT, req)
   },
   cluster: {
     connect: (req: ConnectRequest): Promise<ConnectResponse> => ipcRenderer.invoke(IPC.CLUSTER_CONNECT, req),
@@ -184,13 +203,50 @@ const api = {
     listClusterEvents: (req: ClusterEventsRequest): Promise<ResourceEventsResponse> =>
       ipcRenderer.invoke(IPC.RESOURCE_LIST_CLUSTER_EVENTS, req)
   },
+  session: {
+    setScope: (scope: string): Promise<{ ok: true; scope: string }> =>
+      ipcRenderer.invoke(IPC.SESSION_SET_SCOPE, { scope })
+  },
   clusterStore: {
     list: (): Promise<{ clusters: PersistedClusterEntry[] }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_LIST),
     add: (entry: PersistedClusterEntry): Promise<{ ok: true } | { ok: false; reason: 'duplicate' }> =>
       ipcRenderer.invoke(IPC.CLUSTER_STORE_ADD, entry),
     update: (entry: PersistedClusterEntry): Promise<{ ok: true }> =>
       ipcRenderer.invoke(IPC.CLUSTER_STORE_UPDATE, entry),
-    remove: (id: string): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_REMOVE, { id })
+    remove: (id: string): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_REMOVE, { id }),
+    upsertOrg: (input: {
+      remoteId: string
+      orgKubeconfigId: string
+      customName: string
+      contextName: string
+      source?: import('@shared/types/kubeconfig').KubeconfigSource
+      yamlContent?: string
+      userEmail?: string
+      endpoint?: string
+      environment?: string
+    }): Promise<{ ok: true; cluster: PersistedClusterEntry }> =>
+      ipcRenderer.invoke(IPC.CLUSTER_STORE_UPSERT_ORG, input),
+    syncOrgIds: (
+      orgKubeconfigIds: string[],
+      remoteIds: string[],
+      successfullySyncedOrgIds?: string[]
+    ): Promise<{ ok: true; removed: string[] }> =>
+      ipcRenderer.invoke(IPC.CLUSTER_STORE_SYNC_ORG_IDS, {
+        orgKubeconfigIds,
+        remoteIds,
+        successfullySyncedOrgIds
+      })
+  },
+  clusterVpn: {
+    getLinks: (): Promise<{ links: Record<string, string> }> =>
+      ipcRenderer.invoke(IPC.CLUSTER_VPN_LINKS_GET),
+    setLink: (
+      clusterId: string,
+      vpnProfileId: string | null
+    ): Promise<{ ok: true; links: Record<string, string> }> =>
+      ipcRenderer.invoke(IPC.CLUSTER_VPN_LINKS_SET, { clusterId, vpnProfileId }),
+    removeLink: (clusterId: string): Promise<{ ok: true; links: Record<string, string> }> =>
+      ipcRenderer.invoke(IPC.CLUSTER_VPN_LINKS_REMOVE, { clusterId })
   },
   uiState: {
     get: (): Promise<PersistedUiState> => ipcRenderer.invoke(IPC.UI_STATE_GET),
@@ -400,6 +456,89 @@ const api = {
   search: {
     resources: (req: GlobalSearchRequest): Promise<GlobalSearchResponse> =>
       ipcRenderer.invoke(IPC.SEARCH_RESOURCES, req)
+  },
+  enterprise: {
+    request: (req: {
+      url: string
+      method?: string
+      headers?: Record<string, string>
+      body?: string | null
+    }): Promise<{ ok: boolean; status: number; body: string }> =>
+      ipcRenderer.invoke(IPC.ENTERPRISE_HTTP, req)
+  },
+  vpn: {
+    list: (): Promise<{ profiles: VpnProfileSummary[]; status: VpnRuntimeStatus }> =>
+      ipcRenderer.invoke(IPC.VPN_LIST),
+    getStatus: (): Promise<VpnRuntimeStatus> => ipcRenderer.invoke(IPC.VPN_GET_STATUS),
+    pickFile: (): Promise<
+      | { ok: false; canceled: true }
+      | {
+          ok: true
+          name: string
+          config: string
+          provider: VpnProvider
+          filePath: string
+          username?: string
+          organization?: string
+          serverHost?: string
+          serverName?: string
+          protocol?: string
+        }
+    > => ipcRenderer.invoke(IPC.VPN_PICK_FILE),
+    connect: (
+      id: string,
+      preferExternal?: boolean,
+      credentials?: VpnAuthCredentials
+    ): Promise<VpnConnectResult> =>
+      ipcRenderer.invoke(IPC.VPN_CONNECT, { id, preferExternal, credentials }),
+    disconnect: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke(IPC.VPN_DISCONNECT),
+    setFocus: (profileId: string | null): Promise<{ ok: true }> =>
+      ipcRenderer.invoke(IPC.VPN_SET_FOCUS, { profileId }),
+    reveal: (id: string): Promise<{ ok: boolean; path?: string; error?: string }> =>
+      ipcRenderer.invoke(IPC.VPN_REVEAL, { id }),
+    upsertOrg: (input: {
+      remoteId: string
+      name: string
+      config: string
+      provider?: string
+      description?: string
+      username?: string
+      organization?: string
+      serverHost?: string
+      serverName?: string
+      protocol?: string
+    }): Promise<{ ok: true; profile: VpnProfileSummary }> =>
+      ipcRenderer.invoke(IPC.VPN_UPSERT_ORG, input),
+    add: (input: {
+      name: string
+      config: string
+      provider?: string
+      description?: string
+      username?: string
+      organization?: string
+      serverHost?: string
+      serverName?: string
+      protocol?: string
+    }): Promise<{ ok: true; profile: VpnProfileSummary }> => ipcRenderer.invoke(IPC.VPN_ADD, input),
+    update: (input: {
+      id: string
+      name?: string
+      username?: string
+      organization?: string
+      serverHost?: string
+      serverName?: string
+      protocol?: string
+      description?: string
+    }): Promise<{ ok: true; profile: VpnProfileSummary } | { ok: false; error: string }> =>
+      ipcRenderer.invoke(IPC.VPN_UPDATE, input),
+    remove: (id: string): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.VPN_REMOVE, { id }),
+    syncOrgIds: (remoteIds: string[]): Promise<{ ok: true; removed: string[] }> =>
+      ipcRenderer.invoke(IPC.VPN_SYNC_ORG_IDS, { remoteIds }),
+    onStatusChanged: (cb: (status: VpnRuntimeStatus) => void): (() => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, status: VpnRuntimeStatus): void => cb(status)
+      ipcRenderer.on(IPC.VPN_STATUS_CHANGED, listener)
+      return () => ipcRenderer.removeListener(IPC.VPN_STATUS_CHANGED, listener)
+    }
   }
 }
 

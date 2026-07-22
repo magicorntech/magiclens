@@ -6,10 +6,11 @@ import { useAppPalette } from '../../stores/useAppPalette'
 
 interface TerminalViewProps {
   sessionId: string
+  clusterId: string
   isActive: boolean
 }
 
-export function TerminalView({ sessionId, isActive }: TerminalViewProps): React.JSX.Element {
+export function TerminalView({ sessionId, clusterId, isActive }: TerminalViewProps): React.JSX.Element {
   const palette = useAppPalette()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const termRef = useRef<Terminal | null>(null)
@@ -41,7 +42,7 @@ export function TerminalView({ sessionId, isActive }: TerminalViewProps): React.
       term.write(`\r\n\x1b[33m[Process exited with code ${payload.exitCode}]\x1b[0m\r\n`)
     })
 
-    void window.api.terminal.start({ sessionId, cols: term.cols, rows: term.rows }).then((res) => {
+    void window.api.terminal.start({ sessionId, cols: term.cols, rows: term.rows, clusterId }).then((res) => {
       if (!res.ok) term.write(`\r\n\x1b[31m[Failed to start terminal: ${res.error}]\x1b[0m\r\n`)
     })
 
@@ -71,7 +72,7 @@ export function TerminalView({ sessionId, isActive }: TerminalViewProps): React.
       term.dispose()
       termRef.current = null
     }
-  }, [sessionId, palette.terminalBg, palette.terminalFg, palette.primary])
+  }, [sessionId, clusterId, palette.terminalBg, palette.terminalFg, palette.primary])
 
   useEffect(() => {
     if (!isActive) return
