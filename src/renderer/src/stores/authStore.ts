@@ -51,25 +51,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   mustChangePassword: false,
 
   hydrate: async () => {
-    const tokens = loadTokens()
-    const offline = localStorage.getItem('magiclens.enterprise.offline') === '1'
-    if (!tokens) {
-      set({ hydrated: true, offlineMode: offline, me: null })
-      return
-    }
-    try {
-      const me = await enterpriseApi<MeResponse>('/auth/me')
-      set({
-        hydrated: true,
-        me,
-        offlineMode: false,
-        error: null,
-        mustChangePassword: !!me.mustChangePassword
-      })
-    } catch {
-      saveTokens(null)
-      set({ hydrated: true, me: null, offlineMode: offline })
-    }
+    // Desktop is offline-first: no org login gate. Clear any leftover session tokens.
+    saveTokens(null)
+    localStorage.setItem('magiclens.enterprise.offline', '1')
+    set({
+      hydrated: true,
+      offlineMode: true,
+      me: null,
+      notifications: [],
+      mustChangePassword: false,
+      error: null
+    })
   },
 
   login: async (email, password) => {
@@ -125,8 +117,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   requireLogin: () => {
-    localStorage.removeItem('magiclens.enterprise.offline')
-    set({ offlineMode: false })
+    // Login is disabled; stay offline.
+    localStorage.setItem('magiclens.enterprise.offline', '1')
+    set({ offlineMode: true, me: null })
   },
 
   setApiBaseUrl: (url) => {

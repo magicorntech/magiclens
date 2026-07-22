@@ -491,7 +491,8 @@ const api = {
       credentials?: VpnAuthCredentials
     ): Promise<VpnConnectResult> =>
       ipcRenderer.invoke(IPC.VPN_CONNECT, { id, preferExternal, credentials }),
-    disconnect: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke(IPC.VPN_DISCONNECT),
+    disconnect: (id?: string): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC.VPN_DISCONNECT, id ? { id } : undefined),
     setFocus: (profileId: string | null): Promise<{ ok: true }> =>
       ipcRenderer.invoke(IPC.VPN_SET_FOCUS, { profileId }),
     reveal: (id: string): Promise<{ ok: boolean; path?: string; error?: string }> =>

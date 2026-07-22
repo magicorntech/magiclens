@@ -6,8 +6,6 @@ import { ensureClusterAccess } from '../../clusterVpn'
 import { useResponsiveLayoutEffects } from '../../hooks/useResponsiveLayoutEffects'
 import { usesOverlayNavigation, useLayoutMode } from '../../hooks/useLayoutMode'
 import { ClusterListPage } from '../../pages/ClusterListPage'
-import { AdminConsolePage } from '../../pages/AdminConsolePage'
-import { ProfilePage } from '../../pages/ProfilePage'
 import { VpnPage } from '../../pages/VpnPage'
 import { ClusterTabBar } from '../ClusterTabs/ClusterTabBar'
 import { AddClusterModal } from '../ClusterTabs/AddClusterModal'
@@ -42,10 +40,6 @@ export function AppLayout(): React.JSX.Element {
       <div className="app-layout-content-inner">
         {activeView === 'clusters' ? (
           <ClusterListPage />
-        ) : activeView === 'admin' ? (
-          <AdminConsolePage />
-        ) : activeView === 'profile' ? (
-          <ProfilePage />
         ) : activeView === 'vpn' ? (
           <VpnPage />
         ) : (

@@ -18,7 +18,7 @@ import {
   vpnHasStaticChallenge,
   vpnRequiresAuth
 } from '@shared/types/vpn'
-import { getVpnProfile } from '../persistence/vpnStore'
+import { getVpnProfile, listVpnProfiles } from '../persistence/vpnStore'
 
 const execFileAsync = promisify(execFile)
 
@@ -86,6 +86,7 @@ class VpnManager {
   }
 
   async getStatus(): Promise<VpnRuntimeStatus> {
+    await this.recoverOrphanSessions()
     const tools = await this.detectTools()
     const primary = this.primarySession()
     const connected =
@@ -103,6 +104,189 @@ class VpnManager {
       connectedAt: primary?.connectedAt,
       stats: connected === 'connected' ? this.stats : null,
       tools
+    }
+  }
+
+  private isProcessAlive(pid: number): boolean {
+    try {
+      process.kill(pid, 0)
+      return true
+    } catch (err) {
+      // Root-owned OpenVPN: signal 0 returns EPERM when the process exists.
+      const code =
+        err && typeof err === 'object' && 'code' in err
+          ? (err as NodeJS.ErrnoException).code
+          : undefined
+      return code === 'EPERM'
+    }
+  }
+
+  private readPidFile(profileId: string): number | null {
+    const pidPath = join(this.vpnDir(), `${profileId}.pid`)
+    if (!existsSync(pidPath)) return null
+    try {
+      const pid = Number(readFileSync(pidPath, 'utf8').trim())
+      return Number.isFinite(pid) && pid > 0 ? pid : null
+    } catch {
+      return null
+    }
+  }
+
+  private clearPidFile(profileId: string): void {
+    const pidPath = join(this.vpnDir(), `${profileId}.pid`)
+    try {
+      if (existsSync(pidPath)) unlinkSync(pidPath)
+    } catch {
+      // ignore
+    }
+  }
+
+  private wireguardIface(profileId: string): string {
+    return `ml-${profileId.slice(0, 8)}`
+  }
+
+  private async interfaceExists(name: string): Promise<boolean> {
+    try {
+      if (process.platform === 'darwin') {
+        await execFileAsync('ifconfig', [name])
+        return true
+      }
+      await execFileAsync('ip', ['link', 'show', name])
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * OpenVPN is started with --daemon, so tunnels survive app quit.
+   * Rebuild in-memory sessions from pid files / WG interfaces on restart.
+   */
+  private syncSessionsWithOs(): void {
+    let changed = false
+
+    for (const [id, session] of [...this.sessions.entries()]) {
+      if (session.method !== 'cli') continue
+      if (session.process && !session.process.killed) continue
+
+      if (session.provider === 'wireguard' || session.interfaceName?.startsWith('ml-')) {
+        // Checked async in getStatus path — use pid/file heuristic only here;
+        // WG recovery uses interfaceExists from recoverOrphans (async). Skip prune here.
+        continue
+      }
+
+      const pid = this.readPidFile(id)
+      if (!pid || !this.isProcessAlive(pid)) {
+        this.sessions.delete(id)
+        if (pid) this.clearPidFile(id)
+        if (this.focusProfileId === id) {
+          this.focusProfileId = this.sessions.keys().next().value ?? null
+        }
+        changed = true
+      }
+    }
+
+    for (const summary of listVpnProfiles()) {
+      if (this.sessions.has(summary.id)) continue
+      const profile = getVpnProfile(summary.id)
+      if (!profile) continue
+
+      if (profile.provider === 'wireguard') {
+        // Async recovery handled in recoverOrphanSessionsAsync
+        continue
+      }
+
+      const pid = this.readPidFile(profile.id)
+      if (!pid) continue
+      if (!this.isProcessAlive(pid)) {
+        this.clearPidFile(profile.id)
+        continue
+      }
+
+      this.sessions.set(profile.id, {
+        profileId: profile.id,
+        provider: profile.provider,
+        process: null,
+        configPath: this.writeConfigFile(profile.id, profile.provider, profile.config),
+        connectedAt: new Date().toISOString(),
+        method: 'cli'
+      })
+      changed = true
+    }
+
+    if (changed) {
+      if (this.sessions.size > 0) {
+        if (!this.focusProfileId || !this.sessions.has(this.focusProfileId)) {
+          this.focusProfileId = this.sessions.keys().next().value ?? null
+        }
+        this.status = 'connected'
+        this.message = `Connected · ${this.sessions.size} tunnel(s)`
+        this.startStatsPolling()
+      } else {
+        this.focusProfileId = null
+        this.status = 'disconnected'
+        this.message = undefined
+        this.stopStatsPolling()
+        this.stats = null
+      }
+    }
+  }
+
+  /** WireGuard ifaces need async checks — call from getStatus/connect. */
+  async recoverOrphanSessions(): Promise<void> {
+    this.syncSessionsWithOs()
+    let changed = false
+
+    for (const summary of listVpnProfiles()) {
+      if (this.sessions.has(summary.id)) continue
+      const profile = getVpnProfile(summary.id)
+      if (!profile || profile.provider !== 'wireguard') continue
+
+      const iface = this.wireguardIface(profile.id)
+      if (!(await this.interfaceExists(iface))) continue
+
+      const wgPath = join(this.vpnDir(), `${iface}.conf`)
+      this.sessions.set(profile.id, {
+        profileId: profile.id,
+        provider: profile.provider,
+        process: null,
+        configPath: existsSync(wgPath) ? wgPath : this.writeConfigFile(profile.id, 'wireguard', profile.config),
+        interfaceName: iface,
+        connectedAt: new Date().toISOString(),
+        method: 'cli'
+      })
+      changed = true
+    }
+
+    // Drop WG sessions whose iface is gone
+    for (const [id, session] of [...this.sessions.entries()]) {
+      if (session.provider !== 'wireguard' && !session.interfaceName?.startsWith('ml-')) continue
+      if (session.method !== 'cli') continue
+      const iface = session.interfaceName ?? this.wireguardIface(id)
+      if (!(await this.interfaceExists(iface))) {
+        this.sessions.delete(id)
+        if (this.focusProfileId === id) {
+          this.focusProfileId = this.sessions.keys().next().value ?? null
+        }
+        changed = true
+      }
+    }
+
+    if (changed) {
+      if (this.sessions.size > 0) {
+        if (!this.focusProfileId || !this.sessions.has(this.focusProfileId)) {
+          this.focusProfileId = this.sessions.keys().next().value ?? null
+        }
+        this.status = 'connected'
+        this.message = `Connected · ${this.sessions.size} tunnel(s)`
+        this.startStatsPolling()
+      } else {
+        this.focusProfileId = null
+        this.status = 'disconnected'
+        this.message = undefined
+        this.stopStatsPolling()
+        this.stats = null
+      }
     }
   }
 
@@ -355,6 +539,9 @@ class VpnManager {
       return { ok: false, status: 'error', error: 'VPN profile has no config content' }
     }
 
+    // Re-attach tunnels left running after a previous app quit.
+    await this.recoverOrphanSessions()
+
     const needsAuth = vpnRequiresAuth(profile.provider, profile.config)
     if (needsAuth && !preferExternal) {
       const username = credentials?.username?.trim() || profile.username?.trim()
@@ -383,9 +570,8 @@ class VpnManager {
       return { ok: true, status: 'connected', method: existing.method }
     }
 
-    const provider = profile.provider === 'generic' ? 'openvpn' : profile.provider
-    const effectiveProvider: VpnProvider =
-      provider === 'pritunl' ? 'openvpn' : provider === 'generic' ? 'openvpn' : provider
+    const effectiveProvider: 'openvpn' | 'wireguard' =
+      profile.provider === 'wireguard' ? 'wireguard' : 'openvpn'
 
     this.focusProfileId = profileId
     this.setState('connecting', `Connecting ${profile.name}…`)
@@ -796,6 +982,7 @@ class VpnManager {
   }
 
   async disconnect(profileId?: string): Promise<{ ok: boolean; error?: string }> {
+    await this.recoverOrphanSessions()
     const ids = profileId ? [profileId] : [...this.sessions.keys()]
     if (ids.length === 0) {
       this.focusProfileId = null
@@ -829,10 +1016,32 @@ class VpnManager {
   /** Kill one tunnel by pid — never killall (would drop other profiles). */
   private async disconnectSession(profileId: string): Promise<void> {
     const session = this.sessions.get(profileId)
-    if (!session) return
+    const tools = await this.detectTools()
+
+    if (!session) {
+      // Orphan tunnel after crash/restart without recovery in map
+      const pid = this.readPidFile(profileId)
+      if (pid && this.isProcessAlive(pid)) {
+        try {
+          await this.runElevated(`kill ${pid}`)
+        } catch {
+          // ignore
+        }
+      }
+      this.clearPidFile(profileId)
+      const iface = this.wireguardIface(profileId)
+      const wgPath = join(this.vpnDir(), `${iface}.conf`)
+      if (tools.wgQuickPath && existsSync(wgPath) && (await this.interfaceExists(iface))) {
+        try {
+          await this.runElevated(`"${tools.wgQuickPath}" down "${wgPath}"`)
+        } catch {
+          // ignore
+        }
+      }
+      return
+    }
 
     if (session.method === 'cli') {
-      const tools = await this.detectTools()
       if (session.provider === 'wireguard' || session.interfaceName?.startsWith('ml-')) {
         if (tools.wgQuickPath && session.configPath) {
           await this.runElevated(`"${tools.wgQuickPath}" down "${session.configPath}"`)
@@ -854,6 +1063,7 @@ class VpnManager {
           }
         }
       }
+      this.clearPidFile(profileId)
     }
     this.secureCleanupAuth(session.authPath)
     this.sessions.delete(profileId)

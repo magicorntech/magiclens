@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Empty, Tooltip } from 'antd'
-import { ChevronLeft, ChevronRight, Layers, Network, Shield, UserRound } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Layers, Network } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import logo from '../../assets/logo.png'
 import { useClusterStore } from '../../stores/clusterStore'
-import { useAuthStore } from '../../stores/authStore'
 import { useVpnStore } from '../../stores/vpnStore'
 import { useClusterVpnStore } from '../../stores/clusterVpnStore'
 import { resolveUserScope, favoritesHeightKey } from '../../workspace'
@@ -41,14 +40,10 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const storedCollapsed = useClusterStore((s) => s.leftSidebarCollapsed)
   const setCollapsed = useClusterStore((s) => s.setLeftSidebarCollapsed)
   const setActiveView = useClusterStore((s) => s.setActiveView)
-  const isAdmin = useAuthStore((s) => s.isAdmin)
-  const me = useAuthStore((s) => s.me)
-  const offlineMode = useAuthStore((s) => s.offlineMode)
   const vpnStatus = useVpnStore((s) => s.status)
   const vpnProfiles = useVpnStore((s) => s.profiles)
   const clusterVpnLinks = useClusterVpnStore((s) => s.links)
-  const requireLogin = useAuthStore((s) => s.requireLogin)
-  const userScope = resolveUserScope(me, offlineMode)
+  const userScope = resolveUserScope(null, true)
   const isDrawer = variant === 'drawer'
   const collapsed = isDrawer ? false : storedCollapsed
 
@@ -223,63 +218,6 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
           </button>
         </Tooltip>
 
-        {!me ? (
-          <Tooltip title="Sign in to your organization account" placement="right">
-            <button
-              type="button"
-              className="ml-sidebar-hub-btn"
-              onClick={() => handleNavigate(() => requireLogin())}
-            >
-              <span className="ml-sidebar-hub-btn-icon">
-                <Icon icon={UserRound} variant="action" />
-              </span>
-              {!collapsed && (
-                <span className="ml-sidebar-hub-btn-text">
-                  <span className="ml-sidebar-hub-btn-title">Login</span>
-                  <span className="ml-sidebar-hub-btn-meta">
-                    {offlineMode ? 'Offline mode' : 'Organization account'}
-                  </span>
-                </span>
-              )}
-            </button>
-          </Tooltip>
-        ) : isAdmin() ? (
-          <Tooltip title="Admin Console" placement="right">
-            <button
-              type="button"
-              className={`ml-sidebar-hub-btn${activeView === 'admin' ? ' ml-sidebar-hub-btn--active' : ''}`}
-              onClick={() => handleNavigate(() => setActiveView('admin'))}
-            >
-              <span className="ml-sidebar-hub-btn-icon">
-                <Icon icon={Shield} variant="action" />
-              </span>
-              {!collapsed && (
-                <span className="ml-sidebar-hub-btn-text">
-                  <span className="ml-sidebar-hub-btn-title">Admin</span>
-                  <span className="ml-sidebar-hub-btn-meta">{me.organization?.role ?? 'ADMIN'} access</span>
-                </span>
-              )}
-            </button>
-          </Tooltip>
-        ) : (
-          <Tooltip title="Your assigned clusters and VPN profiles" placement="right">
-            <button
-              type="button"
-              className={`ml-sidebar-hub-btn${activeView === 'profile' ? ' ml-sidebar-hub-btn--active' : ''}`}
-              onClick={() => handleNavigate(() => setActiveView('profile'))}
-            >
-              <span className="ml-sidebar-hub-btn-icon">
-                <Icon icon={UserRound} variant="action" />
-              </span>
-              {!collapsed && (
-                <span className="ml-sidebar-hub-btn-text">
-                  <span className="ml-sidebar-hub-btn-title">Profile</span>
-                  <span className="ml-sidebar-hub-btn-meta">{me.organization?.role ?? 'Member'}</span>
-                </span>
-              )}
-            </button>
-          </Tooltip>
-        )}
       </div>
 
       <div

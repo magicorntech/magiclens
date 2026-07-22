@@ -60,7 +60,7 @@ interface VpnState {
     id: string,
     options?: { preferExternal?: boolean; credentials?: VpnAuthCredentials }
   ) => Promise<{ ok: boolean; error?: string }>
-  disconnect: () => Promise<void>
+  disconnect: (id?: string) => Promise<void>
   reveal: (id: string) => Promise<void>
   syncOrgProfiles: () => Promise<number>
   subscribeStatus: () => () => void
@@ -143,8 +143,8 @@ export const useVpnStore = create<VpnState>((set, get) => ({
     return { ok: result.ok, error: result.error }
   },
 
-  disconnect: async () => {
-    await window.api.vpn.disconnect()
+  disconnect: async (id) => {
+    await window.api.vpn.disconnect(id)
     await get().refresh()
   },
 

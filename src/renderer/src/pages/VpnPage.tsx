@@ -1,24 +1,39 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
-  Badge,
   Button,
+  Dropdown,
+  Empty,
   Form,
   Input,
   Modal,
   Select,
   Space,
-  Table,
   Tag,
   Typography,
   message
 } from 'antd'
+import type { MenuProps } from 'antd'
+import {
+  FilePlus2,
+  ClipboardPaste,
+  MoreHorizontal,
+  Network,
+  RefreshCw,
+  FolderOpen,
+  Pencil,
+  Trash2,
+  Unplug,
+  ShieldCheck,
+  Search
+} from 'lucide-react'
 import type { VpnProfileSummary } from '@shared/types/vpn'
 import { parseVpnConfigMeta } from '@shared/types/vpn'
-import { useAuthStore } from '../stores/authStore'
 import { useVpnStore } from '../stores/vpnStore'
 import { useVpnSessionStore } from '../stores/vpnSessionStore'
 import { VpnConnectionPanel } from '../components/Vpn/VpnConnectionPanel'
+import { VpnDottedWorldMap } from '../components/Vpn/VpnDottedWorldMap'
+import { Icon } from '../components/ui/Icon'
 
 type ProfileDraft = {
   id?: string
@@ -33,8 +48,21 @@ type ProfileDraft = {
   mode: 'create' | 'edit'
 }
 
+function statusTone(
+  status: string | undefined
+): 'connected' | 'connecting' | 'error' | 'idle' {
+  if (status === 'connected') return 'connected'
+  if (status === 'connecting') return 'connecting'
+  if (status === 'error') return 'error'
+  return 'idle'
+}
+
+function serverLabel(row: VpnProfileSummary): string {
+  if (row.serverName && row.serverHost) return `${row.serverName} · ${row.serverHost}`
+  return row.serverHost || row.serverName || 'No server set'
+}
+
 export function VpnPage(): React.JSX.Element {
-  const me = useAuthStore((s) => s.me)
   const profiles = useVpnStore((s) => s.profiles)
   const status = useVpnStore((s) => s.status)
   const loading = useVpnStore((s) => s.loading)
@@ -42,19 +70,18 @@ export function VpnPage(): React.JSX.Element {
   const refresh = useVpnStore((s) => s.refresh)
   const pickFileDraft = useVpnStore((s) => s.pickFileDraft)
   const addFromDraft = useVpnStore((s) => s.addFromDraft)
-  const addFromPaste = useVpnStore((s) => s.addFromPaste)
   const updateProfile = useVpnStore((s) => s.updateProfile)
   const remove = useVpnStore((s) => s.remove)
   const connect = useVpnStore((s) => s.connect)
   const disconnect = useVpnStore((s) => s.disconnect)
   const reveal = useVpnStore((s) => s.reveal)
-  const syncOrgProfiles = useVpnStore((s) => s.syncOrgProfiles)
   const subscribeStatus = useVpnStore((s) => s.subscribeStatus)
   const [pasteOpen, setPasteOpen] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [authProfile, setAuthProfile] = useState<VpnProfileSummary | null>(null)
   const [authExternal, setAuthExternal] = useState(false)
   const [draft, setDraft] = useState<ProfileDraft | null>(null)
+  const [profileQuery, setProfileQuery] = useState('')
   const [authForm] = Form.useForm()
   const [draftForm] = Form.useForm()
 
@@ -79,7 +106,30 @@ export function VpnPage(): React.JSX.Element {
   const tools = status?.tools
   const activeId = status?.activeProfileId
   const activeProfile = profiles.find((p) => p.id === activeId)
-  const connected = status?.status === 'connected'
+  const connectedIds = new Set(status?.connectedProfileIds ?? [])
+  const anyConnected = status?.status === 'connected' || connectedIds.size > 0
+  const tone = statusTone(status?.status)
+
+  const filteredProfiles = useMemo(() => {
+    const q = profileQuery.trim().toLowerCase()
+    if (!q) return profiles
+    return profiles.filter((p) => {
+      const hay = [
+        p.name,
+        p.username,
+        p.organization,
+        p.serverHost,
+        p.serverName,
+        p.provider,
+        p.protocol,
+        p.origin
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      return hay.includes(q)
+    })
+  }, [profiles, profileQuery])
 
   async function openConnect(row: VpnProfileSummary, preferExternal = false): Promise<void> {
     if (row.provider === 'wireguard' || preferExternal) {
@@ -133,186 +183,270 @@ export function VpnPage(): React.JSX.Element {
     })
   }
 
+  function profileMenu(row: VpnProfileSummary): MenuProps {
+    const items: MenuProps['items'] = [
+      {
+        key: 'edit',
+        icon: <Icon icon={Pencil} variant="detail" />,
+        label: 'Edit profile',
+        onClick: () => openEdit(row)
+      },
+      {
+        key: 'reveal',
+        icon: <Icon icon={FolderOpen} variant="detail" />,
+        label: 'Reveal file',
+        onClick: () => void reveal(row.id)
+      },
+      {
+        key: 'external',
+        label: 'Open externally',
+        disabled: !row.hasConfig,
+        onClick: () => void openConnect(row, true)
+      }
+    ]
+    if (row.origin === 'local') {
+      items.push({ type: 'divider' })
+      items.push({
+        key: 'delete',
+        danger: true,
+        icon: <Icon icon={Trash2} variant="detail" />,
+        label: 'Delete',
+        onClick: async () => {
+          await remove(row.id)
+          message.success('Removed')
+        }
+      })
+    }
+    return { items }
+  }
+
   return (
-    <div className="ml-admin-page" style={{ padding: 24, overflow: 'auto' }}>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        VPN
-      </Typography.Title>
-      <Typography.Paragraph type="secondary">
-        After importing an .ovpn, review and edit User / Organization / Server if auto-detect is wrong.
-        Connect asks only for PIN and MFA.
-      </Typography.Paragraph>
+    <div className="ml-vpn-page">
+      <div className="ml-vpn-page__stage">
+        <div className="ml-vpn-page__layout">
+          <div className="ml-vpn-page__map-col">
+            <div className="ml-vpn-page__backdrop" aria-hidden>
+              <VpnDottedWorldMap connected={anyConnected} />
+              <div className="ml-vpn-page__backdrop-glow" />
+            </div>
 
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Badge
-          status={
-            connected
-              ? 'success'
-              : status?.status === 'connecting'
-                ? 'processing'
-                : status?.status === 'error'
-                  ? 'error'
-                  : 'default'
-          }
-          text={
-            connected
-              ? `Connected${status?.message ? ` · ${status.message}` : ''}`
-              : status?.status === 'connecting'
-                ? 'Connecting…'
-                : status?.status === 'error'
-                  ? status.message ?? 'Error'
-                  : 'Disconnected'
-          }
-        />
-        {connected && (
-          <Button
-            danger
-            onClick={async () => {
-              await disconnect()
-              message.success('Disconnected')
-            }}
-          >
-            Disconnect
-          </Button>
-        )}
-      </Space>
+            <header className="ml-vpn-hero ml-vpn-hero--overlay">
+              <div className="ml-vpn-hero__copy">
+                <div className="ml-vpn-hero__eyebrow">
+                  <Icon icon={Network} variant="action" />
+                  <span>Secure tunnel</span>
+                </div>
+                <Typography.Title level={2} className="ml-vpn-hero__title">
+                  VPN
+                </Typography.Title>
+              </div>
 
-      <VpnConnectionPanel status={status} activeProfile={activeProfile} />
-
-      {tools && !tools.openvpn && !tools.wireguard && !tools.tunnelblick && !tools.wireguardApp && (
-        <Alert
-          type="info"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message="No VPN tools detected"
-          description="Install OpenVPN (brew install openvpn), Tunnelblick, WireGuard.app, or wireguard-tools."
-        />
-      )}
-
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={() => void startAddFromFile()}>
-          Add from file (.ovpn / .conf)
-        </Button>
-        <Button onClick={() => setPasteOpen(true)}>Paste config</Button>
-        <Button
-          disabled={!me}
-          onClick={async () => {
-            await useAuthStore.getState().refreshMe()
-            const n = await syncOrgProfiles()
-            await refresh()
-            message.success(n > 0 ? `Synced ${n} org VPN profile(s)` : 'No org VPN configs to sync')
-          }}
-        >
-          Sync org profiles
-        </Button>
-        <Button onClick={() => void refresh()} loading={loading}>
-          Refresh
-        </Button>
-      </Space>
-
-      <Table<VpnProfileSummary>
-        rowKey="id"
-        loading={loading}
-        dataSource={profiles}
-        pagination={false}
-        columns={[
-          {
-            title: 'Name',
-            dataIndex: 'name',
-            render: (name: string, row) => (
-              <Space>
-                {name}
-                {activeId === row.id && connected && <Tag color="success">active</Tag>}
-              </Space>
-            )
-          },
-          { title: 'User', dataIndex: 'username', render: (v?: string) => v || '—' },
-          { title: 'Organization', dataIndex: 'organization', render: (v?: string) => v || '—' },
-          {
-            title: 'Server',
-            render: (_: unknown, row: VpnProfileSummary) =>
-              row.serverName && row.serverHost
-                ? `${row.serverName} (${row.serverHost})`
-                : row.serverHost || row.serverName || '—'
-          },
-          {
-            title: 'Provider',
-            dataIndex: 'provider',
-            render: (p: string) => <Tag>{p}</Tag>
-          },
-          {
-            title: 'Origin',
-            dataIndex: 'origin',
-            render: (o: string) => <Tag color={o === 'org' ? 'blue' : 'default'}>{o}</Tag>
-          },
-          {
-            title: 'Actions',
-            render: (_, row) => {
-              const isActive = activeId === row.id && connected
-              return (
-                <Space wrap>
-                  {isActive ? (
-                    <Button
-                      size="small"
-                      danger
-                      loading={busyId === row.id}
-                      onClick={async () => {
-                        setBusyId(row.id)
-                        try {
-                          await disconnect()
-                          message.success('Disconnected')
-                        } finally {
-                          setBusyId(null)
-                        }
-                      }}
-                    >
-                      Disconnect
-                    </Button>
-                  ) : (
-                    <>
-                      <Button
-                        size="small"
-                        type="primary"
-                        disabled={!row.hasConfig}
-                        loading={busyId === row.id}
-                        onClick={() => void openConnect(row, false)}
-                      >
-                        Connect
-                      </Button>
-                      <Button
-                        size="small"
-                        disabled={!row.hasConfig}
-                        loading={busyId === row.id}
-                        onClick={() => void openConnect(row, true)}
-                      >
-                        Open externally
-                      </Button>
-                    </>
-                  )}
-                  <Button size="small" onClick={() => openEdit(row)}>
-                    Edit
+              <div className={`ml-vpn-status-pill ml-vpn-status-pill--${tone}`}>
+                <span className="ml-vpn-status-pill__dot" />
+                <div className="ml-vpn-status-pill__text">
+                  <strong>
+                    {tone === 'connected'
+                      ? 'Connected'
+                      : tone === 'connecting'
+                        ? 'Connecting'
+                        : tone === 'error'
+                          ? 'Error'
+                          : 'Disconnected'}
+                  </strong>
+                  <span>
+                    {status?.message ||
+                      (connectedIds.size > 1
+                        ? `${connectedIds.size} tunnels up`
+                        : activeProfile?.name || 'No active profile')}
+                  </span>
+                </div>
+                {anyConnected && (
+                  <Button
+                    size="small"
+                    danger
+                    icon={<Icon icon={Unplug} variant="action" />}
+                    onClick={async () => {
+                      await disconnect()
+                      message.success('Disconnected')
+                    }}
+                  >
+                    Disconnect
                   </Button>
-                  <Button size="small" onClick={() => void reveal(row.id)}>
-                    Reveal file
-                  </Button>
-                  {row.origin === 'local' && (
-                    <Button
-                      size="small"
-                      danger
-                      onClick={async () => {
-                        await remove(row.id)
-                        message.success('Removed')
-                      }}
+                )}
+              </div>
+            </header>
+
+            <div className="ml-vpn-page__map-spacer" />
+
+            {tools && !tools.openvpn && !tools.wireguard && !tools.tunnelblick && !tools.wireguardApp && (
+              <Alert
+                className="ml-vpn-tools-alert"
+                type="info"
+                showIcon
+                message="No VPN tools detected"
+                description="Install OpenVPN (brew install openvpn), Tunnelblick, WireGuard.app, or wireguard-tools."
+              />
+            )}
+
+            <div className="ml-vpn-panel-shell ml-vpn-panel-shell--dock">
+              <VpnConnectionPanel status={status} activeProfile={activeProfile} />
+            </div>
+          </div>
+
+          <aside className="ml-vpn-sidebar">
+            <div className="ml-vpn-sidebar__head">
+              <div>
+                <Typography.Title level={4} className="ml-vpn-section__title">
+                  VPN profiles
+                </Typography.Title>
+                <Typography.Text type="secondary" className="ml-vpn-sidebar__count">
+                  {profiles.length === 0
+                    ? 'Add a config to get started'
+                    : `${filteredProfiles.length} of ${profiles.length}`}
+                </Typography.Text>
+              </div>
+            </div>
+
+            <Input
+              allowClear
+              className="ml-vpn-sidebar__search"
+              prefix={<Icon icon={Search} variant="action" />}
+              placeholder="Search profiles…"
+              value={profileQuery}
+              onChange={(e) => setProfileQuery(e.target.value)}
+            />
+
+            <div className="ml-vpn-toolbar ml-vpn-toolbar--sidebar">
+              <Button
+                type="primary"
+                icon={<Icon icon={FilePlus2} variant="action" />}
+                onClick={() => void startAddFromFile()}
+              >
+                Add file
+              </Button>
+              <Button
+                icon={<Icon icon={ClipboardPaste} variant="action" />}
+                onClick={() => setPasteOpen(true)}
+              >
+                Paste
+              </Button>
+              <Button
+                icon={<Icon icon={RefreshCw} variant="action" />}
+                onClick={() => void refresh()}
+                loading={loading}
+                aria-label="Refresh"
+              />
+            </div>
+
+            <div className="ml-vpn-sidebar__list">
+              {profiles.length === 0 ? (
+                <div className="ml-vpn-empty">
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={
+                      <span>
+                        Drop in an <strong>.ovpn</strong> or WireGuard <strong>.conf</strong>
+                      </span>
+                    }
+                  >
+                    <Space wrap>
+                      <Button type="primary" size="small" onClick={() => void startAddFromFile()}>
+                        Choose file
+                      </Button>
+                      <Button size="small" onClick={() => setPasteOpen(true)}>
+                        Paste
+                      </Button>
+                    </Space>
+                  </Empty>
+                </div>
+              ) : filteredProfiles.length === 0 ? (
+                <div className="ml-vpn-empty">
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={`No profiles match “${profileQuery.trim()}”`}
+                  />
+                </div>
+              ) : (
+                filteredProfiles.map((row) => {
+                  const isLive = connectedIds.has(row.id) || (activeId === row.id && anyConnected)
+                  return (
+                    <article
+                      key={row.id}
+                      className={`ml-vpn-profile-card${isLive ? ' ml-vpn-profile-card--live' : ''}`}
                     >
-                      Delete
-                    </Button>
-                  )}
-                </Space>
-              )
-            }
-          }
-        ]}
-      />
+                      <div className="ml-vpn-profile-card__top">
+                        <div className="ml-vpn-profile-card__icon">
+                          <Icon icon={isLive ? ShieldCheck : Network} variant="action" />
+                        </div>
+                        <div className="ml-vpn-profile-card__titles">
+                          <div className="ml-vpn-profile-card__name-row">
+                            <Typography.Text strong className="ml-vpn-profile-card__name">
+                              {row.name}
+                            </Typography.Text>
+                            {isLive && <Tag color="success">Live</Tag>}
+                          </div>
+                          <Typography.Text type="secondary" className="ml-vpn-profile-card__meta">
+                            {row.username || 'Username not set'} · {serverLabel(row)}
+                          </Typography.Text>
+                        </div>
+                        <Dropdown menu={profileMenu(row)} trigger={['click']}>
+                          <Button
+                            type="text"
+                            className="ml-vpn-profile-card__more"
+                            icon={<Icon icon={MoreHorizontal} variant="action" />}
+                            aria-label="More actions"
+                          />
+                        </Dropdown>
+                      </div>
+
+                      <div className="ml-vpn-profile-card__tags">
+                        <Tag>{row.provider}</Tag>
+                        {row.organization ? <Tag>{row.organization}</Tag> : null}
+                        {row.protocol ? <Tag>{row.protocol}</Tag> : null}
+                      </div>
+
+                      <div className="ml-vpn-profile-card__actions">
+                        {isLive ? (
+                          <Button
+                            danger
+                            block
+                            loading={busyId === row.id}
+                            icon={<Icon icon={Unplug} variant="action" />}
+                            onClick={async () => {
+                              setBusyId(row.id)
+                              try {
+                                await disconnect(row.id)
+                                message.success('Disconnected')
+                              } finally {
+                                setBusyId(null)
+                              }
+                            }}
+                          >
+                            Disconnect
+                          </Button>
+                        ) : (
+                          <Button
+                            type="primary"
+                            block
+                            disabled={!row.hasConfig}
+                            loading={busyId === row.id}
+                            onClick={() => void openConnect(row, false)}
+                          >
+                            Connect
+                          </Button>
+                        )}
+                        <Button block onClick={() => openEdit(row)}>
+                          Edit
+                        </Button>
+                      </div>
+                    </article>
+                  )
+                })
+              )}
+            </div>
+          </aside>
+        </div>
+      </div>
 
       <Modal
         title={draft?.mode === 'edit' ? 'Edit VPN profile' : 'Review VPN profile'}
@@ -384,7 +518,11 @@ export function VpnPage(): React.JSX.Element {
               />
             </Form.Item>
           )}
-          <Form.Item name="username" label="Username" rules={[{ required: true, message: 'Enter VPN username' }]}>
+          <Form.Item
+            name="username"
+            label="Username"
+            rules={[{ required: true, message: 'Enter VPN username' }]}
+          >
             <Input placeholder="user@company.com" autoFocus />
           </Form.Item>
           <Form.Item name="organization" label="Organization">

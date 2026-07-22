@@ -1,4 +1,4 @@
-import type { MeResponse } from '../enterprise/api'
+import type { MeResponse } from './enterprise/api'
 import { useClusterStore } from './stores/clusterStore'
 import { useClusterVpnStore } from './stores/clusterVpnStore'
 import { connectCluster, disconnectCluster } from './clusterConnect'
@@ -19,9 +19,8 @@ function normalizeUiStateForClusters(
       ? uiState.activeClusterId
       : (openedTabs[0] ?? null)
 
+  // Admin/profile require org login (disabled). Remap to clusters.
   const activeView =
-    uiState.activeView === 'admin' ||
-    uiState.activeView === 'profile' ||
     uiState.activeView === 'vpn' ||
     uiState.activeView === 'tabs' ||
     uiState.activeView === 'clusters'

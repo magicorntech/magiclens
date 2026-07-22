@@ -126,7 +126,9 @@ export function registerVpnHandlers(): void {
     }
   )
 
-  ipcMain.handle(IPC.VPN_DISCONNECT, async () => vpnManager.disconnect())
+  ipcMain.handle(IPC.VPN_DISCONNECT, async (_e, req?: { id?: string }) =>
+    vpnManager.disconnect(req?.id)
+  )
 
   ipcMain.handle(IPC.VPN_SET_FOCUS, async (_e, req: { profileId: string | null }) => {
     vpnManager.setFocus(req.profileId)

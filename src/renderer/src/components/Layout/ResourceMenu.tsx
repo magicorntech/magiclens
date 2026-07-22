@@ -23,6 +23,8 @@ import { Icon } from '../ui/Icon'
 import { HighlightText } from '../ClusterTabs/ClusterSearchInput'
 
 const EXPANDED_STORAGE_PREFIX = 'ml-resource-nav-expanded:'
+/** Stable empty list so the auth selector does not allocate a new [] / Set every render. */
+const EMPTY_HIDDEN_KINDS: string[] = []
 
 interface ResourceMenuProps {
   clusterId: string
@@ -78,7 +80,8 @@ export function ResourceMenu({
   const prefs = getResourceTabPrefs(clusterId)
   const favoriteKinds = prefs.favorites
   const pinnedKinds = prefs.pinned
-  const hiddenKinds = useAuthStore((s) => new Set(s.me?.hiddenResourceKinds ?? []))
+  const hiddenKindList = useAuthStore((s) => s.me?.hiddenResourceKinds ?? EMPTY_HIDDEN_KINDS)
+  const hiddenKinds = useMemo(() => new Set(hiddenKindList), [hiddenKindList])
 
   const visibleNavLayout = useMemo((): NavLayoutItem[] => {
     if (hiddenKinds.size === 0) return resourceNavLayout
