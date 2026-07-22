@@ -348,7 +348,16 @@ const api = {
     setSplashSeen: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_SET_SPLASH_SEEN),
     getDisplaySettings: (): Promise<DisplaySettings> => ipcRenderer.invoke(IPC.APP_GET_DISPLAY_SETTINGS),
     setDisplaySettings: (patch: Partial<DisplaySettings>): Promise<DisplaySettings> =>
-      ipcRenderer.invoke(IPC.APP_SET_DISPLAY_SETTINGS, patch)
+      ipcRenderer.invoke(IPC.APP_SET_DISPLAY_SETTINGS, patch),
+    getFullscreen: (): Promise<{ fullscreen: boolean }> => ipcRenderer.invoke(IPC.APP_GET_FULLSCREEN),
+    toggleFullscreen: (): Promise<{ fullscreen: boolean }> =>
+      ipcRenderer.invoke(IPC.APP_TOGGLE_FULLSCREEN),
+    onFullscreenChanged: (cb: (payload: { fullscreen: boolean }) => void): (() => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, payload: { fullscreen: boolean }): void =>
+        cb(payload)
+      ipcRenderer.on(IPC.APP_FULLSCREEN_CHANGED, listener)
+      return () => ipcRenderer.removeListener(IPC.APP_FULLSCREEN_CHANGED, listener)
+    }
   },
   pod: {
     getDetail: (req: PodResourceRequest): Promise<PodDetailResponse> => ipcRenderer.invoke(IPC.POD_GET_DETAIL, req),
@@ -566,6 +575,19 @@ const api = {
       ipcRenderer.on(IPC.VPN_STATUS_CHANGED, listener)
       return () => ipcRenderer.removeListener(IPC.VPN_STATUS_CHANGED, listener)
     }
+  },
+  topology: {
+    getGraph: (
+      req: import('@shared/types/topology').TopologyGraphRequest
+    ): Promise<
+      | import('@shared/types/topology').TopologyGraphResponse
+      | { error: string }
+    > => ipcRenderer.invoke(IPC.TOPOLOGY_GET_GRAPH, req),
+    openWindow: (req: {
+      clusterId: string
+      namespace: string
+    }): Promise<{ ok: true; windowId: number } | { error: string }> =>
+      ipcRenderer.invoke(IPC.TOPOLOGY_OPEN_WINDOW, req)
   }
 }
 

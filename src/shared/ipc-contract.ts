@@ -88,6 +88,9 @@ export const IPC = {
   APP_SET_SPLASH_SEEN: 'app:setSplashSeen',
   APP_GET_DISPLAY_SETTINGS: 'app:getDisplaySettings',
   APP_SET_DISPLAY_SETTINGS: 'app:setDisplaySettings',
+  APP_GET_FULLSCREEN: 'app:getFullscreen',
+  APP_TOGGLE_FULLSCREEN: 'app:toggleFullscreen',
+  APP_FULLSCREEN_CHANGED: 'app:fullscreenChanged',
 
   POD_GET_DETAIL: 'pod:getDetail',
   POD_GET_METRICS: 'pod:getMetrics',
@@ -166,5 +169,8 @@ export const IPC = {
   VPN_UPSERT_ORG: 'vpn:upsertOrg',
   VPN_SYNC_ORG_IDS: 'vpn:syncOrgIds',
   VPN_GET_CONFIG: 'vpn:getConfig',
-  VPN_INSTALL_TOOL: 'vpn:installTool'
+  VPN_INSTALL_TOOL: 'vpn:installTool',
+
+  TOPOLOGY_GET_GRAPH: 'topology:getGraph',
+  TOPOLOGY_OPEN_WINDOW: 'topology:openWindow'
 } as const

@@ -377,6 +377,11 @@ export const zh: TranslationOverrides = {
         title: '浏览每类资源',
         body: '工作负载、配置、网络、存储等 — 实时监视、YAML 编辑、批量操作与详情面板。'
       },
+      topology: {
+        eyebrow: '拓扑',
+        title: '看清应用如何连接',
+        body: '在一张图中映射 Deployment、Service 与 Ingress — 发现异常 Pod、打开详情，并从应用跳到依赖关系图。'
+      },
       vpn: {
         eyebrow: 'VPN',
         title: '私有集群与隧道',
@@ -392,6 +397,56 @@ export const zh: TranslationOverrides = {
         title: '端口转发更简单',
         body: '几步将 Pod 或 Service 转到本地端口 — 会话在工作时保持可见。'
       }
+    }
+  },
+  resourceNav: {
+    virtual: {
+      topology: '拓扑'
+    }
+  },
+  topology: {
+    title: '拓扑与应用',
+    subtitle: '此命名空间中工作负载、服务与依赖的实时地图。',
+    modes: {
+      graph: '拓扑',
+      apps: '应用',
+      resources: '资源'
+    },
+    refresh: '刷新',
+    empty: '此命名空间没有可映射的资源。',
+    loading: '正在构建拓扑…',
+    error: '拓扑加载失败',
+    search: '搜索资源…',
+    filterAll: '全部',
+    insights: '洞察',
+    noInsights: '未发现问题。',
+    health: {
+      healthy: '健康',
+      degraded: '降级',
+      error: '错误',
+      unknown: '未知'
+    },
+    apps: {
+      replicas: '副本',
+      uptime: '存活时间',
+      errors: '错误',
+      empty: '未找到应用。请为工作负载添加 app.kubernetes.io/name 标签。'
+    },
+    drawer: {
+      overview: '概览',
+      close: '关闭'
+    },
+    insightItems: {
+      crashloopTitle: 'CrashLoopBackOff：{{name}}',
+      crashloopDetail: 'Pod 正在崩溃循环',
+      serviceEmptyTitle: 'Service 无端点：{{name}}',
+      serviceEmptyDetail: '选择器未匹配此命名空间中的任何 Pod。',
+      ingressOrphanTitle: 'Ingress 无后端：{{name}}',
+      ingressOrphanDetail: '未配置 HTTP 路径或默认后端。',
+      brokenRouteTitle: 'Ingress 依赖损坏',
+      brokenRouteDetail: '路由指向缺失的 Service（{{target}}）。',
+      zeroReadyTitle: '无就绪副本：{{name}}',
+      zeroReadyDetail: '{{ready}}/{{desired}} 就绪'
     }
   }
 }

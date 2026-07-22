@@ -1,8 +1,8 @@
 {
   "name": "magiclens",
   "productName": "MagicLens",
-  "version": "0.1.11",
-  "buildNumber": "12",
+  "version": "0.1.12",
+  "buildNumber": "13",
   "description": "A simple, fast Kubernetes cluster manager",
   "main": "./out/main/index.js",
   "author": {
@@ -48,6 +48,7 @@
     "@ant-design/icons": "^6.0.2",
     "@codemirror/lang-yaml": "^6.1.3",
     "@codemirror/search": "^6.7.1",
+    "@dagrejs/dagre": "^3.0.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@kubernetes/client-node": "1.4.0",
@@ -57,6 +58,7 @@
     "@uiw/react-codemirror": "^4.25.10",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
+    "@xyflow/react": "^12.11.2",
     "antd": "6.5.0",
     "dayjs": "^1.11.13",
     "electron-store": "^8.2.0",
@@ -79,6 +81,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.1.0",
+    "@types/dagre": "^0.7.54",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

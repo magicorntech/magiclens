@@ -1074,7 +1074,7 @@ body,
   position: absolute;
   /* Center in map column (excludes right rail); bias up for bottom status dock */
   left: 50%;
-  top: 44%;
+  top: 36%;
   width: 128%;
   height: 128%;
   transform: translate(-50%, -50%);
@@ -1461,7 +1461,7 @@ body,
   }
 
   .ml-vpn-world-map {
-    top: 42%;
+    top: 34%;
     width: 140%;
     height: 140%;
   }
@@ -5202,4 +5202,32 @@ body,
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+
+/* Cluster edit drawer — wide two-column form */
+.ml-cluster-edit-drawer .ant-drawer-body {
+  overflow-y: auto;
+}
+
+.ml-cluster-edit-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px 32px;
+  align-items: start;
+}
+
+.ml-cluster-edit-col {
+  min-width: 0;
+}
+
+.ml-cluster-edit-section-title {
+  display: block;
+}
+
+@media (max-width: 720px) {
+  .ml-cluster-edit-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
 }

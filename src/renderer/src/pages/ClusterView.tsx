@@ -15,6 +15,7 @@ import { DiscoveredApiVersionsPage } from '../components/Discovery/DiscoveredApi
 import { CustomResourceBrowserPage } from '../components/Discovery/CustomResourceBrowserPage'
 import { HelmChartsPage } from '../components/Helm/HelmChartsPage'
 import { HelmReleasesPage } from '../components/Helm/HelmReleasesPage'
+import { TopologyPage } from '../components/Topology/TopologyPage'
 import type { VirtualPageKey } from '../resourceConfig/kinds.renderer'
 
 interface ClusterViewProps {
@@ -160,6 +161,8 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
 
   function renderVirtualPage(page: VirtualPageKey): React.JSX.Element {
     switch (page) {
+      case 'topology':
+        return <TopologyPage clusterId={clusterId} namespace={selectedNamespace} />
       case 'portForwarding':
         return <PortForwardingPage clusterId={clusterId} />
       case 'discoveredApiGroups':

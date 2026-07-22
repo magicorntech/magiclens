@@ -7,6 +7,7 @@ import { useGlobalSearchStore } from '../../stores/globalSearchStore'
 import { useSettingsUiStore } from '../../stores/settingsUiStore'
 import { Icon } from '../ui/Icon'
 import { ThemeToggle } from './ThemeToggle'
+import { FullscreenToggle } from './FullscreenToggle'
 
 export function AppTopBar(): React.JSX.Element {
   const { t } = useTranslation()
@@ -27,6 +28,7 @@ export function AppTopBar(): React.JSX.Element {
 
       <div className="app-top-bar-actions titlebar-no-drag">
         <ThemeToggle compact />
+        <FullscreenToggle />
         <Tooltip title={t('common.settings')}>
           <button type="button" className="ml-icon-btn" aria-label={t('common.settings')} onClick={() => openSettings()}>
             <Icon icon={Settings} variant="toolbar" />

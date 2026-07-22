@@ -31,7 +31,9 @@ export const tr: TranslationOverrides = {
     noWorkspaceMatch: 'Eşleşen workspace yok',
     noFavoriteClusters: 'Favori küme yok',
     collapseSidebar: 'Kenar çubuğunu daralt',
-    expandSidebar: 'Kenar çubuğunu genişlet'
+    expandSidebar: 'Kenar çubuğunu genişlet',
+    fullscreen: 'Tam ekran',
+    exitFullscreen: 'Tam ekrandan çık'
   },
   settings: {
     title: 'Ayarlar',
@@ -392,6 +394,11 @@ export const tr: TranslationOverrides = {
         title: 'Her kaynağa göz atın',
         body: 'Workload, Config, Network, Storage ve daha fazlası — canlı izleme, YAML düzenleme, toplu işlemler ve odaklı detay paneli.'
       },
+      topology: {
+        eyebrow: 'Topoloji',
+        title: 'Uygulamaların nasıl bağlandığını görün',
+        body: 'Deployment, Service ve Ingress’i tek grafikte haritalayın — sağlıksız pod’ları tespit edin, detaya inin ve uygulamalardan canlı bağımlılık haritasına geçin.'
+      },
       vpn: {
         eyebrow: 'VPN',
         title: 'Özel kümeler, sizin tünelleriniz',
@@ -433,5 +440,95 @@ export const tr: TranslationOverrides = {
     save: 'Kaydet',
     created: 'Workspace oluşturuldu',
     updated: 'Workspace güncellendi'
+  },
+  resourceNav: {
+    sections: {
+      overview: 'Genel bakış'
+    },
+    virtual: {
+      topology: 'Topoloji'
+    }
+  },
+  topology: {
+    title: 'Topoloji ve Uygulamalar',
+    subtitle: 'Bu namespace’teki iş yükleri, servisler ve bağımlılıkların canlı haritası.',
+    modes: {
+      graph: 'Topoloji',
+      apps: 'Uygulamalar',
+      resources: 'Kaynaklar'
+    },
+    refresh: 'Yenile',
+    empty: 'Bu namespace’te haritalanacak kaynak yok.',
+    loading: 'Topoloji oluşturuluyor…',
+    error: 'Topoloji yüklenemedi',
+    zoomIn: 'Yakınlaştır',
+    zoomOut: 'Uzaklaştır',
+    fitView: 'Görünüme sığdır',
+    openWindow: 'Pencerede aç',
+    openWindowMissingCluster: 'Topoloji penceresi için küme seçili değil',
+    pickNamespace: 'Topoloji haritası için bir namespace seçin',
+    pickNamespaceHint: 'Topoloji tek bir namespace ister. Üstteki namespace seçiciden bir tane seçin.',
+    graphCrash: 'Graf çizilemedi. Yenileyin veya başka bir namespace seçin.',
+    live: 'Canlı',
+    updating: 'Güncelleniyor…',
+    search: 'Kaynaklarda ara…',
+    filterNamespace: 'Namespace',
+    filterKind: 'Tür',
+    filterHealth: 'Sağlık',
+    filterAll: 'Tümü',
+    sortName: 'Ad',
+    sortKind: 'Tür',
+    sortHealth: 'Sağlık',
+    insights: 'İçgörüler',
+    noInsights: 'Sorun tespit edilmedi.',
+    health: {
+      healthy: 'Sağlıklı',
+      degraded: 'Bozulmuş',
+      error: 'Hata',
+      unknown: 'Bilinmiyor'
+    },
+    relation: {
+      owns: 'sahip',
+      selects: 'seçer',
+      routes: 'yönlendirir',
+      mounts: 'bağlar',
+      dependsOn: 'bağımlı'
+    },
+    apps: {
+      replicas: 'Replica',
+      uptime: 'Yaş',
+      errors: 'Hata',
+      empty: 'Uygulama bulunamadı. Workload’lara app.kubernetes.io/name etiketi ekleyin.'
+    },
+    drawer: {
+      overview: 'Genel bakış',
+      yaml: 'YAML',
+      events: 'Olaylar',
+      logs: 'Loglar',
+      metrics: 'Metrikler',
+      actions: 'İşlemler',
+      restart: 'Yeniden başlat',
+      scale: 'Ölçekle',
+      delete: 'Sil',
+      editYaml: 'YAML düzenle',
+      close: 'Kapat'
+    },
+    edge: {
+      ports: 'Portlar',
+      protocol: 'Protokol',
+      rate: '{{rate}} istek/sn'
+    },
+    insightItems: {
+      crashloopTitle: 'CrashLoopBackOff: {{name}}',
+      crashloopDetail: 'Pod sürekli yeniden başlıyor',
+      serviceEmptyTitle: 'Service endpoint yok: {{name}}',
+      serviceEmptyDetail: 'Selector bu namespace’te hiçbir pod ile eşleşmiyor.',
+      ingressOrphanTitle: 'Ingress backend yok: {{name}}',
+      ingressOrphanDetail: 'HTTP path veya varsayılan backend tanımlı değil.',
+      brokenRouteTitle: 'Bozuk Ingress bağımlılığı',
+      brokenRouteDetail: 'Rota eksik servise işaret ediyor ({{target}}).',
+      zeroReadyTitle: 'Hazır replica yok: {{name}}',
+      zeroReadyDetail: '{{ready}}/{{desired}} hazır'
+    }
   }
 }

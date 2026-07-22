@@ -11,7 +11,8 @@ import {
   Layers,
   Network,
   Search,
-  Terminal
+  Terminal,
+  Waypoints
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '../ui/Icon'
@@ -26,7 +27,16 @@ interface FeatureTourScreenProps {
 type TourPhase = 'language' | 'slides'
 
 type SlideMeta = {
-  id: 'welcome' | 'clusters' | 'split' | 'search' | 'resources' | 'vpn' | 'ops' | 'forward'
+  id:
+    | 'welcome'
+    | 'clusters'
+    | 'split'
+    | 'search'
+    | 'resources'
+    | 'topology'
+    | 'vpn'
+    | 'ops'
+    | 'forward'
   icon: typeof Layers
   accent: string
 }
@@ -37,6 +47,7 @@ const SLIDES: SlideMeta[] = [
   { id: 'split', icon: Columns2, accent: '#14b8a6' },
   { id: 'search', icon: Search, accent: '#38bdf8' },
   { id: 'resources', icon: Box, accent: '#0ea5e9' },
+  { id: 'topology', icon: Waypoints, accent: '#06b6d4' },
   { id: 'vpn', icon: Network, accent: '#22c55e' },
   { id: 'ops', icon: Terminal, accent: '#f59e0b' },
   { id: 'forward', icon: Cable, accent: '#ec4899' }

@@ -249,9 +249,6 @@ export function VpnPage(): React.JSX.Element {
                   <Icon icon={Network} variant="action" />
                   <span>{t('vpn.heroEyebrow')}</span>
                 </div>
-                <Typography.Title level={2} className="ml-vpn-hero__title">
-                  {t('vpn.title')}
-                </Typography.Title>
               </div>
 
               <div className={`ml-vpn-status-pill ml-vpn-status-pill--${tone}`}>

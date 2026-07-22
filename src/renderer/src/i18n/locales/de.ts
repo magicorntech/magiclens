@@ -392,6 +392,11 @@ export const de: TranslationOverrides = {
         title: 'Jede Ressource durchsuchen',
         body: 'Workloads, Config, Network, Storage und mehr — Live-Watch, YAML-Bearbeitung, Batch-Aktionen und Detailpanel.'
       },
+      topology: {
+        eyebrow: 'Topologie',
+        title: 'Verbindungen Ihrer Apps sehen',
+        body: 'Deployments, Services und Ingress in einem Graphen — ungesunde Pods erkennen, Details öffnen und von Apps zur Abhängigkeitskarte springen.'
+      },
       vpn: {
         eyebrow: 'VPN',
         title: 'Private Cluster, Ihre Tunnel',
@@ -407,6 +412,63 @@ export const de: TranslationOverrides = {
         title: 'Port-Forwarding leicht gemacht',
         body: 'Pod oder Service mit wenigen Klicks auf einen lokalen Port weiterleiten — die Sitzung bleibt sichtbar.'
       }
+    }
+  },
+  resourceNav: {
+    virtual: {
+      topology: 'Topologie'
+    }
+  },
+  topology: {
+    title: 'Topologie & Anwendungen',
+    subtitle: 'Live-Karte von Workloads, Services und Abhängigkeiten in diesem Namespace.',
+    modes: {
+      graph: 'Topologie',
+      apps: 'Anwendungen',
+      resources: 'Ressourcen'
+    },
+    refresh: 'Aktualisieren',
+    empty: 'Keine Ressourcen zum Abbilden in diesem Namespace.',
+    loading: 'Topologie wird erstellt…',
+    error: 'Topologie konnte nicht geladen werden',
+    search: 'Ressourcen suchen…',
+    filterKind: 'Art',
+    filterHealth: 'Status',
+    filterAll: 'Alle',
+    insights: 'Hinweise',
+    noInsights: 'Keine Probleme erkannt.',
+    health: {
+      healthy: 'Gesund',
+      degraded: 'Eingeschränkt',
+      error: 'Fehler',
+      unknown: 'Unbekannt'
+    },
+    apps: {
+      replicas: 'Replicas',
+      uptime: 'Alter',
+      errors: 'Fehler',
+      empty: 'Keine Anwendungen gefunden. Workloads mit app.kubernetes.io/name kennzeichnen.'
+    },
+    drawer: {
+      overview: 'Übersicht',
+      yaml: 'YAML',
+      events: 'Ereignisse',
+      logs: 'Logs',
+      metrics: 'Metriken',
+      actions: 'Aktionen',
+      close: 'Schließen'
+    },
+    insightItems: {
+      crashloopTitle: 'CrashLoopBackOff: {{name}}',
+      crashloopDetail: 'Pod startet ständig neu',
+      serviceEmptyTitle: 'Service ohne Endpoints: {{name}}',
+      serviceEmptyDetail: 'Selector trifft in diesem Namespace auf keine Pods.',
+      ingressOrphanTitle: 'Ingress ohne Backends: {{name}}',
+      ingressOrphanDetail: 'Keine HTTP-Pfade oder Default-Backend konfiguriert.',
+      brokenRouteTitle: 'Kaputte Ingress-Abhängigkeit',
+      brokenRouteDetail: 'Route zeigt auf fehlenden Service ({{target}}).',
+      zeroReadyTitle: 'Keine bereiten Replicas: {{name}}',
+      zeroReadyDetail: '{{ready}}/{{desired}} bereit'
     }
   }
 }

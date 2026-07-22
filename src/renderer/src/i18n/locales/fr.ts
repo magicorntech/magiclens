@@ -393,6 +393,11 @@ export const fr: TranslationOverrides = {
         title: 'Parcourez chaque ressource',
         body: 'Workloads, Config, Network, Storage et plus — surveillance live, YAML, actions en lot et panneau de détail.'
       },
+      topology: {
+        eyebrow: 'Topologie',
+        title: 'Voir comment les apps se connectent',
+        body: 'Cartographiez Deployments, Services et Ingress — repérez les pods en erreur, ouvrez les détails et passez des applications au graphe de dépendances.'
+      },
       vpn: {
         eyebrow: 'VPN',
         title: 'Clusters privés, vos tunnels',
@@ -408,6 +413,56 @@ export const fr: TranslationOverrides = {
         title: 'Port forwarding simplifié',
         body: 'Transférez un Pod ou Service vers un port local en quelques clics — la session reste visible.'
       }
+    }
+  },
+  resourceNav: {
+    virtual: {
+      topology: 'Topologie'
+    }
+  },
+  topology: {
+    title: 'Topologie et applications',
+    subtitle: 'Carte live des workloads, services et dépendances de ce namespace.',
+    modes: {
+      graph: 'Topologie',
+      apps: 'Applications',
+      resources: 'Ressources'
+    },
+    refresh: 'Actualiser',
+    empty: 'Aucune ressource à cartographier dans ce namespace.',
+    loading: 'Construction de la topologie…',
+    error: 'Échec du chargement de la topologie',
+    search: 'Rechercher des ressources…',
+    filterAll: 'Tous',
+    insights: 'Insights',
+    noInsights: 'Aucun problème détecté.',
+    health: {
+      healthy: 'Sain',
+      degraded: 'Dégradé',
+      error: 'Erreur',
+      unknown: 'Inconnu'
+    },
+    apps: {
+      replicas: 'Réplicas',
+      uptime: 'Âge',
+      errors: 'Erreurs',
+      empty: 'Aucune application. Étiquetez les workloads avec app.kubernetes.io/name.'
+    },
+    drawer: {
+      overview: 'Aperçu',
+      close: 'Fermer'
+    },
+    insightItems: {
+      crashloopTitle: 'CrashLoopBackOff : {{name}}',
+      crashloopDetail: 'Le pod redémarre en boucle',
+      serviceEmptyTitle: 'Service sans endpoints : {{name}}',
+      serviceEmptyDetail: 'Le sélecteur ne correspond à aucun pod dans ce namespace.',
+      ingressOrphanTitle: 'Ingress sans backends : {{name}}',
+      ingressOrphanDetail: 'Aucun chemin HTTP ni backend par défaut.',
+      brokenRouteTitle: 'Dépendance Ingress cassée',
+      brokenRouteDetail: 'La route pointe vers un service manquant ({{target}}).',
+      zeroReadyTitle: 'Aucun replica prêt : {{name}}',
+      zeroReadyDetail: '{{ready}}/{{desired}} prêts'
     }
   }
 }

@@ -29,7 +29,9 @@ export const en = {
     noFavoriteClusters: 'No favorite clusters',
     noWorkspaceMatch: 'No workspaces match',
     collapseSidebar: 'Collapse sidebar',
-    expandSidebar: 'Expand sidebar'
+    expandSidebar: 'Expand sidebar',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen'
   },
   settings: {
     title: 'Settings',
@@ -391,6 +393,11 @@ export const en = {
         title: 'Browse every resource',
         body: 'Workloads, Config, Network, Storage, and more — live watch, YAML edit, batch actions, and a focused detail panel.'
       },
+      topology: {
+        eyebrow: 'Topology',
+        title: 'See how apps connect',
+        body: 'Map Deployments, Services, and Ingress in one graph — spot unhealthy pods, open details, and jump from applications to the live dependency map.'
+      },
       vpn: {
         eyebrow: 'VPN',
         title: 'Private clusters, your tunnels',
@@ -445,6 +452,7 @@ export const en = {
     emptyFavorites: 'Right-click a resource to add favorites.',
     aria: 'Resources',
     sections: {
+      overview: 'Overview',
       workloads: 'Workloads',
       config: 'Config',
       network: 'Network',
@@ -454,12 +462,95 @@ export const en = {
       'custom-resources': 'Custom Resources'
     },
     virtual: {
+      topology: 'Topology',
       portForwarding: 'Port Forwarding',
       helmCharts: 'Charts',
       helmReleases: 'Releases',
       operatorResources: 'Installed CRDs',
       dynamicCustomResources: 'Dynamic Resources',
       definitions: 'Definitions'
+    }
+  },
+  topology: {
+    title: 'Topology & Applications',
+    subtitle: 'Live map of workloads, services, and dependencies in this namespace.',
+    modes: {
+      graph: 'Topology',
+      apps: 'Applications',
+      resources: 'Resources'
+    },
+    refresh: 'Refresh',
+    empty: 'No resources to map in this namespace.',
+    loading: 'Building topology…',
+    error: 'Failed to load topology',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    fitView: 'Fit to view',
+    openWindow: 'Open in window',
+    openWindowMissingCluster: 'No cluster selected for topology window',
+    pickNamespace: 'Select a namespace to build the topology map',
+    pickNamespaceHint: 'Topology needs a single namespace. Choose one from the namespace selector above.',
+    graphCrash: 'The graph failed to render. Try refreshing or picking another namespace.',
+    live: 'Live',
+    updating: 'Updating…',
+    search: 'Search resources…',
+    filterNamespace: 'Namespace',
+    filterKind: 'Kind',
+    filterHealth: 'Health',
+    filterAll: 'All',
+    sortName: 'Name',
+    sortKind: 'Kind',
+    sortHealth: 'Health',
+    insights: 'Insights',
+    noInsights: 'No issues detected.',
+    health: {
+      healthy: 'Healthy',
+      degraded: 'Degraded',
+      error: 'Error',
+      unknown: 'Unknown'
+    },
+    relation: {
+      owns: 'owns',
+      selects: 'selects',
+      routes: 'routes',
+      mounts: 'mounts',
+      dependsOn: 'depends on'
+    },
+    apps: {
+      replicas: 'Replicas',
+      uptime: 'Age',
+      errors: 'Errors',
+      empty: 'No applications found. Label workloads with app.kubernetes.io/name.'
+    },
+    drawer: {
+      overview: 'Overview',
+      yaml: 'YAML',
+      events: 'Events',
+      logs: 'Logs',
+      metrics: 'Metrics',
+      actions: 'Actions',
+      restart: 'Restart',
+      scale: 'Scale',
+      delete: 'Delete',
+      editYaml: 'Edit YAML',
+      close: 'Close'
+    },
+    edge: {
+      ports: 'Ports',
+      protocol: 'Protocol',
+      rate: '{{rate}} req/s'
+    },
+    insightItems: {
+      crashloopTitle: 'CrashLoopBackOff: {{name}}',
+      crashloopDetail: 'Pod is crash looping',
+      serviceEmptyTitle: 'Service has no endpoints: {{name}}',
+      serviceEmptyDetail: 'Selector does not match any pods in this namespace.',
+      ingressOrphanTitle: 'Ingress has no backends: {{name}}',
+      ingressOrphanDetail: 'No HTTP paths or default backend configured.',
+      brokenRouteTitle: 'Broken Ingress dependency',
+      brokenRouteDetail: 'Route points to missing service ({{target}}).',
+      zeroReadyTitle: 'No ready replicas: {{name}}',
+      zeroReadyDetail: '{{ready}}/{{desired}} ready'
     }
   },
   clustersHub: {

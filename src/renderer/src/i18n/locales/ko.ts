@@ -392,6 +392,11 @@ export const ko: TranslationOverrides = {
         title: '모든 리소스 살펴보기',
         body: '워크로드, Config, Network, Storage 등 — 라이브 감시, YAML 편집, 일괄 작업, 상세 패널.'
       },
+      topology: {
+        eyebrow: '토폴로지',
+        title: '앱 연결을 한눈에',
+        body: 'Deployment, Service, Ingress를 그래프로 매핑 — 비정상 Pod를 찾고 상세를 연 뒤 애플리케이션에서 의존성 맵으로 이동하세요.'
+      },
       vpn: {
         eyebrow: 'VPN',
         title: '프라이빗 클러스터와 터널',
@@ -407,6 +412,56 @@ export const ko: TranslationOverrides = {
         title: '포트 포워딩이 간단',
         body: '몇 번의 클릭으로 Pod/Service를 로컬 포트로 — 작업 중에도 세션이 보입니다.'
       }
+    }
+  },
+  resourceNav: {
+    virtual: {
+      topology: '토폴로지'
+    }
+  },
+  topology: {
+    title: '토폴로지 및 애플리케이션',
+    subtitle: '이 네임스페이스의 워크로드, 서비스, 의존성의 실시간 맵.',
+    modes: {
+      graph: '토폴로지',
+      apps: '애플리케이션',
+      resources: '리소스'
+    },
+    refresh: '새로고침',
+    empty: '이 네임스페이스에 매핑할 리소스가 없습니다.',
+    loading: '토폴로지 구성 중…',
+    error: '토폴로지를 불러오지 못했습니다',
+    search: '리소스 검색…',
+    filterAll: '전체',
+    insights: '인사이트',
+    noInsights: '문제가 감지되지 않았습니다.',
+    health: {
+      healthy: '정상',
+      degraded: '저하',
+      error: '오류',
+      unknown: '알 수 없음'
+    },
+    apps: {
+      replicas: '레플리카',
+      uptime: '경과',
+      errors: '오류',
+      empty: '애플리케이션이 없습니다. app.kubernetes.io/name 레이블을 추가하세요.'
+    },
+    drawer: {
+      overview: '개요',
+      close: '닫기'
+    },
+    insightItems: {
+      crashloopTitle: 'CrashLoopBackOff: {{name}}',
+      crashloopDetail: 'Pod가 크래시 루프 중입니다',
+      serviceEmptyTitle: '엔드포인트 없는 Service: {{name}}',
+      serviceEmptyDetail: '셀렉터가 이 네임스페이스의 Pod와 일치하지 않습니다.',
+      ingressOrphanTitle: '백엔드 없는 Ingress: {{name}}',
+      ingressOrphanDetail: 'HTTP 경로 또는 기본 백엔드가 없습니다.',
+      brokenRouteTitle: '깨진 Ingress 의존성',
+      brokenRouteDetail: '라우트가 없는 서비스를 가리킵니다 ({{target}}).',
+      zeroReadyTitle: '준비된 레플리카 없음: {{name}}',
+      zeroReadyDetail: '{{ready}}/{{desired}} ready'
     }
   }
 }

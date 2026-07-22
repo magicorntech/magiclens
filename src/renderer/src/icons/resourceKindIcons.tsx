@@ -90,6 +90,7 @@ export const kindIcons: Record<ResourceKind, React.ComponentType> = {
 }
 
 export const virtualPageIcons: Record<VirtualPageKey, LucideIcon> = {
+  topology: Network,
   portForwarding: ArrowLeftRight,
   dynamicCustomResources: Boxes,
   operatorResources: Package,
@@ -156,6 +157,7 @@ export const kindIconLucide: Record<ResourceKind, LucideIcon> = {
 }
 
 export const virtualPageIconComponents: Record<VirtualPageKey, React.ComponentType> = {
+  topology: virtualIcon('topology'),
   portForwarding: virtualIcon('portForwarding'),
   dynamicCustomResources: virtualIcon('dynamicCustomResources'),
   operatorResources: virtualIcon('operatorResources'),

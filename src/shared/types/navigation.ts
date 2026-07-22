@@ -1,6 +1,7 @@
 import type { ResourceKind } from '@shared/resourceKinds'
 
 export type VirtualPageKey =
+  | 'topology'
   | 'portForwarding'
   | 'dynamicCustomResources'
   | 'operatorResources'

@@ -392,6 +392,11 @@ export const ja: TranslationOverrides = {
         title: 'すべてのリソースを閲覧',
         body: 'Workload、Config、Network、Storage など — ライブ監視、YAML 編集、一括操作、詳細パネル。'
       },
+      topology: {
+        eyebrow: 'トポロジー',
+        title: 'アプリのつながりを可視化',
+        body: 'Deployment / Service / Ingress を一枚のグラフに — 異常 Pod を見つけ、詳細を開き、アプリから依存関係マップへ移動。'
+      },
       vpn: {
         eyebrow: 'VPN',
         title: 'プライベートクラスターとトンネル',
@@ -407,6 +412,56 @@ export const ja: TranslationOverrides = {
         title: 'ポートフォワードが簡単',
         body: 'Pod / Service を数クリックでローカルポートへ — 作業中もセッションを表示。'
       }
+    }
+  },
+  resourceNav: {
+    virtual: {
+      topology: 'トポロジー'
+    }
+  },
+  topology: {
+    title: 'トポロジーとアプリケーション',
+    subtitle: 'このネームスペースのワークロード、サービス、依存関係のライブマップ。',
+    modes: {
+      graph: 'トポロジー',
+      apps: 'アプリケーション',
+      resources: 'リソース'
+    },
+    refresh: '更新',
+    empty: 'このネームスペースにマッピングするリソースがありません。',
+    loading: 'トポロジーを構築中…',
+    error: 'トポロジーの読み込みに失敗しました',
+    search: 'リソースを検索…',
+    filterAll: 'すべて',
+    insights: 'インサイト',
+    noInsights: '問題は検出されませんでした。',
+    health: {
+      healthy: '正常',
+      degraded: '低下',
+      error: 'エラー',
+      unknown: '不明'
+    },
+    apps: {
+      replicas: 'レプリカ',
+      uptime: '経過',
+      errors: 'エラー',
+      empty: 'アプリケーションがありません。app.kubernetes.io/name ラベルを付けてください。'
+    },
+    drawer: {
+      overview: '概要',
+      close: '閉じる'
+    },
+    insightItems: {
+      crashloopTitle: 'CrashLoopBackOff: {{name}}',
+      crashloopDetail: 'Pod がクラッシュループしています',
+      serviceEmptyTitle: 'エンドポイントなしの Service: {{name}}',
+      serviceEmptyDetail: 'セレクターがこのネームスペースの Pod と一致しません。',
+      ingressOrphanTitle: 'バックエンドなしの Ingress: {{name}}',
+      ingressOrphanDetail: 'HTTP パスまたはデフォルトバックエンドがありません。',
+      brokenRouteTitle: '壊れた Ingress 依存',
+      brokenRouteDetail: 'ルートが存在しないサービスを指しています（{{target}}）。',
+      zeroReadyTitle: 'Ready レプリカなし: {{name}}',
+      zeroReadyDetail: '{{ready}}/{{desired}} ready'
     }
   }
 }

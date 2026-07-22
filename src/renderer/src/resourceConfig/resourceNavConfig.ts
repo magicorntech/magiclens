@@ -5,6 +5,7 @@ import {
   FolderOpen,
   Globe,
   HardDrive,
+  Network,
   Orbit,
   Server,
   Settings,
@@ -41,6 +42,13 @@ export const FAVORITES_SECTION_ID = 'favorites'
 export const resourceNavLayout: NavLayoutItem[] = [
   'favorites',
   { type: 'standalone', kind: 'Nodes', icon: Server },
+  {
+    type: 'section',
+    id: 'overview',
+    title: 'Overview',
+    icon: Network,
+    entries: [{ type: 'virtual', key: 'topology', label: 'Topology' }]
+  },
   {
     type: 'section',
     id: 'workloads',

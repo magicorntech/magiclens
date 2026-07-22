@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Button, Input, Modal, Select, Space, Tag, Typography, message } from 'antd'
+import { Alert, Button, Drawer, Input, Select, Space, Tag, Typography, message, Modal } from 'antd'
 import { Clipboard, Eye, RefreshCw, Save, Upload } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '../ui/Icon'
@@ -16,6 +16,7 @@ import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import Editor from '@monaco-editor/react'
 import { setupMonaco } from '../Editor/setupMonaco'
 import { useResolvedDarkMode } from '../../stores/useResolvedDarkMode'
+import { useLayoutMode } from '../../hooks/useLayoutMode'
 
 interface EditClusterModalProps {
   cluster: ClusterEntry | null
@@ -43,6 +44,9 @@ function statusTag(status: PrometheusStatus | null, t: (key: string, opts?: Reco
 
 export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): React.JSX.Element {
   const { t } = useTranslation()
+  const layoutMode = useLayoutMode()
+  const drawerWidth =
+    layoutMode === 'mobile' ? '100%' : layoutMode === 'compact' ? 'min(720px, 96vw)' : 'min(880px, 92vw)'
   const [customName, setCustomName] = useState('')
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined)
   const [backgroundId, setBackgroundId] = useState<string | undefined>(undefined)
@@ -250,101 +254,120 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
 
   return (
     <>
-      <Modal title={t('clusterEdit.title')} open={!!cluster} onCancel={onClose} onOk={handleSave} okText={t('clusterEdit.save')}>
-        <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-          <Space align="center">
-            <ClusterAvatar logoUrl={logoUrl} name={customName} size={48} />
-            <Button icon={<Icon icon={Upload} variant="detail" />} onClick={() => fileInputRef.current?.click()}>
-              {t('clusterEdit.changeLogo')}
+      <Drawer
+        title={t('clusterEdit.title')}
+        open={!!cluster}
+        onClose={onClose}
+        placement="right"
+        width={drawerWidth}
+        destroyOnHidden
+        className="ml-cluster-edit-drawer"
+        mask={{ blur: true }}
+        styles={{
+          body: { paddingTop: 12, paddingBottom: 8 },
+          footer: { borderTop: '1px solid var(--ml-border-secondary)' }
+        }}
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <Button onClick={onClose}>{t('clusterEdit.close')}</Button>
+            <Button type="primary" onClick={() => void handleSave()}>
+              {t('clusterEdit.save')}
             </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={LOGO_ACCEPT}
-              style={{ display: 'none' }}
-              onChange={handleLogoSelected}
-            />
-          </Space>
-          <div>
-            <Typography.Text>{t('clusterEdit.displayName')}</Typography.Text>
-            <Input
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
-              placeholder={t('clusterEdit.displayNamePlaceholder')}
-            />
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Typography.Text>{t('clusterEdit.prometheus')}</Typography.Text>
-              {statusTag(prometheusStatus, t)}
-            </div>
-            <Input
-              value={prometheusUrl}
-              onChange={(e) => setPrometheusUrl(e.target.value)}
-              placeholder={t('clusterEdit.prometheusPlaceholder')}
-            />
-            <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
-              {t('clusterEdit.prometheusHint')}
+        }
+      >
+        <div className="ml-cluster-edit-layout">
+          <section className="ml-cluster-edit-col">
+            <Typography.Text strong className="ml-cluster-edit-section-title">
+              {t('clusterEdit.displayName')}
             </Typography.Text>
-            {cluster?.status === 'connected' ? (
-              <Button
-                size="small"
-                icon={<Icon icon={RefreshCw} variant="detail" />}
-                loading={discovering}
-                style={{ marginTop: 8 }}
-                onClick={() => void handleDiscover()}
-              >
-                {t('clusterActions.testConnection')}
-              </Button>
-            ) : (
-              <Alert
-                type="info"
-                showIcon
-                style={{ marginTop: 8 }}
-                message={t('clusterEdit.prometheusConnectHint')}
+            <Space align="start" size="middle" style={{ width: '100%', marginTop: 8 }}>
+              <ClusterAvatar logoUrl={logoUrl} name={customName} size={56} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Input
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder={t('clusterEdit.displayNamePlaceholder')}
+                  size="large"
+                />
+                <Button
+                  size="small"
+                  icon={<Icon icon={Upload} variant="detail" />}
+                  style={{ marginTop: 8 }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {t('clusterEdit.changeLogo')}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={LOGO_ACCEPT}
+                  style={{ display: 'none' }}
+                  onChange={handleLogoSelected}
+                />
+              </div>
+            </Space>
+
+            <div style={{ marginTop: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Typography.Text strong>{t('clusterEdit.prometheus')}</Typography.Text>
+                {statusTag(prometheusStatus, t)}
+              </div>
+              <Input
+                value={prometheusUrl}
+                onChange={(e) => setPrometheusUrl(e.target.value)}
+                placeholder={t('clusterEdit.prometheusPlaceholder')}
               />
-            )}
-            {prometheusStatus && !prometheusStatus.available && prometheusStatus.error ? (
               <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
-                {prometheusStatus.error}
+                {t('clusterEdit.prometheusHint')}
               </Typography.Text>
-            ) : null}
-          </div>
+              {cluster?.status === 'connected' ? (
+                <Button
+                  size="small"
+                  icon={<Icon icon={RefreshCw} variant="detail" />}
+                  loading={discovering}
+                  style={{ marginTop: 8 }}
+                  onClick={() => void handleDiscover()}
+                >
+                  {t('clusterActions.testConnection')}
+                </Button>
+              ) : (
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginTop: 8 }}
+                  message={t('clusterEdit.prometheusConnectHint')}
+                />
+              )}
+              {prometheusStatus && !prometheusStatus.available && prometheusStatus.error ? (
+                <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
+                  {prometheusStatus.error}
+                </Typography.Text>
+              ) : null}
+            </div>
 
-          <div>
-            <ClusterBackgroundPicker
-              backgroundId={backgroundId}
-              backgroundCustomUrl={backgroundCustomUrl}
-              backgroundPanelOpacity={backgroundPanelOpacity}
-              onChange={(next) => {
-                setBackgroundId(next.backgroundId)
-                setBackgroundCustomUrl(next.backgroundCustomUrl)
-                setBackgroundPanelOpacity(next.backgroundPanelOpacity)
-              }}
-            />
-          </div>
+            <div style={{ marginTop: 20 }}>
+              <Typography.Text strong>{t('vpn.clusterLink.title')}</Typography.Text>
+              <Select
+                allowClear
+                placeholder={t('vpn.clusterLink.placeholder')}
+                style={{ width: '100%', marginTop: 8 }}
+                value={linkedVpnProfileId ?? undefined}
+                options={vpnProfileOptions}
+                onChange={(value) => setLinkedVpnProfileId(value ?? null)}
+                notFoundContent={
+                  vpnProfileOptions.length === 0 ? t('vpn.clusterLink.empty') : undefined
+                }
+              />
+              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
+                {t('vpn.clusterLink.hint')}
+              </Typography.Text>
+            </div>
+          </section>
 
-          <div>
-            <Typography.Text>{t('vpn.clusterLink.title')}</Typography.Text>
-            <Select
-              allowClear
-              placeholder={t('vpn.clusterLink.placeholder')}
-              style={{ width: '100%', marginTop: 8 }}
-              value={linkedVpnProfileId ?? undefined}
-              options={vpnProfileOptions}
-              onChange={(value) => setLinkedVpnProfileId(value ?? null)}
-              notFoundContent={
-                vpnProfileOptions.length === 0 ? t('vpn.clusterLink.empty') : undefined
-              }
-            />
-            <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
-              {t('vpn.clusterLink.hint')}
-            </Typography.Text>
-          </div>
-
-          <div>
+          <section className="ml-cluster-edit-col">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Typography.Text>{t('clusterEdit.kubeconfig')}</Typography.Text>
+              <Typography.Text strong>{t('clusterEdit.kubeconfig')}</Typography.Text>
               <Tag>
                 {cluster?.source.type === 'file'
                   ? t('clusterEdit.kubeconfigScopedFile')
@@ -378,9 +401,22 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
             <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
               {t('clusterEdit.kubeconfigHint')}
             </Typography.Text>
-          </div>
-        </Space>
-      </Modal>
+
+            <div style={{ marginTop: 20 }}>
+              <ClusterBackgroundPicker
+                backgroundId={backgroundId}
+                backgroundCustomUrl={backgroundCustomUrl}
+                backgroundPanelOpacity={backgroundPanelOpacity}
+                onChange={(next) => {
+                  setBackgroundId(next.backgroundId)
+                  setBackgroundCustomUrl(next.backgroundCustomUrl)
+                  setBackgroundPanelOpacity(next.backgroundPanelOpacity)
+                }}
+              />
+            </div>
+          </section>
+        </div>
+      </Drawer>
 
       <LogoCropModal imageSrc={cropSource} onCancel={() => setCropSource(null)} onSave={handleCropSave} />
 
