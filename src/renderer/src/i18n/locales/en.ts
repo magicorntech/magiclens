@@ -156,7 +156,7 @@ export const en = {
     removedToast: 'Removed',
     noToolsTitle: 'No VPN tools detected',
     noToolsDesc:
-      'Install OpenVPN (brew install openvpn), Tunnelblick, WireGuard.app, or wireguard-tools.',
+      'On connect, MagicLens installs Homebrew (if needed) then OpenVPN via brew. You may be asked for your Mac password. OpenVPN Connect is not supported for PIN + MFA.',
     profilesTitle: 'VPN profiles',
     addToStart: 'Add a config to get started',
     filteredCount: '{{filtered}} of {{total}}',

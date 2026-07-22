@@ -492,6 +492,8 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
       statusColor: 'default',
       columns: {
         minAvailable: pdb.spec?.minAvailable !== undefined ? String(pdb.spec.minAvailable) : '-',
+        currentHealthy: String(pdb.status?.currentHealthy ?? 0),
+        desiredHealthy: String(pdb.status?.desiredHealthy ?? 0),
         allowedDisruptions: String(pdb.status?.disruptionsAllowed ?? 0)
       }
     })

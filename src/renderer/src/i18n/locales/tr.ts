@@ -158,7 +158,7 @@ export const tr: TranslationOverrides = {
     removedToast: 'Kaldırıldı',
     noToolsTitle: 'VPN aracı bulunamadı',
     noToolsDesc:
-      'OpenVPN (brew install openvpn), Tunnelblick, WireGuard.app veya wireguard-tools kurun.',
+      'Bağlanırken MagicLens gerekirse Homebrew’u, ardından OpenVPN’i kurar. Mac şifreniz sorulabilir. PIN + MFA için OpenVPN Connect desteklenmez.',
     profilesTitle: 'VPN profilleri',
     addToStart: 'Başlamak için bir yapılandırma ekleyin',
     filteredCount: '{{filtered}} / {{total}}',

@@ -131,6 +131,8 @@ export const kindColumnDefs: Record<ResourceKind, ColumnDef[]> = {
   ],
   PodDisruptionBudgets: [
     { key: 'minAvailable', title: 'Min available' },
+    { key: 'currentHealthy', title: 'Current healthy' },
+    { key: 'desiredHealthy', title: 'Desired healthy' },
     { key: 'allowedDisruptions', title: 'Allowed disruptions' }
   ],
   PriorityClasses: [

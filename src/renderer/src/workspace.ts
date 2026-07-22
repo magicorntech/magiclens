@@ -60,14 +60,8 @@ export async function switchWorkspace(
     }
   }
 
-  try {
-    await Promise.race([
-      window.api.vpn.disconnect(),
-      new Promise<void>((resolve) => setTimeout(resolve, 3000))
-    ])
-  } catch {
-    // ignore
-  }
+  // Do NOT disconnect VPN tunnels here — OpenVPN runs as a daemon and should survive
+  // app / renderer restarts for the ~5h session. Logout / manual Disconnect tear them down.
 
   await window.api.session.setScope(scope)
 

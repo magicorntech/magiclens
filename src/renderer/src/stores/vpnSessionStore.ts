@@ -11,6 +11,7 @@ type SessionCreds = {
 /** Keep PIN like Pritunl session (~5h). MFA/TOTP is only reusable briefly. */
 const PIN_TTL_MS = 5 * 60 * 60 * 1000
 const MFA_TTL_MS = 90_000
+const STORAGE_KEY = 'magiclens.vpnSession.v1'
 
 interface VpnSessionState {
   credentialsByProfile: Record<string, SessionCreds>
@@ -24,23 +25,57 @@ interface VpnSessionState {
   clearAuthPrompt: () => void
 }
 
+function pruneExpired(creds: Record<string, SessionCreds>): Record<string, SessionCreds> {
+  const now = Date.now()
+  const next: Record<string, SessionCreds> = {}
+  for (const [id, entry] of Object.entries(creds)) {
+    if (now - entry.pinAt <= PIN_TTL_MS) next[id] = entry
+  }
+  return next
+}
+
+function loadPersisted(): Record<string, SessionCreds> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as Record<string, SessionCreds>
+    if (!parsed || typeof parsed !== 'object') return {}
+    return pruneExpired(parsed)
+  } catch {
+    return {}
+  }
+}
+
+function persist(creds: Record<string, SessionCreds>): void {
+  try {
+    const pruned = pruneExpired(creds)
+    if (Object.keys(pruned).length === 0) {
+      localStorage.removeItem(STORAGE_KEY)
+      return
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned))
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
 export const useVpnSessionStore = create<VpnSessionState>((set, get) => ({
-  credentialsByProfile: {},
+  credentialsByProfile: loadPersisted(),
   authPrompt: null,
 
   setCredentials: (profileId, creds) => {
     const now = Date.now()
-    set({
-      credentialsByProfile: {
-        ...get().credentialsByProfile,
-        [profileId]: {
-          pin: creds.pin,
-          mfaCode: creds.mfaCode,
-          pinAt: now,
-          mfaAt: now
-        }
+    const next = {
+      ...get().credentialsByProfile,
+      [profileId]: {
+        pin: creds.pin,
+        mfaCode: creds.mfaCode,
+        pinAt: now,
+        mfaAt: now
       }
-    })
+    }
+    persist(next)
+    set({ credentialsByProfile: next })
   },
 
   getCredentials: (profileId) => {
@@ -50,6 +85,7 @@ export const useVpnSessionStore = create<VpnSessionState>((set, get) => ({
     if (now - entry.pinAt > PIN_TTL_MS) {
       const next = { ...get().credentialsByProfile }
       delete next[profileId]
+      persist(next)
       set({ credentialsByProfile: next })
       return null
     }
@@ -63,6 +99,7 @@ export const useVpnSessionStore = create<VpnSessionState>((set, get) => ({
     if (Date.now() - entry.pinAt > PIN_TTL_MS) {
       const next = { ...get().credentialsByProfile }
       delete next[profileId]
+      persist(next)
       set({ credentialsByProfile: next })
       return null
     }
@@ -71,11 +108,13 @@ export const useVpnSessionStore = create<VpnSessionState>((set, get) => ({
 
   clearCredentials: (profileId) => {
     if (!profileId) {
+      persist({})
       set({ credentialsByProfile: {} })
       return
     }
     const next = { ...get().credentialsByProfile }
     delete next[profileId]
+    persist(next)
     set({ credentialsByProfile: next })
   },
 

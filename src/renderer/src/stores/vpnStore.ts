@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { VpnAuthCredentials, VpnProfileSummary, VpnRuntimeStatus } from '@shared/types/vpn'
 import { enterpriseApi } from '../enterprise/api'
 import { useAuthStore } from './authStore'
+import { useVpnSessionStore } from './vpnSessionStore'
 
 interface VpnState {
   profiles: VpnProfileSummary[]
@@ -145,6 +146,8 @@ export const useVpnStore = create<VpnState>((set, get) => ({
 
   disconnect: async (id) => {
     await window.api.vpn.disconnect(id)
+    // Manual disconnect ends the ~5h auth session for that profile (or all).
+    useVpnSessionStore.getState().clearCredentials(id)
     await get().refresh()
   },
 

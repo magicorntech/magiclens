@@ -1,12 +1,14 @@
 import { join } from 'node:path'
 import { app, BrowserWindow } from 'electron'
 import { registerIpcHandlers } from './ipc/register'
+import { installApplicationMenu, installReloadConfirm } from './reloadConfirm'
 import { initAutoUpdater } from './update/autoUpdateService'
 import { fixShellPath } from './util/fixShellPath'
 import { createMainWindow } from './window'
 
 app.whenReady().then(() => {
   fixShellPath()
+  installApplicationMenu()
 
   if (process.platform === 'darwin' && !app.isPackaged) {
     app.dock?.setIcon(join(__dirname, '../../resources/icon.png'))
@@ -14,11 +16,13 @@ app.whenReady().then(() => {
 
   registerIpcHandlers()
   const window = createMainWindow()
+  installReloadConfirm(window)
   initAutoUpdater(window)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow()
+      const next = createMainWindow()
+      installReloadConfirm(next)
     }
   })
 })

@@ -56,10 +56,28 @@ class VpnManager {
     return first.done ? null : first.value
   }
 
+  private homebrewPrefixes(): string[] {
+    if (process.platform === 'darwin') return ['/opt/homebrew', '/usr/local']
+    if (process.platform === 'linux') return ['/home/linuxbrew/.linuxbrew', '/usr/local']
+    return []
+  }
+
+  private enrichedEnv(): NodeJS.ProcessEnv {
+    const extras = this.homebrewPrefixes().map((p) => join(p, 'bin'))
+    const pathKey = process.platform === 'win32' ? 'Path' : 'PATH'
+    const current = process.env[pathKey] ?? process.env.PATH ?? ''
+    return {
+      ...process.env,
+      [pathKey]: [...extras, current].filter(Boolean).join(process.platform === 'win32' ? ';' : ':'),
+      HOMEBREW_NO_AUTO_UPDATE: '1',
+      NONINTERACTIVE: '1'
+    }
+  }
+
   private async which(bin: string): Promise<string | null> {
     try {
       const { stdout } = await execFileAsync(process.platform === 'win32' ? 'where' : 'which', [bin], {
-        env: process.env
+        env: this.enrichedEnv()
       })
       const path = stdout.trim().split(/\r?\n/)[0]
       return path && existsSync(path) ? path : null
@@ -68,9 +86,19 @@ class VpnManager {
     }
   }
 
+  private async resolveBin(bin: string): Promise<string | undefined> {
+    const fromPath = await this.which(bin)
+    if (fromPath) return fromPath
+    for (const prefix of this.homebrewPrefixes()) {
+      const candidate = join(prefix, 'bin', bin)
+      if (existsSync(candidate)) return candidate
+    }
+    return undefined
+  }
+
   private async detectTools(): Promise<VpnRuntimeStatus['tools']> {
-    const openvpnPath = (await this.which('openvpn')) ?? undefined
-    const wgQuickPath = (await this.which('wg-quick')) ?? undefined
+    const openvpnPath = await this.resolveBin('openvpn')
+    const wgQuickPath = await this.resolveBin('wg-quick')
     const tunnelblick =
       process.platform === 'darwin' && existsSync('/Applications/Tunnelblick.app')
     const wireguardApp =
@@ -83,6 +111,185 @@ class VpnManager {
       tunnelblick,
       wireguardApp
     }
+  }
+
+  /**
+   * Install Homebrew if missing (macOS/Linux), then install a formula.
+   * Used so PIN+MFA OpenVPN can run in-process instead of handing .ovpn to OpenVPN Connect.
+   */
+  private async ensureHomebrew(): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+    const existing = await this.resolveBin('brew')
+    if (existing) return { ok: true, path: existing }
+
+    if (process.platform !== 'darwin' && process.platform !== 'linux') {
+      return {
+        ok: false,
+        error: 'Homebrew auto-install is only supported on macOS and Linux.'
+      }
+    }
+
+    this.setState(
+      'connecting',
+      'Installing Homebrew… You may be asked for your password. This can take several minutes.'
+    )
+
+    const installUrl = 'https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh'
+    const installCmd = `NONINTERACTIVE=1 CI=1 /bin/bash -c "$(curl -fsSL ${installUrl})"`
+
+    try {
+      if (process.platform === 'darwin') {
+        mkdirSync(this.vpnDir(), { recursive: true })
+        const askpassPath = join(this.vpnDir(), 'brew-askpass.sh')
+        writeFileSync(
+          askpassPath,
+          `#!/bin/bash
+osascript <<'APPLESCRIPT'
+tell application "System Events"
+  activate
+  set thePass to text returned of (display dialog "MagicLens needs your Mac password to install Homebrew (required for OpenVPN)." default answer "" with hidden answer with title "MagicLens" buttons {"Cancel", "OK"} default button "OK" cancel button "Cancel")
+end tell
+return thePass
+APPLESCRIPT
+`,
+          { encoding: 'utf8', mode: 0o700 }
+        )
+        try {
+          chmodSync(askpassPath, 0o700)
+        } catch {
+          // ignore
+        }
+        await execFileAsync('/bin/bash', ['-lc', installCmd], {
+          timeout: 900_000,
+          env: {
+            ...this.enrichedEnv(),
+            SUDO_ASKPASS: askpassPath,
+            SUDO_ASKPASS_REQUIRE: 'force'
+          }
+        })
+      } else {
+        await execFileAsync('/bin/bash', ['-lc', installCmd], {
+          timeout: 900_000,
+          env: this.enrichedEnv()
+        })
+      }
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err)
+      return {
+        ok: false,
+        error: `Failed to install Homebrew: ${detail}. Install manually from https://brew.sh then retry.`
+      }
+    }
+
+    for (const candidate of [
+      '/opt/homebrew/bin/brew',
+      '/usr/local/bin/brew',
+      '/home/linuxbrew/.linuxbrew/bin/brew'
+    ]) {
+      if (existsSync(candidate)) return { ok: true, path: candidate }
+    }
+
+    const brew = await this.resolveBin('brew')
+    if (!brew) {
+      return {
+        ok: false,
+        error:
+          'Homebrew install finished but brew was not found. Quit and reopen MagicLens, then retry.'
+      }
+    }
+    return { ok: true, path: brew }
+  }
+
+  private async brewInstall(formula: string, label: string): Promise<{ ok: boolean; error?: string }> {
+    let brew = await this.resolveBin('brew')
+    if (!brew) {
+      const homebrew = await this.ensureHomebrew()
+      if (!homebrew.ok) return { ok: false, error: homebrew.error }
+      brew = homebrew.path
+    }
+
+    this.setState('connecting', `Installing ${label} via Homebrew… This may take a few minutes.`)
+    try {
+      await execFileAsync(brew, ['install', formula], {
+        timeout: 600_000,
+        env: this.enrichedEnv()
+      })
+      return { ok: true }
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err)
+      return {
+        ok: false,
+        error: `Failed to install ${label} with Homebrew: ${detail}`
+      }
+    }
+  }
+
+  private async ensureOpenVpnCli(): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+    let tools = await this.detectTools()
+    if (tools.openvpnPath) return { ok: true, path: tools.openvpnPath }
+
+    if (process.platform !== 'darwin' && process.platform !== 'linux') {
+      return {
+        ok: false,
+        error: 'OpenVPN CLI not found. Install OpenVPN and retry.'
+      }
+    }
+
+    const installed = await this.brewInstall('openvpn', 'OpenVPN CLI')
+    if (!installed.ok) {
+      return {
+        ok: false,
+        error:
+          installed.error ??
+          'OpenVPN CLI not found. Install with: brew install openvpn — or install Tunnelblick'
+      }
+    }
+
+    tools = await this.detectTools()
+    if (!tools.openvpnPath) {
+      return {
+        ok: false,
+        error:
+          'OpenVPN was installed but MagicLens still cannot find it. Quit and reopen MagicLens, then retry.'
+      }
+    }
+    return { ok: true, path: tools.openvpnPath }
+  }
+
+  private async ensureWireGuardCli(): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+    let tools = await this.detectTools()
+    if (tools.wgQuickPath) return { ok: true, path: tools.wgQuickPath }
+    if (tools.wireguardApp) {
+      // App-only is fine for external path; CLI ensure is best-effort.
+      return {
+        ok: false,
+        error: 'WireGuard CLI (wg-quick) not found. Install with: brew install wireguard-tools'
+      }
+    }
+
+    if (process.platform !== 'darwin' && process.platform !== 'linux') {
+      return {
+        ok: false,
+        error: 'WireGuard tools not found. Install with: brew install wireguard-tools'
+      }
+    }
+
+    const installed = await this.brewInstall('wireguard-tools', 'WireGuard tools')
+    if (!installed.ok) {
+      return {
+        ok: false,
+        error: installed.error ?? 'WireGuard tools not found. Install with: brew install wireguard-tools'
+      }
+    }
+
+    tools = await this.detectTools()
+    if (!tools.wgQuickPath) {
+      return {
+        ok: false,
+        error:
+          'WireGuard tools were installed but MagicLens still cannot find wg-quick. Quit and reopen MagicLens, then retry.'
+      }
+    }
+    return { ok: true, path: tools.wgQuickPath }
   }
 
   async getStatus(): Promise<VpnRuntimeStatus> {
@@ -576,6 +783,28 @@ class VpnManager {
     this.focusProfileId = profileId
     this.setState('connecting', `Connecting ${profile.name}…`)
 
+    // Prefer in-process CLI (PIN+MFA). Auto-install via Homebrew when missing.
+    if (!preferExternal) {
+      if (effectiveProvider === 'openvpn') {
+        const ensured = await this.ensureOpenVpnCli()
+        if (!ensured.ok) {
+          this.setState('error', ensured.error)
+          return { ok: false, status: 'error', error: ensured.error }
+        }
+      } else if (effectiveProvider === 'wireguard') {
+        const toolsBefore = await this.detectTools()
+        if (!toolsBefore.wgQuickPath && !toolsBefore.wireguardApp) {
+          const ensured = await this.ensureWireGuardCli()
+          if (!ensured.ok) {
+            this.setState('error', ensured.error)
+            return { ok: false, status: 'error', error: ensured.error }
+          }
+        }
+      }
+    }
+
+    this.setState('connecting', `Connecting ${profile.name}…`)
+
     let configBody = profile.config
     let authPath: string | undefined
     const authUsername = credentials?.username?.trim() || profile.username?.trim()
@@ -967,15 +1196,46 @@ class VpnManager {
     tools: VpnRuntimeStatus['tools']
   ): Promise<{ ok: boolean; message?: string; error?: string }> {
     if (process.platform === 'darwin') {
+      // Only open apps that can actually bring a tunnel up for MagicLens.
+      // Never fall back to `shell.openPath(.ovpn)` — that often launches OpenVPN Connect,
+      // which only imports the file and never receives Magiclens PIN/MFA credentials.
       if ((provider === 'openvpn' || provider === 'pritunl') && tools.tunnelblick) {
-        await shell.openPath(configPath)
-        return { ok: true, message: 'Opened with Tunnelblick / default .ovpn handler' }
+        try {
+          await execFileAsync('open', ['-a', 'Tunnelblick', configPath])
+          return { ok: true, message: 'Opened with Tunnelblick' }
+        } catch {
+          return {
+            ok: false,
+            error:
+              'Tunnelblick is installed but failed to open the profile. Open Tunnelblick and import the config manually, or install CLI OpenVPN: brew install openvpn'
+          }
+        }
       }
       if (provider === 'wireguard' && tools.wireguardApp) {
-        await shell.openPath(configPath)
-        return { ok: true, message: 'Opened with WireGuard.app' }
+        try {
+          await execFileAsync('open', ['-a', 'WireGuard', configPath])
+          return { ok: true, message: 'Opened with WireGuard.app' }
+        } catch {
+          return {
+            ok: false,
+            error:
+              'WireGuard.app failed to open the profile. Install CLI tools: brew install wireguard-tools'
+          }
+        }
+      }
+      if (provider === 'openvpn' || provider === 'pritunl') {
+        return {
+          ok: false,
+          error:
+            'OpenVPN CLI not found. Install with: brew install openvpn (recommended for PIN + MFA). Tunnelblick also works. OpenVPN Connect is not supported — it only imports the file and cannot use MagicLens credentials.'
+        }
+      }
+      return {
+        ok: false,
+        error: 'WireGuard tools not found. Install with: brew install wireguard-tools — or install WireGuard.app'
       }
     }
+
     const result = await shell.openPath(configPath)
     if (result) return { ok: false, error: result }
     return { ok: true, message: 'Opened config with system default app' }
