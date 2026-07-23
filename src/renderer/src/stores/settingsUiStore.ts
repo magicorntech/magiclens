@@ -7,6 +7,7 @@ export type SettingsSection =
   | 'keyboard'
   | 'appearance'
   | 'vpnExtensions'
+  | 'developer'
   | 'about'
 
 interface SettingsUiState {

@@ -2,10 +2,11 @@ import { safeStorage } from 'electron'
 import Store from 'electron-store'
 import { randomUUID } from 'crypto'
 import { existsSync, unlinkSync, writeFileSync } from 'node:fs'
-import { findExistingCluster } from '@shared/clusterIdentity'
+import { clusterDedupeKey, findExistingCluster, pickCanonicalCluster } from '@shared/clusterIdentity'
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import type { PersistedClusterEntry } from '@shared/types/cluster'
 import { exportScopedKubeconfigYaml } from '../k8s/kubeconfigExport'
+import { authFingerprintForContext, buildKubeConfig } from '../k8s/kubeconfigParser'
 import { orgKubeconfigFilePath } from '../k8s/kubeconfigPaths'
 import { getSessionScope } from './sessionScope'
 
@@ -114,13 +115,87 @@ function saveCluster(entry: PersistedClusterEntry): void {
   writeScopeEntries(stored)
 }
 
-export function addCluster(entry: PersistedClusterEntry): 'added' | 'duplicate' {
-  const clusters = listClusters()
-  if (findExistingCluster(clusters.filter((c) => c.id !== entry.id), entry, entry.endpoint)) {
+function enrichIdentity(entry: PersistedClusterEntry): PersistedClusterEntry {
+  if (entry.authFingerprint && entry.endpoint) return entry
+  try {
+    const kc = buildKubeConfig(entry.source, entry.contextName)
+    const cluster = kc.getCurrentCluster()
+    return {
+      ...entry,
+      endpoint: entry.endpoint || cluster?.server,
+      authFingerprint: entry.authFingerprint || authFingerprintForContext(kc, entry.contextName)
+    }
+  } catch {
+    return entry
+  }
+}
+
+export function addCluster(
+  entry: PersistedClusterEntry,
+  options?: { force?: boolean }
+): 'added' | 'duplicate' {
+  const enriched = enrichIdentity(entry)
+  const clusters = listClusters().map(enrichIdentity)
+  if (
+    !options?.force &&
+    findExistingCluster(
+      clusters.filter((c) => c.id !== enriched.id),
+      enriched,
+      enriched.endpoint
+    )
+  ) {
     return 'duplicate'
   }
-  saveCluster(entry)
+  saveCluster(enriched)
   return 'added'
+}
+
+/** Collapse duplicate clusters (same identity) into one entry each. */
+export function dedupeClusters(): {
+  kept: number
+  removedIds: string[]
+  groupsMerged: number
+} {
+  const clusters = listClusters().map(enrichIdentity)
+  const groups = new Map<string, PersistedClusterEntry[]>()
+
+  for (const entry of clusters) {
+    const key = clusterDedupeKey(entry)
+    const list = groups.get(key) ?? []
+    list.push(entry)
+    groups.set(key, list)
+  }
+
+  const keptEntries: PersistedClusterEntry[] = []
+  const removedIds: string[] = []
+  let groupsMerged = 0
+
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      keptEntries.push(group[0]!)
+      continue
+    }
+    groupsMerged += 1
+    const canonical = pickCanonicalCluster(group)
+    const merged: PersistedClusterEntry = {
+      ...canonical,
+      endpoint: canonical.endpoint || group.find((g) => g.endpoint)?.endpoint,
+      authFingerprint: canonical.authFingerprint || group.find((g) => g.authFingerprint)?.authFingerprint,
+      isFavorite: group.some((g) => g.isFavorite),
+      logoUrl: canonical.logoUrl || group.find((g) => g.logoUrl)?.logoUrl,
+      backgroundId: canonical.backgroundId || group.find((g) => g.backgroundId)?.backgroundId,
+      backgroundCustomUrl:
+        canonical.backgroundCustomUrl || group.find((g) => g.backgroundCustomUrl)?.backgroundCustomUrl,
+      prometheusUrl: canonical.prometheusUrl || group.find((g) => g.prometheusUrl)?.prometheusUrl
+    }
+    keptEntries.push(merged)
+    for (const extra of group) {
+      if (extra.id !== canonical.id) removedIds.push(extra.id)
+    }
+  }
+
+  writeScopeEntries(keptEntries.map(toStored))
+  return { kept: keptEntries.length, removedIds, groupsMerged }
 }
 
 export function updateCluster(entry: PersistedClusterEntry): void {
@@ -154,7 +229,7 @@ export function upsertOrgCluster(input: {
   endpoint?: string
   environment?: string
 }): PersistedClusterEntry {
-  const clusters = listClusters()
+  const clusters = listClusters().map(enrichIdentity)
   let source = input.source
   let localKubeconfigPath: string | undefined
 
@@ -171,11 +246,22 @@ export function upsertOrgCluster(input: {
 
   if (!source) throw new Error('upsertOrgCluster requires source or yamlContent+userEmail')
 
+  const draft = enrichIdentity({
+    id: randomUUID(),
+    customName: input.customName,
+    contextName: input.contextName,
+    source,
+    endpoint: input.endpoint,
+    isFavorite: false,
+    selectedNamespace: 'ALL',
+    selectedResourceKind: null
+  })
+
   const existingOrg = clusters.find((c) => c.origin === 'org' && c.remoteId === input.remoteId)
   const existingLocal = findExistingCluster(
     clusters.filter((c) => c.origin !== 'org'),
-    { contextName: input.contextName, source, endpoint: input.endpoint },
-    input.endpoint
+    draft,
+    draft.endpoint
   )
   const existing = existingOrg ?? existingLocal
 
@@ -190,11 +276,12 @@ export function upsertOrgCluster(input: {
   }
 
   const entry: PersistedClusterEntry = {
-    id: existing?.id ?? randomUUID(),
+    id: existing?.id ?? draft.id,
     customName: input.customName,
     contextName: input.contextName,
     source,
-    endpoint: input.endpoint,
+    endpoint: draft.endpoint ?? existing?.endpoint,
+    authFingerprint: draft.authFingerprint ?? existing?.authFingerprint,
     environment: input.environment,
     logoUrl: existing?.logoUrl,
     backgroundId: existing?.backgroundId,

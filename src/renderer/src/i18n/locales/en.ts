@@ -15,7 +15,8 @@ export const en = {
     total: 'total',
     clusters: 'Clusters',
     vpn: 'VPN',
-    favorites: 'Favorites'
+    favorites: 'Favorites',
+    cancel: 'Cancel'
   },
   chrome: {
     searchPlaceholder: 'Search clusters, resources, namespaces…',
@@ -42,6 +43,7 @@ export const en = {
       vpnExtensions: 'VPN Extensions',
       keyboard: 'Keyboard',
       appearance: 'Appearance',
+      developer: 'Developer',
       about: 'About'
     },
     language: {
@@ -51,7 +53,24 @@ export const en = {
     general: {
       refreshTitle: 'Resource refresh interval',
       refreshHint:
-        'How often resource lists and metrics refresh automatically. Applies to every open cluster tab; pausing live refresh is still available per resource view.'
+        'How often resource lists and metrics refresh automatically. Applies to every open cluster tab; pausing live refresh is still available per resource view.',
+      kubeconfigPathTitle: 'Local kubeconfig path',
+      kubeconfigPathHint:
+        'MagicLens auto-scans only this file or folder when you open Add Cluster. Leave empty to use ~/.kube.',
+      kubeconfigPathPlaceholder: '~/.kube (default)',
+      kubeconfigPickFile: 'Pick file',
+      kubeconfigPickFolder: 'Pick folder',
+      kubeconfigReset: 'Use ~/.kube',
+      dedupeTitle: 'Duplicate clusters',
+      dedupeHint:
+        'Collapse clusters that share the same name/context, API server, and credentials into one entry. Favorites and settings from the best match are kept.',
+      dedupe: 'Merge duplicates',
+      dedupeConfirmTitle: 'Merge duplicate clusters?',
+      dedupeConfirmBody:
+        'Clusters with the same name/context, API server, and credentials will be collapsed into one entry. Favorites and settings from the best match are kept.',
+      dedupeConfirmOk: 'Merge duplicates',
+      dedupeNone: 'No duplicate clusters found.',
+      dedupeDone: 'Merged {{groups}} group(s), removed {{removed}} duplicate(s). {{kept}} cluster(s) remain.'
     },
     updates: {
       available: 'v{{version}} available',
@@ -141,6 +160,48 @@ export const en = {
       customAccent: 'Custom accent',
       customAccentHint: 'Applies to sidebars, buttons, highlights, and chart accents.',
       customSwatch: 'Your own accent color'
+    },
+    developer: {
+      hostTitle: 'Computer specs',
+      hostHint: 'Hardware and OS details for this machine (loaded once when you open this section).',
+      hostHostname: 'Hostname',
+      hostOs: 'Operating system',
+      hostCpu: 'CPU',
+      hostCores: '{{count}} cores',
+      hostCpuSpeed: '{{mhz}} MHz',
+      hostMemory: 'Memory',
+      hostMemoryValue: '{{free}} free / {{total}}',
+      hostDisplay: 'Primary display',
+      hostDisplayValue: '{{width}}×{{height}} @ {{scale}}×',
+      hostRuntime: 'Runtime',
+      hostApiMissing:
+        'Host info API is unavailable. Restart MagicLens to load the new developer tools.',
+      liveTitle: 'Live app usage',
+      liveHint:
+        'Continuously reads MagicLens CPU and memory (main, GPU, renderer, utilities). Values refresh on the interval below.',
+      pollLabel: 'Refresh every',
+      cpuTotal: 'CPU (all processes)',
+      memTotal: 'Memory (working set)',
+      mainHeap: 'Main V8 heap',
+      heapOf: 'of {{total}} allocated',
+      systemMem: 'System memory',
+      systemMemValue: '{{free}} free / {{total}}',
+      processes: '{{count}} processes',
+      noSamples: 'Waiting for first sample…',
+      sampleFailed: 'Could not read process metrics.',
+      apiMissing: 'Process metrics API is unavailable. Restart MagicLens to load the new developer tools.',
+      colType: 'Type',
+      colName: 'Name',
+      colCpu: 'CPU',
+      colMem: 'Memory',
+      controlsTitle: 'Performance controls',
+      controlsHint: 'Tune live resource refresh and reclaim renderer caches when memory climbs.',
+      liveRefresh: 'Live resource refresh',
+      pauseRefresh: 'Pause refresh',
+      resumeRefresh: 'Resume refresh',
+      clearCache: 'Clear renderer cache',
+      cacheCleared: 'Renderer cache cleared',
+      openDevTools: 'Open DevTools'
     },
     about: {
       platform: 'Platform'
@@ -428,6 +489,9 @@ export const en = {
     noClusters: 'No clusters yet — edit workspace to add some.',
     defaultName: 'Workspace',
     name: 'Name',
+    logo: 'Logo',
+    changeLogo: 'Change logo',
+    removeLogo: 'Remove',
     clusters: 'Clusters',
     selectClusters: 'Select clusters for this workspace',
     shortcut: 'Keyboard shortcut',
@@ -573,6 +637,37 @@ export const en = {
       error: 'Error',
       recent: 'Recently opened'
     }
+  },
+  addCluster: {
+    title: 'Add Cluster',
+    detected: 'Detected on this machine',
+    rescan: 'Rescan',
+    scanPath: 'Scanning: {{path}}',
+    mergeExisting: 'Merge duplicates in list',
+    mergeNone: 'No duplicates in your cluster list.',
+    mergeDone: 'Merged {{groups}} group(s), removed {{removed}}.',
+    modeFile: 'Pick kubeconfig file',
+    modePaste: 'Paste kubeconfig YAML',
+    modeFolder: 'Scan a folder',
+    chooseFile: 'Choose file...',
+    chooseFolder: 'Choose folder to scan...',
+    pastePlaceholder: 'Paste kubeconfig YAML here',
+    parse: 'Parse',
+    uniqueContexts: '{{count}} unique context(s)',
+    mergedHint: '({{count}} merged from duplicate configs)',
+    alreadyInList: '{{count}} already in your cluster list',
+    selectAllNew: 'Select all new',
+    tagMerged: 'Merged',
+    tagAlready: 'Already added',
+    matches: 'matches "{{name}}"',
+    dupSkip: 'Skip (already exists)',
+    dupRename: 'Add with new name',
+    newNamePlaceholder: 'New display name',
+    noneToAdd: 'Nothing to add — duplicates are set to skip, or nothing is selected.',
+    skipped: '{{count}} cluster(s) skipped — already in your list.',
+    added: 'Added {{count}} cluster(s).',
+    addCount: 'Add {{count}} cluster(s)',
+    allAlready: 'All detected contexts are already in your cluster list. Choose “Add with new name” to keep a second copy.'
   },
   clusterActions: {
     open: 'Open',

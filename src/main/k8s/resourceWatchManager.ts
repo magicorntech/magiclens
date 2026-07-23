@@ -19,8 +19,9 @@ import { listDynamicResourcesRaw, toDynamicItem } from './dynamicResourceService
 
 type WatchItem = ResourceListItem | DynamicResourceItem
 
-const FLUSH_INTERVAL_MS = 200
+const FLUSH_INTERVAL_MS = 400
 const MAX_RETRIES = 5
+const MAX_PENDING_OPS = 2_000
 const NO_RETRY_STATUS_CODES = new Set([401, 403, 404])
 
 function backoffDelay(retryCount: number): number {
@@ -145,11 +146,17 @@ class ResourceWatchManager {
 
     const toItem = resolved.toItem
     const onUpsert = (obj: KubernetesObject): void => {
+      if (session.pending.size >= MAX_PENDING_OPS) {
+        this.flush(req.sessionId)
+      }
       const item = toItem(obj)
       session.pending.set(item.id, { op: 'upsert', item })
       this.scheduleFlush(req.sessionId)
     }
     const onDelete = (obj: KubernetesObject): void => {
+      if (session.pending.size >= MAX_PENDING_OPS) {
+        this.flush(req.sessionId)
+      }
       const item = toItem(obj)
       session.pending.set(item.id, { op: 'delete', id: item.id })
       this.scheduleFlush(req.sessionId)
@@ -226,7 +233,10 @@ class ResourceWatchManager {
   private flush(sessionId: string): void {
     const session = this.sessions.get(sessionId)
     if (!session) return
-    session.flushTimer = null
+    if (session.flushTimer) {
+      clearTimeout(session.flushTimer)
+      session.flushTimer = null
+    }
     if (session.pending.size === 0) return
     const changes = [...session.pending.values()]
     session.pending.clear()

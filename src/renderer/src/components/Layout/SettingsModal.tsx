@@ -3,6 +3,7 @@ import {
   Button,
   ColorPicker,
   Descriptions,
+  Input,
   Menu,
   Modal,
   Select,
@@ -10,6 +11,7 @@ import {
   Switch,
   Tag,
   Typography,
+  message,
   theme
 } from 'antd'
 import type { MenuProps } from 'antd'
@@ -17,9 +19,11 @@ import type { AggregationColor } from 'antd/es/color-picker/color'
 import {
   Check,
   CloudDownload,
+  Code2,
   Info,
   Keyboard,
   LayoutDashboard,
+  Layers2,
   Network,
   Palette,
   RefreshCw
@@ -34,9 +38,11 @@ import { COLOR_SCHEME_DEFINITIONS } from '../../theme/schemes'
 import type { AppInfoResponse } from '@shared/types/app'
 import { APP_LOCALES, APP_LOCALE_LABELS, type AppLocale } from '@shared/types/locale'
 import { useLayoutMode } from '../../hooks/useLayoutMode'
+import { applyDedupeResult } from '../../clusterDedupe'
 import { NodesDashboardSettings } from '../Nodes/NodesDashboardSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { VpnExtensionsSettings } from './VpnExtensionsSettings'
+import { DeveloperSettings } from './DeveloperSettings'
 import { type SettingsSection, useSettingsUiStore } from '../../stores/settingsUiStore'
 
 interface SettingsModalProps {
@@ -71,12 +77,51 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const showWorkspacesSection = useDisplaySettingsStore((s) => s.showWorkspacesSection)
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
   const locale = useDisplaySettingsStore((s) => s.locale)
+  const kubeconfigScanPath = useDisplaySettingsStore((s) => s.kubeconfigScanPath)
   const setShowClusterTabLogos = useDisplaySettingsStore((s) => s.setShowClusterTabLogos)
   const setShowResourceTabIcons = useDisplaySettingsStore((s) => s.setShowResourceTabIcons)
   const setShowFavoritesSection = useDisplaySettingsStore((s) => s.setShowFavoritesSection)
   const setShowWorkspacesSection = useDisplaySettingsStore((s) => s.setShowWorkspacesSection)
   const setResourceDetailPlacement = useDisplaySettingsStore((s) => s.setResourceDetailPlacement)
   const setLocale = useDisplaySettingsStore((s) => s.setLocale)
+  const setKubeconfigScanPath = useDisplaySettingsStore((s) => s.setKubeconfigScanPath)
+  const [kubePathDraft, setKubePathDraft] = useState(kubeconfigScanPath)
+  const [deduping, setDeduping] = useState(false)
+
+  useEffect(() => {
+    if (open) setKubePathDraft(kubeconfigScanPath)
+  }, [open, kubeconfigScanPath])
+
+  function handleDedupeClusters(): void {
+    Modal.confirm({
+      title: t('settings.general.dedupeConfirmTitle'),
+      content: t('settings.general.dedupeConfirmBody'),
+      okText: t('settings.general.dedupeConfirmOk'),
+      cancelText: t('common.cancel'),
+      onOk: async () => {
+        setDeduping(true)
+        try {
+          const result = await window.api.clusterStore.dedupe()
+          applyDedupeResult(result)
+          if (result.groupsMerged === 0) {
+            message.info(t('settings.general.dedupeNone'))
+          } else {
+            message.success(
+              t('settings.general.dedupeDone', {
+                groups: result.groupsMerged,
+                removed: result.removedIds.length,
+                kept: result.kept
+              })
+            )
+          }
+        } catch (err) {
+          message.error(err instanceof Error ? err.message : String(err))
+        } finally {
+          setDeduping(false)
+        }
+      }
+    })
+  }
 
   const menuItems: MenuProps['items'] = useMemo(
     () => [
@@ -90,6 +135,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
       },
       { key: 'keyboard', icon: <Icon icon={Keyboard} variant="detail" />, label: t('settings.sections.keyboard') },
       { key: 'appearance', icon: <Icon icon={Palette} variant="detail" />, label: t('settings.sections.appearance') },
+      { key: 'developer', icon: <Icon icon={Code2} variant="detail" />, label: t('settings.sections.developer') },
       { key: 'about', icon: <Icon icon={Info} variant="detail" />, label: t('settings.sections.about') }
     ],
     [t]
@@ -152,6 +198,70 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
               <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
                 {t('settings.general.refreshHint')}
               </Typography.Text>
+            </div>
+            <div>
+              <Typography.Text strong>{t('settings.general.kubeconfigPathTitle')}</Typography.Text>
+              <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <Input
+                  value={kubePathDraft}
+                  placeholder={t('settings.general.kubeconfigPathPlaceholder')}
+                  onChange={(e) => setKubePathDraft(e.target.value)}
+                  onBlur={() => {
+                    if (kubePathDraft !== kubeconfigScanPath) void setKubeconfigScanPath(kubePathDraft)
+                  }}
+                  style={{ flex: 1, minWidth: 220 }}
+                />
+                <Button
+                  onClick={() => {
+                    void window.api.kubeconfig.pickFile().then((r) => {
+                      if (!r.canceled && r.filePath) {
+                        setKubePathDraft(r.filePath)
+                        void setKubeconfigScanPath(r.filePath)
+                      }
+                    })
+                  }}
+                >
+                  {t('settings.general.kubeconfigPickFile')}
+                </Button>
+                <Button
+                  onClick={() => {
+                    void window.api.kubeconfig.pickDirectory().then((r) => {
+                      if (!r.canceled && r.directoryPath) {
+                        setKubePathDraft(r.directoryPath)
+                        void setKubeconfigScanPath(r.directoryPath)
+                      }
+                    })
+                  }}
+                >
+                  {t('settings.general.kubeconfigPickFolder')}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setKubePathDraft('')
+                    void setKubeconfigScanPath('')
+                  }}
+                >
+                  {t('settings.general.kubeconfigReset')}
+                </Button>
+              </div>
+              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                {t('settings.general.kubeconfigPathHint')}
+              </Typography.Text>
+            </div>
+            <div>
+              <Typography.Text strong>{t('settings.general.dedupeTitle')}</Typography.Text>
+              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                {t('settings.general.dedupeHint')}
+              </Typography.Text>
+              <div style={{ marginTop: 12 }}>
+                <Button
+                  icon={<Icon icon={Layers2} variant="detail" />}
+                  loading={deduping}
+                  onClick={handleDedupeClusters}
+                >
+                  {t('settings.general.dedupe')}
+                </Button>
+              </div>
             </div>
           </Space>
         )
@@ -422,6 +532,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
 
       case 'vpnExtensions':
         return <VpnExtensionsSettings />
+
+      case 'developer':
+        return <DeveloperSettings />
 
       case 'about':
         return (

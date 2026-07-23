@@ -31,6 +31,7 @@ function normalizeGroup(g: ClusterGroup): ClusterGroup {
     name: g.name.trim() || 'Workspace',
     clusterIds: [...new Set(g.clusterIds)],
     collapsed: g.collapsed,
+    ...(typeof g.logoUrl === 'string' && g.logoUrl.trim() ? { logoUrl: g.logoUrl.trim() } : {}),
     ...(shortcut !== undefined ? { shortcut } : {})
   }
 }
@@ -59,9 +60,17 @@ export function createClusterGroup(name: string): ClusterGroupsState {
 
 export function updateClusterGroup(
   id: string,
-  patch: Partial<Pick<ClusterGroup, 'name' | 'clusterIds' | 'collapsed' | 'shortcut'>>
+  patch: Partial<Pick<ClusterGroup, 'name' | 'clusterIds' | 'collapsed' | 'shortcut' | 'logoUrl'>>
 ): ClusterGroupsState {
-  const groups = listClusterGroups().map((g) => (g.id === id ? { ...g, ...patch } : g))
+  const groups = listClusterGroups().map((g) => {
+    if (g.id !== id) return g
+    const next = { ...g, ...patch }
+    // Explicit null/empty clears the logo.
+    if ('logoUrl' in patch && !patch.logoUrl) {
+      delete next.logoUrl
+    }
+    return next
+  })
   return saveClusterGroups(groups)
 }
 

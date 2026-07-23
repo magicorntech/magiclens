@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, shell } from 'electron'
+import { createAppWebPreferences } from './chromiumPerf'
 
 export function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -16,15 +17,29 @@ export function createMainWindow(): BrowserWindow {
     ...(process.platform === 'darwin'
       ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 20 } }
       : {}),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true
-    }
+    webPreferences: createAppWebPreferences()
   })
 
   window.on('ready-to-show', () => window.show())
+
+  // When the window is hidden/minimized, nudge Chromium to drop unused GPU/renderer caches.
+  let reclaimTimer: ReturnType<typeof setTimeout> | null = null
+  const scheduleReclaim = (): void => {
+    if (reclaimTimer) clearTimeout(reclaimTimer)
+    reclaimTimer = setTimeout(() => {
+      reclaimTimer = null
+      if (window.isDestroyed() || window.isVisible()) return
+      void window.webContents.session.clearCache().catch(() => {})
+    }, 60_000)
+  }
+  window.on('hide', scheduleReclaim)
+  window.on('minimize', scheduleReclaim)
+  window.on('show', () => {
+    if (reclaimTimer) {
+      clearTimeout(reclaimTimer)
+      reclaimTimer = null
+    }
+  })
 
   window.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)

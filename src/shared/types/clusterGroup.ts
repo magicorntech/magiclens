@@ -4,6 +4,8 @@ export interface ClusterGroup {
   id: string
   name: string
   clusterIds: string[]
+  /** Optional workspace logo (data URL or remote URL). */
+  logoUrl?: string
   /** UI preference — collapsed in sidebar */
   collapsed?: boolean
   /** Optional app-wide shortcut to open this workspace */

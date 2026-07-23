@@ -22,11 +22,23 @@ interface LiveRefreshState {
 export const useLiveRefreshStore = create<LiveRefreshState>()(
   persist(
     (set) => ({
-      interval: 1000,
+      // 1s was the previous default and caused heavy fallback polling + metrics churn on Mac.
+      interval: 5000,
       paused: false,
       setInterval: (interval) => set({ interval }),
       togglePaused: () => set((s) => ({ paused: !s.paused }))
     }),
-    { name: 'magiclens-live-refresh' }
+    {
+      name: 'magiclens-live-refresh',
+      version: 2,
+      migrate: (persisted) => {
+        const state = (persisted ?? {}) as Partial<LiveRefreshState>
+        // Nudge users still on the old 1s default to a saner interval without forcing manual choices.
+        if (state.interval === 1000) {
+          return { ...state, interval: 5000 as RefreshInterval }
+        }
+        return state
+      }
+    }
   )
 )

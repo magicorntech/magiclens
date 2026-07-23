@@ -6,9 +6,9 @@ export interface NodeMetricsSample {
   memoryUsageBytes: number
 }
 
-const MAX_SAMPLES_PER_NODE = 400
-const MAX_TRACKED_NODES = 40
-const MIN_SAMPLE_GAP_MS = 250
+const MAX_SAMPLES_PER_NODE = 180
+const MAX_TRACKED_NODES = 20
+const MIN_SAMPLE_GAP_MS = 1_000
 
 function decimate(samples: NodeMetricsSample[]): NodeMetricsSample[] {
   if (samples.length <= MAX_SAMPLES_PER_NODE) return samples

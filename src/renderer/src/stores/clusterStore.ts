@@ -17,6 +17,7 @@ export interface ClusterEntry {
   contextName: string
   source: KubeconfigSource
   endpoint?: string
+  authFingerprint?: string
   logoUrl?: string
   backgroundId?: string
   backgroundCustomUrl?: string
@@ -404,6 +405,7 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         contextName: entry.contextName,
         source: entry.source,
         endpoint: entry.endpoint,
+        authFingerprint: entry.authFingerprint,
         logoUrl: entry.logoUrl,
         backgroundId: entry.backgroundId,
         backgroundCustomUrl: entry.backgroundCustomUrl,

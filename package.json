@@ -1,8 +1,8 @@
 {
   "name": "magiclens",
   "productName": "MagicLens",
-  "version": "0.1.12",
-  "buildNumber": "13",
+  "version": "0.1.13",
+  "buildNumber": "14",
   "description": "A simple, fast Kubernetes cluster manager",
   "main": "./out/main/index.js",
   "author": {
@@ -19,9 +19,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
     "build": "electron-vite build",
-    "start": "electron-vite preview",
+    "start": "env -u ELECTRON_RUN_AS_NODE electron-vite preview",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -34,7 +34,7 @@
     "dev:api": "npm run start:dev -w @magiclens/api",
     "dev:worker": "npm run start:dev -w @magiclens/worker",
     "dev:admin": "npm run dev -w @magiclens/admin",
-    "dev:desktop": "electron-vite dev",
+    "dev:desktop": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
     "dev:infra": "docker compose up -d postgres redis mailpit",
     "dev:infra:down": "docker compose stop postgres redis mailpit",
     "dev:backend": "npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed && concurrently -k -n api,worker,admin -c teal,magenta,cyan \"npm run dev:api\" \"npm run dev:worker\" \"npm run dev:admin\"",

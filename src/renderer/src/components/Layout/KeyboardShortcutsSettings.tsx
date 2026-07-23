@@ -9,6 +9,7 @@ import {
 } from '@shared/types/keyboardShortcuts'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useClusterGroupsStore } from '../../stores/clusterGroupsStore'
+import { ClusterAvatar } from '../ClusterTabs/ClusterAvatar'
 
 const ACTION_ORDER: ShortcutActionId[] = [
   'globalSearch',
@@ -219,13 +220,16 @@ export function KeyboardShortcutsSettings(): React.JSX.Element {
                     background: isListening ? token.colorPrimaryBg : token.colorBgContainer
                   }}
                 >
-                  <div style={{ minWidth: 0 }}>
-                    <Typography.Text strong style={{ display: 'block', fontSize: 13 }}>
-                      {group.name}
-                    </Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {t('settings.keyboard.workspaceOpenDesc', { count: group.clusterIds.length })}
-                    </Typography.Text>
+                  <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={28} />
+                    <div style={{ minWidth: 0 }}>
+                      <Typography.Text strong style={{ display: 'block', fontSize: 13 }}>
+                        {group.name}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                        {t('settings.keyboard.workspaceOpenDesc', { count: group.clusterIds.length })}
+                      </Typography.Text>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     {renderBindingButton(

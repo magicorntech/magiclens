@@ -75,7 +75,8 @@ export function getDisplaySettings(): DisplaySettings {
     ...stored,
     nodesDashboard: normalizeNodesDashboardPrefs(stored?.nodesDashboard),
     keyboardShortcuts: normalizeKeyboardShortcuts(stored?.keyboardShortcuts),
-    locale: normalizeAppLocale(stored?.locale)
+    locale: normalizeAppLocale(stored?.locale),
+    kubeconfigScanPath: typeof stored?.kubeconfigScanPath === 'string' ? stored.kubeconfigScanPath : ''
   }
 }
 
@@ -90,7 +91,9 @@ export function setDisplaySettings(patch: Partial<DisplaySettings>): DisplaySett
     keyboardShortcuts: patch.keyboardShortcuts
       ? normalizeKeyboardShortcuts({ ...current.keyboardShortcuts, ...patch.keyboardShortcuts })
       : current.keyboardShortcuts,
-    locale: normalizeAppLocale(patch.locale ?? current.locale)
+    locale: normalizeAppLocale(patch.locale ?? current.locale),
+    kubeconfigScanPath:
+      patch.kubeconfigScanPath !== undefined ? patch.kubeconfigScanPath : current.kubeconfigScanPath
   }
   store.set('displaySettings', next)
   return next

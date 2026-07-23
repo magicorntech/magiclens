@@ -14,12 +14,30 @@ import type {
   WriteKubeconfigFileRequest,
   WriteKubeconfigFileResponse
 } from '@shared/types/kubeconfig'
+import { getDisplaySettings } from '../persistence/appSettings'
 import { exportScopedKubeconfigYaml } from '../k8s/kubeconfigExport'
-import { parseKubeconfigFile, parseKubeconfigString, scanDirectoryForKubeconfigs } from '../k8s/kubeconfigParser'
+import {
+  parseKubeconfigFile,
+  parseKubeconfigString,
+  scanDirectoryForKubeconfigs,
+  scanKubeconfigPath
+} from '../k8s/kubeconfigParser'
 
 function scanDirectorySafely(directoryPath: string): ScanDirectoryResponse {
   const exists = existsSync(directoryPath)
   const files = exists ? scanDirectoryForKubeconfigs(directoryPath) : []
+  return { directoryPath, exists, files }
+}
+
+function resolveScanPath(): string {
+  const configured = getDisplaySettings().kubeconfigScanPath?.trim()
+  return configured || join(homedir(), '.kube')
+}
+
+function scanConfiguredPath(): ScanDirectoryResponse {
+  const directoryPath = resolveScanPath()
+  const exists = existsSync(directoryPath)
+  const files = exists ? scanKubeconfigPath(directoryPath) : []
   return { directoryPath, exists, files }
 }
 
@@ -61,7 +79,7 @@ export function registerKubeconfigHandlers(): void {
   })
 
   ipcMain.handle(IPC.KUBECONFIG_SCAN_DEFAULT, async () => {
-    return scanDirectorySafely(join(homedir(), '.kube'))
+    return scanConfiguredPath()
   })
 
   ipcMain.handle(

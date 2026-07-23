@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Button, Empty, Input, Modal, Select, Tooltip, Typography, message } from 'antd'
-import { ChevronDown, ChevronRight, FolderPlus, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Button, Empty, Input, Modal, Select, Space, Tooltip, Typography, message } from 'antd'
+import { ChevronDown, ChevronRight, FolderPlus, MoreHorizontal, Pencil, Trash2, Upload } from 'lucide-react'
 import type { MenuProps } from 'antd'
 import { Dropdown } from 'antd'
 import { useTranslation } from 'react-i18next'
@@ -13,13 +13,26 @@ import {
 import { useClusterStore, type ClusterEntry } from '../../stores/clusterStore'
 import { useClusterGroupsStore } from '../../stores/clusterGroupsStore'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
+import { ClusterAvatar } from '../ClusterTabs/ClusterAvatar'
 import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
+import { LogoCropModal } from '../ClusterTabs/LogoCropModal'
 import { Icon } from '../ui/Icon'
 
 interface SidebarWorkspacesProps {
   collapsed: boolean
   onNavigate?: () => void
   onEditCluster?: (cluster: ClusterEntry) => void
+}
+
+const LOGO_ACCEPT = 'image/png,image/jpeg,image/x-icon,image/vnd.microsoft.icon,.png,.jpg,.jpeg,.ico'
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
 }
 
 function matchesQuery(text: string, query: string): boolean {
@@ -41,6 +54,7 @@ export function SidebarWorkspaces({
   const setCollapsed = useClusterGroupsStore((s) => s.setCollapsed)
   const setGroupClusters = useClusterGroupsStore((s) => s.setGroupClusters)
   const setGroupShortcut = useClusterGroupsStore((s) => s.setGroupShortcut)
+  const setGroupLogo = useClusterGroupsStore((s) => s.setGroupLogo)
 
   const [query, setQuery] = useState('')
   const [editorOpen, setEditorOpen] = useState(false)
@@ -48,8 +62,11 @@ export function SidebarWorkspaces({
   const [draftName, setDraftName] = useState('')
   const [draftClusterIds, setDraftClusterIds] = useState<string[]>([])
   const [draftShortcut, setDraftShortcut] = useState<ShortcutBinding | null>(null)
+  const [draftLogoUrl, setDraftLogoUrl] = useState<string | undefined>(undefined)
+  const [cropSource, setCropSource] = useState<string | null>(null)
   const [listeningShortcut, setListeningShortcut] = useState(false)
   const [shortcutError, setShortcutError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const isMac = navigator.platform.includes('Mac')
 
   const clusterOptions = useMemo(
@@ -139,6 +156,8 @@ export function SidebarWorkspaces({
     setDraftName(t('workspaces.defaultName'))
     setDraftClusterIds([])
     setDraftShortcut(null)
+    setDraftLogoUrl(undefined)
+    setCropSource(null)
     setListeningShortcut(false)
     setShortcutError(null)
     setEditorOpen(true)
@@ -151,9 +170,18 @@ export function SidebarWorkspaces({
     setDraftName(g.name)
     setDraftClusterIds([...g.clusterIds])
     setDraftShortcut(g.shortcut ?? null)
+    setDraftLogoUrl(g.logoUrl)
+    setCropSource(null)
     setListeningShortcut(false)
     setShortcutError(null)
     setEditorOpen(true)
+  }
+
+  async function handleLogoSelected(e: React.ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setCropSource(await readFileAsDataUrl(file))
   }
 
   async function saveEditor(): Promise<void> {
@@ -162,9 +190,10 @@ export function SidebarWorkspaces({
       await renameGroup(editingId, name)
       await setGroupClusters(editingId, draftClusterIds)
       await setGroupShortcut(editingId, draftShortcut)
+      await setGroupLogo(editingId, draftLogoUrl ?? null)
       message.success(t('workspaces.updated'))
     } else {
-      await createGroup(name, draftClusterIds, draftShortcut)
+      await createGroup(name, draftClusterIds, draftShortcut, draftLogoUrl ?? null)
       message.success(t('workspaces.created'))
     }
     setEditorOpen(false)
@@ -173,78 +202,120 @@ export function SidebarWorkspaces({
   const shortcutPartsLabel = draftShortcut ? shortcutParts(draftShortcut, isMac) : null
 
   const editorModal = (
-    <Modal
-      title={editingId ? t('workspaces.edit') : t('workspaces.new')}
-      open={editorOpen}
-      onCancel={() => setEditorOpen(false)}
-      onOk={() => void saveEditor()}
-      okText={t('workspaces.save')}
-      destroyOnClose
-    >
-      <Typography.Text strong>{t('workspaces.name')}</Typography.Text>
-      <Input
-        value={draftName}
-        onChange={(e) => setDraftName(e.target.value)}
-        placeholder="Production"
-        style={{ marginTop: 8, marginBottom: 16 }}
-      />
-      <Typography.Text strong>{t('workspaces.clusters')}</Typography.Text>
-      <Select
-        mode="multiple"
-        allowClear
-        style={{ width: '100%', marginTop: 8, marginBottom: 16 }}
-        placeholder={t('workspaces.selectClusters')}
-        value={draftClusterIds}
-        options={clusterOptions}
-        onChange={setDraftClusterIds}
-        optionFilterProp="label"
-      />
-      <Typography.Text strong>{t('workspaces.shortcut')}</Typography.Text>
-      <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 8 }}>
-        {t('workspaces.shortcutHint')}
-      </Typography.Paragraph>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Button
-          type={listeningShortcut ? 'primary' : 'default'}
-          onClick={() => {
-            setShortcutError(null)
-            setListeningShortcut((v) => !v)
-          }}
-        >
-          {listeningShortcut
-            ? t('workspaces.shortcutListening')
-            : draftShortcut
-              ? formatShortcutBinding(draftShortcut, isMac)
-              : t('workspaces.shortcutAssign')}
-        </Button>
-        {draftShortcut && (
+    <>
+      <Modal
+        title={editingId ? t('workspaces.edit') : t('workspaces.new')}
+        open={editorOpen}
+        onCancel={() => setEditorOpen(false)}
+        onOk={() => void saveEditor()}
+        okText={t('workspaces.save')}
+        destroyOnClose
+      >
+        <Typography.Text strong>{t('workspaces.logo')}</Typography.Text>
+        <Space align="start" size="middle" style={{ width: '100%', marginTop: 8, marginBottom: 16 }}>
+          <ClusterAvatar logoUrl={draftLogoUrl} name={draftName || t('workspaces.defaultName')} size={48} />
+          <div>
+            <Button
+              size="small"
+              icon={<Icon icon={Upload} variant="detail" />}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {t('workspaces.changeLogo')}
+            </Button>
+            {draftLogoUrl ? (
+              <Button
+                type="link"
+                danger
+                size="small"
+                style={{ marginLeft: 4 }}
+                onClick={() => setDraftLogoUrl(undefined)}
+              >
+                {t('workspaces.removeLogo')}
+              </Button>
+            ) : null}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={LOGO_ACCEPT}
+              style={{ display: 'none' }}
+              onChange={(e) => void handleLogoSelected(e)}
+            />
+          </div>
+        </Space>
+
+        <Typography.Text strong>{t('workspaces.name')}</Typography.Text>
+        <Input
+          value={draftName}
+          onChange={(e) => setDraftName(e.target.value)}
+          placeholder="Production"
+          style={{ marginTop: 8, marginBottom: 16 }}
+        />
+        <Typography.Text strong>{t('workspaces.clusters')}</Typography.Text>
+        <Select
+          mode="multiple"
+          allowClear
+          style={{ width: '100%', marginTop: 8, marginBottom: 16 }}
+          placeholder={t('workspaces.selectClusters')}
+          value={draftClusterIds}
+          options={clusterOptions}
+          onChange={setDraftClusterIds}
+          optionFilterProp="label"
+        />
+        <Typography.Text strong>{t('workspaces.shortcut')}</Typography.Text>
+        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 8 }}>
+          {t('workspaces.shortcutHint')}
+        </Typography.Paragraph>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <Button
-            type="link"
-            danger
+            type={listeningShortcut ? 'primary' : 'default'}
             onClick={() => {
-              setDraftShortcut(null)
-              setListeningShortcut(false)
+              setShortcutError(null)
+              setListeningShortcut((v) => !v)
             }}
           >
-            {t('workspaces.shortcutClear')}
+            {listeningShortcut
+              ? t('workspaces.shortcutListening')
+              : draftShortcut
+                ? formatShortcutBinding(draftShortcut, isMac)
+                : t('workspaces.shortcutAssign')}
           </Button>
-        )}
-      </div>
-      {shortcutPartsLabel && !listeningShortcut && (
-        <div style={{ marginTop: 8, display: 'flex', gap: 4 }}>
-          {shortcutPartsLabel.map((part) => (
-            <Typography.Text key={part} code style={{ fontSize: 11 }}>
-              {part}
-            </Typography.Text>
-          ))}
+          {draftShortcut && (
+            <Button
+              type="link"
+              danger
+              onClick={() => {
+                setDraftShortcut(null)
+                setListeningShortcut(false)
+              }}
+            >
+              {t('workspaces.shortcutClear')}
+            </Button>
+          )}
         </div>
-      )}
-      {shortcutError && (
-        <Typography.Text type="danger" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-          {shortcutError}
-        </Typography.Text>
-      )}
-    </Modal>
+        {shortcutPartsLabel && !listeningShortcut && (
+          <div style={{ marginTop: 8, display: 'flex', gap: 4 }}>
+            {shortcutPartsLabel.map((part) => (
+              <Typography.Text key={part} code style={{ fontSize: 11 }}>
+                {part}
+              </Typography.Text>
+            ))}
+          </div>
+        )}
+        {shortcutError && (
+          <Typography.Text type="danger" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+            {shortcutError}
+          </Typography.Text>
+        )}
+      </Modal>
+      <LogoCropModal
+        imageSrc={cropSource}
+        onCancel={() => setCropSource(null)}
+        onSave={(dataUrl) => {
+          setDraftLogoUrl(dataUrl)
+          setCropSource(null)
+        }}
+      />
+    </>
   )
 
   if (collapsed) {
@@ -354,6 +425,7 @@ export function SidebarWorkspaces({
                     onClick={() => void setCollapsed(group.id, !isCollapsed)}
                   >
                     <Icon icon={isCollapsed ? ChevronRight : ChevronDown} variant="micro" />
+                    <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={18} />
                     <Typography.Text strong ellipsis style={{ maxWidth: 120 }}>
                       {group.name}
                     </Typography.Text>

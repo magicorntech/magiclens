@@ -11,9 +11,9 @@ export interface PodMetricsSample {
 // historical time series API. To chart "usage over time" we accumulate samples ourselves,
 // client-side, for as long as the app has been observing a given pod (keyed by cluster+uid so
 // a recreated pod with the same name starts a fresh history).
-const MAX_SAMPLES_PER_POD = 400
-const MAX_TRACKED_PODS = 30
-const MIN_SAMPLE_GAP_MS = 250
+const MAX_SAMPLES_PER_POD = 180
+const MAX_TRACKED_PODS = 12
+const MIN_SAMPLE_GAP_MS = 1_000
 
 function decimate(samples: PodMetricsSample[]): PodMetricsSample[] {
   if (samples.length <= MAX_SAMPLES_PER_POD) return samples

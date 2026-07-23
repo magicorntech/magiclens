@@ -8,12 +8,18 @@ interface ClusterGroupsStoreState {
   groups: ClusterGroupsState
   hydrated: boolean
   hydrate: () => Promise<void>
-  createGroup: (name: string, clusterIds?: string[], shortcut?: ShortcutBinding | null) => Promise<void>
+  createGroup: (
+    name: string,
+    clusterIds?: string[],
+    shortcut?: ShortcutBinding | null,
+    logoUrl?: string | null
+  ) => Promise<void>
   renameGroup: (id: string, name: string) => Promise<void>
   removeGroup: (id: string) => Promise<void>
   setCollapsed: (id: string, collapsed: boolean) => Promise<void>
   setGroupClusters: (id: string, clusterIds: string[]) => Promise<void>
   setGroupShortcut: (id: string, shortcut: ShortcutBinding | null) => Promise<void>
+  setGroupLogo: (id: string, logoUrl: string | null) => Promise<void>
   addClusterToGroup: (groupId: string, clusterId: string) => Promise<void>
   removeClusterFromGroup: (groupId: string, clusterId: string) => Promise<void>
   /** Expand workspace and open its clusters (focus first). */
@@ -27,13 +33,14 @@ export const useClusterGroupsStore = create<ClusterGroupsStoreState>()((set, get
     const groups = await window.api.clusterGroups.list()
     set({ groups, hydrated: true })
   },
-  createGroup: async (name, clusterIds = [], shortcut = null) => {
+  createGroup: async (name, clusterIds = [], shortcut = null, logoUrl = null) => {
     let groups = await window.api.clusterGroups.create(name)
     const created = groups[groups.length - 1]
     if (created) {
-      const patch: Partial<Pick<ClusterGroup, 'clusterIds' | 'shortcut'>> = {}
+      const patch: Partial<Pick<ClusterGroup, 'clusterIds' | 'shortcut' | 'logoUrl'>> = {}
       if (clusterIds.length > 0) patch.clusterIds = clusterIds
       if (shortcut) patch.shortcut = shortcut
+      if (logoUrl) patch.logoUrl = logoUrl
       if (Object.keys(patch).length > 0) {
         groups = await window.api.clusterGroups.update(created.id, patch)
       }
@@ -67,6 +74,13 @@ export const useClusterGroupsStore = create<ClusterGroupsStoreState>()((set, get
       }
     }
     const groups = await window.api.clusterGroups.update(id, { shortcut })
+    set({ groups })
+  },
+  setGroupLogo: async (id, logoUrl) => {
+    // Empty string survives IPC JSON (unlike undefined) and clears the stored logo.
+    const groups = await window.api.clusterGroups.update(id, {
+      logoUrl: logoUrl || ''
+    })
     set({ groups })
   },
   addClusterToGroup: async (groupId, clusterId) => {

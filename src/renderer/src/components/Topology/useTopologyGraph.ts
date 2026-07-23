@@ -1,15 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { TopologyGraphResponse } from '@shared/types/topology'
 import type { ResourceWatchStatus } from '@shared/types/resourceWatch'
-import { useResourceList } from '../../queries/useResourceList'
+import { useLiveRefreshStore } from '../../stores/liveRefreshStore'
 
+const DEFAULT_POLL_MS = 5_000
+const MIN_POLL_MS = 3_000
+
+/**
+ * Topology used to open 7 simultaneous Kubernetes informers (Pods, Deployments, …)
+ * just to detect changes, then re-fetch the full graph. That duplicated large object
+ * caches in the main process and ballooned RAM on Apple Silicon. A single polled
+ * topology:getGraph call is enough for this view.
+ */
 export function useTopologyGraph(clusterId: string, namespace: string): {
   data: TopologyGraphResponse | null
   loading: boolean
   refreshing: boolean
   error: string | null
   live: boolean
-  watchStatus: import('@shared/types/resourceWatch').ResourceWatchStatus
+  watchStatus: ResourceWatchStatus
   refresh: () => Promise<void>
 } {
   const enabled = Boolean(clusterId && namespace && namespace !== 'ALL')
@@ -17,51 +26,10 @@ export function useTopologyGraph(clusterId: string, namespace: string): {
   const [loading, setLoading] = useState(enabled)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const seq = useRef(0)
   const hasDataRef = useRef(false)
-
-  const pods = useResourceList(enabled ? clusterId : null, namespace, 'Pods', enabled)
-  const deps = useResourceList(enabled ? clusterId : null, namespace, 'Deployments', enabled)
-  const sts = useResourceList(enabled ? clusterId : null, namespace, 'StatefulSets', enabled)
-  const svcs = useResourceList(enabled ? clusterId : null, namespace, 'Services', enabled)
-  const ings = useResourceList(enabled ? clusterId : null, namespace, 'Ingresses', enabled)
-  const cms = useResourceList(enabled ? clusterId : null, namespace, 'ConfigMaps', enabled)
-  const rss = useResourceList(enabled ? clusterId : null, namespace, 'ReplicaSets', enabled)
-
-  const watchStatuses: ResourceWatchStatus[] = [
-    pods.watchStatus,
-    deps.watchStatus,
-    sts.watchStatus,
-    svcs.watchStatus,
-    ings.watchStatus,
-    cms.watchStatus,
-    rss.watchStatus
-  ]
-  const watchStatus: ResourceWatchStatus = !enabled
-    ? 'disconnected'
-    : watchStatuses.some((s) => s === 'live')
-      ? 'live'
-      : watchStatuses.some((s) => s === 'reconnecting')
-        ? 'reconnecting'
-        : watchStatuses.some((s) => s === 'connecting')
-          ? 'connecting'
-          : watchStatuses.some((s) => s === 'fallback-polling')
-            ? 'fallback-polling'
-            : watchStatuses.some((s) => s === 'error')
-              ? 'error'
-              : 'disconnected'
-  const live = watchStatus === 'live' || watchStatus === 'reconnecting'
-
-  const dataUpdatedAt = [
-    pods.dataUpdatedAt,
-    deps.dataUpdatedAt,
-    sts.dataUpdatedAt,
-    svcs.dataUpdatedAt,
-    ings.dataUpdatedAt,
-    cms.dataUpdatedAt,
-    rss.dataUpdatedAt
-  ].join(':')
+  const interval = useLiveRefreshStore((s) => s.interval)
+  const paused = useLiveRefreshStore((s) => s.paused)
 
   const refresh = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -110,15 +78,32 @@ export function useTopologyGraph(clusterId: string, namespace: string): {
   }, [refresh])
 
   useEffect(() => {
-    if (!enabled) return
-    if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => {
+    if (!enabled || paused || interval === 'manual') return
+    const ms = Math.max(MIN_POLL_MS, typeof interval === 'number' ? interval : DEFAULT_POLL_MS)
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'hidden') return
       void refresh({ silent: true })
-    }, 150)
-    return () => {
-      if (timer.current) clearTimeout(timer.current)
-    }
-  }, [dataUpdatedAt, refresh, enabled])
+    }, ms)
+    return () => window.clearInterval(id)
+  }, [enabled, paused, interval, refresh])
 
-  return { data, loading, refreshing, error, live, watchStatus, refresh: () => refresh({ silent: false }) }
+  const watchStatus: ResourceWatchStatus = !enabled
+    ? 'disconnected'
+    : error
+      ? 'error'
+      : loading && !hasDataRef.current
+        ? 'connecting'
+        : paused || interval === 'manual'
+          ? 'fallback-polling'
+          : 'live'
+
+  return {
+    data,
+    loading,
+    refreshing,
+    error,
+    live: watchStatus === 'live',
+    watchStatus,
+    refresh: () => refresh({ silent: false })
+  }
 }

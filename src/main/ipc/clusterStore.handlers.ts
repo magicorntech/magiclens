@@ -6,6 +6,7 @@ import { removeClusterVpnLink } from '../persistence/clusterVpnLinks'
 import { removeClusterFromAllGroups } from '../persistence/clusterGroups'
 import {
   addCluster,
+  dedupeClusters,
   listClusters,
   removeCluster,
   removeOrgClustersMissing,
@@ -18,10 +19,22 @@ export function registerClusterStoreHandlers(): void {
     return { clusters: listClusters() }
   })
 
-  ipcMain.handle(IPC.CLUSTER_STORE_ADD, async (_e, entry: PersistedClusterEntry) => {
-    const result = addCluster(entry)
-    if (result === 'duplicate') return { ok: false as const, reason: 'duplicate' as const }
-    return { ok: true as const }
+  ipcMain.handle(
+    IPC.CLUSTER_STORE_ADD,
+    async (_e, entry: PersistedClusterEntry, options?: { force?: boolean }) => {
+      const result = addCluster(entry, options)
+      if (result === 'duplicate') return { ok: false as const, reason: 'duplicate' as const }
+      return { ok: true as const }
+    }
+  )
+
+  ipcMain.handle(IPC.CLUSTER_STORE_DEDUPE, async () => {
+    const result = dedupeClusters()
+    for (const id of result.removedIds) {
+      removeClusterVpnLink(id)
+      removeClusterFromAllGroups(id)
+    }
+    return { ok: true as const, ...result, clusters: listClusters() }
   })
 
   ipcMain.handle(IPC.CLUSTER_STORE_UPDATE, async (_e, entry: PersistedClusterEntry) => {

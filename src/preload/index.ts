@@ -209,11 +209,21 @@ const api = {
   },
   clusterStore: {
     list: (): Promise<{ clusters: PersistedClusterEntry[] }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_LIST),
-    add: (entry: PersistedClusterEntry): Promise<{ ok: true } | { ok: false; reason: 'duplicate' }> =>
-      ipcRenderer.invoke(IPC.CLUSTER_STORE_ADD, entry),
+    add: (
+      entry: PersistedClusterEntry,
+      options?: { force?: boolean }
+    ): Promise<{ ok: true } | { ok: false; reason: 'duplicate' }> =>
+      ipcRenderer.invoke(IPC.CLUSTER_STORE_ADD, entry, options),
     update: (entry: PersistedClusterEntry): Promise<{ ok: true }> =>
       ipcRenderer.invoke(IPC.CLUSTER_STORE_UPDATE, entry),
     remove: (id: string): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_REMOVE, { id }),
+    dedupe: (): Promise<{
+      ok: true
+      kept: number
+      removedIds: string[]
+      groupsMerged: number
+      clusters: PersistedClusterEntry[]
+    }> => ipcRenderer.invoke(IPC.CLUSTER_STORE_DEDUPE),
     upsertOrg: (input: {
       remoteId: string
       orgKubeconfigId: string
@@ -262,7 +272,7 @@ const api = {
       patch: Partial<
         Pick<
           import('@shared/types/clusterGroup').ClusterGroup,
-          'name' | 'clusterIds' | 'collapsed' | 'shortcut'
+          'name' | 'clusterIds' | 'collapsed' | 'shortcut' | 'logoUrl'
         >
       >
     ): Promise<import('@shared/types/clusterGroup').ClusterGroupsState> =>
@@ -352,6 +362,12 @@ const api = {
     getFullscreen: (): Promise<{ fullscreen: boolean }> => ipcRenderer.invoke(IPC.APP_GET_FULLSCREEN),
     toggleFullscreen: (): Promise<{ fullscreen: boolean }> =>
       ipcRenderer.invoke(IPC.APP_TOGGLE_FULLSCREEN),
+    getProcessMetrics: (): Promise<import('@shared/types/app').AppProcessMetricsResponse> =>
+      ipcRenderer.invoke(IPC.APP_GET_PROCESS_METRICS),
+    getHostInfo: (): Promise<import('@shared/types/app').AppHostInfoResponse> =>
+      ipcRenderer.invoke(IPC.APP_GET_HOST_INFO),
+    clearCache: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_CLEAR_CACHE),
+    openDevTools: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_OPEN_DEVTOOLS),
     onFullscreenChanged: (cb: (payload: { fullscreen: boolean }) => void): (() => void) => {
       const listener = (_e: Electron.IpcRendererEvent, payload: { fullscreen: boolean }): void =>
         cb(payload)

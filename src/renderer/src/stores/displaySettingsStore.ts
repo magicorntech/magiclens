@@ -35,6 +35,7 @@ interface DisplaySettingsState extends DisplaySettings {
   setShortcut: (action: ShortcutActionId, binding: ShortcutBinding) => Promise<void>
   resetShortcuts: () => Promise<void>
   setLocale: (locale: AppLocale) => Promise<void>
+  setKubeconfigScanPath: (path: string) => Promise<void>
 }
 
 function applyDisplay(next: DisplaySettings): DisplaySettings {
@@ -130,5 +131,9 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
     const applied = applyDisplay(saved)
     set(applied)
     await syncLocale(applied.locale)
+  },
+  setKubeconfigScanPath: async (path) => {
+    const next = await window.api.app.setDisplaySettings({ kubeconfigScanPath: path })
+    set(applyDisplay(next))
   }
 }))

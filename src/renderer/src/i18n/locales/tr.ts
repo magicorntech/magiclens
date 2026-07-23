@@ -17,7 +17,8 @@ export const tr: TranslationOverrides = {
     total: 'toplam',
     clusters: 'Kümeler',
     vpn: 'VPN',
-    favorites: 'Favoriler'
+    favorites: 'Favoriler',
+    cancel: 'İptal'
   },
   chrome: {
     searchPlaceholder: 'Küme, kaynak, namespace ara…',
@@ -35,6 +36,43 @@ export const tr: TranslationOverrides = {
     fullscreen: 'Tam ekran',
     exitFullscreen: 'Tam ekrandan çık'
   },
+  clustersHub: {
+    title: 'Kümeler',
+    subtitle: 'Tüm Kubernetes kümelerini tek yerden ekleyin, bağlanın ve yönetin.',
+    add: 'Küme ekle',
+    addFirst: 'İlk kümenizi ekleyin'
+  },
+  addCluster: {
+    title: 'Küme Ekle',
+    detected: 'Bu makinede bulunanlar',
+    rescan: 'Yeniden tara',
+    scanPath: 'Taranan yol: {{path}}',
+    mergeExisting: 'Listedeki tekrarları birleştir',
+    mergeNone: 'Küme listesinde tekrar yok.',
+    mergeDone: '{{groups}} grup birleştirildi, {{removed}} silindi.',
+    modeFile: 'Kubeconfig dosyası seç',
+    modePaste: 'Kubeconfig YAML yapıştır',
+    modeFolder: 'Klasör tara',
+    chooseFile: 'Dosya seç...',
+    chooseFolder: 'Taranacak klasörü seç...',
+    pastePlaceholder: 'Kubeconfig YAML buraya yapıştırın',
+    parse: 'Ayrıştır',
+    uniqueContexts: '{{count}} benzersiz context',
+    mergedHint: '({{count}} tekrarlayan config birleştirildi)',
+    alreadyInList: '{{count}} zaten listede',
+    selectAllNew: 'Tüm yenileri seç',
+    tagMerged: 'Birleştirildi',
+    tagAlready: 'Zaten eklendi',
+    matches: '"{{name}}" ile eşleşiyor',
+    dupSkip: 'Atla (zaten var)',
+    dupRename: 'Yeni adla ekle',
+    newNamePlaceholder: 'Yeni görünen ad',
+    noneToAdd: 'Eklenecek bir şey yok — tekrarlar atlandı veya seçim yok.',
+    skipped: '{{count}} küme atlandı — zaten listede.',
+    added: '{{count}} küme eklendi.',
+    addCount: '{{count}} küme ekle',
+    allAlready: 'Tespit edilen tüm context’ler zaten listede. İkinci kopya için “Yeni adla ekle”yi seçin.'
+  },
   settings: {
     title: 'Ayarlar',
     sections: {
@@ -44,6 +82,7 @@ export const tr: TranslationOverrides = {
       vpnExtensions: 'VPN Eklentileri',
       keyboard: 'Klavye',
       appearance: 'Tema',
+      developer: 'Geliştirici',
       about: 'Hakkında'
     },
     language: {
@@ -53,7 +92,24 @@ export const tr: TranslationOverrides = {
     general: {
       refreshTitle: 'Kaynak yenileme aralığı',
       refreshHint:
-        'Kaynak listeleri ve metriklerin ne sıklıkla otomatik yenileneceği. Tüm açık küme sekmelerine uygulanır; canlı yenilemeyi kaynak görünümünde duraklatabilirsiniz.'
+        'Kaynak listeleri ve metriklerin ne sıklıkla otomatik yenileneceği. Tüm açık küme sekmelerine uygulanır; canlı yenilemeyi kaynak görünümünde duraklatabilirsiniz.',
+      kubeconfigPathTitle: 'Yerel kubeconfig yolu',
+      kubeconfigPathHint:
+        'Küme Ekle açıldığında MagicLens yalnızca bu dosya veya klasörü tarar. Boş bırakırsanız ~/.kube kullanılır.',
+      kubeconfigPathPlaceholder: '~/.kube (varsayılan)',
+      kubeconfigPickFile: 'Dosya seç',
+      kubeconfigPickFolder: 'Klasör seç',
+      kubeconfigReset: '~/.kube kullan',
+      dedupeTitle: 'Tekrarlayan kümeler',
+      dedupeHint:
+        'Aynı ad/context, API sunucusu ve kimlik bilgisine sahip kümeleri tek kayda indirger. Favori ve ayarlar en uygun kayıttan korunur.',
+      dedupe: 'Tekrarları birleştir',
+      dedupeConfirmTitle: 'Tekrarlayan kümeler birleştirilsin mi?',
+      dedupeConfirmBody:
+        'Aynı ad/context, API sunucusu ve kimlik bilgisine sahip kümeler tek kayda indirgenir. Favori ve ayarlar en uygun kayıttan korunur.',
+      dedupeConfirmOk: 'Birleştir',
+      dedupeNone: 'Tekrarlayan küme bulunamadı.',
+      dedupeDone: '{{groups}} grup birleştirildi, {{removed}} tekrar silindi. {{kept}} küme kaldı.'
     },
     updates: {
       available: 'v{{version}} mevcut',
@@ -143,6 +199,48 @@ export const tr: TranslationOverrides = {
       customAccent: 'Özel vurgu',
       customAccentHint: 'Kenar çubukları, düğmeler, vurgular ve grafik tonlarına uygulanır.',
       customSwatch: 'Kendi vurgu rengin'
+    },
+    developer: {
+      hostTitle: 'Bilgisayar özellikleri',
+      hostHint: 'Bu makinenin donanım ve işletim sistemi bilgileri (bölümü açınca bir kez yüklenir).',
+      hostHostname: 'Ana makine adı',
+      hostOs: 'İşletim sistemi',
+      hostCpu: 'CPU',
+      hostCores: '{{count}} çekirdek',
+      hostCpuSpeed: '{{mhz}} MHz',
+      hostMemory: 'Bellek',
+      hostMemoryValue: '{{free}} boş / {{total}}',
+      hostDisplay: 'Ana ekran',
+      hostDisplayValue: '{{width}}×{{height}} @ {{scale}}×',
+      hostRuntime: 'Çalışma zamanı',
+      hostApiMissing:
+        'Bilgisayar bilgisi API’si yok. Geliştirici araçları için MagicLens’i yeniden başlatın.',
+      liveTitle: 'Anlık uygulama kullanımı',
+      liveHint:
+        'MagicLens CPU ve belleğini sürekli okur (main, GPU, renderer, yardımcılar). Değerler aşağıdaki aralıkta yenilenir.',
+      pollLabel: 'Yenileme aralığı',
+      cpuTotal: 'CPU (tüm süreçler)',
+      memTotal: 'Bellek (working set)',
+      mainHeap: 'Main V8 heap',
+      heapOf: 'ayrılan {{total}}',
+      systemMem: 'Sistem belleği',
+      systemMemValue: '{{free}} boş / {{total}}',
+      processes: '{{count}} süreç',
+      noSamples: 'İlk örnek bekleniyor…',
+      sampleFailed: 'Süreç metrikleri okunamadı.',
+      apiMissing: 'Süreç metrikleri API’si yok. Geliştirici araçları için MagicLens’i yeniden başlatın.',
+      colType: 'Tür',
+      colName: 'Ad',
+      colCpu: 'CPU',
+      colMem: 'Bellek',
+      controlsTitle: 'Performans kontrolleri',
+      controlsHint: 'Canlı kaynak yenilemesini ayarlayın; bellek yükselince renderer önbelleğini temizleyin.',
+      liveRefresh: 'Canlı kaynak yenileme',
+      pauseRefresh: 'Yenilemeyi duraklat',
+      resumeRefresh: 'Yenilemeyi sürdür',
+      clearCache: 'Renderer önbelleğini temizle',
+      cacheCleared: 'Renderer önbelleği temizlendi',
+      openDevTools: 'DevTools aç'
     },
     about: {
       platform: 'Platform'
@@ -428,6 +526,9 @@ export const tr: TranslationOverrides = {
     noClusters: 'Henüz küme yok — eklemek için workspace’i düzenleyin.',
     defaultName: 'Workspace',
     name: 'Ad',
+    logo: 'Logo',
+    changeLogo: 'Logo değiştir',
+    removeLogo: 'Kaldır',
     clusters: 'Kümeler',
     selectClusters: 'Bu workspace için küme seçin',
     shortcut: 'Klavye kısayolu',

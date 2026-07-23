@@ -32,6 +32,7 @@ export const IPC = {
   CLUSTER_STORE_ADD: 'clusterStore:add',
   CLUSTER_STORE_UPDATE: 'clusterStore:update',
   CLUSTER_STORE_REMOVE: 'clusterStore:remove',
+  CLUSTER_STORE_DEDUPE: 'clusterStore:dedupe',
   CLUSTER_STORE_UPSERT_ORG: 'clusterStore:upsertOrg',
   CLUSTER_STORE_SYNC_ORG_IDS: 'clusterStore:syncOrgIds',
 
@@ -91,6 +92,10 @@ export const IPC = {
   APP_GET_FULLSCREEN: 'app:getFullscreen',
   APP_TOGGLE_FULLSCREEN: 'app:toggleFullscreen',
   APP_FULLSCREEN_CHANGED: 'app:fullscreenChanged',
+  APP_GET_PROCESS_METRICS: 'app:getProcessMetrics',
+  APP_GET_HOST_INFO: 'app:getHostInfo',
+  APP_CLEAR_CACHE: 'app:clearCache',
+  APP_OPEN_DEVTOOLS: 'app:openDevTools',
 
   POD_GET_DETAIL: 'pod:getDetail',
   POD_GET_METRICS: 'pod:getMetrics',

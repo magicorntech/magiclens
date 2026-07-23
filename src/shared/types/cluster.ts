@@ -11,6 +11,8 @@ export interface PersistedClusterEntry {
   contextName: string
   source: KubeconfigSource
   endpoint?: string
+  /** Stable hash of kubeconfig user auth for this context (token/cert/exec). */
+  authFingerprint?: string
   logoUrl?: string
   /**
    * Wallpaper: `default-01`…`default-10`, `custom`, or omit for none.

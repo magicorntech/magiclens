@@ -41,6 +41,14 @@ export function YamlMonacoEditor({
   }, [])
 
   useEffect(() => {
+    return () => {
+      const ed = editorRef.current
+      editorRef.current = null
+      ed?.dispose()
+    }
+  }, [])
+
+  useEffect(() => {
     const el = surfaceRef.current
     if (!el) return
     const ro = new ResizeObserver(() => {
@@ -126,8 +134,17 @@ export function YamlMonacoEditor({
             padding: { top: 12, bottom: 12 },
             renderLineHighlight: 'line',
             bracketPairColorization: { enabled: true },
-            smoothScrolling: true,
-            tabSize: 2
+            smoothScrolling: false,
+            tabSize: 2,
+            // Lighter editor surface — fewer decorations keep Monaco's heap smaller.
+            renderWhitespace: 'none',
+            quickSuggestions: false,
+            suggestOnTriggerCharacters: false,
+            wordBasedSuggestions: 'off',
+            links: false,
+            folding: true,
+            glyphMargin: false,
+            overviewRulerLanes: 0
           }}
         />
       </div>

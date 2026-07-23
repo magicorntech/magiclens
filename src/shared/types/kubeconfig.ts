@@ -6,6 +6,8 @@ export interface ContextInfo {
   userName: string
   namespace?: string
   server?: string
+  /** Stable hash of user auth (token/cert/exec) for duplicate detection. */
+  authFingerprint?: string
 }
 
 export interface ParsedKubeconfigResult {

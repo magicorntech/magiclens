@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { BrowserWindow, app } from 'electron'
+import { createAppWebPreferences } from './chromiumPerf'
 
 const openWindows = new Map<string, BrowserWindow>()
 
@@ -45,12 +46,7 @@ export function openTopologyWindow(input: {
     ...(process.platform === 'darwin'
       ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 18 } }
       : {}),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true
-    }
+    webPreferences: createAppWebPreferences()
   })
 
   openWindows.set(key, win)
