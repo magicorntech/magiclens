@@ -43,7 +43,11 @@ export function TerminalView({ sessionId, clusterId, isActive }: TerminalViewPro
     })
 
     void window.api.terminal.start({ sessionId, cols: term.cols, rows: term.rows, clusterId }).then((res) => {
-      if (!res.ok) term.write(`\r\n\x1b[31m[Failed to start terminal: ${res.error}]\x1b[0m\r\n`)
+      if (!res.ok) {
+        term.write(`\r\n\x1b[31m[Failed to start terminal: ${res.error}]\x1b[0m\r\n`)
+        return
+      }
+      term.focus()
     })
 
     const dataDisposable = term.onData((data) => {
@@ -62,7 +66,12 @@ export function TerminalView({ sessionId, clusterId, isActive }: TerminalViewPro
     })
     resizeObserver.observe(containerRef.current)
 
+    const host = containerRef.current
+    const onHostMouseDown = (): void => term.focus()
+    host.addEventListener('mousedown', onHostMouseDown)
+
     return () => {
+      host.removeEventListener('mousedown', onHostMouseDown)
       resizeObserver.disconnect()
       dataDisposable.dispose()
       resizeDisposable.dispose()

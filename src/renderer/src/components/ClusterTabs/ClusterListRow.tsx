@@ -47,6 +47,13 @@ export function ClusterListRow({ cluster, searchQuery, onEdit }: ClusterListRowP
 
   return (
     <List.Item
+      className={
+        cluster.isFavorite && cluster.status === 'connected'
+          ? 'ml-cluster-row--fav-connected'
+          : cluster.status === 'connected'
+            ? 'ml-cluster-row--connected'
+            : undefined
+      }
       extra={
         <Space orientation="vertical" size={4} align="end" style={{ minWidth: 220 }}>
           <ConnectionStatusBadge status={cluster.status} errorMessage={cluster.errorMessage} />

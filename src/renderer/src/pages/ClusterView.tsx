@@ -16,6 +16,10 @@ import { CustomResourceBrowserPage } from '../components/Discovery/CustomResourc
 import { HelmChartsPage } from '../components/Helm/HelmChartsPage'
 import { HelmReleasesPage } from '../components/Helm/HelmReleasesPage'
 import { TopologyPage } from '../components/Topology/TopologyPage'
+import { ClusterOverviewPage } from '../components/Overview/ClusterOverviewPage'
+import { WorkloadsOverviewPage } from '../components/Overview/WorkloadsOverviewPage'
+import { ApplicationsOverviewPage } from '../components/Overview/ApplicationsOverviewPage'
+import { ConfigOverviewPage } from '../components/Overview/ConfigOverviewPage'
 import type { VirtualPageKey } from '../resourceConfig/kinds.renderer'
 
 interface ClusterViewProps {
@@ -161,6 +165,16 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
 
   function renderVirtualPage(page: VirtualPageKey): React.JSX.Element {
     switch (page) {
+      case 'clusterOverview':
+        return <ClusterOverviewPage clusterId={clusterId} isActive />
+      case 'applications':
+        return (
+          <ApplicationsOverviewPage clusterId={clusterId} namespace={selectedNamespace} />
+        )
+      case 'workloadsOverview':
+        return <WorkloadsOverviewPage clusterId={clusterId} isActive />
+      case 'configOverview':
+        return <ConfigOverviewPage clusterId={clusterId} isActive />
       case 'topology':
         return <TopologyPage clusterId={clusterId} namespace={selectedNamespace} />
       case 'portForwarding':

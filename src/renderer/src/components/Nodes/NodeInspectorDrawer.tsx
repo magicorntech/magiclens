@@ -1,11 +1,9 @@
 import { useMemo } from 'react'
 import { Drawer, Tabs, Typography } from 'antd'
-import { X } from 'lucide-react'
 import type { ResourceListItem } from '@shared/types/resource'
 import { useLayoutMode } from '../../hooks/useLayoutMode'
 import { useResourceManifest } from '../../queries/useResourceManifest'
 import { useResourceList } from '../../queries/useResourceList'
-import { Icon } from '../ui/Icon'
 import { AgeCell } from '../ResourceTable/AgeCell'
 import { StatusTag } from '../ResourceTable/StatusTag'
 import { ResourceEventsPanel } from '../ResourceTable/ResourceEventsPanel'
@@ -245,27 +243,30 @@ export function NodeInspectorDrawer({
 
   return (
     <Drawer
-      title={null}
+      title={
+        item ? (
+          <div className="ml-node-inspector-title">
+            <Typography.Text strong style={{ fontSize: 15 }}>
+              {item.name}
+            </Typography.Text>
+            <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+              Node
+            </Typography.Text>
+          </div>
+        ) : null
+      }
       placement="right"
       open={open && !!item}
       onClose={onClose}
       width={width}
       destroyOnHidden
+      closable
       className="ml-node-inspector-drawer"
       styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column', height: '100%' } }}
       mask={{ blur: true }}
     >
       {item && (
         <div className="ml-node-inspector">
-          <header className="ml-node-inspector-header">
-            <div>
-              <Typography.Text strong style={{ fontSize: 15 }}>{item.name}</Typography.Text>
-              <Typography.Text type="secondary" style={{ display: 'block', fontSize: 12 }}>Node</Typography.Text>
-            </div>
-            <button type="button" className="ml-icon-btn" onClick={onClose} aria-label="Close">
-              <Icon icon={X} variant="action" />
-            </button>
-          </header>
           <Tabs size="small" items={tabItems} className="ml-node-inspector-tabs" destroyOnHidden />
         </div>
       )}

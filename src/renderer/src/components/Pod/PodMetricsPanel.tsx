@@ -182,7 +182,7 @@ export function PodMetricsPanel({
               : `Recording since ${dayjs(firstSampleAt).format('HH:mm:ss')} — this pod started earlier, but Kubernetes' metrics API has no historical data from before MagicLens began observing it.`}
           </Typography.Text>
         )}
-        <ExtendedMetricsCharts rangeData={rangeData} />
+        <ExtendedMetricsCharts rangeData={rangeData} showPodVolumes />
       </div>
 
       {isPodDetailData(detail) && (

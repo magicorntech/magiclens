@@ -13,11 +13,14 @@ export const zh: TranslationOverrides = {
     error: '错误',
     connectionError: 'Connection error',
     idle: 'Idle',
-    allNamespaces: 'All namespaces',
+    allNamespaces: '全部命名空间',
+    selectNamespaces: '选择命名空间',
+    namespacesSelected: '{{count}} 个命名空间',
     total: '总计',
     clusters: '集群',
     vpn: 'VPN',
-    favorites: '收藏'
+    favorites: '收藏',
+    cancel: '取消'
   },
   chrome: {
     searchPlaceholder: '搜索集群、资源、命名空间…',
@@ -31,7 +34,10 @@ export const zh: TranslationOverrides = {
     noWorkspaceMatch: '没有匹配的工作区',
     noFavoriteClusters: '暂无收藏的集群',
     collapseSidebar: '折叠侧边栏',
-    expandSidebar: '展开侧边栏'
+    expandSidebar: '展开侧边栏',
+    favoritesHint: '固定集群',
+    fullscreen: '全屏',
+    exitFullscreen: '退出全屏'
   },
   settings: {
     title: '设置',
@@ -42,7 +48,8 @@ export const zh: TranslationOverrides = {
       vpnExtensions: 'VPN 扩展',
       keyboard: '键盘',
       appearance: '外观',
-      about: '关于'
+      about: '关于',
+      developer: '开发商'
     },
     language: {
       title: '语言',
@@ -50,16 +57,28 @@ export const zh: TranslationOverrides = {
     },
     general: {
       refreshTitle: '资源刷新间隔',
-      refreshHint:
-        '资源列表与指标自动刷新的频率。应用于每个打开的集群标签页；仍可在各资源视图中暂停实时刷新。'
+      refreshHint: '资源列表与指标自动刷新的频率。应用于每个打开的集群标签页；仍可在各资源视图中暂停实时刷新。',
+      kubeconfigPathTitle: '本地 kubeconfig 路径',
+      kubeconfigPathHint: '当您打开“添加群集”时，MagicLens 仅自动扫描此文件或文件夹。留空以使用 ~/.kube。',
+      kubeconfigPathPlaceholder: '~/.kube（默认）',
+      kubeconfigPickFile: '选择文件',
+      kubeconfigPickFolder: '选择文件夹',
+      kubeconfigReset: '使用~/.kube',
+      dedupeTitle: '重复的簇',
+      dedupeHint: '将共享相同名称/上下文、API 服务器和凭据的集群折叠到一个条目中。保留最佳匹配的收藏夹和设置。',
+      dedupe: '合并重复项',
+      dedupeConfirmTitle: '合并重复的簇？',
+      dedupeConfirmBody: '具有相同名称/上下文、API 服务器和凭据的集群将合并为一个条目。保留最佳匹配的收藏夹和设置。',
+      dedupeConfirmOk: '合并重复项',
+      dedupeNone: '没有发现重复的簇。',
+      dedupeDone: '合并了 {{groups}} 个组，删除了 {{removed}} 个重复项。剩余 {{kept}} 个簇。'
     },
     updates: {
       available: 'v{{version}} 可用',
       checkAutomatically: '自动检查更新',
       checkOnStartup: '启动时检查',
       includePrerelease: '包含预发布版本',
-      macosManual:
-        '在没有付费 Apple Developer ID 证书的情况下，macOS 无法自动下载/安装。发现更新时，MagicLens 会跳转到 GitHub 发布页以便手动下载 DMG。',
+      macosManual: '在没有付费 Apple Developer ID 证书的情况下，macOS 无法自动下载/安装。发现更新时，MagicLens 会跳转到 GitHub 发布页以便手动下载 DMG。',
       autoDownload: '自动下载更新',
       askBeforeInstall: '安装前询问',
       checkNow: '立即检查更新',
@@ -82,7 +101,16 @@ export const zh: TranslationOverrides = {
       tabIconsTitle: '标签图标',
       showClusterLogos: '在集群标签上显示徽标',
       showResourceIcons: '在资源标签上显示图标',
-      tabIconsHint: '集群标签使用添加集群时设置的徽标。资源标签使用与左侧菜单相同的图标。'
+      tabIconsHint: '集群标签使用添加集群时设置的徽标。资源标签使用与左侧菜单相同的图标。',
+      detailMaskBlur: '模糊细节背后的背景',
+      detailMaskBlurHint: '当资源详细信息抽屉打开时，模糊其后面的列表。默认情况下关闭，以便桌子保持清晰。',
+      panelTitle: '终端和 YAML 面板',
+      panelHint: '将终端和编辑 YAML 面板停靠在工作区的底部、右侧或左侧。您还可以从面板工具栏图标进行切换。',
+      panelPlacementBottom: '底部',
+      panelPlacementRight: '正确的',
+      panelPlacementLeft: '左边',
+      showClusterNamespace: '显示连接的命名空间',
+      showClusterNamespaceHint: '启用后，选定的命名空间将显示为左侧边栏中连接的集群上的一个芯片。'
     },
     nodesSections: {
       health: '集群健康',
@@ -127,23 +155,31 @@ export const zh: TranslationOverrides = {
           label: '打开设置',
           description: '打开设置窗口'
         }
-      }
+      },
+      globalTitle: '应用程序快捷方式'
     },
     appearance: {
       intro: '选择预设或自定义强调色。侧边栏、资源菜单和面板都会跟随当前主题。使用标题栏开关切换浅色 / 深色模式。',
+      groupClassic: '经典',
+      groupWorlds: '世界 — 动漫与英雄',
       customAccent: '自定义强调色',
       customAccentHint: '应用于侧边栏、按钮、高亮与图表强调色。',
-      customSwatch: '你自己的强调色'
+      customSwatch: '你自己的强调色',
+      modeTitle: '色彩模式',
+      modeHint: '在浅色、深色之间切换，或遵循系统外观。'
     },
     about: {
-      platform: '平台'
+      platform: '平台',
+      appTitle: '魔镜',
+      appHint: '桌面 Kubernetes 客户端 — 此安装的版本和运行时详细信息。'
     },
     vpnExtensions: {
       intro: '安装并检查 MagicLens 进行 PIN + MFA 隧道所需的 VPN CLI 工具。不支持 OpenVPN Connect。',
       platformLabel: '检测到的平台：{{platform}}',
       platformHint: {
         darwin: 'macOS 通过 Homebrew 安装 OpenVPN / WireGuard CLI。Tunnelblick 与 WireGuard.app 为可选备用。',
-        win32: 'Windows 通过 winget 安装 OpenVPN Community CLI 与 WireGuard（备用：Chocolatey/Scoop）。请勿使用 OpenVPN Connect。',
+        win32:
+          'Windows 通过 winget 安装 OpenVPN Community CLI 与 WireGuard（备用：Chocolatey/Scoop）。请勿使用 OpenVPN Connect。',
         linux: 'Linux 优先使用发行版软件包（apt/dnf/pacman/zypper）。失败时回退到 Homebrew。',
         other: '此平台上自动安装可能受限。请使用下方手动命令。'
       },
@@ -188,7 +224,65 @@ export const zh: TranslationOverrides = {
           '重启 MagicLens 并重试连接。'
         ]
       },
-      connectNote: '工具就绪后，返回 VPN 页面进行连接。若工具缺失，连接时也会尝试自动安装。'
+      connectNote: '工具就绪后，返回 VPN 页面进行连接。若工具缺失，连接时也会尝试自动安装。',
+      copyCmd: '复制',
+      copied: '已复制到剪贴板',
+      copyFailed: '复制失败'
+    },
+    subtitle: 'MagicLens 的偏好设置',
+    navGroups: {
+      preferences: '偏好设置',
+      system: '系统'
+    },
+    sectionHints: {
+      general: '语言、刷新节奏、kubeconfig 扫描路径和集群管理。',
+      updates: '控制 MagicLens 检查和安装更新的方式。',
+      display: '详细信息打开的位置、终端/YAML 停靠的位置以及侧边栏显示的内容。',
+      vpnExtensions: '安装或修复 VPN 配置文件使用的 OpenVPN 和 WireGuard 帮助程序。',
+      keyboard: '自定义全局快捷方式。冲突的绑定会自动交换。',
+      appearance: '整个应用程序的浅色/深色模式和颜色主题。',
+      developer: '用于调试的主机规格和实时进程使用情况。',
+      about: '此 MagicLens 版本的版本和运行时信息。'
+    },
+    developer: {
+      hostTitle: '电脑规格',
+      hostHint: '该计算机的硬件和操作系统详细信息（打开此部分时加载一次）。',
+      hostHostname: '主机名',
+      hostOs: '操作系统',
+      hostCpu: '中央处理器',
+      hostCores: '{{count}} 个核心',
+      hostCpuSpeed: '{{mhz}}兆赫',
+      hostMemory: '记忆',
+      hostMemoryValue: '{{免费}} 免费 / {{总计}}',
+      hostDisplay: '主显示屏',
+      hostDisplayValue: '{{宽度}}×{{高度}} @ {{比例}}×',
+      hostRuntime: '运行时',
+      hostApiMissing: '主机信息 API 不可用。重新启动 MagicLens 以加载新的开发人员工具。',
+      liveTitle: '实时应用程序使用情况',
+      liveHint: '连续读取 MagicLens CPU 和内存（主、GPU、渲染器、实用程序）。值按以下间隔刷新。',
+      pollLabel: 'Refresh every',
+      cpuTotal: 'CPU（所有进程）',
+      memTotal: '内存（工作集）',
+      mainHeap: '主V8堆',
+      heapOf: '分配了 {{total}} 的',
+      systemMem: '系统内存',
+      systemMemValue: '{{免费}} 免费 / {{总计}}',
+      processes: '{{count}} 个进程',
+      noSamples: '等待第一个样品...',
+      sampleFailed: '无法读取进程指标。',
+      apiMissing: '流程指标 API 不可用。重新启动 MagicLens 以加载新的开发人员工具。',
+      colType: '类型',
+      colName: '姓名',
+      colCpu: '中央处理器',
+      colMem: '记忆',
+      controlsTitle: '性能控制',
+      controlsHint: '当内存攀升时，调整实时资源刷新并回收渲染器缓存。',
+      liveRefresh: '实时资源刷新',
+      pauseRefresh: '暂停刷新',
+      resumeRefresh: '恢复刷新',
+      clearCache: '清除渲染器缓存',
+      cacheCleared: '渲染器缓存已清除',
+      openDevTools: '打开开发工具'
     }
   },
   vpn: {
@@ -316,10 +410,8 @@ export const zh: TranslationOverrides = {
       titleForCluster: '{{cluster}} 的 VPN',
       titleConnect: '连接 VPN · {{name}}',
       alertTitle: 'VPN 会话',
-      pinKnownDesc:
-        'PIN 会记住约 5 小时。请输入新的 MFA 验证码以启动隧道。连接后，只要隧道保持，切换集群不会再次询问。',
-      pinUnknownDesc:
-        '每个 VPN 认证一次。MagicLens 会保持隧道（类似 Pritunl），约 5 小时内切换集群无需重新登录。',
+      pinKnownDesc: 'PIN 会记住约 5 小时。请输入新的 MFA 验证码以启动隧道。连接后，只要隧道保持，切换集群不会再次询问。',
+      pinUnknownDesc: '每个 VPN 认证一次。MagicLens 会保持隧道（类似 Pritunl），约 5 小时内切换集群无需重新登录。',
       profile: '配置：',
       user: '用户：',
       pin: 'PIN',
@@ -401,7 +493,36 @@ export const zh: TranslationOverrides = {
   },
   resourceNav: {
     virtual: {
-      topology: '拓扑'
+      topology: '拓扑',
+      clusterOverview: '簇',
+      applications: '应用领域',
+      workloadsOverview: '概述',
+      configOverview: '概述',
+      portForwarding: '端口转发',
+      helmCharts: '图表',
+      helmReleases: '发布',
+      operatorResources: '已安装的 CRD',
+      dynamicCustomResources: '动态资源',
+      definitions: '定义'
+    },
+    search: '搜索资源',
+    favorites: '收藏夹',
+    addFavorite: '添加到收藏夹',
+    removeFavorite: '从收藏夹中删除',
+    pin: '固定到选项卡',
+    unpin: '从选项卡取消固定',
+    pinned: '固定到选项卡',
+    emptyFavorites: '右键单击资源可添加收藏夹。',
+    aria: '资源',
+    sections: {
+      overview: '概述',
+      workloads: '工作负载',
+      config: '配置',
+      network: '网络',
+      storage: '贮存',
+      helm: '舵',
+      "access-control": '访问控制',
+      "custom-resources": '定制资源'
     }
   },
   topology: {
@@ -430,11 +551,22 @@ export const zh: TranslationOverrides = {
       replicas: '副本',
       uptime: '存活时间',
       errors: '错误',
+      search: '搜索应用…',
+      noMatch: '没有匹配搜索的应用。',
       empty: '未找到应用。请为工作负载添加 app.kubernetes.io/name 标签。'
     },
     drawer: {
       overview: '概览',
-      close: '关闭'
+      close: '关闭',
+      yaml: 'YAML',
+      events: '活动',
+      logs: '日志',
+      metrics: '指标',
+      actions: '行动',
+      restart: '重新启动',
+      scale: '规模',
+      delete: '删除',
+      editYaml: '编辑 YAML'
     },
     insightItems: {
       crashloopTitle: 'CrashLoopBackOff：{{name}}',
@@ -447,6 +579,511 @@ export const zh: TranslationOverrides = {
       brokenRouteDetail: '路由指向缺失的 Service（{{target}}）。',
       zeroReadyTitle: '无就绪副本：{{name}}',
       zeroReadyDetail: '{{ready}}/{{desired}} 就绪'
+    },
+    zoomIn: '放大',
+    zoomOut: '缩小',
+    fitView: '适合查看',
+    openWindow: '在窗口中打开',
+    openWindowMissingCluster: '未为拓扑窗口选择集群',
+    pickNamespace: '选择命名空间来构建拓扑图',
+    pickNamespaceHint: '拓扑需要单个命名空间。从上面的命名空间选择器中选择一个。',
+    graphCrash: '图表渲染失败。尝试刷新或选择另一个名称空间。',
+    live: '居住',
+    updating: '正在更新…',
+    filterNamespace: '命名空间',
+    filterKind: '种类',
+    filterHealth: '健康',
+    sortName: '姓名',
+    sortKind: '种类',
+    sortHealth: '健康',
+    relation: {
+      owns: '拥有',
+      selects: '选择',
+      routes: '路线',
+      mounts: '坐骑',
+      dependsOn: '取决于'
+    },
+    edge: {
+      ports: '港口',
+      protocol: '协议',
+      rate: '{{rate}} 请求/秒'
+    }
+  },
+  workspaces: {
+    title: '工作空间',
+    sectionHint: '分组集群',
+    compactMark: '瓦',
+    compactTooltip: '工作空间',
+    new: '新工作区',
+    newTooltip: '新工作区',
+    edit: '编辑工作区',
+    delete: '删除工作区',
+    empty: '将集群分组到工作区',
+    noClusters: '还没有集群 - 编辑工作区以添加一些集群。',
+    defaultName: '工作空间',
+    name: '姓名',
+    logo: '标识',
+    changeLogo: '更改标志',
+    removeLogo: '消除',
+    clusters: '集群',
+    selectClusters: '为此工作区选择集群',
+    shortcut: '键盘快捷键',
+    shortcutHint: '打开此工作区及其集群。使用 ⌘/Ctrl（或 Alt）键。',
+    shortcutAssign: '指定快捷方式',
+    shortcutListening: '按键...',
+    shortcutClear: '清除',
+    shortcutNone: '没有任何',
+    shortcutRecordError: '使用带有 ⌘/Ctrl（或 Alt）的快捷键，或按 Esc 取消',
+    save: '节省',
+    created: '工作区已创建',
+    updated: '工作区已更新'
+  },
+  nodesOverview: {
+    tableTitle: '节点',
+    tableCount: '总计 {{count}}',
+    emptyTitle: '未找到节点',
+    emptyHint: '该集群没有注册节点，或者您的搜索过滤器排除了所有结果。',
+    hiddenTitle: '节点仪表板隐藏',
+    hiddenHint: '启用“设置”→“显示”→“节点”页面布局中的部分。',
+    hotspots: '热点',
+    hotspotsCount: '{{count}} 条见解',
+    topConsumers: '顶级消费者'
+  },
+  clusterOverview: {
+    title: '集群概览',
+    subtitle: '整个集群的运行状况、容量和近期活动。',
+    metricsUnavailable: '指标服务器不可用——使用数据可能不完整',
+    nodes: '节点',
+    nodesHint: '{{ready}} 准备好 · {{notReady}} 未准备好',
+    pods: '豆荚',
+    podsHint: '{{running}} 正在运行 · {{pending}} 待定 · {{failed}} 失败',
+    namespaces: '命名空间',
+    deployments: '部署',
+    services: '服务',
+    problemPods: '问题荚',
+    resources: '资源使用情况',
+    cpuCapacity: 'CPU容量',
+    memCapacity: '内存容量',
+    cpuAlloc: 'CPU可分配',
+    memAlloc: '可分配内存',
+    recentEvents: '近期活动'
+  },
+  workloadsOverview: {
+    title: '工作负载概述',
+    subtitle: '跨命名空间的计数、运行状况和问题工作负载。',
+    healthy: '健康',
+    unhealthy: '不良',
+    byNamespace: '按命名空间',
+    empty: '未找到工作负载',
+    problems: '问题工作负载',
+    noProblems: '未检测到不健康的工作负载',
+    highRestarts: '高重启 Pod',
+    noRestarts: '没有重启次数较多的 Pod',
+    restarts: '{{count}} 重新启动'
+  },
+  applicationsOverview: {
+    title: '应用领域',
+    subtitle: '应用程序根据所选命名空间中的工作负载标签进行分组。',
+    pickNamespace: '命名空间',
+    search: '搜索应用程序...',
+    needNamespace: '选择一个命名空间',
+    needNamespaceHint: '应用程序分组需要命名空间上下文。',
+    error: '无法加载应用程序',
+    total: '应用程序',
+    apps: '应用领域',
+    empty: '此命名空间中没有应用程序',
+    replicas: '复制品',
+    errors: '错误',
+    resources: '资源'
+  },
+  configOverview: {
+    title: '配置概览',
+    subtitle: 'ConfigMap、Secret、配额、自动缩放和准入 Webhooks。',
+    highlights: '亮点',
+    configMaps: '配置映射',
+    secrets: '秘密',
+    tlsSecrets: 'TLS 秘密',
+    hpas: 'HPA',
+    pdbs: 'PDB',
+    webhooks: '网络钩子',
+    quotas: '资源配额',
+    noQuotas: '无资源配额',
+    quotaWarnings: '{{count}} 个配额看起来受到限制',
+    hpaList: '水平 Pod 自动缩放器',
+    noHpas: '未定义 HPA'
+  },
+  clustersHub: {
+    title: '集群',
+    subtitle: '从一处添加、连接和管理所有 Kubernetes 集群。',
+    add: '添加集群',
+    addFirst: '添加您的第一个集群',
+    statTotal: '全部的',
+    statConnected: '已连接',
+    statFavorites: '收藏夹',
+    statIssues: '需要注意',
+    searchPlaceholder: '按名称、上下文、端点、命名空间、版本搜索...',
+    empty: '还没有集群。添加您的第一个集群即可开始。',
+    noMatch: '没有与您的搜索或过滤器匹配的集群。',
+    filters: {
+      all: '全部',
+      favorites: '收藏夹',
+      connected: '已连接',
+      disconnected: '已断开连接',
+      error: '错误',
+      recent: '最近开业'
+    }
+  },
+  addCluster: {
+    title: '添加集群',
+    detected: '在本机上检测到',
+    rescan: '重新扫描',
+    scanPath: '扫描：{{路径}}',
+    mergeExisting: '合并列表中的重复项',
+    mergeNone: '您的集群列表中没有重复项。',
+    mergeDone: '合并了 {{groups}} 个群组，删除了 {{removed}}。',
+    modeFile: '选择 kubeconfig 文件',
+    modePaste: '粘贴 kubeconfig YAML',
+    modeFolder: '扫描文件夹',
+    chooseFile: '选择文件...',
+    chooseFolder: '选择要扫描的文件夹...',
+    pastePlaceholder: '将 kubeconfig YAML 粘贴到此处',
+    parse: '解析',
+    uniqueContexts: '{{count}} 个独特的上下文',
+    mergedHint: '（{{count}} 从重复的配置中合并）',
+    alreadyInList: '{{count}} 已在您的集群列表中',
+    selectAllNew: '选择全部新建',
+    tagMerged: '合并',
+    tagAlready: '已添加',
+    matches: '匹配“{{name}}”',
+    dupSkip: '跳过（已存在）',
+    dupRename: '添加新名称',
+    newNamePlaceholder: '新显示名称',
+    noneToAdd: '无需添加任何内容 - 重复项设置为跳过，或者未选择任何内容。',
+    skipped: '已跳过 {{count}} 个集群 — 已在您的列表中。',
+    added: '添加了 {{count}} 个集群。',
+    addCount: '添加 {{count}} 个集群',
+    allAlready: '所有检测到的上下文都已在您的集群列表中。选择“使用新名称添加”以保留第二个副本。'
+  },
+  clusterActions: {
+    open: '打开',
+    disconnect: '断开',
+    removeFavorite: '从收藏夹中删除',
+    addFavorite: '添加到收藏夹',
+    removeCluster: '删除集群',
+    edit: '编辑',
+    testConnection: '测试连接',
+    openDashboard: '打开仪表板',
+    removeConfirm: '删除这个集群？',
+    namespacesCount: '{{count}} 个命名空间',
+    lastOpened: '上次打开',
+    splitScreen: '分屏',
+    exitSplit: '退出分割视图'
+  },
+  clusterEdit: {
+    title: '编辑集群',
+    displayName: '显示名称',
+    displayNamePlaceholder: '我的集群',
+    changeLogo: '更改标志',
+    removeLogo: '删除标志',
+    prometheus: '普罗米修斯网址',
+    prometheusHint: '选修的。用于自动发现不可用时的指标。',
+    prometheusPlaceholder: 'https://prometheus.example.com',
+    prometheusUnknown: '未知',
+    prometheusConnected: '已连接（{{方法}}）',
+    prometheusNotFound: '未找到',
+    prometheusConnectHint: '连接到此集群以测试 Prometheus 发现。',
+    kubeconfig: '库贝配置',
+    kubeconfigHint: '查看、复制或编辑用于此集群的 kubeconfig。',
+    kubeconfigCopied: 'Kubeconfig 已复制到剪贴板',
+    kubeconfigScopedFile: '范围（来自文件）',
+    kubeconfigScopedInline: '范围（内联）',
+    view: '看法',
+    copy: '复制',
+    editYaml: '编辑',
+    saveKubeconfig: '保存 kubeconfig',
+    noKubeconfigChanges: '没有要保存的更改',
+    kubeconfigSaved: '为此集群保存的 Kubeconfig',
+    reconnectHint: '重新连接集群以应用 kubeconfig 更改',
+    save: '节省',
+    cancel: '取消',
+    close: '关闭'
+  },
+  clusterBg: {
+    title: '工作区背景',
+    hint: '当此群集选项卡打开时显示。选择默认风景或上传 PNG / JPG。',
+    remove: '消除',
+    upload: '上传 PNG/JPG',
+    panelTransparency: '面板透明度',
+    solidPct: '{{不透明度}}% 固体',
+    clear: '清除',
+    default: '默认',
+    solid: '坚硬的',
+    panelHint: '控制资源菜单、表格（Pod、部署等）和标题在壁纸上的显示方式。'
+  },
+  clusterView: {
+    disconnectedTitle: '集群断开连接',
+    disconnectedBody: '连接以加载此集群的命名空间和资源。',
+    connect: '连接',
+    connectingVpn: '正在连接 VPN...',
+    connecting: '正在连接…'
+  },
+  clusterAdd: {
+    title: '添加集群',
+    pickFile: '选择 kubeconfig 文件',
+    pasteYaml: '粘贴 YAML',
+    scan: '扫描',
+    rescan: '重新扫描',
+    selectAllNew: '选择全部新建',
+    alreadyAdded: '已添加',
+    addN: '添加 {{count}} 个集群',
+    addN_plural: '添加 {{count}} 个集群',
+    noContexts: '在此 kubeconfig 中找不到上下文。',
+    duplicate: '已在您的列表中'
+  },
+  auth: {
+    signInTitle: '登录 MagicLens',
+    signInBody: '使用您的组织电子邮件和密码。管理员打开管理控制台；会员打开他们的个人资料。您还可以仅使用本地 kubeconfig 继续离线。',
+    email: '电子邮件',
+    emailPlaceholder: '你@company.com',
+    password: '密码',
+    passwordPlaceholder: '密码',
+    apiBase: 'API 基址',
+    apiBasePlaceholder: 'http://本地主机:3000',
+    signIn: '登入',
+    apiSettings: 'API设置',
+    hideApiSettings: '隐藏 API 设置',
+    continueOffline: '继续离线',
+    syncedToast: '已同步 {{kubeconfigs}} 集群上下文和 {{vpn}} VPN 配置文件',
+    syncFailedToast: '已登录，但同步失败：{{error}}'
+  },
+  search: {
+    placeholder: '搜索集群、Pod...',
+    searching: '正在寻找...',
+    noResults: '没有结果',
+    connectHint: '连接集群以跨命名空间搜索资源。',
+    typeHint: '键入进行搜索。使用 pod:nginx、@deploy api 等关键字，或单击上面的类型过滤器。',
+    searchingIn: '搜索资源：{{cluster}}',
+    recent: '最近的',
+    clusters: '集群',
+    resources: '资源',
+    hint: '↑↓导航·输入打开·Esc关闭'
+  },
+  onboarding: {
+    title: 'Resources assigned to you',
+    body: '选择要同步到此设备的组织 kubeconfig 和 VPN 配置文件。',
+    syncSelected: '将所选内容同步到该设备',
+    notNow: '现在不要',
+    kubeconfigs: 'Kube配置',
+    vpnProfiles: 'VPN 配置文件',
+    empty: '还没有作业'
+  },
+  profile: {
+    title: '轮廓',
+    assignedClusters: '分配的集群',
+    assignedVpn: '分配的 VPN 配置文件',
+    syncAssignments: '同步作业',
+    adminConsole: '管理控制台',
+    updatePassword: '更新密码',
+    notifications: '通知',
+    markAllRead: '标记全部已读',
+    fullAccess: '完全访问权限',
+    readOnly: '只读',
+    noClusters: '尚未分配集群',
+    noVpn: '未分配 VPN 配置文件',
+    noNotifications: '没有通知',
+    currentPassword: '当前密码',
+    newPassword: '新密码',
+    confirmPassword: '确认密码'
+  },
+  admin: {
+    title: '管理控制台',
+    signInRequired: '需要登录',
+    accessRequired: '需要管理员权限',
+    nav: {
+      dashboard: '仪表板',
+      users: '用户',
+      teams: '团队',
+      kubeconfigs: 'Kube配置',
+      vpn: 'VPN',
+      permissions: '权限',
+      invitations: '邀请函',
+      audit: '审计'
+    },
+    dashboard: {
+      pendingInvitations: '待处理的邀请',
+      recentActions: '最近的行政行动',
+      users: '用户',
+      teams: '团队'
+    }
+  },
+  chromeExtra: {
+    splitScreen: '分屏',
+    exitSplit: '退出分割视图',
+    terminal: '终端',
+    closePanel: '关闭面板'
+  },
+  resourceDetail: {
+    tabs: {
+      overview: '概述',
+      events: '活动',
+      yaml: 'YAML',
+      portForward: '端口转发',
+      replicaHistory: '复制历史',
+      exec: '执行者',
+      metrics: '指标',
+      pressure: '压力'
+    },
+    overview: {
+      title: '概述',
+      status: '地位',
+      age: '年龄',
+      namespace: '命名空间'
+    },
+    metadata: {
+      title: '所有权和元数据',
+      controlledBy: '控制者',
+      labels: '标签',
+      annotations: '注释',
+      selector: '选择器',
+      apiVersion: 'API版本'
+    },
+    conditions: {
+      title: '状况'
+    },
+    data: {
+      secretTitle: '秘密数据',
+      configMapTitle: '配置映射数据',
+      empty: '无数据密钥'
+    },
+    actions: {
+      kubectl: '复制 kubectl',
+      copyGet: 'kubectl 获取',
+      copyDescribe: 'kubectl 描述',
+      copyDelete: 'kubectl 删除',
+      copyYaml: 'kubectl get -o yaml',
+      copied: '命令已复制到剪贴板',
+      copyFailed: '复制失败',
+      editYaml: '编辑 YAML',
+      delete: '删除',
+      deleteTitle: '删除“{{name}}”？',
+      deleteBody: '此操作无法撤消。',
+      deleted: '已删除“{{name}}”',
+      deleteFailed: '删除失败：{{error}}'
+    }
+  },
+  podDetail: {
+    loadError: '无法加载 Pod 详细信息',
+    tabs: {
+      overview: '概述',
+      containers: '集装箱',
+      metrics: '指标',
+      network: '网络',
+      logs: '日志',
+      exec: '执行者',
+      events: '活动',
+      yaml: 'YAML'
+    },
+    overview: {
+      title: '概述',
+      status: '地位',
+      ready: '准备好',
+      restarts: '重新启动',
+      age: '年龄',
+      node: '节点',
+      podIP: '吊舱IP',
+      hostIP: '主机IP',
+      qos: '服务质量等级',
+      serviceAccount: '服务帐号',
+      priorityClass: '优先级',
+      restartPolicy: '重启政策'
+    },
+    metadata: {
+      title: '所有权和元数据',
+      controlledBy: '控制者',
+      labels: '标签',
+      annotations: '注释'
+    },
+    conditions: {
+      title: '状况'
+    },
+    scheduling: {
+      title: '调度',
+      node: '节点',
+      nodeSelector: '节点选择器',
+      tolerations: '公差',
+      affinity: '亲和力',
+      none: '没有任何'
+    },
+    security: {
+      title: '安全',
+      pod: 'Pod 安全上下文',
+      container: '容器安全上下文',
+      none: '未设置'
+    },
+    storage: {
+      title: '贮存',
+      volume: '体积',
+      type: '类型',
+      source: '来源',
+      mounts: '卷安装',
+      none: '没有卷'
+    },
+    health: {
+      title: '健康检查',
+      liveness: '活力',
+      readiness: '准备情况',
+      startup: '启动'
+    },
+    containers: {
+      title: '集装箱',
+      initTitle: '初始化容器',
+      init: '初始化',
+      ready: '准备好',
+      notReady: '还没准备好',
+      restarts: '{{count}} 重新启动',
+      image: '图像',
+      pullPolicy: '拉动政策',
+      requests: '要求',
+      limits: '限制',
+      message: '信息',
+      lastState: '最后状态',
+      ports: '港口',
+      env: '环境',
+      containers: '集装箱'
+    },
+    actions: {
+      kubectl: '复制 kubectl',
+      copyGet: 'kubectl get -o yaml',
+      copyDescribe: 'kubectl 描述',
+      copyLogs: 'kubectl 日志',
+      copyExec: 'kubectl 执行',
+      copyDelete: 'kubectl 删除',
+      copied: '命令已复制到剪贴板',
+      copyFailed: '复制失败',
+      restart: '重新启动',
+      restartTitle: '重新启动“{{name}}”？',
+      restartBody: 'Pod 将被删除，其控制器将重新创建它。',
+      restartBodyOrphan: '该 Pod 没有控制器 - 删除它不会重新创建它。继续？',
+      delete: '删除',
+      deleteTitle: '删除“{{name}}”？',
+      deleteBody: '此操作无法撤消。',
+      deleted: '已删除“{{name}}”',
+      deleteFailed: '删除失败：{{error}}'
+    },
+    insights: {
+      crashLoop: '{{container}} 正在崩溃 ({{reason}})。',
+      oomKilled: '{{container}} 被 OOMKilled — 考虑提高其内存限制。',
+      highRestarts: '重启次数过多 ({{count}}) — Pod 不稳定。',
+      notReady: '只有 {{ready}} 个容器（共 {{total}} 个）准备就绪。',
+      unschedulable: 'Pod 无法调度：{{reason}}。',
+      noLiveness: '{{container}} 没有活性探针。',
+      noReadiness: '{{container}} 没有就绪探针。',
+      noLimits: '{{container}} 没有设置 CPU/内存限制。',
+      floatingTag: '{{container}} 使用浮动图像标签 (:latest) — 固定版本以进行可重复部署。',
+      privileged: '{{container}} 在特权模式下运行——存在安全风险。',
+      privilegeEscalation: '{{container}} 允许权限升级。',
+      bestEffort: 'QoS 是 BestEffort——这个 Pod 在压力下首先被驱逐。',
+      healthy: '没有检测到问题。豆荚看起来很健康。'
     }
   }
 }

@@ -14,7 +14,15 @@ export function registerNodeHandlers(): void {
     const clients = clusterManager.require(req.clusterId)
     const sender = event.sender
     sender.once('destroyed', () => nodeExecManager.stopAllForSender(sender.id))
-    await nodeExecManager.start(req.sessionId, clients, req.nodeName, req.cols, req.rows, sender)
+    await nodeExecManager.start(
+      req.sessionId,
+      clients,
+      req.clusterId,
+      req.nodeName,
+      req.cols,
+      req.rows,
+      sender
+    )
     return { ok: true as const }
   })
 

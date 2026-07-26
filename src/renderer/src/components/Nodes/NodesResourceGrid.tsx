@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Alert, Popover } from 'antd'
-import { Box, Cpu, HardDrive, MemoryStick } from 'lucide-react'
+import { Box, Cpu, MemoryStick } from 'lucide-react'
 import { DEFAULT_METRICS_TIME_RANGE, type MetricsTimeRange } from '@shared/metricsTimeRange'
 import type { ClusterMetricsSummary } from '@shared/types/metrics'
 import { useClusterMetricsRange } from '../../queries/useMetricsRange'
@@ -97,14 +97,6 @@ export function NodesResourceGrid({ clusterId, data, isActive }: NodesResourceGr
             unavailable={data.memoryUsageBytes === undefined}
           />
         )}
-        <ResourceUsageCard
-          icon={HardDrive}
-          label="Storage"
-          usage="—"
-          capacity="—"
-          unavailable
-          accent="var(--ml-text-tertiary)"
-        />
         <ResourceUsageCard
           icon={Box}
           label="Pods Capacity"

@@ -36,9 +36,16 @@ export function buildAntdTheme(
       fontSize: 13,
       controlHeight: 32,
       motionDurationMid: '0.18s',
-      motionEaseInOut: 'cubic-bezier(0.22, 1, 0.36, 1)'
+      motionEaseInOut: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      // Keep a single soft elevation for popovers/dropdowns; tooltips override to none in CSS
+      boxShadowSecondary: isDark
+        ? '0 4px 16px rgba(0, 0, 0, 0.45)'
+        : '0 4px 14px rgba(15, 23, 42, 0.12)'
     },
     components: {
+      Tooltip: {
+        borderRadius: radius.sm
+      },
       Layout: {
         siderBg: p.resourceSiderBg,
         headerBg: p.bgContainer,

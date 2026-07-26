@@ -9,10 +9,40 @@ import type {
 } from '@shared/types/terminal'
 import { localTerminalManager } from '../terminal/localTerminalManager'
 import { listClusters } from '../persistence/clusterStore'
+import type { PersistedClusterEntry } from '@shared/types/cluster'
 import { exportScopedKubeconfigYaml } from '../k8s/kubeconfigExport'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { existsSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { parse, stringify } from 'yaml'
+
+/**
+ * Points the shell at a kubeconfig whose `current-context` is the cluster the terminal
+ * was opened from, so bare `kubectl` commands can't silently target another cluster.
+ */
+function kubeconfigEnvForCluster(
+  entry: PersistedClusterEntry,
+  clusterId: string,
+  sessionId: string
+): { kubeconfigPath: string; tempPaths?: string[] } {
+  const tempPath = (): string => join(tmpdir(), `magiclens-kubeconfig-${clusterId}-${sessionId}.yaml`)
+
+  if (entry.localKubeconfigPath && existsSync(entry.localKubeconfigPath)) {
+    const raw = readFileSync(entry.localKubeconfigPath, 'utf-8')
+    const parsed = parse(raw) as { 'current-context'?: string } | null
+    if (parsed && parsed['current-context'] === entry.contextName) {
+      return { kubeconfigPath: entry.localKubeconfigPath }
+    }
+    // Same credentials, but re-pointed at this cluster's context.
+    const filePath = tempPath()
+    writeFileSync(filePath, stringify({ ...parsed, 'current-context': entry.contextName }), 'utf-8')
+    return { kubeconfigPath: filePath, tempPaths: [filePath] }
+  }
+
+  const filePath = tempPath()
+  writeFileSync(filePath, exportScopedKubeconfigYaml(entry.source, entry.contextName), 'utf-8')
+  return { kubeconfigPath: filePath, tempPaths: [filePath] }
+}
 
 export function registerTerminalHandlers(): void {
   ipcMain.handle(IPC.TERMINAL_START, (event, req: TerminalStartRequest): TerminalStartResponse => {
@@ -25,17 +55,19 @@ export function registerTerminalHandlers(): void {
       const entry = listClusters().find((c) => c.id === req.clusterId)
       if (entry) {
         try {
-          if (entry.localKubeconfigPath && existsSync(entry.localKubeconfigPath)) {
-            env = { ...(env ?? {}), KUBECONFIG: entry.localKubeconfigPath }
-          } else {
-            const yaml = exportScopedKubeconfigYaml(entry.source, entry.contextName)
-            const filePath = join(tmpdir(), `magiclens-kubeconfig-${req.clusterId}-${req.sessionId}.yaml`)
-            writeFileSync(filePath, yaml, 'utf-8')
-            env = { ...(env ?? {}), KUBECONFIG: filePath }
-            tempPaths = [filePath]
+          const resolved = kubeconfigEnvForCluster(entry, req.clusterId, req.sessionId)
+          env = {
+            ...(env ?? {}),
+            KUBECONFIG: resolved.kubeconfigPath,
+            // Surfaced for prompts/scripts (kubectl itself has no context env var).
+            MAGICLENS_KUBE_CONTEXT: entry.contextName
           }
-        } catch {
-          // best-effort; fall back to default env
+          tempPaths = resolved.tempPaths
+        } catch (err) {
+          console.warn(
+            `[magiclens] Could not scope terminal kubeconfig to context "${entry.contextName}":`,
+            err instanceof Error ? err.message : err
+          )
         }
       }
     }

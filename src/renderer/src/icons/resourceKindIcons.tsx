@@ -1,5 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
+  Activity,
+  AppWindow,
   ArrowLeftRight,
   Bell,
   Box,
@@ -16,6 +18,7 @@ import {
   HardDrive,
   Key,
   Layers,
+  LayoutDashboard,
   Link2,
   Lock,
   Network,
@@ -36,6 +39,7 @@ import {
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { VirtualPageKey } from '@shared/types/navigation'
 import { Icon } from '../components/ui/Icon'
+import { HelmLogo } from './HelmLogo'
 
 function kindIcon(icon: LucideIcon): React.ComponentType {
   return function ResourceKindIcon(): React.JSX.Element {
@@ -90,14 +94,18 @@ export const kindIcons: Record<ResourceKind, React.ComponentType> = {
 }
 
 export const virtualPageIcons: Record<VirtualPageKey, LucideIcon> = {
+  clusterOverview: LayoutDashboard,
+  applications: AppWindow,
+  workloadsOverview: Activity,
+  configOverview: SlidersHorizontal,
   topology: Network,
   portForwarding: ArrowLeftRight,
   dynamicCustomResources: Boxes,
   operatorResources: Package,
   discoveredApiGroups: Compass,
   discoveredApiVersions: GitBranch,
-  helmCharts: Package,
-  helmReleases: Rocket
+  helmCharts: HelmLogo as LucideIcon,
+  helmReleases: HelmLogo as LucideIcon
 }
 
 export const favoriteIcon = Star
@@ -157,6 +165,10 @@ export const kindIconLucide: Record<ResourceKind, LucideIcon> = {
 }
 
 export const virtualPageIconComponents: Record<VirtualPageKey, React.ComponentType> = {
+  clusterOverview: virtualIcon('clusterOverview'),
+  applications: virtualIcon('applications'),
+  workloadsOverview: virtualIcon('workloadsOverview'),
+  configOverview: virtualIcon('configOverview'),
   topology: virtualIcon('topology'),
   portForwarding: virtualIcon('portForwarding'),
   dynamicCustomResources: virtualIcon('dynamicCustomResources'),

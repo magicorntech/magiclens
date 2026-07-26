@@ -1,5 +1,14 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { CustomResourceKindsRequest } from '@shared/types/discovery'
+import type {
+  CustomResourceKindsRequest,
+  DynamicResourceListResponse
+} from '@shared/types/discovery'
+import {
+  filterItemsByNamespaceSelection,
+  isNoNamespaceSelection,
+  listNamespaceParam
+} from '@shared/namespaceSelection'
 
 export function useDiscovery(clusterId: string | null) {
   return useQuery({
@@ -27,20 +36,36 @@ export function useDynamicResourceList(
   apiVersion: string | null,
   kind: string | null,
   namespaced: boolean,
-  namespace: string,
+  namespaceSelection: string,
   refetchInterval: number | false = false
 ) {
-  return useQuery({
-    queryKey: ['dynamic-resource-list', clusterId, apiVersion, kind, namespaced, namespace],
+  const noNamespace = isNoNamespaceSelection(namespaceSelection)
+  const apiNamespace = namespaced ? listNamespaceParam(namespaceSelection) : 'ALL'
+  const canFetch = !namespaced || (!noNamespace && apiNamespace !== null)
+
+  const query = useQuery({
+    queryKey: ['dynamic-resource-list', clusterId, apiVersion, kind, namespaced, namespaceSelection],
     queryFn: () =>
       window.api.discovery.listDynamicResources({
         clusterId: clusterId as string,
         apiVersion: apiVersion as string,
         kind: kind as string,
         namespaced,
-        namespace
+        namespace: (apiNamespace ?? 'ALL') as string
       }),
-    enabled: !!clusterId && !!apiVersion && !!kind,
+    enabled: !!clusterId && !!apiVersion && !!kind && canFetch,
     refetchInterval
   })
+
+  const data = useMemo((): DynamicResourceListResponse | undefined => {
+    if (namespaced && noNamespace) return { items: [] }
+    if (!query.data) return undefined
+    if ('error' in query.data) return query.data
+    if (!namespaced) return query.data
+    return {
+      items: filterItemsByNamespaceSelection(query.data.items, namespaceSelection)
+    }
+  }, [query.data, namespaceSelection, namespaced, noNamespace])
+
+  return { ...query, data }
 }

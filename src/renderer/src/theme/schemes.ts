@@ -8,12 +8,30 @@ import {
   type DerivedSchemeColors
 } from './colorUtils'
 
-export type ColorSchemeId = 'violet' | 'ocean' | 'forest' | 'sunset' | 'slate' | 'rose' | 'custom'
+export type ColorSchemeId =
+  | 'violet'
+  | 'ocean'
+  | 'forest'
+  | 'sunset'
+  | 'slate'
+  | 'rose'
+  | 'skywings'
+  | 'moonprism'
+  | 'webstrike'
+  | 'nightcape'
+  | 'arcforge'
+  | 'shadowflame'
+  | 'leafstorm'
+  | 'nebula'
+  | 'custom'
+
+export type ColorSchemeGroup = 'classic' | 'worlds'
 
 export interface ColorSchemeDefinition {
   id: Exclude<ColorSchemeId, 'custom'>
   name: string
   description: string
+  group: ColorSchemeGroup
   swatches: [string, string, string]
 }
 
@@ -100,40 +118,41 @@ function buildPalette(colors: SchemeColors, isDark: boolean): AppPalette {
 }
 
 const SCHEME_COLORS: Record<Exclude<ColorSchemeId, 'custom'>, SchemeColors> = {
+  /* —— Classic —— */
   violet: {
-    primaryLight: '#4f46e5',
-    primaryLightHover: '#4338ca',
-    primaryDark: '#818cf8',
-    primaryDarkHover: '#a5b4fc',
-    resourceSiderLight: '#f8fafc',
-    resourceSiderDark: '#161b22',
-    spotlightLight: '#eef2ff',
-    spotlightDark: '#1c2128',
-    layoutLight: '#f4f6f8',
-    layoutDark: '#0d1117'
+    primaryLight: '#6d28d9',
+    primaryLightHover: '#5b21b6',
+    primaryDark: '#a78bfa',
+    primaryDarkHover: '#c4b5fd',
+    resourceSiderLight: '#2e1065',
+    resourceSiderDark: '#12081f',
+    spotlightLight: '#f5f3ff',
+    spotlightDark: '#1a1228',
+    layoutLight: '#f5f3ff',
+    layoutDark: '#0c0814'
   },
   ocean: {
-    primaryLight: '#0284c7',
-    primaryLightHover: '#0369a1',
-    primaryDark: '#38bdf8',
-    primaryDarkHover: '#7dd3fc',
-    resourceSiderLight: '#0c4a6e',
-    resourceSiderDark: '#041018',
-    spotlightLight: '#f0f9ff',
-    spotlightDark: '#102030',
-    layoutLight: '#eff6ff',
-    layoutDark: '#060d14'
+    primaryLight: '#0891b2',
+    primaryLightHover: '#0e7490',
+    primaryDark: '#22d3ee',
+    primaryDarkHover: '#67e8f9',
+    resourceSiderLight: '#164e63',
+    resourceSiderDark: '#041016',
+    spotlightLight: '#ecfeff',
+    spotlightDark: '#0c1c24',
+    layoutLight: '#f0f9ff',
+    layoutDark: '#050e14'
   },
   forest: {
-    primaryLight: '#059669',
-    primaryLightHover: '#047857',
-    primaryDark: '#34d399',
-    primaryDarkHover: '#6ee7b7',
-    resourceSiderLight: '#064e3b',
-    resourceSiderDark: '#041410',
-    spotlightLight: '#ecfdf5',
-    spotlightDark: '#102018',
-    layoutLight: '#f0fdf4',
+    primaryLight: '#15803d',
+    primaryLightHover: '#166534',
+    primaryDark: '#4ade80',
+    primaryDarkHover: '#86efac',
+    resourceSiderLight: '#14532d',
+    resourceSiderDark: '#04140a',
+    spotlightLight: '#f0fdf4',
+    spotlightDark: '#0e1c14',
+    layoutLight: '#f7fef9',
     layoutDark: '#060f0a'
   },
   sunset: {
@@ -145,20 +164,20 @@ const SCHEME_COLORS: Record<Exclude<ColorSchemeId, 'custom'>, SchemeColors> = {
     resourceSiderDark: '#180904',
     spotlightLight: '#fff7ed',
     spotlightDark: '#241610',
-    layoutLight: '#fff7ed',
+    layoutLight: '#fffaf5',
     layoutDark: '#100904'
   },
   slate: {
-    primaryLight: '#4f46e5',
-    primaryLightHover: '#4338ca',
-    primaryDark: '#818cf8',
-    primaryDarkHover: '#a5b4fc',
-    resourceSiderLight: '#f8fafc',
-    resourceSiderDark: '#161b22',
+    primaryLight: '#475569',
+    primaryLightHover: '#334155',
+    primaryDark: '#94a3b8',
+    primaryDarkHover: '#cbd5e1',
+    resourceSiderLight: '#1e293b',
+    resourceSiderDark: '#0b1018',
     spotlightLight: '#f1f5f9',
-    spotlightDark: '#1c2128',
-    layoutLight: '#f4f6f8',
-    layoutDark: '#0d1117'
+    spotlightDark: '#161b22',
+    layoutLight: '#f8fafc',
+    layoutDark: '#0b0f14'
   },
   rose: {
     primaryLight: '#e11d48',
@@ -169,22 +188,231 @@ const SCHEME_COLORS: Record<Exclude<ColorSchemeId, 'custom'>, SchemeColors> = {
     resourceSiderDark: '#14060c',
     spotlightLight: '#fff1f2',
     spotlightDark: '#241018',
-    layoutLight: '#fff1f2',
+    layoutLight: '#fff7f8',
     layoutDark: '#0f0608'
+  },
+
+  /* —— Worlds (anime / hero inspired, original names) —— */
+  /** Soft sky blues + warm gold — winged-journey anime energy */
+  skywings: {
+    primaryLight: '#2563eb',
+    primaryLightHover: '#1d4ed8',
+    primaryDark: '#60a5fa',
+    primaryDarkHover: '#93c5fd',
+    resourceSiderLight: '#1e3a5f',
+    resourceSiderDark: '#060d18',
+    spotlightLight: '#eff6ff',
+    spotlightDark: '#121c2c',
+    layoutLight: '#f5f8ff',
+    layoutDark: '#070b14'
+  },
+  /** Magical-girl pink / soft prism glow */
+  moonprism: {
+    primaryLight: '#db2777',
+    primaryLightHover: '#be185d',
+    primaryDark: '#f472b6',
+    primaryDarkHover: '#f9a8d4',
+    resourceSiderLight: '#831843',
+    resourceSiderDark: '#16060f',
+    spotlightLight: '#fdf2f8',
+    spotlightDark: '#241018',
+    layoutLight: '#fff5fb',
+    layoutDark: '#10060c'
+  },
+  /** Crimson + electric blue — agile street-hero punch */
+  webstrike: {
+    primaryLight: '#dc2626',
+    primaryLightHover: '#b91c1c',
+    primaryDark: '#f87171',
+    primaryDarkHover: '#fca5a5',
+    resourceSiderLight: '#1e3a8a',
+    resourceSiderDark: '#080c18',
+    spotlightLight: '#fef2f2',
+    spotlightDark: '#1a1018',
+    layoutLight: '#fff5f5',
+    layoutDark: '#0c0608'
+  },
+  /** Charcoal + bat-signal gold — nocturnal vigilante */
+  nightcape: {
+    primaryLight: '#eab308',
+    primaryLightHover: '#ca8a04',
+    primaryDark: '#facc15',
+    primaryDarkHover: '#fde047',
+    resourceSiderLight: '#1c1917',
+    resourceSiderDark: '#080706',
+    spotlightLight: '#fafaf9',
+    spotlightDark: '#1c1917',
+    layoutLight: '#f5f5f4',
+    layoutDark: '#0a0908'
+  },
+  /** Deep crimson + forge gold — armored tech hero */
+  arcforge: {
+    primaryLight: '#b91c1c',
+    primaryLightHover: '#991b1b',
+    primaryDark: '#f59e0b',
+    primaryDarkHover: '#fbbf24',
+    resourceSiderLight: '#450a0a',
+    resourceSiderDark: '#120606',
+    spotlightLight: '#fef2f2',
+    spotlightDark: '#1c1008',
+    layoutLight: '#fff8f0',
+    layoutDark: '#0e0704'
+  },
+  /** Deep plum + cyan blade edge — dark anime bladesman */
+  shadowflame: {
+    primaryLight: '#7c3aed',
+    primaryLightHover: '#6d28d9',
+    primaryDark: '#2dd4bf',
+    primaryDarkHover: '#5eead4',
+    resourceSiderLight: '#312e81',
+    resourceSiderDark: '#0a0818',
+    spotlightLight: '#f5f3ff',
+    spotlightDark: '#14141f',
+    layoutLight: '#f8f7ff',
+    layoutDark: '#08060f'
+  },
+  /** Hot orange + deep navy — village-ninja storm */
+  leafstorm: {
+    primaryLight: '#f97316',
+    primaryLightHover: '#ea580c',
+    primaryDark: '#fb923c',
+    primaryDarkHover: '#fdba74',
+    resourceSiderLight: '#1e3a5f',
+    resourceSiderDark: '#060a14',
+    spotlightLight: '#fff7ed',
+    spotlightDark: '#1a1410',
+    layoutLight: '#fffaf5',
+    layoutDark: '#0a0806'
+  },
+  /** Magenta nebula + cyan stars — cosmic crew */
+  nebula: {
+    primaryLight: '#c026d3',
+    primaryLightHover: '#a21caf',
+    primaryDark: '#e879f9',
+    primaryDarkHover: '#f0abfc',
+    resourceSiderLight: '#4c1d95',
+    resourceSiderDark: '#0e0618',
+    spotlightLight: '#fdf4ff',
+    spotlightDark: '#1a1024',
+    layoutLight: '#faf5ff',
+    layoutDark: '#0a0612'
   }
 }
 
 export const COLOR_SCHEME_DEFINITIONS: ColorSchemeDefinition[] = [
-  { id: 'violet', name: 'Violet', description: 'MagicLens default purple harmony', swatches: ['#7c3aed', '#a78bfa', '#f3f0f9'] },
-  { id: 'ocean', name: 'Ocean', description: 'Cool blue and cyan balance', swatches: ['#0284c7', '#38bdf8', '#eff6ff'] },
-  { id: 'forest', name: 'Forest', description: 'Fresh green natural tones', swatches: ['#059669', '#34d399', '#f0fdf4'] },
-  { id: 'sunset', name: 'Sunset', description: 'Warm orange and amber glow', swatches: ['#ea580c', '#fb923c', '#fff7ed'] },
-  { id: 'slate', name: 'Slate', description: 'Neutral professional gray', swatches: ['#475569', '#94a3b8', '#f1f5f9'] },
-  { id: 'rose', name: 'Rose', description: 'Soft pink and rose accents', swatches: ['#e11d48', '#fb7185', '#fff1f2'] }
+  {
+    id: 'violet',
+    name: 'Violet',
+    description: 'MagicLens signature purple',
+    group: 'classic',
+    swatches: ['#6d28d9', '#a78bfa', '#f5f3ff']
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean',
+    description: 'Cyan tide and deep water',
+    group: 'classic',
+    swatches: ['#0891b2', '#22d3ee', '#ecfeff']
+  },
+  {
+    id: 'forest',
+    name: 'Forest',
+    description: 'Moss green and leaf light',
+    group: 'classic',
+    swatches: ['#15803d', '#4ade80', '#f0fdf4']
+  },
+  {
+    id: 'sunset',
+    name: 'Sunset',
+    description: 'Warm orange dusk glow',
+    group: 'classic',
+    swatches: ['#ea580c', '#fb923c', '#fff7ed']
+  },
+  {
+    id: 'slate',
+    name: 'Slate',
+    description: 'Cool professional gray',
+    group: 'classic',
+    swatches: ['#475569', '#94a3b8', '#f1f5f9']
+  },
+  {
+    id: 'rose',
+    name: 'Rose',
+    description: 'Soft rose and blush pink',
+    group: 'classic',
+    swatches: ['#e11d48', '#fb7185', '#fff1f2']
+  },
+  {
+    id: 'skywings',
+    name: 'Sky Wings',
+    description: 'Winged journey skies & gold',
+    group: 'worlds',
+    swatches: ['#2563eb', '#fbbf24', '#eff6ff']
+  },
+  {
+    id: 'moonprism',
+    name: 'Moon Prism',
+    description: 'Magical-girl pink prism',
+    group: 'worlds',
+    swatches: ['#db2777', '#f9a8d4', '#fdf2f8']
+  },
+  {
+    id: 'webstrike',
+    name: 'Web Strike',
+    description: 'Crimson & blue street hero',
+    group: 'worlds',
+    swatches: ['#dc2626', '#2563eb', '#fef2f2']
+  },
+  {
+    id: 'nightcape',
+    name: 'Night Cape',
+    description: 'Midnight charcoal & signal gold',
+    group: 'worlds',
+    swatches: ['#eab308', '#1c1917', '#fafaf9']
+  },
+  {
+    id: 'arcforge',
+    name: 'Arc Forge',
+    description: 'Armored crimson & forge gold',
+    group: 'worlds',
+    swatches: ['#b91c1c', '#f59e0b', '#fff8f0']
+  },
+  {
+    id: 'shadowflame',
+    name: 'Shadow Flame',
+    description: 'Plum blade with teal edge',
+    group: 'worlds',
+    swatches: ['#7c3aed', '#2dd4bf', '#f5f3ff']
+  },
+  {
+    id: 'leafstorm',
+    name: 'Leaf Storm',
+    description: 'Hot orange over deep navy',
+    group: 'worlds',
+    swatches: ['#f97316', '#1e3a5f', '#fff7ed']
+  },
+  {
+    id: 'nebula',
+    name: 'Nebula',
+    description: 'Cosmic magenta starfield',
+    group: 'worlds',
+    swatches: ['#c026d3', '#22d3ee', '#fdf4ff']
+  }
 ]
 
-export function getSchemePalette(scheme: ColorSchemeId, isDark: boolean, customAccent?: string): AppPalette {
+export const COLOR_SCHEME_GROUPS: { id: ColorSchemeGroup; labelKey: string }[] = [
+  { id: 'classic', labelKey: 'settings.appearance.groupClassic' },
+  { id: 'worlds', labelKey: 'settings.appearance.groupWorlds' }
+]
+
+export function getSchemePalette(
+  scheme: ColorSchemeId,
+  isDark: boolean,
+  customAccent?: string
+): AppPalette {
   const colors =
-    scheme === 'custom' ? deriveSchemeFromAccent(customAccent ?? '#7c3aed') : SCHEME_COLORS[scheme]
+    scheme === 'custom'
+      ? deriveSchemeFromAccent(customAccent ?? '#7c3aed')
+      : (SCHEME_COLORS[scheme] ?? SCHEME_COLORS.violet)
   return buildPalette(colors, isDark)
 }

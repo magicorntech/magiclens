@@ -1,9 +1,8 @@
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import type { ResourceListItem } from '@shared/types/resource'
 import type { NodeMetricsResponse } from '@shared/types/metrics'
-import type { NodesDashboardSectionId } from '@shared/types/nodesDashboard'
 import { useMemo, useState } from 'react'
-import { Splitter } from 'antd'
+import { useTranslation } from 'react-i18next'
 import { useClusterMetrics } from '../../queries/useClusterMetrics'
 import { useResourceList } from '../../queries/useResourceList'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
@@ -12,7 +11,6 @@ import { NodesHealthBanner } from './NodesHealthBanner'
 import { NodesResourceGrid } from './NodesResourceGrid'
 import { NodesQuickInsights, NodesTopConsumers } from './NodesQuickInsights'
 import { NodesEventsStrip } from './NodesEventsStrip'
-import { NodeInspectorDrawer } from './NodeInspectorDrawer'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { EmptyState } from '../ResourceTable/EmptyErrorStates'
 import {
@@ -23,7 +21,6 @@ import {
   topPodNodes,
   topRestartNodes
 } from './nodesOverviewUtils'
-import { MotionDiv, slideUp } from '../ui/Motion'
 
 interface NodesOverviewPageProps {
   clusterId: string
@@ -42,52 +39,10 @@ interface NodesOverviewPageProps {
   nodeMetrics?: NodeMetricsResponse
 }
 
-const DASHBOARD_SECTIONS = new Set<NodesDashboardSectionId>([
-  'health',
-  'resources',
-  'quickInsights',
-  'topConsumers'
-])
-
-const NODES_TABLE_SPLIT_KEY = 'ml-nodes-table-split-dashboard'
-const DEFAULT_DASHBOARD_SPLIT = '38%'
-
-function readDashboardSplitSize(): string {
-  try {
-    const stored = localStorage.getItem(NODES_TABLE_SPLIT_KEY)
-    if (stored && /^\d+(\.\d+)?%$/.test(stored)) return stored
-  } catch {
-    // ignore
-  }
-  return DEFAULT_DASHBOARD_SPLIT
-}
-
-function renderDashboardBatch(batch: NodesDashboardSectionId[], renderSection: (id: NodesDashboardSectionId) => React.ReactNode): React.ReactNode {
-  if (batch.length === 0) return null
-
-  const widgetIds = batch.filter((id) => id === 'quickInsights' || id === 'topConsumers')
-  const cardIds = batch.filter((id) => id === 'health' || id === 'resources')
-
-  return (
-    <section key={`dash-${batch.join('-')}`} className="ml-nodes-overview-dashboard">
-      {cardIds.map((id) => (
-        <div key={id} className="ml-nodes-overview-dashboard-block">
-          {renderSection(id)}
-        </div>
-      ))}
-      {widgetIds.length > 0 && (
-        <div className="ml-nodes-overview-widgets">
-          {widgetIds.map((id) => (
-            <div key={id} className="ml-nodes-overview-dashboard-block">
-              {renderSection(id)}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  )
-}
-
+/**
+ * Cleaner Nodes page: compact health + usage strip on top, table as the main
+ * surface, optional hotspots, events below. No nested splitter dashboard.
+ */
 export function NodesOverviewPage({
   clusterId,
   isActive,
@@ -104,28 +59,39 @@ export function NodesOverviewPage({
   paginationProps,
   nodeMetrics
 }: NodesOverviewPageProps): React.JSX.Element {
+  const { t } = useTranslation()
   const dashboardPrefs = useDisplaySettingsStore((s) => s.nodesDashboard)
   const navigateToResource = useClusterStore((s) => s.navigateToResource)
-  const [dashboardSplitSize, setDashboardSplitSize] = useState(readDashboardSplitSize)
+  const [hotspotsOpen, setHotspotsOpen] = useState(false)
   const { data: clusterMetrics, isLoading: metricsLoading } = useClusterMetrics(clusterId, isActive)
   const { data: podsData } = useResourceList(clusterId, 'ALL', 'Pods', isActive)
 
-  const visibleSections = dashboardPrefs.order.filter((id) => dashboardPrefs.visible[id])
+  const showHealth = dashboardPrefs.visible.health
+  const showResources = dashboardPrefs.visible.resources
+  const showInsights = dashboardPrefs.visible.quickInsights
+  const showTopConsumers = dashboardPrefs.visible.topConsumers
+  const showTable = dashboardPrefs.visible.table
+  const showEvents = dashboardPrefs.visible.events
 
-  const podStats = (() => {
+  const podStats = useMemo(() => {
     if (!podsData || 'error' in podsData) return new Map()
     return aggregatePodStatsByNode(podsData.items)
-  })()
+  }, [podsData])
 
-  const insights =
-    nodeMetrics?.nodes ? buildQuickInsights(filtered, nodeMetrics.nodes, podStats) : []
+  const insights = useMemo(
+    () => (nodeMetrics?.nodes ? buildQuickInsights(filtered, nodeMetrics.nodes, podStats) : []),
+    [nodeMetrics, filtered, podStats]
+  )
 
-  const topConsumers = {
-    cpu: topCpuNodes(nodeMetrics?.nodes ?? []),
-    memory: topMemoryNodes(nodeMetrics?.nodes ?? []),
-    pods: topPodNodes(podStats),
-    restarts: topRestartNodes(podStats)
-  }
+  const topConsumers = useMemo(
+    () => ({
+      cpu: topCpuNodes(nodeMetrics?.nodes ?? []),
+      memory: topMemoryNodes(nodeMetrics?.nodes ?? []),
+      pods: topPodNodes(podStats),
+      restarts: topRestartNodes(podStats)
+    }),
+    [nodeMetrics, podStats]
+  )
 
   function handleNavigateToNode(nodeName: string): void {
     navigateToResource(clusterId, { kind: 'Nodes', namespace: '', name: nodeName })
@@ -133,42 +99,80 @@ export function NodesOverviewPage({
     if (match) onSelectItem(match)
   }
 
-  function renderDashboardSection(id: NodesDashboardSectionId): React.ReactNode {
-    switch (id) {
-      case 'health':
-        return metricsLoading || !clusterMetrics ? (
-          <div className="ml-skeleton-row" style={{ height: 48 }} />
-        ) : (
-          <NodesHealthBanner data={clusterMetrics} />
-        )
-      case 'resources':
-        return metricsLoading || !clusterMetrics ? (
-          <div className="ml-skeleton-row" style={{ height: 88 }} />
-        ) : (
-          <NodesResourceGrid clusterId={clusterId} data={clusterMetrics} isActive={isActive} />
-        )
-      case 'quickInsights':
-        return <NodesQuickInsights insights={insights} onNavigateToNode={handleNavigateToNode} />
-      case 'topConsumers':
-        return <NodesTopConsumers {...topConsumers} onNavigateToNode={handleNavigateToNode} />
-      default:
-        return null
-    }
+  const hasHotspots = (showInsights && insights.length > 0) || showTopConsumers
+
+  if (!showTable && !showHealth && !showResources && !showEvents && !hasHotspots) {
+    return (
+      <EmptyState
+        title={t('nodesOverview.hiddenTitle')}
+        description={t('nodesOverview.hiddenHint')}
+      />
+    )
   }
 
-  function renderMainSection(id: NodesDashboardSectionId): React.ReactNode {
-    if (id === 'table') {
-      return (
-        <MotionDiv key="table" className="ml-nodes-overview-table-section" {...slideUp}>
-          <div className="ml-nodes-overview-table-header">
-            <h4 className="ml-nodes-section-title">Nodes</h4>
-            <span className="ml-nodes-overview-table-count">{filtered.length} total</span>
+  return (
+    <div className="ml-nodes-page">
+      {(showHealth || showResources) && (
+        <header className="ml-nodes-page__hero">
+          {showHealth ? (
+            metricsLoading || !clusterMetrics ? (
+              <div className="ml-skeleton-row" style={{ height: 44 }} />
+            ) : (
+              <NodesHealthBanner data={clusterMetrics} />
+            )
+          ) : null}
+          {showResources ? (
+            metricsLoading || !clusterMetrics ? (
+              <div className="ml-skeleton-row" style={{ height: 72 }} />
+            ) : (
+              <NodesResourceGrid clusterId={clusterId} data={clusterMetrics} isActive={isActive} />
+            )
+          ) : null}
+        </header>
+      )}
+
+      {hasHotspots ? (
+        <div className="ml-nodes-page__hotspots">
+          <button
+            type="button"
+            className="ml-nodes-page__hotspots-toggle"
+            onClick={() => setHotspotsOpen((v) => !v)}
+            aria-expanded={hotspotsOpen}
+          >
+            <span>{t('nodesOverview.hotspots')}</span>
+            <span className="ml-nodes-page__hotspots-meta">
+              {insights.length > 0
+                ? t('nodesOverview.hotspotsCount', { count: insights.length })
+                : t('nodesOverview.topConsumers')}
+            </span>
+            <span aria-hidden>{hotspotsOpen ? '▾' : '▸'}</span>
+          </button>
+          {hotspotsOpen ? (
+            <div className="ml-nodes-page__hotspots-body">
+              {showInsights ? (
+                <NodesQuickInsights insights={insights} onNavigateToNode={handleNavigateToNode} />
+              ) : null}
+              {showTopConsumers ? (
+                <NodesTopConsumers {...topConsumers} onNavigateToNode={handleNavigateToNode} />
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {showTable ? (
+        <section className="ml-nodes-page__table">
+          <div className="ml-nodes-page__table-head">
+            <h3 className="ml-nodes-page__title">{t('nodesOverview.tableTitle')}</h3>
+            <span className="ml-nodes-page__count">
+              {t('nodesOverview.tableCount', { count: filtered.length })}
+            </span>
           </div>
-          <div className="ml-nodes-overview-table-wrap">
+          <div className="ml-nodes-page__table-body">
             {!tableLoading && filtered.length === 0 ? (
               <EmptyState
-                title="No nodes found"
-                description="This cluster has no registered nodes, or your search filter excluded all results."
+                title={t('nodesOverview.emptyTitle')}
+                description={t('nodesOverview.emptyHint')}
                 variant="default"
               />
             ) : (
@@ -197,152 +201,18 @@ export function NodesOverviewPage({
               />
             )}
           </div>
-        </MotionDiv>
-      )
-    }
+        </section>
+      ) : null}
 
-    if (id === 'events') {
-      return (
-        <NodesEventsStrip
-          key="events"
-          clusterId={clusterId}
-          isActive={isActive}
-          selectedNodeName={selectedItem?.name}
-        />
-      )
-    }
-
-    return null
-  }
-
-  function handleSplitResizeEnd(sizes: number[]): void {
-    const total = sizes.reduce((sum, size) => sum + size, 0)
-    if (total <= 0) return
-    const pct = Math.min(78, Math.max(12, Math.round((sizes[0] / total) * 100)))
-    const next = `${pct}%`
-    setDashboardSplitSize(next)
-    try {
-      localStorage.setItem(NODES_TABLE_SPLIT_KEY, next)
-    } catch {
-      // ignore
-    }
-  }
-
-  const layout = useMemo(() => {
-    const aboveTable: React.ReactNode[] = []
-    const belowTable: React.ReactNode[] = []
-    let tableSection: React.ReactNode | null = null
-    let target = aboveTable
-    let dashboardBatch: NodesDashboardSectionId[] = []
-    let dashIndex = 0
-
-    function flushDashboard(): void {
-      if (dashboardBatch.length === 0) return
-      const section = renderDashboardBatch(dashboardBatch, renderDashboardSection)
-      if (section) {
-        target.push(
-          <div key={`dash-wrap-${dashIndex++}`} className="ml-nodes-overview-dashboard-wrap">
-            {section}
-          </div>
-        )
-      }
-      dashboardBatch = []
-    }
-
-    for (const id of visibleSections) {
-      if (id === 'table') {
-        flushDashboard()
-        tableSection = renderMainSection('table')
-        target = belowTable
-        continue
-      }
-
-      if (DASHBOARD_SECTIONS.has(id)) {
-        dashboardBatch.push(id)
-        continue
-      }
-
-      flushDashboard()
-      const section = renderMainSection(id)
-      if (section) target.push(section)
-    }
-    flushDashboard()
-
-    return { aboveTable, tableSection, belowTable }
-  }, [
-    visibleSections,
-    metricsLoading,
-    clusterMetrics,
-    insights,
-    topConsumers,
-    filtered,
-    selectedItem,
-    selectedRowKeys,
-    tableKey,
-    visibleColumns,
-    nodeMetrics,
-    isActive,
-    clusterId
-  ])
-
-  const { aboveTable, tableSection, belowTable } = layout
-  const useTableSplitter = tableSection !== null && aboveTable.length > 0
-
-  let mainContent: React.ReactNode
-
-  if (useTableSplitter) {
-    mainContent = (
-      <Splitter
-        layout="vertical"
-        className="ml-nodes-overview-split"
-        onResizeEnd={handleSplitResizeEnd}
-      >
-        <Splitter.Panel defaultSize={dashboardSplitSize} min="12%" max="78%">
-          <div className="ml-nodes-overview-dashboard-pane">{aboveTable}</div>
-        </Splitter.Panel>
-        <Splitter.Panel min="18%">
-          <div className="ml-nodes-overview-lower-pane">
-            {tableSection}
-            {belowTable}
-          </div>
-        </Splitter.Panel>
-      </Splitter>
-    )
-  } else if (tableSection !== null) {
-    mainContent = (
-      <>
-        {aboveTable}
-        {tableSection}
-        {belowTable}
-      </>
-    )
-  } else if (aboveTable.length > 0 || belowTable.length > 0) {
-    mainContent = (
-      <>
-        {aboveTable}
-        {belowTable}
-      </>
-    )
-  } else {
-    mainContent = (
-      <EmptyState
-        title="Nodes dashboard hidden"
-        description="Enable sections in Settings → Display → Nodes page layout."
-      />
-    )
-  }
-
-  return (
-    <div className="ml-nodes-overview">
-      {mainContent}
-
-      <NodeInspectorDrawer
-        open={!!selectedItem}
-        clusterId={clusterId}
-        item={selectedItem}
-        isActive={isActive}
-        onClose={() => onSelectItem(null)}
-      />
+      {showEvents ? (
+        <div className="ml-nodes-page__events">
+          <NodesEventsStrip
+            clusterId={clusterId}
+            isActive={isActive}
+            selectedNodeName={selectedItem?.name}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }

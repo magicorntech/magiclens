@@ -42,8 +42,9 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
   }, [containers, containerName])
 
   useEffect(() => {
-    if (!containerName || !containerRef.current) return
+    if (!isActive || !containerName || !containerRef.current) return
 
+    const host = containerRef.current
     const term = new Terminal({
       convertEol: true,
       fontSize: 13,
@@ -53,8 +54,13 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
     })
     const fitAddon = new FitAddon()
     term.loadAddon(fitAddon)
-    term.open(containerRef.current)
-    fitAddon.fit()
+    term.open(host)
+    try {
+      fitAddon.fit()
+    } catch {
+      // layout may still be settling
+    }
+    term.focus()
     termRef.current = term
     fitAddonRef.current = fitAddon
     setStatus('connecting')
@@ -81,7 +87,23 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
         cols: term.cols,
         rows: term.rows
       })
-      .then(() => setStatus('connected'))
+      .then(() => {
+        setStatus('connected')
+        // Refit + refocus after the tab/drawer layout finishes settling.
+        requestAnimationFrame(() => {
+          try {
+            fitAddon.fit()
+          } catch {
+            /* ignore */
+          }
+          term.focus()
+        })
+      })
+      .catch((err: unknown) => {
+        setStatus('exited')
+        const message = err instanceof Error ? err.message : String(err)
+        term.write(`\r\n\x1b[31m[Failed to start shell: ${message}]\x1b[0m\r\n`)
+      })
 
     const dataDisposable = term.onData((data) => {
       void window.api.pod.exec.input({ sessionId, data })
@@ -97,9 +119,15 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
         // container may be transiently zero-sized during layout changes
       }
     })
-    resizeObserver.observe(containerRef.current)
+    resizeObserver.observe(host)
+
+    const onHostMouseDown = (): void => {
+      term.focus()
+    }
+    host.addEventListener('mousedown', onHostMouseDown)
 
     return () => {
+      host.removeEventListener('mousedown', onHostMouseDown)
       resizeObserver.disconnect()
       dataDisposable.dispose()
       resizeDisposable.dispose()
@@ -108,8 +136,29 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
       void window.api.pod.exec.stop({ sessionId })
       term.dispose()
       termRef.current = null
+      fitAddonRef.current = null
     }
-  }, [clusterId, namespace, podName, containerName, restartToken, palette.terminalBg, palette.terminalFg, palette.primary])
+  }, [
+    isActive,
+    clusterId,
+    namespace,
+    podName,
+    containerName,
+    restartToken,
+    palette.terminalBg,
+    palette.terminalFg,
+    palette.primary
+  ])
+
+  useEffect(() => {
+    if (!isActive) return
+    try {
+      fitAddonRef.current?.fit()
+    } catch {
+      /* ignore */
+    }
+    termRef.current?.focus()
+  }, [isActive])
 
   if (isLoading) return <LoadingState />
 
@@ -123,8 +172,8 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
     )
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <Space style={{ marginBottom: 8, flexShrink: 0 }} wrap>
+    <div className="ml-pod-exec">
+      <Space className="ml-pod-exec__toolbar" wrap>
         {containers.length > 1 && (
           <Select
             size="small"
@@ -139,16 +188,7 @@ export function PodExecPanel({ clusterId, namespace, podName, isActive }: PodExe
           Restart session
         </Button>
       </Space>
-      <div
-        ref={containerRef}
-        style={{
-          flex: 1,
-          minHeight: 0,
-          background: 'var(--ml-terminal-bg)',
-          padding: 8,
-          borderRadius: 6
-        }}
-      />
+      <div ref={containerRef} className="ml-pod-exec__term" />
     </div>
   )
 }

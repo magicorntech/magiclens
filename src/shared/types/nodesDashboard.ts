@@ -21,12 +21,12 @@ export const NODES_DASHBOARD_SECTION_LABELS: Record<NodesDashboardSectionId, str
 }
 
 export const defaultNodesDashboardPrefs: NodesDashboardPrefs = {
-  order: ['health', 'resources', 'quickInsights', 'topConsumers', 'table', 'events'],
+  order: ['health', 'resources', 'table', 'events', 'quickInsights', 'topConsumers'],
   visible: {
     health: true,
     resources: true,
-    quickInsights: true,
-    topConsumers: true,
+    quickInsights: false,
+    topConsumers: false,
     table: true,
     events: true
   }

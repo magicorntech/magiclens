@@ -4,14 +4,16 @@ import { Drawer, Layout, Splitter } from 'antd'
 import { Menu, Terminal } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ResourceKind } from '@shared/resourceKinds'
+import type { UtilityPanelPlacement } from '@shared/types/app'
 import type { ClusterEntry } from '../../stores/clusterStore'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import type { VirtualPageKey } from '../../resourceConfig/kinds.renderer'
 import { ResourceMenu } from './ResourceMenu'
 import { NamespaceSelector } from './NamespaceSelector'
 import { BottomPanel } from './BottomPanel'
 import { BottomPanelProvider, useBottomPanel } from './BottomPanelContext'
-import { usesOverlayNavigation, useLayoutMode } from '../../hooks/useLayoutMode'
+import { canUseSplitLayouts, usesOverlayNavigation, useLayoutMode } from '../../hooks/useLayoutMode'
 import { Icon } from '../ui/Icon'
 import { StatusBadge } from '../ui/StatusBadge'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
@@ -53,6 +55,14 @@ export function AppShell(props: AppShellProps): React.JSX.Element {
   )
 }
 
+function resolvePanelPlacement(
+  placement: UtilityPanelPlacement,
+  allowSide: boolean
+): UtilityPanelPlacement {
+  if (!allowSide && placement !== 'bottom') return 'bottom'
+  return placement
+}
+
 function AppShellInner({
   cluster,
   splitPane,
@@ -65,9 +75,11 @@ function AppShellInner({
   const { t } = useTranslation()
   const layoutMode = useLayoutMode()
   const overlayResourceNav = usesOverlayNavigation(layoutMode)
+  const allowSidePanel = canUseSplitLayouts(layoutMode)
   const resourceMenuCollapsed = useClusterStore((s) => s.resourceMenuCollapsed)
   const setResourceMenuCollapsed = useClusterStore((s) => s.setResourceMenuCollapsed)
   const splitView = useClusterStore((s) => s.splitView)
+  const utilityPanelPlacement = useDisplaySettingsStore((s) => s.utilityPanelPlacement)
   const headerInnerRef = useRef<HTMLDivElement>(null)
   const compactToolbar = useCompactToolbar(headerInnerRef)
   const { tabs, addTerminalTab, setActiveTab } = useBottomPanel()
@@ -75,6 +87,16 @@ function AppShellInner({
   const resourceWatchDisplay = useResourceWatchDisplayStore((s) => s.byCluster[cluster.id])
 
   const hasTerminalTab = tabs.some((tab) => tab.kind === 'terminal')
+  const panelPlacement = resolvePanelPlacement(utilityPanelPlacement, allowSidePanel)
+  const showHeaderNamespace =
+    !!selectedVirtualPage &&
+    selectedVirtualPage !== 'clusterOverview' &&
+    selectedVirtualPage !== 'workloadsOverview' &&
+    selectedVirtualPage !== 'configOverview' &&
+    selectedVirtualPage !== 'helmCharts' &&
+    selectedVirtualPage !== 'helmReleases' &&
+    selectedVirtualPage !== 'dynamicCustomResources' &&
+    selectedVirtualPage !== 'operatorResources'
 
   function handleTerminalClick(): void {
     const existing = tabs.find((tab) => tab.kind === 'terminal')
@@ -92,6 +114,52 @@ function AppShellInner({
     setResourceNavOpen(false)
   }
 
+  function renderWorkspaceBody(): React.JSX.Element {
+    if (tabs.length === 0) {
+      return <>{children}</>
+    }
+
+    const main = <div className="ml-workspace-main">{children}</div>
+    const panel = <BottomPanel placement={panelPlacement} allowSidePlacement={allowSidePanel} />
+
+    if (panelPlacement === 'left') {
+      return (
+        <Splitter layout="horizontal" style={{ height: '100%' }}>
+          <Splitter.Panel defaultSize="38%" min="18%" max="70%">
+            {panel}
+          </Splitter.Panel>
+          <Splitter.Panel defaultSize="62%" min="25%">
+            {main}
+          </Splitter.Panel>
+        </Splitter>
+      )
+    }
+
+    if (panelPlacement === 'right') {
+      return (
+        <Splitter layout="horizontal" style={{ height: '100%' }}>
+          <Splitter.Panel defaultSize="62%" min="25%">
+            {main}
+          </Splitter.Panel>
+          <Splitter.Panel defaultSize="38%" min="18%" max="70%">
+            {panel}
+          </Splitter.Panel>
+        </Splitter>
+      )
+    }
+
+    return (
+      <Splitter layout="vertical" style={{ height: '100%' }}>
+        <Splitter.Panel defaultSize="65%" min="25%">
+          {main}
+        </Splitter.Panel>
+        <Splitter.Panel defaultSize="35%" min="15%" max="75%">
+          {panel}
+        </Splitter.Panel>
+      </Splitter>
+    )
+  }
+
   return (
     <Layout className="ml-app-shell">
       <header
@@ -101,25 +169,40 @@ function AppShellInner({
           {!splitView && (
             <div className="ml-workspace-header-leading">
               {overlayResourceNav && (
-                <button type="button" className="ml-icon-btn" onClick={() => setResourceNavOpen(true)} aria-label={t('resourceNav.aria')}>
+                <button
+                  type="button"
+                  className="ml-icon-btn"
+                  onClick={() => setResourceNavOpen(true)}
+                  aria-label={t('resourceNav.aria')}
+                >
                   <Icon icon={Menu} variant="toolbar" />
                 </button>
               )}
               <span className="ml-workspace-cluster-name">{cluster.customName}</span>
-              {!overlayResourceNav && (cluster.serverVersion || (!selectedVirtualPage && resourceWatchDisplay)) && (
-                <div className="ml-workspace-header-meta">
-                  {cluster.serverVersion && <StatusBadge label={cluster.serverVersion} variant="info" size="sm" />}
-                  {!selectedVirtualPage && resourceWatchDisplay && (
-                    <WatchStatusBadge
-                      isError={resourceWatchDisplay.isError}
-                      watchStatus={resourceWatchDisplay.watchStatus}
-                    />
-                  )}
-                </div>
-              )}
+              {!overlayResourceNav &&
+                (cluster.serverVersion || (!selectedVirtualPage && resourceWatchDisplay)) && (
+                  <div className="ml-workspace-header-meta">
+                    {cluster.serverVersion && (
+                      <StatusBadge label={cluster.serverVersion} variant="info" size="sm" />
+                    )}
+                    {!selectedVirtualPage && resourceWatchDisplay && (
+                      <WatchStatusBadge
+                        isError={resourceWatchDisplay.isError}
+                        watchStatus={resourceWatchDisplay.watchStatus}
+                      />
+                    )}
+                  </div>
+                )}
             </div>
           )}
           <div className="ml-workspace-header-actions">
+            {showHeaderNamespace ? (
+              <NamespaceSelector
+                clusterId={cluster.id}
+                value={cluster.selectedNamespace}
+                onChange={onNamespaceChange}
+              />
+            ) : null}
             <button
               type="button"
               className={`ml-btn ml-btn--secondary${hasTerminalTab ? ' ml-btn--active' : ''}`}
@@ -128,7 +211,6 @@ function AppShellInner({
               <Icon icon={Terminal} variant="action" />
               {!compactToolbar && <span>{t('chromeExtra.terminal')}</span>}
             </button>
-            <NamespaceSelector clusterId={cluster.id} value={cluster.selectedNamespace} onChange={onNamespaceChange} />
           </div>
         </div>
       </header>
@@ -155,20 +237,7 @@ function AppShellInner({
           </Sider>
         )}
         <Content className="ml-workspace-content">
-          <div className="ml-workspace-content-inner">
-            {tabs.length > 0 ? (
-              <Splitter layout="vertical" style={{ height: '100%' }}>
-                <Splitter.Panel defaultSize="65%" min="25%">
-                  <div className="ml-workspace-main">{children}</div>
-                </Splitter.Panel>
-                <Splitter.Panel defaultSize="35%" min="15%" max="75%">
-                  <BottomPanel />
-                </Splitter.Panel>
-              </Splitter>
-            ) : (
-              children
-            )}
-          </div>
+          <div className="ml-workspace-content-inner">{renderWorkspaceBody()}</div>
         </Content>
       </Layout>
 

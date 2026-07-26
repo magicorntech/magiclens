@@ -27,7 +27,9 @@ function StepNode({
   active?: boolean
 }): React.JSX.Element {
   return (
-    <div className={`ml-vpn-node${active ? ' ml-vpn-node--active' : ''}${ok ? ' ml-vpn-node--ok' : ''}`}>
+    <div
+      className={`ml-vpn-node${active ? ' ml-vpn-node--active' : ''}${ok ? ' ml-vpn-node--ok' : ''}`}
+    >
       <div className="ml-vpn-node__icon">{icon}</div>
       <Typography.Text strong className="ml-vpn-node__label">
         {label}
@@ -37,6 +39,26 @@ function StepNode({
           {sub}
         </Typography.Text>
       ) : null}
+    </div>
+  )
+}
+
+function TopologyLink({
+  live,
+  rate
+}: {
+  live?: boolean
+  rate?: string
+}): React.JSX.Element {
+  return (
+    <div className={`ml-vpn-link${live ? ' ml-vpn-link--live' : ''}`}>
+      <div className="ml-vpn-link__track" aria-hidden>
+        <span className="ml-vpn-link__rail" />
+        <span className="ml-vpn-link__packet" />
+        <span className="ml-vpn-link__packet ml-vpn-link__packet--delayed" />
+        <span className="ml-vpn-link__chevron" />
+      </div>
+      {rate ? <span className="ml-vpn-link__rate">{rate}</span> : null}
     </div>
   )
 }
@@ -109,32 +131,26 @@ export function VpnConnectionPanel({
       }
       style={{ marginBottom: 16 }}
     >
-      <div className="ml-vpn-topology">
+      <div className={`ml-vpn-topology${connected ? ' is-live' : ''}${connecting ? ' is-connecting' : ''}`}>
         <StepNode
           icon={<Icon icon={Laptop} variant="detail" />}
           label="MagicLens"
           sub={activeProfile?.username || t('vpn.panel.local')}
           ok={connected}
-          active={connected}
+          active={connected || connecting}
         />
-        <div className={`ml-vpn-link${connected ? ' ml-vpn-link--live' : ''}`}>
-          <span className="ml-vpn-link__arrow">→</span>
-          {connected && (
-            <span className="ml-vpn-link__rate">
-              ↑ {formatBitrate(txRate)} · ↓ {formatBitrate(rxRate)}
-            </span>
-          )}
-        </div>
+        <TopologyLink
+          live={connected}
+          rate={connected ? `↑ ${formatBitrate(txRate)} · ↓ ${formatBitrate(rxRate)}` : undefined}
+        />
         <StepNode
           icon={<Icon icon={Shield} variant="detail" />}
           label={t('vpn.panel.tunnel')}
           sub={stats?.interfaceName ?? (connecting ? t('vpn.panel.opening') : '—')}
           ok={connected && !!stats?.interfaceName}
-          active={connected}
+          active={connected || connecting}
         />
-        <div className={`ml-vpn-link${connected ? ' ml-vpn-link--live' : ''}`}>
-          <span className="ml-vpn-link__arrow">→</span>
-        </div>
+        <TopologyLink live={connected} />
         <StepNode
           icon={<Icon icon={Router} variant="detail" />}
           label={t('vpn.panel.server')}
@@ -144,15 +160,15 @@ export function VpnConnectionPanel({
               : activeProfile?.serverHost || '—'
           }
           ok={connected}
+          active={connected}
         />
-        <div className="ml-vpn-link">
-          <span className="ml-vpn-link__arrow">→</span>
-        </div>
+        <TopologyLink live={connected} />
         <StepNode
           icon={<Icon icon={Server} variant="detail" />}
           label={t('vpn.panel.privateNetwork')}
           sub={activeProfile?.organization || t('vpn.panel.clusterEndpoints')}
           ok={connected}
+          active={connected}
         />
       </div>
 
@@ -212,7 +228,10 @@ export function VpnConnectionPanel({
             </Typography.Paragraph>
           )}
 
-          <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}>
+          <Typography.Paragraph
+            type="secondary"
+            style={{ marginTop: 12, marginBottom: 0, fontSize: 12 }}
+          >
             {t('vpn.panel.providerLine', { provider: status?.provider ?? '—' })}
             {status?.connectedAt ? ` · ${t('vpn.panel.connectedAgo', { uptime: uptime ?? '' })}` : ''}
             {status?.message ? ` · ${status.message}` : ''}

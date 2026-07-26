@@ -51,6 +51,7 @@ export interface TopologyApplication {
 
 export interface TopologyGraphRequest {
   clusterId: string
+  /** Namespace selection: single name, comma-joined list, or 'ALL'. */
   namespace: string | 'ALL'
 }
 

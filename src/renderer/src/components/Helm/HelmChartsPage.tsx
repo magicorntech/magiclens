@@ -7,6 +7,10 @@ import type { HelmChartSummary } from '@shared/types/helm'
 import { useHelmCharts, useHelmUninstallChart } from '../../queries/useHelm'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { ResourceTableToolbar } from '../ResourceTable/ResourceTableToolbar'
+import { NamespaceSelector } from '../Layout/NamespaceSelector'
+import { useClusterStore } from '../../stores/clusterStore'
+import { HelmLogo } from '../../icons/HelmLogo'
 import { HelmRowActions } from './HelmRowActions'
 
 interface HelmChartsPageProps {
@@ -17,6 +21,10 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
   const { data, isLoading } = useHelmCharts(clusterId)
   const uninstallChart = useHelmUninstallChart(clusterId)
   const [search, setSearch] = useState('')
+  const selectedNamespace = useClusterStore(
+    (s) => s.clusters.find((c) => c.id === clusterId)?.selectedNamespace ?? 'ALL'
+  )
+  const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const { setPagination, paginationProps } = useTablePagination([clusterId, search])
 
   const charts = data && 'charts' in data ? data.charts : []
@@ -68,21 +76,35 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
       title: 'Chart',
       dataIndex: 'chartName',
       key: 'chartName',
-      render: (v: string) => <Typography.Text strong>{v}</Typography.Text>
+      ellipsis: true,
+      render: (v: string) => (
+        <span className="ml-helm-chart-name">
+          <HelmLogo size={16} color="var(--ml-primary)" />
+          <Typography.Text strong>{v}</Typography.Text>
+        </span>
+      )
     },
-    { title: 'Version', dataIndex: 'chartVersion', key: 'chartVersion' },
-    { title: 'App version', dataIndex: 'appVersion', key: 'appVersion' },
+    { title: 'Version', dataIndex: 'chartVersion', key: 'chartVersion', width: 120, ellipsis: true },
+    { title: 'App version', dataIndex: 'appVersion', key: 'appVersion', width: 120, ellipsis: true },
     { title: 'Releases', dataIndex: 'releaseCount', key: 'releaseCount', width: 100 },
     {
       title: 'Namespaces',
       dataIndex: 'namespaces',
       key: 'namespaces',
-      render: (namespaces: string[]) => namespaces.map((ns) => <Tag key={ns}>{ns}</Tag>)
+      ellipsis: true,
+      render: (namespaces: string[]) => (
+        <span className="ml-helm-ns-tags">
+          {namespaces.map((ns) => (
+            <Tag key={ns}>{ns}</Tag>
+          ))}
+        </span>
+      )
     },
     {
       title: '',
       key: 'actions',
       width: 56,
+      fixed: 'right',
       render: (_, chart) => (
         <HelmRowActions
           items={[
@@ -100,39 +122,62 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
   ]
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-      <Typography.Title level={4} style={{ marginTop: 0 }}>
-        Helm Charts
-      </Typography.Title>
-      <Typography.Paragraph type="secondary">
-        Charts currently installed as releases on this cluster, derived from live release data. Uninstall removes all
-        matching releases and their deployed resources.
-      </Typography.Paragraph>
+    <div className="ml-resource-page">
+      <div className="ml-helm-page-header">
+        <HelmLogo size={22} color="var(--ml-primary)" />
+        <div className="ml-helm-page-header__copy">
+          <Typography.Title level={4} className="ml-helm-page-header__title">
+            Helm Charts
+          </Typography.Title>
+          <Typography.Text type="secondary" className="ml-helm-page-header__hint">
+            Installed charts derived from live releases — uninstall removes matching releases and resources.
+          </Typography.Text>
+        </div>
+      </div>
       {error ? (
         <Empty description={error} />
       ) : (
         <>
-          <Input.Search
-            placeholder="Search charts by name, version, namespace..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            allowClear
-            style={{ width: 360, marginBottom: 12 }}
+          <ResourceTableToolbar
+            leading={
+              <NamespaceSelector
+                clusterId={clusterId}
+                value={selectedNamespace}
+                onChange={(ns) => setSelectedNamespace(clusterId, ns)}
+              />
+            }
+            search={
+              <Input.Search
+                className="ml-resource-search"
+                placeholder="Search charts…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                allowClear
+              />
+            }
           />
-          {!isLoading && filteredCharts.length === 0 ? (
-            <Empty description={charts.length === 0 ? 'No Helm charts found in this cluster' : 'No charts match your search'} />
-          ) : (
-            <ResizableTable
-              tableKey="helm-charts"
-              rowKey="id"
-              columns={columns}
-              dataSource={filteredCharts}
-              loading={isLoading}
-              pagination={paginationProps(filteredCharts.length)}
-              onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
-              size="middle"
-            />
-          )}
+          <div className="ml-resource-page-body">
+            {!isLoading && filteredCharts.length === 0 ? (
+              <Empty
+                description={
+                  charts.length === 0
+                    ? 'No Helm charts found in this cluster'
+                    : 'No charts match your search'
+                }
+              />
+            ) : (
+              <ResizableTable
+                tableKey="helm-charts"
+                rowKey="id"
+                columns={columns}
+                dataSource={filteredCharts}
+                loading={isLoading}
+                pagination={paginationProps(filteredCharts.length)}
+                onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
+                size="middle"
+              />
+            )}
+          </div>
         </>
       )}
     </div>

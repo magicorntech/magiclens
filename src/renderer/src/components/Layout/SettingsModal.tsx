@@ -2,39 +2,38 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Button,
   ColorPicker,
-  Descriptions,
   Input,
-  Menu,
   Modal,
+  Segmented,
   Select,
   Space,
-  Switch,
   Tag,
   Typography,
-  message,
-  theme
+  message
 } from 'antd'
-import type { MenuProps } from 'antd'
 import type { AggregationColor } from 'antd/es/color-picker/color'
+import type { LucideIcon } from 'lucide-react'
 import {
-  Check,
   CloudDownload,
   Code2,
+  FolderOpen,
   Info,
   Keyboard,
   LayoutDashboard,
   Layers2,
   Network,
   Palette,
-  RefreshCw
+  RefreshCw,
+  Settings2
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '../ui/Icon'
+import logo from '../../assets/logo.png'
 import { refreshIntervalOptions, useLiveRefreshStore } from '../../stores/liveRefreshStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useUpdateStore } from '../../stores/updateStore'
 import { useThemeStore } from '../../stores/themeStore'
-import { COLOR_SCHEME_DEFINITIONS } from '../../theme/schemes'
+import { COLOR_SCHEME_DEFINITIONS, COLOR_SCHEME_GROUPS } from '../../theme/schemes'
 import type { AppInfoResponse } from '@shared/types/app'
 import { APP_LOCALES, APP_LOCALE_LABELS, type AppLocale } from '@shared/types/locale'
 import { useLayoutMode } from '../../hooks/useLayoutMode'
@@ -43,19 +42,44 @@ import { NodesDashboardSettings } from '../Nodes/NodesDashboardSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { VpnExtensionsSettings } from './VpnExtensionsSettings'
 import { DeveloperSettings } from './DeveloperSettings'
-import { type SettingsSection, useSettingsUiStore } from '../../stores/settingsUiStore'
+import { ThemeToggle } from './ThemeToggle'
+import {
+  SettingsSection,
+  SettingsToggleRow,
+  ThemeSchemeCard
+} from './SettingsPrimitives'
+import { type SettingsSection as SettingsSectionId, useSettingsUiStore } from '../../stores/settingsUiStore'
 
 interface SettingsModalProps {
   open: boolean
   onClose: () => void
 }
 
+interface NavItem {
+  key: SettingsSectionId
+  icon: LucideIcon
+  group: 'preferences' | 'system'
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { key: 'general', icon: Settings2, group: 'preferences' },
+  { key: 'appearance', icon: Palette, group: 'preferences' },
+  { key: 'display', icon: LayoutDashboard, group: 'preferences' },
+  { key: 'keyboard', icon: Keyboard, group: 'preferences' },
+  { key: 'updates', icon: CloudDownload, group: 'system' },
+  { key: 'vpnExtensions', icon: Network, group: 'system' },
+  { key: 'developer', icon: Code2, group: 'system' },
+  { key: 'about', icon: Info, group: 'system' }
+]
+
 export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.Element {
   const { t } = useTranslation()
-  const { token } = theme.useToken()
   const layoutMode = useLayoutMode()
   const isMobileSettings = layoutMode === 'mobile'
-  const modalWidth = layoutMode === 'mobile' ? 'calc(100vw - 16px)' : layoutMode === 'compact' ? 560 : 760
+  const modalWidth =
+    layoutMode === 'mobile' ? 'calc(100vw - 12px)' : layoutMode === 'compact' ? 860 : 1100
+  const modalHeight =
+    layoutMode === 'mobile' ? 'calc(100vh - 24px)' : layoutMode === 'compact' ? 620 : 680
   const section = useSettingsUiStore((s) => s.section)
   const setSection = useSettingsUiStore((s) => s.setSection)
   const interval = useLiveRefreshStore((s) => s.interval)
@@ -75,14 +99,20 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const showResourceTabIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
   const showFavoritesSection = useDisplaySettingsStore((s) => s.showFavoritesSection)
   const showWorkspacesSection = useDisplaySettingsStore((s) => s.showWorkspacesSection)
+  const showClusterNamespace = useDisplaySettingsStore((s) => s.showClusterNamespace)
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
+  const resourceDetailMaskBlur = useDisplaySettingsStore((s) => s.resourceDetailMaskBlur)
+  const utilityPanelPlacement = useDisplaySettingsStore((s) => s.utilityPanelPlacement)
   const locale = useDisplaySettingsStore((s) => s.locale)
   const kubeconfigScanPath = useDisplaySettingsStore((s) => s.kubeconfigScanPath)
   const setShowClusterTabLogos = useDisplaySettingsStore((s) => s.setShowClusterTabLogos)
   const setShowResourceTabIcons = useDisplaySettingsStore((s) => s.setShowResourceTabIcons)
   const setShowFavoritesSection = useDisplaySettingsStore((s) => s.setShowFavoritesSection)
   const setShowWorkspacesSection = useDisplaySettingsStore((s) => s.setShowWorkspacesSection)
+  const setShowClusterNamespace = useDisplaySettingsStore((s) => s.setShowClusterNamespace)
   const setResourceDetailPlacement = useDisplaySettingsStore((s) => s.setResourceDetailPlacement)
+  const setResourceDetailMaskBlur = useDisplaySettingsStore((s) => s.setResourceDetailMaskBlur)
+  const setUtilityPanelPlacement = useDisplaySettingsStore((s) => s.setUtilityPanelPlacement)
   const setLocale = useDisplaySettingsStore((s) => s.setLocale)
   const setKubeconfigScanPath = useDisplaySettingsStore((s) => s.setKubeconfigScanPath)
   const [kubePathDraft, setKubePathDraft] = useState(kubeconfigScanPath)
@@ -91,6 +121,17 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   useEffect(() => {
     if (open) setKubePathDraft(kubeconfigScanPath)
   }, [open, kubeconfigScanPath])
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    void window.api.app.getInfo().then((info) => {
+      if (!cancelled) setAppInfo(info)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open])
 
   function handleDedupeClusters(): void {
     Modal.confirm({
@@ -123,24 +164,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
     })
   }
 
-  const menuItems: MenuProps['items'] = useMemo(
-    () => [
-      { key: 'general', icon: <Icon icon={RefreshCw} variant="detail" />, label: t('settings.sections.general') },
-      { key: 'updates', icon: <Icon icon={CloudDownload} variant="detail" />, label: t('settings.sections.updates') },
-      { key: 'display', icon: <Icon icon={LayoutDashboard} variant="detail" />, label: t('settings.sections.display') },
-      {
-        key: 'vpnExtensions',
-        icon: <Icon icon={Network} variant="detail" />,
-        label: t('settings.sections.vpnExtensions')
-      },
-      { key: 'keyboard', icon: <Icon icon={Keyboard} variant="detail" />, label: t('settings.sections.keyboard') },
-      { key: 'appearance', icon: <Icon icon={Palette} variant="detail" />, label: t('settings.sections.appearance') },
-      { key: 'developer', icon: <Icon icon={Code2} variant="detail" />, label: t('settings.sections.developer') },
-      { key: 'about', icon: <Icon icon={Info} variant="detail" />, label: t('settings.sections.about') }
-    ],
-    [t]
-  )
-
   const intervalOptions = useMemo(
     () =>
       refreshIntervalOptions.map((opt) => ({
@@ -155,53 +178,70 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
     []
   )
 
-  useEffect(() => {
-    if (!open) return
-    let cancelled = false
-    void window.api.app.getInfo().then((info) => {
-      if (!cancelled) setAppInfo(info)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [open])
+  const preferenceNav = NAV_ITEMS.filter((i) => i.group === 'preferences')
+  const systemNav = NAV_ITEMS.filter((i) => i.group === 'system')
+
+  function renderNavGroup(items: NavItem[], label: string): React.JSX.Element {
+    return (
+      <div className="ml-settings-nav__group">
+        {!isMobileSettings ? <div className="ml-settings-nav__group-label">{label}</div> : null}
+        <div className="ml-settings-nav__list" role="tablist" aria-orientation={isMobileSettings ? 'horizontal' : 'vertical'}>
+          {items.map((item) => {
+            const active = section === item.key
+            return (
+              <button
+                key={item.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={`ml-settings-nav__item${active ? ' is-active' : ''}`}
+                onClick={() => setSection(item.key)}
+              >
+                <Icon icon={item.icon} variant="detail" />
+                <span>{t(`settings.sections.${item.key}`)}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
 
   function renderSection(): React.ReactNode {
     switch (section) {
       case 'general':
         return (
-          <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-            <div>
-              <Typography.Text strong>{t('settings.language.title')}</Typography.Text>
-              <div style={{ marginTop: 8 }}>
+          <>
+            <SettingsSection title={t('settings.language.title')} description={t('settings.language.hint')}>
+              <div className="ml-settings-segmented-wrap">
                 <Select
                   value={locale}
                   onChange={(value: AppLocale) => void setLocale(value)}
                   options={languageOptions}
-                  style={{ width: 240 }}
+                  style={{ width: 260, maxWidth: '100%' }}
                 />
               </div>
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                {t('settings.language.hint')}
-              </Typography.Text>
-            </div>
-            <div>
-              <Typography.Text strong>{t('settings.general.refreshTitle')}</Typography.Text>
-              <div style={{ marginTop: 8 }}>
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.general.refreshTitle')}
+              description={t('settings.general.refreshHint')}
+            >
+              <div className="ml-settings-segmented-wrap">
                 <Select
                   value={interval}
                   onChange={setInterval_}
                   options={intervalOptions}
-                  style={{ width: 200 }}
+                  style={{ width: 220, maxWidth: '100%' }}
                 />
               </div>
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                {t('settings.general.refreshHint')}
-              </Typography.Text>
-            </div>
-            <div>
-              <Typography.Text strong>{t('settings.general.kubeconfigPathTitle')}</Typography.Text>
-              <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.general.kubeconfigPathTitle')}
+              description={t('settings.general.kubeconfigPathHint')}
+            >
+              <div className="ml-settings-path-row">
                 <Input
                   value={kubePathDraft}
                   placeholder={t('settings.general.kubeconfigPathPlaceholder')}
@@ -209,9 +249,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                   onBlur={() => {
                     if (kubePathDraft !== kubeconfigScanPath) void setKubeconfigScanPath(kubePathDraft)
                   }}
-                  style={{ flex: 1, minWidth: 220 }}
+                  className="ml-settings-path-row__input"
                 />
                 <Button
+                  icon={<Icon icon={FolderOpen} variant="detail" />}
                   onClick={() => {
                     void window.api.kubeconfig.pickFile().then((r) => {
                       if (!r.canceled && r.filePath) {
@@ -236,6 +277,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                   {t('settings.general.kubeconfigPickFolder')}
                 </Button>
                 <Button
+                  type="text"
                   onClick={() => {
                     setKubePathDraft('')
                     void setKubeconfigScanPath('')
@@ -244,16 +286,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                   {t('settings.general.kubeconfigReset')}
                 </Button>
               </div>
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                {t('settings.general.kubeconfigPathHint')}
-              </Typography.Text>
-            </div>
-            <div>
-              <Typography.Text strong>{t('settings.general.dedupeTitle')}</Typography.Text>
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                {t('settings.general.dedupeHint')}
-              </Typography.Text>
-              <div style={{ marginTop: 12 }}>
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.general.dedupeTitle')}
+              description={t('settings.general.dedupeHint')}
+              actions={
                 <Button
                   icon={<Icon icon={Layers2} variant="detail" />}
                   loading={deduping}
@@ -261,148 +299,171 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 >
                   {t('settings.general.dedupe')}
                 </Button>
-              </div>
-            </div>
-          </Space>
+              }
+            >
+              <Typography.Text type="secondary" className="ml-settings-inline-hint">
+                {t('settings.general.dedupeConfirmBody')}
+              </Typography.Text>
+            </SettingsSection>
+          </>
         )
 
       case 'updates':
         return (
-          <Space orientation="vertical" style={{ width: '100%' }} size={12}>
-            {updateState?.latestVersion && updateState.phase !== 'not-available' && (
-              <Tag color="blue">{t('settings.updates.available', { version: updateState.latestVersion })}</Tag>
-            )}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography.Text>{t('settings.updates.checkAutomatically')}</Typography.Text>
-              <Switch
+          <>
+            <SettingsSection
+              title={t('settings.sections.updates')}
+              description={t('settings.sectionHints.updates')}
+              actions={
+                <Space size={8}>
+                  {updateState?.latestVersion && updateState.phase !== 'not-available' ? (
+                    <Tag color="blue">
+                      {t('settings.updates.available', { version: updateState.latestVersion })}
+                    </Tag>
+                  ) : null}
+                  <Button
+                    size="small"
+                    icon={<Icon icon={RefreshCw} variant="detail" />}
+                    loading={updateState?.phase === 'checking'}
+                    onClick={() => void check()}
+                  >
+                    {t('settings.updates.checkNow')}
+                  </Button>
+                  <Button size="small" type="primary" ghost onClick={() => openUpdateCenter()}>
+                    {t('settings.updates.openCenter')}
+                  </Button>
+                </Space>
+              }
+            >
+              <SettingsToggleRow
+                title={t('settings.updates.checkAutomatically')}
                 checked={updateSettings?.checkAutomatically ?? true}
                 onChange={(checked) => void saveUpdateSettings({ checkAutomatically: checked })}
               />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography.Text>{t('settings.updates.checkOnStartup')}</Typography.Text>
-              <Switch
+              <SettingsToggleRow
+                title={t('settings.updates.checkOnStartup')}
                 checked={updateSettings?.checkOnStartup ?? true}
                 onChange={(checked) => void saveUpdateSettings({ checkOnStartup: checked })}
               />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography.Text>{t('settings.updates.includePrerelease')}</Typography.Text>
-              <Switch
+              <SettingsToggleRow
+                title={t('settings.updates.includePrerelease')}
                 checked={updateSettings?.includePrerelease ?? false}
                 onChange={(checked) => void saveUpdateSettings({ includePrerelease: checked })}
               />
-            </div>
-            {updateState?.manualDownloadOnly ? (
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {t('settings.updates.macosManual')}
-              </Typography.Text>
-            ) : (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography.Text>{t('settings.updates.autoDownload')}</Typography.Text>
-                  <Switch
+              {updateState?.manualDownloadOnly ? (
+                <Typography.Text type="secondary" className="ml-settings-inline-hint">
+                  {t('settings.updates.macosManual')}
+                </Typography.Text>
+              ) : (
+                <>
+                  <SettingsToggleRow
+                    title={t('settings.updates.autoDownload')}
                     checked={updateSettings?.autoDownload ?? false}
                     onChange={(checked) => void saveUpdateSettings({ autoDownload: checked })}
                   />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography.Text>{t('settings.updates.askBeforeInstall')}</Typography.Text>
-                  <Switch
+                  <SettingsToggleRow
+                    title={t('settings.updates.askBeforeInstall')}
                     checked={updateSettings?.askBeforeInstall ?? true}
                     onChange={(checked) => void saveUpdateSettings({ askBeforeInstall: checked })}
                   />
-                </div>
-              </>
-            )}
-            <Space style={{ marginTop: 4 }}>
-              <Button
-                size="small"
-                icon={<Icon icon={RefreshCw} variant="detail" />}
-                loading={updateState?.phase === 'checking'}
-                onClick={() => void check()}
-              >
-                {t('settings.updates.checkNow')}
-              </Button>
-              <Button size="small" onClick={() => openUpdateCenter()}>
-                {t('settings.updates.openCenter')}
-              </Button>
-            </Space>
-          </Space>
+                </>
+              )}
+            </SettingsSection>
+          </>
         )
 
       case 'display':
         return (
-          <Space orientation="vertical" style={{ width: '100%' }} size="large">
-            <div>
-              <Typography.Text strong>{t('settings.display.detailsTitle')}</Typography.Text>
-              <div style={{ marginTop: 8 }}>
-                <Select
+          <>
+            <SettingsSection
+              title={t('settings.display.detailsTitle')}
+              description={t('settings.display.detailsHint')}
+            >
+              <div className="ml-settings-segmented-wrap">
+                <Segmented
+                  block
                   value={resourceDetailPlacement}
-                  onChange={(value) => void setResourceDetailPlacement(value)}
+                  onChange={(value) => void setResourceDetailPlacement(value as typeof resourceDetailPlacement)}
                   options={[
                     { value: 'drawer', label: t('settings.display.placementDrawer') },
                     { value: 'right', label: t('settings.display.placementRight') },
                     { value: 'bottom', label: t('settings.display.placementBottom') }
                   ]}
-                  style={{ width: '100%', maxWidth: 360 }}
                 />
               </div>
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                {t('settings.display.detailsHint')}
-              </Typography.Text>
-            </div>
-            <div>
-              <Typography.Text strong>{t('settings.display.nodesTitle')}</Typography.Text>
-              <div style={{ marginTop: 10 }}>
-                <NodesDashboardSettings />
+              <SettingsToggleRow
+                title={t('settings.display.detailMaskBlur')}
+                description={t('settings.display.detailMaskBlurHint')}
+                checked={resourceDetailMaskBlur}
+                onChange={(checked) => void setResourceDetailMaskBlur(checked)}
+              />
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.display.panelTitle')}
+              description={t('settings.display.panelHint')}
+            >
+              <div className="ml-settings-segmented-wrap">
+                <Segmented
+                  block
+                  value={utilityPanelPlacement}
+                  onChange={(value) => void setUtilityPanelPlacement(value as typeof utilityPanelPlacement)}
+                  options={[
+                    { value: 'bottom', label: t('settings.display.panelPlacementBottom') },
+                    { value: 'right', label: t('settings.display.panelPlacementRight') },
+                    { value: 'left', label: t('settings.display.panelPlacementLeft') }
+                  ]}
+                />
               </div>
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                {t('settings.display.nodesHint')}
-              </Typography.Text>
-            </div>
-            <div>
-              <Typography.Text strong>{t('settings.display.sidebarTitle')}</Typography.Text>
-              <Space orientation="vertical" style={{ width: '100%', marginTop: 8 }} size={8}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography.Text>{t('settings.display.showFavorites')}</Typography.Text>
-                  <Switch
-                    checked={showFavoritesSection}
-                    onChange={(checked) => void setShowFavoritesSection(checked)}
-                  />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography.Text>{t('settings.display.showWorkspaces')}</Typography.Text>
-                  <Switch
-                    checked={showWorkspacesSection}
-                    onChange={(checked) => void setShowWorkspacesSection(checked)}
-                  />
-                </div>
-              </Space>
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                {t('settings.display.showFavoritesHint')} {t('settings.display.showWorkspacesHint')}
-              </Typography.Text>
-            </div>
-            <div>
-              <Typography.Text strong>{t('settings.display.tabIconsTitle')}</Typography.Text>
-              <Space orientation="vertical" style={{ width: '100%', marginTop: 8 }} size={8}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography.Text>{t('settings.display.showClusterLogos')}</Typography.Text>
-                  <Switch checked={showClusterTabLogos} onChange={(checked) => void setShowClusterTabLogos(checked)} />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography.Text>{t('settings.display.showResourceIcons')}</Typography.Text>
-                  <Switch
-                    checked={showResourceTabIcons}
-                    onChange={(checked) => void setShowResourceTabIcons(checked)}
-                  />
-                </div>
-              </Space>
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
-                {t('settings.display.tabIconsHint')}
-              </Typography.Text>
-            </div>
-          </Space>
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.display.sidebarTitle')}
+              description={t('settings.display.showFavoritesHint')}
+            >
+              <SettingsToggleRow
+                title={t('settings.display.showFavorites')}
+                description={t('settings.display.showFavoritesHint')}
+                checked={showFavoritesSection}
+                onChange={(checked) => void setShowFavoritesSection(checked)}
+              />
+              <SettingsToggleRow
+                title={t('settings.display.showWorkspaces')}
+                description={t('settings.display.showWorkspacesHint')}
+                checked={showWorkspacesSection}
+                onChange={(checked) => void setShowWorkspacesSection(checked)}
+              />
+              <SettingsToggleRow
+                title={t('settings.display.showClusterNamespace')}
+                description={t('settings.display.showClusterNamespaceHint')}
+                checked={showClusterNamespace}
+                onChange={(checked) => void setShowClusterNamespace(checked)}
+              />
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.display.tabIconsTitle')}
+              description={t('settings.display.tabIconsHint')}
+            >
+              <SettingsToggleRow
+                title={t('settings.display.showClusterLogos')}
+                checked={showClusterTabLogos}
+                onChange={(checked) => void setShowClusterTabLogos(checked)}
+              />
+              <SettingsToggleRow
+                title={t('settings.display.showResourceIcons')}
+                checked={showResourceTabIcons}
+                onChange={(checked) => void setShowResourceTabIcons(checked)}
+              />
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.display.nodesTitle')}
+              description={t('settings.display.nodesHint')}
+            >
+              <NodesDashboardSettings />
+            </SettingsSection>
+          </>
         )
 
       case 'keyboard':
@@ -410,124 +471,65 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
 
       case 'appearance':
         return (
-          <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {t('settings.appearance.intro')}
-            </Typography.Text>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-                gap: 10
-              }}
+          <>
+            <SettingsSection
+              title={t('settings.appearance.modeTitle')}
+              description={t('settings.appearance.modeHint')}
             >
-              {COLOR_SCHEME_DEFINITIONS.map((scheme) => {
-                const selected = colorScheme === scheme.id
+              <div className="ml-settings-theme-mode">
+                <ThemeToggle />
+              </div>
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.sections.appearance')}
+              description={t('settings.appearance.intro')}
+            >
+              {COLOR_SCHEME_GROUPS.map((group) => {
+                const schemes = COLOR_SCHEME_DEFINITIONS.filter((s) => s.group === group.id)
                 return (
-                  <button
-                    key={scheme.id}
-                    type="button"
-                    onClick={() => setColorScheme(scheme.id)}
-                    style={{
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      padding: 10,
-                      borderRadius: token.borderRadius,
-                      border: selected ? `2px solid ${token.colorPrimary}` : `1px solid ${token.colorBorderSecondary}`,
-                      background: token.colorBgContainer,
-                      boxShadow: selected ? token.boxShadowSecondary : undefined
-                    }}
-                  >
-                    <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-                      {scheme.swatches.map((color) => (
-                        <span
-                          key={color}
-                          style={{
-                            width: 18,
-                            height: 18,
-                            borderRadius: 4,
-                            background: color,
-                            border: `1px solid ${token.colorBorderSecondary}`
-                          }}
+                  <div key={group.id} className="ml-settings-theme-group">
+                    <div className="ml-settings-theme-group__label">{t(group.labelKey)}</div>
+                    <div className="ml-settings-theme-grid">
+                      {schemes.map((scheme) => (
+                        <ThemeSchemeCard
+                          key={scheme.id}
+                          name={scheme.name}
+                          description={scheme.description}
+                          swatches={scheme.swatches}
+                          selected={colorScheme === scheme.id}
+                          onSelect={() => setColorScheme(scheme.id)}
                         />
                       ))}
+                      {group.id === 'classic' ? (
+                        <ThemeSchemeCard
+                          name={t('common.custom')}
+                          description={t('settings.appearance.customSwatch')}
+                          swatches={[customAccentColor]}
+                          selected={colorScheme === 'custom'}
+                          onSelect={() => setColorScheme('custom')}
+                          trailing={<Icon icon={Palette} variant="detail" />}
+                        />
+                      ) : null}
                     </div>
-                    <Typography.Text strong style={{ fontSize: 13 }}>
-                      {scheme.name}
-                      {selected ? <Icon icon={Check} variant="detail" style={{ marginLeft: 6, color: token.colorPrimary }} /> : null}
-                    </Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
-                      {scheme.description}
-                    </Typography.Text>
-                  </button>
+                  </div>
                 )
               })}
-              <button
-                type="button"
-                onClick={() => setColorScheme('custom')}
-                style={{
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  padding: 10,
-                  borderRadius: token.borderRadius,
-                  border:
-                    colorScheme === 'custom'
-                      ? `2px solid ${token.colorPrimary}`
-                      : `1px solid ${token.colorBorderSecondary}`,
-                  background: token.colorBgContainer,
-                  boxShadow: colorScheme === 'custom' ? token.boxShadowSecondary : undefined
-                }}
-              >
-                <div style={{ display: 'flex', gap: 4, marginBottom: 8, alignItems: 'center' }}>
-                  <span
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: 4,
-                      background: customAccentColor,
-                      border: `1px solid ${token.colorBorderSecondary}`
-                    }}
-                  />
-                  <Icon icon={Palette} variant="detail" style={{ color: token.colorTextSecondary }} />
-                </div>
-                <Typography.Text strong style={{ fontSize: 13 }}>
-                  {t('common.custom')}
-                  {colorScheme === 'custom' ? (
-                    <Icon icon={Check} variant="detail" style={{ marginLeft: 6, color: token.colorPrimary }} />
-                  ) : null}
-                </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
-                  {t('settings.appearance.customSwatch')}
-                </Typography.Text>
-              </button>
-            </div>
-            <div
-              style={{
-                padding: 12,
-                borderRadius: token.borderRadius,
-                border: `1px solid ${token.colorBorderSecondary}`,
-                background: token.colorBgSpotlight,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 12
-              }}
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.appearance.customAccent')}
+              description={t('settings.appearance.customAccentHint')}
             >
-              <div>
-                <Typography.Text strong style={{ display: 'block' }}>
-                  {t('settings.appearance.customAccent')}
-                </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {t('settings.appearance.customAccentHint')}
-                </Typography.Text>
+              <div className="ml-settings-theme-mode">
+                <ColorPicker
+                  value={customAccentColor}
+                  showText
+                  onChange={(color: AggregationColor) => setCustomAccentColor(color.toHexString())}
+                />
               </div>
-              <ColorPicker
-                value={customAccentColor}
-                showText
-                onChange={(color: AggregationColor) => setCustomAccentColor(color.toHexString())}
-              />
-            </div>
-          </Space>
+            </SettingsSection>
+          </>
         )
 
       case 'vpnExtensions':
@@ -538,62 +540,98 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
 
       case 'about':
         return (
-          <Descriptions size="small" column={1} bordered style={{ maxWidth: 400 }}>
-            <Descriptions.Item label={t('common.version')}>{appInfo?.version ?? '-'}</Descriptions.Item>
-            <Descriptions.Item label={t('common.build')}>{appInfo?.buildNumber ?? '-'}</Descriptions.Item>
-            <Descriptions.Item label="Electron">{appInfo?.electronVersion ?? '-'}</Descriptions.Item>
-            <Descriptions.Item label="Chromium">{appInfo?.chromeVersion ?? '-'}</Descriptions.Item>
-            <Descriptions.Item label="Node.js">{appInfo?.nodeVersion ?? '-'}</Descriptions.Item>
-            <Descriptions.Item label={t('settings.about.platform')}>
-              {appInfo?.platform ?? '-'}
-            </Descriptions.Item>
-          </Descriptions>
+          <SettingsSection title={t('settings.about.appTitle')} description={t('settings.about.appHint')}>
+            <div className="ml-settings-about">
+              <div className="ml-settings-about__brand">
+                <img src={logo} alt="" className="ml-settings-about__logo" width={56} height={56} />
+                <div>
+                  <div className="ml-settings-about__name">MagicLens</div>
+                  <div className="ml-settings-about__version">
+                    {t('common.version')} {appInfo?.version ?? '—'}
+                    {appInfo?.buildNumber ? ` · ${t('common.build')} ${appInfo.buildNumber}` : ''}
+                  </div>
+                </div>
+              </div>
+              <dl className="ml-settings-about__meta">
+                <div>
+                  <dt>Electron</dt>
+                  <dd>{appInfo?.electronVersion ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt>Chromium</dt>
+                  <dd>{appInfo?.chromeVersion ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt>Node.js</dt>
+                  <dd>{appInfo?.nodeVersion ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt>{t('settings.about.platform')}</dt>
+                  <dd>{appInfo?.platform ?? '—'}</dd>
+                </div>
+              </dl>
+            </div>
+          </SettingsSection>
         )
     }
   }
 
   return (
     <Modal
-      title={t('settings.title')}
+      title={null}
       open={open}
       onCancel={onClose}
       footer={null}
       width={modalWidth}
       destroyOnHidden
-      className="settings-modal"
+      className="ml-settings-modal"
+      rootClassName="ml-settings-modal-root"
       centered={!isMobileSettings}
-      styles={{ body: { padding: 0 } }}
+      styles={{
+        container: {
+          height: modalHeight,
+          maxHeight: modalHeight,
+          padding: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden'
+        },
+        body: {
+          flex: 1,
+          minHeight: 0,
+          height: '100%',
+          padding: 0,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }
+      }}
     >
-      <div className={`settings-modal-body${isMobileSettings ? ' settings-modal-body--mobile' : ''}`}>
-        <Menu
-          mode={isMobileSettings ? 'horizontal' : 'inline'}
-          selectedKeys={[section]}
-          items={menuItems}
-          onClick={({ key }) => setSection(key as SettingsSection)}
-          className="settings-modal-menu"
-          style={
-            isMobileSettings
-              ? {
-                  width: '100%',
-                  flexShrink: 0,
-                  borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                  borderRadius: 0,
-                  overflowX: 'auto'
-                }
-              : {
-                  width: 168,
-                  flexShrink: 0,
-                  borderInlineEnd: `1px solid ${token.colorBorderSecondary}`,
-                  borderRadius: 0,
-                  padding: '8px 0'
-                }
-          }
-        />
-        <div className="settings-modal-content">
-          <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 16 }}>
-            {t(`settings.sections.${section}`)}
-          </Typography.Title>
-          {renderSection()}
+      <div className={`ml-settings${isMobileSettings ? ' ml-settings--mobile' : ''}`}>
+        <aside className="ml-settings-nav" aria-label={t('settings.title')}>
+          <div className="ml-settings-nav__brand">
+            <Icon icon={Settings2} variant="toolbar" />
+            <div>
+              <div className="ml-settings-nav__brand-title">{t('settings.title')}</div>
+              {!isMobileSettings ? (
+                <div className="ml-settings-nav__brand-hint">{t('settings.subtitle')}</div>
+              ) : null}
+            </div>
+          </div>
+          {renderNavGroup(preferenceNav, t('settings.navGroups.preferences'))}
+          {renderNavGroup(systemNav, t('settings.navGroups.system'))}
+        </aside>
+
+        <div className="ml-settings-main">
+          <header className="ml-settings-main__header">
+            <Typography.Title level={4} className="ml-settings-main__title">
+              {t(`settings.sections.${section}`)}
+            </Typography.Title>
+            <Typography.Text type="secondary" className="ml-settings-main__subtitle">
+              {t(`settings.sectionHints.${section}`)}
+            </Typography.Text>
+          </header>
+          <div className="ml-settings-main__body">{renderSection()}</div>
         </div>
       </div>
     </Modal>

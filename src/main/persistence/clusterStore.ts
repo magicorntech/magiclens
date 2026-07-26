@@ -288,6 +288,7 @@ export function upsertOrgCluster(input: {
     backgroundCustomUrl: existing?.backgroundCustomUrl,
     backgroundPanelOpacity: existing?.backgroundPanelOpacity,
     prometheusUrl: existing?.prometheusUrl,
+    settings: existing?.settings,
     isFavorite: existing?.isFavorite ?? false,
     selectedNamespace: existing?.selectedNamespace ?? 'ALL',
     selectedResourceKind: existing?.selectedResourceKind ?? null,

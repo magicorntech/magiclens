@@ -1,4 +1,4 @@
-import { Pin, Star } from 'lucide-react'
+import { Pin, Star, X } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
 import { kindIconLucide } from '../../icons/resourceKindIcons'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
@@ -8,24 +8,28 @@ interface ResourceTabLabelProps {
   kind: ResourceKind
   pinned: boolean
   favorite: boolean
+  closable?: boolean
   draggable?: boolean
   onDragStart?: (kind: ResourceKind) => void
   onDragOver?: (e: React.DragEvent) => void
   onDrop?: (kind: ResourceKind) => void
   onTogglePin: (kind: ResourceKind) => void
   onToggleFavorite: (kind: ResourceKind) => void
+  onClose?: (kind: ResourceKind) => void
 }
 
 export function ResourceTabLabel({
   kind,
   pinned,
   favorite,
+  closable = false,
   draggable,
   onDragStart,
   onDragOver,
   onDrop,
   onTogglePin,
-  onToggleFavorite
+  onToggleFavorite,
+  onClose
 }: ResourceTabLabelProps): React.JSX.Element {
   const showIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
 
@@ -76,6 +80,19 @@ export function ResourceTabLabel({
         >
           <Icon icon={Pin} variant="micro" fill={pinned ? 'var(--ml-primary)' : 'none'} />
         </button>
+        {closable ? (
+          <button
+            type="button"
+            className="ml-resource-tab-action ml-resource-tab-action--close"
+            aria-label="Close tab"
+            onClick={(e) => {
+              e.stopPropagation()
+              onClose?.(kind)
+            }}
+          >
+            <Icon icon={X} variant="micro" />
+          </button>
+        ) : null}
       </span>
     </span>
   )

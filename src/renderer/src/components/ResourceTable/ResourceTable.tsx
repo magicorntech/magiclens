@@ -7,6 +7,7 @@ import type { ColumnsType, TableProps } from 'antd/es/table'
 import type { SorterResult } from 'antd/es/table/interface'
 import type { ResourceKind } from '@shared/resourceKinds'
 import { isNamespaceScoped } from '@shared/resourceKinds'
+import { isNoNamespaceSelection, showsNamespaceColumn } from '@shared/namespaceSelection'
 import type { ResourceListItem } from '@shared/types/resource'
 import { useResourceList } from '../../queries/useResourceList'
 import { useNodeMetrics } from '../../queries/useNodeMetrics'
@@ -37,6 +38,7 @@ import { ResourceRowActions } from './ResourceRowActions'
 import { WorkloadResourceRowActions } from './WorkloadResourceRowActions'
 import { columnUsesRichRender, renderNamespaceCell, renderResourceColumnCell } from './resourceColumnRender'
 import { NodesOverviewPage } from '../Nodes/NodesOverviewPage'
+import { NamespaceSelector } from '../Layout/NamespaceSelector'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
 import { batchDeleteResources, confirmBatchDelete } from './batchDelete'
 import { useClusterStore } from '../../stores/clusterStore'
@@ -78,12 +80,11 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
   const layoutMode = useLayoutMode()
   const isNodesKind = kind === 'Nodes'
-  const detailInSidebar = !isNodesKind && resourceDetailPlacement === 'right' && canUseSplitLayouts(layoutMode)
+  const detailInSidebar = resourceDetailPlacement === 'right' && canUseSplitLayouts(layoutMode)
   const detailInDrawer =
-    !isNodesKind &&
-    (resourceDetailPlacement === 'drawer' ||
-      (resourceDetailPlacement === 'right' && !canUseSplitLayouts(layoutMode)))
-  const detailInBottom = !isNodesKind && resourceDetailPlacement === 'bottom'
+    resourceDetailPlacement === 'drawer' ||
+    (resourceDetailPlacement === 'right' && !canUseSplitLayouts(layoutMode))
+  const detailInBottom = resourceDetailPlacement === 'bottom'
   const listQueryKey = useMemo(() => ['resource-list', clusterId, namespace, kind], [clusterId, namespace, kind])
   const { data, isLoading, isError, error, refetch, isFetching, watchStatus } = useResourceList(
     clusterId,
@@ -136,7 +137,7 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
         sortState
       )
     ]
-    if (namespace === 'ALL' && isNamespaceScoped(kind)) {
+    if (showsNamespaceColumn(namespace) && isNamespaceScoped(kind)) {
       cols.push(
         applySortOrder(
           {
@@ -313,9 +314,9 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
     return filtered.find((item) => item.id === selectedItem.id) ?? items.find((item) => item.id === selectedItem.id) ?? selectedItem
   }, [filtered, items, selectedItem])
 
-  function selectResource(item: ResourceListItem): void {
+  function selectResource(item: ResourceListItem | null): void {
     setSelectedItem(item)
-    if (detailInBottom) {
+    if (item && detailInBottom) {
       openResourceDetail({ clusterId, resourceKind: kind, namespace, item })
     }
   }
@@ -372,7 +373,7 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
       tableLoading={tableLoading}
       selectedItem={selectedItem}
       selectedRowKeys={selectedRowKeys}
-      onSelectItem={setSelectedItem}
+      onSelectItem={selectResource}
       onSelectRowKeys={setSelectedRowKeys}
       onTableChange={handleTableChange}
       paginationProps={paginationProps}
@@ -386,16 +387,21 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
   const listPanel = (
       <div className={`ml-resource-page${isNodesKind ? ' ml-resource-page--nodes' : ''}`}>
       <ResourceTableToolbar
+        leading={
+          <NamespaceSelector
+            clusterId={clusterId}
+            value={namespace}
+            onChange={(ns) => setSelectedNamespace(clusterId, ns)}
+          />
+        }
         search={
-          <>
-            <Input.Search
-              className="ml-resource-search"
-              placeholder={`Search ${kind.toLowerCase()} by name`}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              allowClear
-            />
-          </>
+          <Input.Search
+            className="ml-resource-search"
+            placeholder={`Search ${kind.toLowerCase()}…`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+          />
         }
         actions={
           <>
@@ -433,7 +439,14 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
         ) : (
           <>
             {!tableLoading && filtered.length === 0 ? (
-              <EmptyState />
+              isNamespaceScoped(kind) && isNoNamespaceSelection(namespace) ? (
+                <EmptyState
+                  title="No namespace selected"
+                  description="Choose one or more namespaces above, or All namespaces."
+                />
+              ) : (
+                <EmptyState />
+              )
             ) : (
               <ResizableTable
                 tableKey={tableKeyFull}
@@ -463,8 +476,8 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
 
   if (!detailInSidebar || !liveSelectedItem) {
     return (
-      <>
-        <div style={{ height: '100%' }}>{listPanel}</div>
+      <div className="ml-resource-detail-host">
+        <div className="ml-resource-detail-host__main">{listPanel}</div>
         {detailInDrawer && (
           <ResourceDetailDrawer
             open={!!liveSelectedItem}
@@ -476,7 +489,7 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
             onClose={() => setSelectedItem(null)}
           />
         )}
-      </>
+      </div>
     )
   }
 

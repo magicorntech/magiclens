@@ -1,5 +1,6 @@
 import type { KubeconfigSource } from './kubeconfig'
 import type { ResourceKind } from '../resourceKinds'
+import type { ClusterSettings } from './clusterSettings'
 
 export type ClusterOrigin = 'local' | 'org'
 
@@ -40,6 +41,8 @@ export interface PersistedClusterEntry {
   environment?: string
   /** On-disk per-user kubeconfig written for org sync (email@context.kubeconfig) */
   localKubeconfigPath?: string
+  /** Extended per-cluster preferences (terminal, node shell, metrics, …). */
+  settings?: ClusterSettings
 }
 
 export interface ConnectRequest {

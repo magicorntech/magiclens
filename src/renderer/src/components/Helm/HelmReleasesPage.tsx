@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Empty, Input, Modal, Space, Splitter, Tag, Typography, message } from 'antd'
+import { Button, Empty, Input, Modal, Splitter, Tag, Typography, message } from 'antd'
 import { History, Trash2 } from 'lucide-react'
 import { Icon } from '../ui/Icon'
 import type { ColumnsType } from 'antd/es/table'
@@ -8,8 +8,10 @@ import type { ResourceFocus } from '@shared/types/navigation'
 import { useHelmReleases, useHelmUninstallRelease } from '../../queries/useHelm'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
-import { HelmReleaseHistoryModal } from './HelmReleaseHistoryModal'
-import { HelmReleaseDetailPanel } from './HelmReleaseDetailPanel'
+import { ResourceTableToolbar } from '../ResourceTable/ResourceTableToolbar'
+import { NamespaceSelector } from '../Layout/NamespaceSelector'
+import { useClusterStore } from '../../stores/clusterStore'
+import { HelmReleaseDetailPanel, type HelmDetailTab } from './HelmReleaseDetailPanel'
 import { HelmRowActions } from './HelmRowActions'
 
 interface HelmReleasesPageProps {
@@ -48,9 +50,13 @@ export function HelmReleasesPage({
   const { data, isLoading } = useHelmReleases(clusterId)
   const uninstallRelease = useHelmUninstallRelease(clusterId)
   const [selectedRelease, setSelectedRelease] = useState<HelmRelease | null>(null)
-  const [historyTarget, setHistoryTarget] = useState<{ namespace: string; name: string } | null>(null)
+  const [detailTab, setDetailTab] = useState<HelmDetailTab>('overview')
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([])
   const [search, setSearch] = useState('')
+  const selectedNamespace = useClusterStore(
+    (s) => s.clusters.find((c) => c.id === clusterId)?.selectedNamespace ?? 'ALL'
+  )
+  const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const { setPagination, paginationProps } = useTablePagination([clusterId, search])
 
   const releases = data && 'releases' in data ? data.releases : []
@@ -80,7 +86,7 @@ export function HelmReleasesPage({
     const match = releases.find(
       (r) => r.namespace === initialRelease.namespace && r.name === initialRelease.name
     )
-    if (match) setSelectedRelease(match)
+    if (match) openRelease(match, 'overview')
     onReleaseFocusConsumed?.()
   }, [initialRelease, releases, onReleaseFocusConsumed])
 
@@ -134,6 +140,11 @@ export function HelmReleasesPage({
     })
   }
 
+  function openRelease(release: HelmRelease, tab: HelmDetailTab = 'overview'): void {
+    setDetailTab(tab)
+    setSelectedRelease(release)
+  }
+
   const columns: ColumnsType<HelmRelease> = [
     {
       title: 'Name',
@@ -168,7 +179,7 @@ export function HelmReleasesPage({
               key: 'history',
               label: 'History',
               icon: <Icon icon={History} variant="detail" />,
-              onClick: () => setHistoryTarget({ namespace: r.namespace, name: r.name })
+              onClick: () => openRelease(r, 'history')
             },
             { type: 'divider' },
             {
@@ -190,7 +201,7 @@ export function HelmReleasesPage({
         Helm Releases
       </Typography.Title>
       <Typography.Paragraph type="secondary" style={{ flexShrink: 0 }}>
-        Click a release to view its values and deployed resources. Use the row menu for history or uninstall.
+        Click a release for overview, values, and resources — or open History from the row menu.
       </Typography.Paragraph>
       {error ? (
         <Empty description={error} />
@@ -210,25 +221,36 @@ export function HelmReleasesPage({
         <Empty description="No Helm releases found in this cluster" />
       ) : (
         <>
-          <Space style={{ marginBottom: 12, flexShrink: 0 }} wrap>
-            <Input.Search
-              placeholder="Search releases by name, namespace, chart, status..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              allowClear
-              style={{ width: 360 }}
-            />
-            {selectedRowKeys.length > 0 && (
-              <Button
-                danger
-                icon={<Icon icon={Trash2} variant="detail" />}
-                loading={uninstallRelease.isPending}
-                onClick={() => confirmUninstall(selectedReleases)}
-              >
-                Uninstall ({selectedRowKeys.length})
-              </Button>
-            )}
-          </Space>
+          <ResourceTableToolbar
+            leading={
+              <NamespaceSelector
+                clusterId={clusterId}
+                value={selectedNamespace}
+                onChange={(ns) => setSelectedNamespace(clusterId, ns)}
+              />
+            }
+            search={
+              <Input.Search
+                className="ml-resource-search"
+                placeholder="Search releases…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                allowClear
+              />
+            }
+            actions={
+              selectedRowKeys.length > 0 ? (
+                <Button
+                  danger
+                  icon={<Icon icon={Trash2} variant="detail" />}
+                  loading={uninstallRelease.isPending}
+                  onClick={() => confirmUninstall(selectedReleases)}
+                >
+                  Uninstall ({selectedRowKeys.length})
+                </Button>
+              ) : null
+            }
+          />
           <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
             {filteredReleases.length === 0 ? (
               <Empty description="No releases match your search" />
@@ -246,21 +268,12 @@ export function HelmReleasesPage({
                   onChange: (keys) => setSelectedRowKeys(keys as string[])
                 }}
                 onRow={(record) => ({
-                  onClick: () => setSelectedRelease(record)
+                  onClick: () => openRelease(record, 'overview')
                 })}
               />
             )}
           </div>
         </>
-      )}
-      {historyTarget && (
-        <HelmReleaseHistoryModal
-          clusterId={clusterId}
-          namespace={historyTarget.namespace}
-          name={historyTarget.name}
-          open={!!historyTarget}
-          onClose={() => setHistoryTarget(null)}
-        />
       )}
     </div>
   )
@@ -278,6 +291,7 @@ export function HelmReleasesPage({
         <HelmReleaseDetailPanel
           clusterId={clusterId}
           release={selectedRelease}
+          initialTab={detailTab}
           onClose={() => setSelectedRelease(null)}
           onNavigateToResource={onNavigateToResource}
         />

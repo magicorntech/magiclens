@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Switch, Typography } from 'antd'
+import { Switch } from 'antd'
 import { GripVertical } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { NodesDashboardSectionId } from '@shared/types/nodesDashboard'
@@ -15,9 +15,7 @@ export function NodesDashboardSettings(): React.JSX.Element {
 
   return (
     <div className="ml-nodes-dashboard-settings">
-      <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 10 }}>
-        {t('settings.display.nodesChooser')}
-      </Typography.Text>
+      <p className="ml-nodes-dashboard-settings__hint">{t('settings.display.nodesChooser')}</p>
       <ul className="ml-nodes-dashboard-settings-list">
         {prefs.order.map((id) => (
           <li

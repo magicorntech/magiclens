@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import type { ResourceKind } from '@shared/resourceKinds'
+import { isNamespaceScoped } from '@shared/resourceKinds'
 import type { DynamicResourceItem } from '@shared/types/discovery'
 import type { ResourceListItem } from '@shared/types/resource'
 import type { ResourceWatchEventPayload, ResourceWatchStatus, ResourceWatchTarget } from '@shared/types/resourceWatch'
+import { listNamespaceParam } from '@shared/namespaceSelection'
 import { refreshNamespaces } from './useNamespaces'
 
 type WatchableItem = ResourceListItem | DynamicResourceItem
@@ -86,23 +88,32 @@ function useWatchSession(
 }
 
 /** Live watch for a built-in resource kind (Pods, Deployments, Services, ...). Patches the same
- * `['resource-list', clusterId, namespace, kind]` query cache used by `useResourceList`. */
+ * `['resource-list', clusterId, namespaceSelection, kind]` query cache used by `useResourceList`. */
 export function useBuiltinResourceWatch(
   clusterId: string | null,
-  namespace: string,
+  namespaceSelection: string,
   kind: ResourceKind | null,
   enabled: boolean
 ): ResourceWatchStatus {
   const queryClient = useQueryClient()
+  const kindNeedsNamespace = !!kind && isNamespaceScoped(kind)
+  const apiNamespace = kindNeedsNamespace ? listNamespaceParam(namespaceSelection) : 'ALL'
   const target: ResourceWatchTarget | null = kind ? { type: 'builtin', kind } : null
-  return useWatchSession(queryClient, ['resource-list', clusterId, namespace, kind], clusterId, namespace, target, enabled)
+  return useWatchSession(
+    queryClient,
+    ['resource-list', clusterId, namespaceSelection, kind],
+    clusterId,
+    apiNamespace ?? 'ALL',
+    target,
+    enabled && apiNamespace !== null
+  )
 }
 
 /** Live watch for a CRD/custom/operator resource kind, addressed by GVK. Patches the same
  * `['dynamic-resource-list', ...]` query cache used by `useDynamicResourceList`. */
 export function useDynamicResourceWatch(
   clusterId: string | null,
-  namespace: string,
+  namespaceSelection: string,
   apiVersion: string | null,
   kind: string | null,
   plural: string | null,
@@ -110,14 +121,15 @@ export function useDynamicResourceWatch(
   enabled: boolean
 ): ResourceWatchStatus {
   const queryClient = useQueryClient()
+  const apiNamespace = namespaced ? listNamespaceParam(namespaceSelection) : 'ALL'
   const target: ResourceWatchTarget | null =
     apiVersion && kind && plural ? { type: 'dynamic', apiVersion, kind, plural, namespaced } : null
   return useWatchSession(
     queryClient,
-    ['dynamic-resource-list', clusterId, apiVersion, kind, namespaced, namespace],
+    ['dynamic-resource-list', clusterId, apiVersion, kind, namespaced, namespaceSelection],
     clusterId,
-    namespace,
+    apiNamespace ?? 'ALL',
     target,
-    enabled
+    enabled && apiNamespace !== null
   )
 }

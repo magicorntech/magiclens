@@ -4,28 +4,137 @@ export interface PodContainerPort {
   protocol: string
 }
 
+export interface PodResourceQuantities {
+  cpu?: string
+  memory?: string
+  ephemeralStorage?: string
+}
+
+export type PodProbeType = 'liveness' | 'readiness' | 'startup'
+
+export interface PodProbeInfo {
+  type: PodProbeType
+  /** Human readable handler, e.g. "HTTP GET /healthz:8080" or "exec: sh -c ...". */
+  handler: string
+  initialDelaySeconds?: number
+  periodSeconds?: number
+  timeoutSeconds?: number
+  successThreshold?: number
+  failureThreshold?: number
+}
+
+export interface PodEnvVar {
+  name: string
+  value?: string
+  /** Where the value comes from when not inline, e.g. "secret: db/password". */
+  source?: string
+}
+
+export interface PodVolumeMountInfo {
+  name: string
+  mountPath: string
+  readOnly: boolean
+  subPath?: string
+}
+
+export interface PodSecurityContextInfo {
+  runAsUser?: number
+  runAsGroup?: number
+  fsGroup?: number
+  runAsNonRoot?: boolean
+  readOnlyRootFilesystem?: boolean
+  privileged?: boolean
+  allowPrivilegeEscalation?: boolean
+  seccompProfile?: string
+  capabilitiesAdd?: string[]
+  capabilitiesDrop?: string[]
+}
+
 export interface PodContainerInfo {
   name: string
   image: string
+  imagePullPolicy?: string
   ready: boolean
+  started?: boolean
   restartCount: number
   state: string
   stateMessage?: string
+  stateStartedAt?: string
   lastTerminatedReason?: string
+  lastTerminatedExitCode?: number
+  lastTerminatedAt?: string
   ports: PodContainerPort[]
+  /** True for init containers. */
+  isInit?: boolean
+  requests?: PodResourceQuantities
+  limits?: PodResourceQuantities
+  env: PodEnvVar[]
+  mounts: PodVolumeMountInfo[]
+  probes: PodProbeInfo[]
+  command?: string[]
+  args?: string[]
+  securityContext?: PodSecurityContextInfo
+}
+
+export interface PodVolumeInfo {
+  name: string
+  /** ConfigMap, Secret, PersistentVolumeClaim, EmptyDir, HostPath, Projected, etc. */
+  type: string
+  /** e.g. claim name, config map name, host path. */
+  detail?: string
+}
+
+export interface PodTolerationInfo {
+  key?: string
+  operator?: string
+  value?: string
+  effect?: string
+  tolerationSeconds?: number
+}
+
+export interface PodOwnerRef {
+  kind: string
+  name: string
+  controller: boolean
+}
+
+export interface PodConditionInfo {
+  type: string
+  status: string
+  reason?: string
+  message?: string
+  lastTransitionTime?: string
 }
 
 export interface PodDetailData {
-  containers: PodContainerInfo[]
-  nodeName: string
-  podIP: string
-  hostIP: string
-  qosClass: string
-  labels: Record<string, string>
+  uid: string
+  creationTimestamp?: string
   phase: string
   statusText: string
   statusColor: string
   statusDetail?: string
+  /** Ready containers over total, e.g. "2/3". */
+  ready: string
+  totalRestarts: number
+  nodeName: string
+  podIP: string
+  hostIP: string
+  qosClass: string
+  serviceAccount: string
+  priorityClass?: string
+  restartPolicy?: string
+  labels: Record<string, string>
+  annotations: Record<string, string>
+  ownerReferences: PodOwnerRef[]
+  conditions: PodConditionInfo[]
+  nodeSelector: Record<string, string>
+  tolerations: PodTolerationInfo[]
+  /** Human readable affinity summary lines. */
+  affinitySummary: string[]
+  securityContext?: PodSecurityContextInfo
+  volumes: PodVolumeInfo[]
+  containers: PodContainerInfo[]
+  initContainers: PodContainerInfo[]
 }
 
 export type PodDetailResponse = PodDetailData | { error: string }

@@ -5,8 +5,7 @@ import {
   FolderOpen,
   Globe,
   HardDrive,
-  Network,
-  Orbit,
+  LayoutDashboard,
   Server,
   Settings,
   Shield,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { VirtualPageKey } from '@shared/types/navigation'
+import { HelmLogo } from '../icons/HelmLogo'
 
 export type NavEntry =
   | { type: 'kind'; kind: ResourceKind; label?: string }
@@ -46,8 +46,11 @@ export const resourceNavLayout: NavLayoutItem[] = [
     type: 'section',
     id: 'overview',
     title: 'Overview',
-    icon: Network,
-    entries: [{ type: 'virtual', key: 'topology', label: 'Topology' }]
+    icon: LayoutDashboard,
+    entries: [
+      { type: 'virtual', key: 'clusterOverview', label: 'Cluster' },
+      { type: 'virtual', key: 'topology', label: 'Topology' }
+    ]
   },
   {
     type: 'section',
@@ -55,6 +58,7 @@ export const resourceNavLayout: NavLayoutItem[] = [
     title: 'Workloads',
     icon: Boxes,
     entries: [
+      { type: 'virtual', key: 'workloadsOverview', label: 'Overview' },
       { type: 'kind', kind: 'Pods' },
       { type: 'kind', kind: 'Deployments' },
       { type: 'kind', kind: 'DaemonSets' },
@@ -71,6 +75,7 @@ export const resourceNavLayout: NavLayoutItem[] = [
     title: 'Config',
     icon: Settings,
     entries: [
+      { type: 'virtual', key: 'configOverview', label: 'Overview' },
       { type: 'kind', kind: 'ConfigMaps' },
       { type: 'kind', kind: 'Secrets' },
       { type: 'kind', kind: 'ResourceQuotas' },
@@ -118,7 +123,7 @@ export const resourceNavLayout: NavLayoutItem[] = [
     type: 'section',
     id: 'helm',
     title: 'Helm',
-    icon: Orbit,
+    icon: HelmLogo as LucideIcon,
     entries: [
       { type: 'virtual', key: 'helmCharts', label: 'Charts' },
       { type: 'virtual', key: 'helmReleases', label: 'Releases' }

@@ -72,6 +72,9 @@ export interface WelcomeStateResponse {
 
 export type ResourceDetailPlacement = 'drawer' | 'right' | 'bottom'
 
+/** Where Terminal / YAML editor (utility dock) sits relative to the main workspace. */
+export type UtilityPanelPlacement = 'bottom' | 'right' | 'left'
+
 import type { NodesDashboardPrefs } from './nodesDashboard'
 import { defaultNodesDashboardPrefs } from './nodesDashboard'
 import type { KeyboardShortcuts } from './keyboardShortcuts'
@@ -105,7 +108,13 @@ export interface DisplaySettings {
   showFavoritesSection: boolean
   /** Left sidebar Workspaces section visibility (default on). */
   showWorkspacesSection: boolean
+  /** Show the connected namespace chip on sidebar cluster items (default on). */
+  showClusterNamespace: boolean
   resourceDetailPlacement: ResourceDetailPlacement
+  /** Blur the resource list behind the detail drawer (default off). */
+  resourceDetailMaskBlur: boolean
+  /** Terminal + YAML editor dock position (default bottom). */
+  utilityPanelPlacement: UtilityPanelPlacement
   showNodesPageEvents: boolean
   nodesDashboard: NodesDashboardPrefs
   keyboardShortcuts: KeyboardShortcuts
@@ -122,7 +131,10 @@ export const defaultDisplaySettings: DisplaySettings = {
   showResourceTabIcons: true,
   showFavoritesSection: true,
   showWorkspacesSection: true,
+  showClusterNamespace: true,
   resourceDetailPlacement: 'drawer',
+  resourceDetailMaskBlur: false,
+  utilityPanelPlacement: 'bottom',
   showNodesPageEvents: true,
   nodesDashboard: defaultNodesDashboardPrefs,
   keyboardShortcuts: defaultKeyboardShortcuts,

@@ -142,7 +142,7 @@ export function NodeMetricsPanel({ clusterId, nodeName, isActive }: NodeMetricsP
             observing this node.
           </Typography.Text>
         ) : null}
-        <ExtendedMetricsCharts rangeData={rangeData} />
+        <ExtendedMetricsCharts rangeData={rangeData} showNodeFilesystems />
       </div>
     </div>
   )

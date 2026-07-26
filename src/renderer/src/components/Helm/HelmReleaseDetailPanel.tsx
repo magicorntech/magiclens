@@ -1,4 +1,5 @@
-import { Button, Descriptions, Empty, Splitter, Tag, Typography, theme } from 'antd'
+import { useEffect, useState } from 'react'
+import { Button, Descriptions, Empty, Splitter, Tabs, Tag, Typography, theme } from 'antd'
 import { ExternalLink, X } from 'lucide-react'
 import { Icon } from '../ui/Icon'
 import type { ColumnsType } from 'antd/es/table'
@@ -7,10 +8,14 @@ import type { ResourceFocus } from '@shared/types/navigation'
 import { useHelmReleaseDetail } from '../../queries/useHelm'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { HelmReleaseHistoryTab } from './HelmReleaseHistoryTab'
+
+export type HelmDetailTab = 'overview' | 'history'
 
 interface HelmReleaseDetailPanelProps {
   clusterId: string
   release: HelmRelease
+  initialTab?: HelmDetailTab
   onClose: () => void
   onNavigateToResource: (focus: ResourceFocus) => void
 }
@@ -18,18 +23,30 @@ interface HelmReleaseDetailPanelProps {
 export function HelmReleaseDetailPanel({
   clusterId,
   release,
+  initialTab = 'overview',
   onClose,
   onNavigateToResource
 }: HelmReleaseDetailPanelProps): React.JSX.Element {
   const { token } = theme.useToken()
-  const { data, isLoading } = useHelmReleaseDetail(clusterId, release.namespace, release.name, true)
+  const [tab, setTab] = useState<HelmDetailTab>(initialTab)
+
+  useEffect(() => {
+    setTab(initialTab)
+  }, [initialTab, release.id])
+
+  const { data, isLoading } = useHelmReleaseDetail(
+    clusterId,
+    release.namespace,
+    release.name,
+    tab === 'overview'
+  )
   const detail = data && 'detail' in data ? data.detail : null
   const error = data && 'error' in data ? data.error : null
 
   const resourceColumns: ColumnsType<HelmManifestResource> = [
     { title: 'Kind', dataIndex: 'kind', key: 'kind', width: 140 },
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Namespace', dataIndex: 'namespace', key: 'namespace', width: 160 },
+    { title: 'Name', dataIndex: 'name', key: 'name', ellipsis: true },
+    { title: 'Namespace', dataIndex: 'namespace', key: 'namespace', width: 140, ellipsis: true },
     {
       title: '',
       key: 'open',
@@ -65,107 +82,111 @@ export function HelmReleaseDetailPanel({
   ]
 
   return (
-    <div
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 0,
-        background: token.colorBgContainer,
-        borderLeft: `1px solid ${token.colorBorderSecondary}`
-      }}
-    >
-      <div
-        style={{
-          flexShrink: 0,
-          padding: '12px 16px',
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}
-      >
-        <div>
+    <div className="ml-helm-detail">
+      <div className="ml-helm-detail__header">
+        <div className="ml-helm-detail__title">
           <Typography.Text strong>{release.name}</Typography.Text>
-          <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
-            {release.namespace}
-          </Typography.Text>
+          <Typography.Text type="secondary">{release.namespace}</Typography.Text>
         </div>
         <Button type="text" size="small" icon={<Icon icon={X} variant="detail" />} onClick={onClose} />
       </div>
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: 12 }}>
-        {isLoading ? (
-          <LoadingState />
-        ) : error ? (
-          <Empty description={error} />
-        ) : !detail ? (
-          <Empty description="Release detail unavailable" />
-        ) : (
-          <Splitter layout="vertical" style={{ height: '100%' }}>
-            <Splitter.Panel defaultSize="45%" min="25%">
-              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, paddingRight: 8 }}>
-                <Descriptions bordered size="small" column={2} style={{ marginBottom: 12, flexShrink: 0 }}>
-                  <Descriptions.Item label="Chart">
-                    {detail.chartName}-{detail.chartVersion}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Revision">{detail.revision}</Descriptions.Item>
-                  <Descriptions.Item label="Status">
-                    <Tag>{detail.status}</Tag>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="App version">{detail.appVersion || '-'}</Descriptions.Item>
-                </Descriptions>
-                <Typography.Text strong style={{ display: 'block', marginBottom: 8, flexShrink: 0 }}>
-                  Values (revision {detail.revision})
-                </Typography.Text>
-                <pre
-                  style={{
-                    flex: 1,
-                    minHeight: 0,
-                    margin: 0,
-                    overflow: 'auto',
-                    padding: 12,
-                    borderRadius: token.borderRadius,
-                    background: token.colorFillAlter,
-                    fontSize: 12,
-                    lineHeight: 1.5
-                  }}
-                >
-                  {detail.valuesYaml}
-                </pre>
+
+      <Tabs
+        className="ml-helm-detail__tabs"
+        activeKey={tab}
+        onChange={(key) => setTab(key as HelmDetailTab)}
+        items={[
+          {
+            key: 'overview',
+            label: 'Overview',
+            children: (
+              <div className="ml-helm-detail__tab-body">
+                {isLoading ? (
+                  <LoadingState />
+                ) : error ? (
+                  <Empty description={error} />
+                ) : !detail ? (
+                  <Empty description="Release detail unavailable" />
+                ) : (
+                  <Splitter layout="vertical" style={{ height: '100%' }}>
+                    <Splitter.Panel defaultSize="45%" min="25%">
+                      <div className="ml-helm-detail__overview-top">
+                        <Descriptions bordered size="small" column={2} style={{ marginBottom: 12 }}>
+                          <Descriptions.Item label="Chart">
+                            {detail.chartName}-{detail.chartVersion}
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Revision">{detail.revision}</Descriptions.Item>
+                          <Descriptions.Item label="Status">
+                            <Tag>{detail.status}</Tag>
+                          </Descriptions.Item>
+                          <Descriptions.Item label="App version">
+                            {detail.appVersion || '-'}
+                          </Descriptions.Item>
+                        </Descriptions>
+                        <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                          Values (revision {detail.revision})
+                        </Typography.Text>
+                        <pre
+                          className="ml-helm-detail__values"
+                          style={{
+                            borderRadius: token.borderRadius,
+                            background: token.colorFillAlter
+                          }}
+                        >
+                          {detail.valuesYaml}
+                        </pre>
+                      </div>
+                    </Splitter.Panel>
+                    <Splitter.Panel defaultSize="55%" min="25%">
+                      <div className="ml-helm-detail__overview-bottom">
+                        <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                          Resources ({detail.resources.length})
+                        </Typography.Text>
+                        <div className="ml-helm-detail__resources">
+                          <ResizableTable
+                            tableKey="helm-release-resources"
+                            rowKey="id"
+                            size="small"
+                            columns={resourceColumns}
+                            dataSource={detail.resources}
+                            pagination={false}
+                            locale={{ emptyText: 'No resources in manifest' }}
+                            onRow={(resource) => ({
+                              style: { cursor: resource.resourceKind ? 'pointer' : 'default' },
+                              onClick: () => {
+                                if (!resource.resourceKind) return
+                                onNavigateToResource({
+                                  kind: resource.resourceKind,
+                                  namespace: resource.namespace,
+                                  name: resource.name
+                                })
+                              }
+                            })}
+                          />
+                        </div>
+                      </div>
+                    </Splitter.Panel>
+                  </Splitter>
+                )}
               </div>
-            </Splitter.Panel>
-            <Splitter.Panel defaultSize="55%" min="25%">
-              <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, paddingLeft: 8 }}>
-                <Typography.Text strong style={{ display: 'block', marginBottom: 8, flexShrink: 0 }}>
-                  Resources ({detail.resources.length})
-                </Typography.Text>
-                <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-                  <ResizableTable
-                    tableKey="helm-release-resources"
-                    rowKey="id"
-                    size="small"
-                    columns={resourceColumns}
-                    dataSource={detail.resources}
-                    pagination={false}
-                    locale={{ emptyText: 'No resources in manifest' }}
-                    onRow={(resource) => ({
-                      style: { cursor: resource.resourceKind ? 'pointer' : 'default' },
-                      onClick: () => {
-                        if (!resource.resourceKind) return
-                        onNavigateToResource({
-                          kind: resource.resourceKind,
-                          namespace: resource.namespace,
-                          name: resource.name
-                        })
-                      }
-                    })}
-                  />
-                </div>
+            )
+          },
+          {
+            key: 'history',
+            label: 'History',
+            children: (
+              <div className="ml-helm-detail__tab-body">
+                <HelmReleaseHistoryTab
+                  clusterId={clusterId}
+                  namespace={release.namespace}
+                  name={release.name}
+                  active={tab === 'history'}
+                />
               </div>
-            </Splitter.Panel>
-          </Splitter>
-        )}
-      </div>
+            )
+          }
+        ]}
+      />
     </div>
   )
 }

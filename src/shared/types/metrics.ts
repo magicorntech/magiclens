@@ -20,7 +20,20 @@ export interface MetricsRangeResponse {
   memory?: MetricsSeries[]
   networkReceive?: MetricsSeries[]
   networkTransmit?: MetricsSeries[]
+  /** Container filesystem usage (writable layer) — bytes. */
   diskUsage?: MetricsSeries[]
+  /** Node disk/filesystem used bytes per mountpoint (node-exporter). */
+  filesystemUsageBytes?: MetricsSeries[]
+  /** Node disk/filesystem size bytes per mountpoint. */
+  filesystemSizeBytes?: MetricsSeries[]
+  /** Node disk fullness 0–100 per mountpoint. */
+  filesystemPercent?: MetricsSeries[]
+  /** PVC / volume used bytes (kubelet volume stats). */
+  volumeUsageBytes?: MetricsSeries[]
+  /** PVC / volume capacity bytes. */
+  volumeCapacityBytes?: MetricsSeries[]
+  /** PVC / volume fullness 0–100. */
+  volumePercent?: MetricsSeries[]
   restartCount?: MetricsSeries[]
   replicaCount?: MetricsSeries[]
   pressureEvents?: MetricsPressureEvent[]

@@ -184,6 +184,7 @@ export function ResourceKindTabs({
         kind={kind}
         pinned={prefs.pinned.includes(kind)}
         favorite={prefs.favorites.includes(kind)}
+        closable={!prefs.pinned.includes(kind)}
         draggable
         onDragStart={(k) => {
           dragKindRef.current = k
@@ -191,9 +192,10 @@ export function ResourceKindTabs({
         onDrop={handleReorder}
         onTogglePin={togglePin}
         onToggleFavorite={toggleFavorite}
+        onClose={(k) => handleEdit(k, 'remove')}
       />
     ),
-    closable: !prefs.pinned.includes(kind),
+    closable: false,
     children: null
   }))
 

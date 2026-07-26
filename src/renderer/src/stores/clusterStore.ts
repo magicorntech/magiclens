@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ConnectionStatus, PersistedClusterEntry, PersistedUiState } from '@shared/types/cluster'
+import type { ClusterSettings } from '@shared/types/clusterSettings'
+import { mergeClusterSettings } from '@shared/types/clusterSettings'
 import type { ResourceFocus, PendingNavigation } from '@shared/types/navigation'
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import { isNamespaceScoped } from '@shared/resourceKinds'
@@ -39,6 +41,7 @@ export interface ClusterEntry {
   orgKubeconfigId?: string
   environment?: string
   localKubeconfigPath?: string
+  settings?: ClusterSettings
 }
 
 interface ClusterStoreState {
@@ -78,6 +81,8 @@ interface ClusterStoreState {
         | 'backgroundId'
         | 'backgroundCustomUrl'
         | 'backgroundPanelOpacity'
+        | 'settings'
+        | 'environment'
       >
     >
   ) => void
@@ -233,7 +238,9 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
           prometheusUrl: updated.prometheusUrl,
           isFavorite: updated.isFavorite,
           selectedNamespace: updated.selectedNamespace,
-          selectedResourceKind: updated.selectedResourceKind
+          selectedResourceKind: updated.selectedResourceKind,
+          settings: updated.settings,
+          environment: updated.environment
         })
       }
       return { clusters }
@@ -413,7 +420,7 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         prometheusUrl: entry.prometheusUrl,
         isFavorite: entry.isFavorite,
         status: 'idle',
-        selectedNamespace: entry.selectedNamespace || 'ALL',
+        selectedNamespace: entry.selectedNamespace ?? 'ALL',
         selectedResourceKind: entry.selectedResourceKind,
         openResourceKinds: entry.selectedResourceKind ? [entry.selectedResourceKind] : [],
         resourceFocus: null,
@@ -422,7 +429,8 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         remoteId: entry.remoteId,
         orgKubeconfigId: entry.orgKubeconfigId,
         environment: entry.environment,
-        localKubeconfigPath: entry.localKubeconfigPath
+        localKubeconfigPath: entry.localKubeconfigPath,
+        settings: mergeClusterSettings(entry.settings)
       }))
     }),
 

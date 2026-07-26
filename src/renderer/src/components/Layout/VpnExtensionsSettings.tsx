@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Button, Space, Tag, Typography, message } from 'antd'
-import { CheckCircle2, Download, RefreshCw, XCircle } from 'lucide-react'
+import { Button, message } from 'antd'
+import { CheckCircle2, Copy, Download, RefreshCw, XCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { AppInfoResponse } from '@shared/types/app'
 import { useVpnStore } from '../../stores/vpnStore'
 import { Icon } from '../ui/Icon'
+import { SettingsSection } from './SettingsPrimitives'
 
 type PlatformGroup = 'darwin' | 'win32' | 'linux' | 'other'
 
@@ -33,31 +34,43 @@ export function VpnExtensionsSettings(): React.JSX.Element {
   const packages = useMemo(() => {
     if (group === 'darwin') {
       return [
-        { id: 'openvpn', cmd: 'brew install openvpn' },
-        { id: 'wireguard', cmd: 'brew install wireguard-tools' },
-        { id: 'tunnelblick', cmd: 'brew install --cask tunnelblick' },
-        { id: 'wireguardApp', cmd: 'brew install --cask wireguard' }
+        { id: 'openvpn', label: 'OpenVPN', cmd: 'brew install openvpn' },
+        { id: 'wireguard', label: 'WireGuard tools', cmd: 'brew install wireguard-tools' },
+        { id: 'tunnelblick', label: 'Tunnelblick', cmd: 'brew install --cask tunnelblick' },
+        { id: 'wireguardApp', label: 'WireGuard app', cmd: 'brew install --cask wireguard' }
       ]
     }
     if (group === 'win32') {
       return [
-        { id: 'openvpn', cmd: 'winget install -e --id OpenVPNTechnologies.OpenVPN' },
-        { id: 'wireguard', cmd: 'winget install -e --id WireGuard.WireGuard' },
-        { id: 'chocoOpenvpn', cmd: 'choco install openvpn -y' },
-        { id: 'chocoWireguard', cmd: 'choco install wireguard -y' }
+        {
+          id: 'openvpn',
+          label: 'OpenVPN (winget)',
+          cmd: 'winget install -e --id OpenVPNTechnologies.OpenVPN'
+        },
+        {
+          id: 'wireguard',
+          label: 'WireGuard (winget)',
+          cmd: 'winget install -e --id WireGuard.WireGuard'
+        },
+        { id: 'chocoOpenvpn', label: 'OpenVPN (choco)', cmd: 'choco install openvpn -y' },
+        { id: 'chocoWireguard', label: 'WireGuard (choco)', cmd: 'choco install wireguard -y' }
       ]
     }
     if (group === 'linux') {
       return [
-        { id: 'aptOpenvpn', cmd: 'sudo apt-get install -y openvpn' },
-        { id: 'aptWireguard', cmd: 'sudo apt-get install -y wireguard-tools' },
-        { id: 'brewOpenvpn', cmd: 'brew install openvpn' },
-        { id: 'brewWireguard', cmd: 'brew install wireguard-tools' }
+        { id: 'aptOpenvpn', label: 'OpenVPN (apt)', cmd: 'sudo apt-get install -y openvpn' },
+        {
+          id: 'aptWireguard',
+          label: 'WireGuard (apt)',
+          cmd: 'sudo apt-get install -y wireguard-tools'
+        },
+        { id: 'brewOpenvpn', label: 'OpenVPN (brew)', cmd: 'brew install openvpn' },
+        { id: 'brewWireguard', label: 'WireGuard (brew)', cmd: 'brew install wireguard-tools' }
       ]
     }
     return [
-      { id: 'openvpn', cmd: 'brew install openvpn' },
-      { id: 'wireguard', cmd: 'brew install wireguard-tools' }
+      { id: 'openvpn', label: 'OpenVPN', cmd: 'brew install openvpn' },
+      { id: 'wireguard', label: 'WireGuard tools', cmd: 'brew install wireguard-tools' }
     ]
   }, [group])
 
@@ -88,63 +101,89 @@ export function VpnExtensionsSettings(): React.JSX.Element {
     }
   }
 
+  async function copyCmd(cmd: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(cmd)
+      message.success(t('settings.vpnExtensions.copied'))
+    } catch {
+      message.error(t('settings.vpnExtensions.copyFailed'))
+    }
+  }
+
   return (
-    <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-      <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-        {t('settings.vpnExtensions.intro')}
-      </Typography.Text>
-
-      <Alert
-        type="info"
-        showIcon
-        message={t('settings.vpnExtensions.platformLabel', {
-          platform: appInfo?.platform ?? '…'
-        })}
+    <>
+      <SettingsSection
+        title={t('settings.vpnExtensions.statusTitle')}
         description={t(`settings.vpnExtensions.platformHint.${group}`)}
-      />
-
-      <div>
-        <Typography.Text strong>{t('settings.vpnExtensions.statusTitle')}</Typography.Text>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-          <Tag
-            icon={
-              <Icon icon={openvpnReady ? CheckCircle2 : XCircle} variant="detail" />
-            }
-            color={openvpnReady ? 'success' : 'default'}
+        actions={
+          <Button
+            size="small"
+            icon={<Icon icon={RefreshCw} variant="detail" />}
+            onClick={() => void refresh()}
           >
-            OpenVPN {openvpnReady ? t('settings.vpnExtensions.ready') : t('settings.vpnExtensions.missing')}
-          </Tag>
-          <Tag
-            icon={
-              <Icon icon={wireguardReady ? CheckCircle2 : XCircle} variant="detail" />
-            }
-            color={wireguardReady ? 'success' : 'default'}
-          >
-            WireGuard{' '}
-            {wireguardReady ? t('settings.vpnExtensions.ready') : t('settings.vpnExtensions.missing')}
-          </Tag>
-          {tools?.tunnelblick && <Tag color="processing">Tunnelblick</Tag>}
-          {tools?.wireguardApp && <Tag color="processing">WireGuard app</Tag>}
+            {t('settings.vpnExtensions.rescan')}
+          </Button>
+        }
+      >
+        <div className="ml-vpn-ext-platform">
+          <span className="ml-vpn-ext-platform__label">
+            {t('settings.vpnExtensions.platformLabel', {
+              platform: appInfo?.platform ?? '…'
+            })}
+          </span>
         </div>
-        <Button
-          size="small"
-          icon={<Icon icon={RefreshCw} variant="action" />}
-          style={{ marginTop: 10 }}
-          onClick={() => void refresh()}
-        >
-          {t('settings.vpnExtensions.rescan')}
-        </Button>
-      </div>
+        <div className="ml-vpn-ext-status">
+          <div className={`ml-vpn-ext-chip${openvpnReady ? ' is-ready' : ' is-missing'}`}>
+            <Icon icon={openvpnReady ? CheckCircle2 : XCircle} variant="detail" />
+            <div>
+              <div className="ml-vpn-ext-chip__name">OpenVPN</div>
+              <div className="ml-vpn-ext-chip__state">
+                {openvpnReady
+                  ? t('settings.vpnExtensions.ready')
+                  : t('settings.vpnExtensions.missing')}
+              </div>
+            </div>
+          </div>
+          <div className={`ml-vpn-ext-chip${wireguardReady ? ' is-ready' : ' is-missing'}`}>
+            <Icon icon={wireguardReady ? CheckCircle2 : XCircle} variant="detail" />
+            <div>
+              <div className="ml-vpn-ext-chip__name">WireGuard</div>
+              <div className="ml-vpn-ext-chip__state">
+                {wireguardReady
+                  ? t('settings.vpnExtensions.ready')
+                  : t('settings.vpnExtensions.missing')}
+              </div>
+            </div>
+          </div>
+          {tools?.tunnelblick ? (
+            <div className="ml-vpn-ext-chip is-ready">
+              <Icon icon={CheckCircle2} variant="detail" />
+              <div>
+                <div className="ml-vpn-ext-chip__name">Tunnelblick</div>
+                <div className="ml-vpn-ext-chip__state">{t('settings.vpnExtensions.ready')}</div>
+              </div>
+            </div>
+          ) : null}
+          {tools?.wireguardApp ? (
+            <div className="ml-vpn-ext-chip is-ready">
+              <Icon icon={CheckCircle2} variant="detail" />
+              <div>
+                <div className="ml-vpn-ext-chip__name">WireGuard app</div>
+                <div className="ml-vpn-ext-chip__state">{t('settings.vpnExtensions.ready')}</div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </SettingsSection>
 
-      <div>
-        <Typography.Text strong>{t('settings.vpnExtensions.installTitle')}</Typography.Text>
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 10 }}>
-          {t('settings.vpnExtensions.installHint')}
-        </Typography.Paragraph>
-        <Space wrap>
+      <SettingsSection
+        title={t('settings.vpnExtensions.installTitle')}
+        description={t('settings.vpnExtensions.installHint')}
+      >
+        <div className="ml-vpn-ext-actions">
           <Button
             type="primary"
-            icon={<Icon icon={Download} variant="action" />}
+            icon={<Icon icon={Download} variant="detail" />}
             loading={installing === 'openvpn'}
             disabled={installing !== null}
             onClick={() => void install('openvpn')}
@@ -152,48 +191,50 @@ export function VpnExtensionsSettings(): React.JSX.Element {
             {t('settings.vpnExtensions.installOpenVpn')}
           </Button>
           <Button
-            icon={<Icon icon={Download} variant="action" />}
+            icon={<Icon icon={Download} variant="detail" />}
             loading={installing === 'wireguard'}
             disabled={installing !== null}
             onClick={() => void install('wireguard')}
           >
             {t('settings.vpnExtensions.installWireGuard')}
           </Button>
-        </Space>
-      </div>
+        </div>
+      </SettingsSection>
 
-      <div>
-        <Typography.Text strong>{t('settings.vpnExtensions.packagesTitle')}</Typography.Text>
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 8 }}>
-          {t('settings.vpnExtensions.packagesHint')}
-        </Typography.Paragraph>
-        <Space orientation="vertical" style={{ width: '100%' }} size={6}>
+      <SettingsSection
+        title={t('settings.vpnExtensions.packagesTitle')}
+        description={t('settings.vpnExtensions.packagesHint')}
+      >
+        <div className="ml-vpn-ext-cmds">
           {packages.map((pkg) => (
-            <Typography.Text
-              key={pkg.id}
-              code
-              copyable
-              style={{ display: 'block', whiteSpace: 'pre-wrap', fontSize: 12 }}
-            >
-              {pkg.cmd}
-            </Typography.Text>
+            <div key={pkg.id} className="ml-vpn-ext-cmd">
+              <div className="ml-vpn-ext-cmd__meta">
+                <span className="ml-vpn-ext-cmd__label">{pkg.label}</span>
+                <code className="ml-vpn-ext-cmd__code">{pkg.cmd}</code>
+              </div>
+              <button
+                type="button"
+                className="ml-vpn-ext-cmd__copy"
+                onClick={() => void copyCmd(pkg.cmd)}
+                aria-label={t('settings.vpnExtensions.copyCmd')}
+              >
+                <Icon icon={Copy} variant="detail" />
+              </button>
+            </div>
           ))}
-        </Space>
-      </div>
+        </div>
+      </SettingsSection>
 
-      <div>
-        <Typography.Text strong>{t('settings.vpnExtensions.manualTitle')}</Typography.Text>
-        <ol style={{ margin: '8px 0 0', paddingInlineStart: 18, fontSize: 13 }}>
+      <SettingsSection
+        title={t('settings.vpnExtensions.manualTitle')}
+        description={t('settings.vpnExtensions.connectNote')}
+      >
+        <ol className="ml-vpn-ext-steps">
           {manualSteps.map((step) => (
-            <li key={step} style={{ marginBottom: 6 }}>
-              {step}
-            </li>
+            <li key={step}>{step}</li>
           ))}
         </ol>
-        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 8, marginBottom: 0 }}>
-          {t('settings.vpnExtensions.connectNote')}
-        </Typography.Paragraph>
-      </div>
-    </Space>
+      </SettingsSection>
+    </>
   )
 }

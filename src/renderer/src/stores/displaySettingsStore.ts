@@ -2,7 +2,8 @@ import { create } from 'zustand'
 import {
   defaultDisplaySettings,
   type DisplaySettings,
-  type ResourceDetailPlacement
+  type ResourceDetailPlacement,
+  type UtilityPanelPlacement
 } from '@shared/types/app'
 import {
   normalizeKeyboardShortcuts,
@@ -27,7 +28,10 @@ interface DisplaySettingsState extends DisplaySettings {
   setShowResourceTabIcons: (value: boolean) => Promise<void>
   setShowFavoritesSection: (value: boolean) => Promise<void>
   setShowWorkspacesSection: (value: boolean) => Promise<void>
+  setShowClusterNamespace: (value: boolean) => Promise<void>
   setResourceDetailPlacement: (value: ResourceDetailPlacement) => Promise<void>
+  setResourceDetailMaskBlur: (value: boolean) => Promise<void>
+  setUtilityPanelPlacement: (value: UtilityPanelPlacement) => Promise<void>
   setShowNodesPageEvents: (value: boolean) => Promise<void>
   setNodesDashboardPrefs: (prefs: NodesDashboardPrefs) => Promise<void>
   toggleNodesDashboardSection: (id: NodesDashboardSectionId) => Promise<void>
@@ -80,8 +84,20 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
     const next = await window.api.app.setDisplaySettings({ showWorkspacesSection: value })
     set(applyDisplay(next))
   },
+  setShowClusterNamespace: async (value) => {
+    const next = await window.api.app.setDisplaySettings({ showClusterNamespace: value })
+    set(applyDisplay(next))
+  },
   setResourceDetailPlacement: async (value) => {
     const next = await window.api.app.setDisplaySettings({ resourceDetailPlacement: value })
+    set(applyDisplay(next))
+  },
+  setResourceDetailMaskBlur: async (value) => {
+    const next = await window.api.app.setDisplaySettings({ resourceDetailMaskBlur: value })
+    set(applyDisplay(next))
+  },
+  setUtilityPanelPlacement: async (value) => {
+    const next = await window.api.app.setDisplaySettings({ utilityPanelPlacement: value })
     set(applyDisplay(next))
   },
   setShowNodesPageEvents: async (value) => {

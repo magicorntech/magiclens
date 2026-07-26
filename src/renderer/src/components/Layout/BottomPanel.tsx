@@ -1,13 +1,26 @@
 import { Button, Tabs, Tooltip } from 'antd'
-import { X } from 'lucide-react'
+import { PanelBottom, PanelLeft, PanelRight, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import type { UtilityPanelPlacement } from '@shared/types/app'
 import { Icon } from '../ui/Icon'
 import { TerminalView } from '../Terminal/TerminalView'
 import { YamlEditorPanelBody } from '../ResourceTable/YamlEditorPanelBody'
 import { ResourceDetailTabBody } from '../ResourceTable/ResourceDetailTabBody'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useBottomPanel } from './BottomPanelContext'
 
-export function BottomPanel(): React.JSX.Element {
+interface BottomPanelProps {
+  placement?: UtilityPanelPlacement
+  allowSidePlacement?: boolean
+}
+
+export function BottomPanel({
+  placement = 'bottom',
+  allowSidePlacement = true
+}: BottomPanelProps): React.JSX.Element {
+  const { t } = useTranslation()
   const { tabs, activeTabId, addTerminalTab, closeTab, setActiveTab, closeAll } = useBottomPanel()
+  const setUtilityPanelPlacement = useDisplaySettingsStore((s) => s.setUtilityPanelPlacement)
 
   const items = tabs.map((tab) => ({
     key: tab.id,
@@ -22,8 +35,14 @@ export function BottomPanel(): React.JSX.Element {
       )
   }))
 
+  const dockOptions: { value: UtilityPanelPlacement; icon: typeof PanelBottom; label: string }[] = [
+    { value: 'left', icon: PanelLeft, label: t('settings.display.panelPlacementLeft') },
+    { value: 'bottom', icon: PanelBottom, label: t('settings.display.panelPlacementBottom') },
+    { value: 'right', icon: PanelRight, label: t('settings.display.panelPlacementRight') }
+  ]
+
   return (
-    <div className="ml-bottom-panel">
+    <div className={`ml-bottom-panel ml-bottom-panel--${placement}`}>
       <Tabs
         type="editable-card"
         size="small"
@@ -40,9 +59,36 @@ export function BottomPanel(): React.JSX.Element {
         tabBarStyle={{ margin: 0, padding: '0 8px' }}
         tabBarExtraContent={{
           right: (
-            <Tooltip title="Close panel">
-              <Button type="text" size="small" icon={<Icon icon={X} variant="detail" />} onClick={closeAll} />
-            </Tooltip>
+            <div className="ml-bottom-panel__chrome">
+              {allowSidePlacement
+                ? dockOptions.map((opt) => (
+                    <Tooltip key={opt.value} title={opt.label}>
+                      <Button
+                        type="text"
+                        size="small"
+                        className={
+                          placement === opt.value
+                            ? 'ml-bottom-panel__dock-btn is-active'
+                            : 'ml-bottom-panel__dock-btn'
+                        }
+                        icon={<Icon icon={opt.icon} variant="detail" />}
+                        aria-label={opt.label}
+                        aria-pressed={placement === opt.value}
+                        onClick={() => void setUtilityPanelPlacement(opt.value)}
+                      />
+                    </Tooltip>
+                  ))
+                : null}
+              <Tooltip title={t('chromeExtra.closePanel')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<Icon icon={X} variant="detail" />}
+                  onClick={closeAll}
+                  aria-label={t('chromeExtra.closePanel')}
+                />
+              </Tooltip>
+            </div>
           )
         }}
       />

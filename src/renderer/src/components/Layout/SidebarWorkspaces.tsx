@@ -1,8 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Empty, Input, Modal, Select, Space, Tooltip, Typography, message } from 'antd'
-import { ChevronDown, ChevronRight, FolderPlus, MoreHorizontal, Pencil, Trash2, Upload } from 'lucide-react'
-import type { MenuProps } from 'antd'
-import { Dropdown } from 'antd'
+import {
+  Button,
+  Dropdown,
+  Empty,
+  Input,
+  Modal,
+  Popover,
+  Select,
+  Space,
+  Tooltip,
+  Typography,
+  message,
+  type MenuProps
+} from 'antd'
+import {
+  ChevronDown,
+  ChevronRight,
+  FolderPlus,
+  Layers,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Upload
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
   bindingFromKeyboardEvent,
@@ -12,6 +32,7 @@ import {
 } from '@shared/types/keyboardShortcuts'
 import { useClusterStore, type ClusterEntry } from '../../stores/clusterStore'
 import { useClusterGroupsStore } from '../../stores/clusterGroupsStore'
+import { sortClustersByConnection } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { ClusterAvatar } from '../ClusterTabs/ClusterAvatar'
 import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
@@ -20,6 +41,8 @@ import { Icon } from '../ui/Icon'
 
 interface SidebarWorkspacesProps {
   collapsed: boolean
+  sectionExpanded: boolean
+  onToggleSection: () => void
   onNavigate?: () => void
   onEditCluster?: (cluster: ClusterEntry) => void
 }
@@ -41,12 +64,15 @@ function matchesQuery(text: string, query: string): boolean {
 
 export function SidebarWorkspaces({
   collapsed,
+  sectionExpanded,
+  onToggleSection,
   onNavigate,
   onEditCluster
 }: SidebarWorkspacesProps): React.JSX.Element {
   const { t } = useTranslation()
   const clusters = useClusterStore((s) => s.clusters)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
+  const openClusterTab = useClusterStore((s) => s.openClusterTab)
   const groups = useClusterGroupsStore((s) => s.groups)
   const createGroup = useClusterGroupsStore((s) => s.createGroup)
   const renameGroup = useClusterGroupsStore((s) => s.renameGroup)
@@ -78,33 +104,15 @@ export function SidebarWorkspaces({
     [clusters]
   )
 
-  /** Clusters that belong to any workspace, with workspace names for tooltips (collapsed rail). */
-  const compactWorkspaceClusters = useMemo(() => {
-    const byId = new Map<string, { cluster: ClusterEntry; workspaceNames: string[] }>()
-    for (const group of groups) {
-      for (const id of group.clusterIds) {
-        const cluster = clusters.find((c) => c.id === id)
-        if (!cluster) continue
-        const existing = byId.get(id)
-        if (existing) {
-          if (!existing.workspaceNames.includes(group.name)) {
-            existing.workspaceNames.push(group.name)
-          }
-        } else {
-          byId.set(id, { cluster, workspaceNames: [group.name] })
-        }
-      }
-    }
-    return [...byId.values()]
-  }, [groups, clusters])
-
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase()
     return groups
       .map((group) => {
-        const members = group.clusterIds
-          .map((id) => clusters.find((c) => c.id === id))
-          .filter((c): c is ClusterEntry => !!c)
+        const members = sortClustersByConnection(
+          group.clusterIds
+            .map((id) => clusters.find((c) => c.id === id))
+            .filter((c): c is ClusterEntry => !!c)
+        )
 
         if (!q) {
           return { group, members, forceOpen: false }
@@ -215,23 +223,22 @@ export function SidebarWorkspaces({
         <Space align="start" size="middle" style={{ width: '100%', marginTop: 8, marginBottom: 16 }}>
           <ClusterAvatar logoUrl={draftLogoUrl} name={draftName || t('workspaces.defaultName')} size={48} />
           <div>
-            <Button
-              size="small"
-              icon={<Icon icon={Upload} variant="detail" />}
+            <button
+              type="button"
+              className="ml-ws-logo-btn"
               onClick={() => fileInputRef.current?.click()}
             >
+              <Icon icon={Upload} variant="detail" />
               {t('workspaces.changeLogo')}
-            </Button>
+            </button>
             {draftLogoUrl ? (
-              <Button
-                type="link"
-                danger
-                size="small"
-                style={{ marginLeft: 4 }}
+              <button
+                type="button"
+                className="ml-ws-logo-btn ml-ws-logo-btn--danger"
                 onClick={() => setDraftLogoUrl(undefined)}
               >
                 {t('workspaces.removeLogo')}
-              </Button>
+              </button>
             ) : null}
             <input
               ref={fileInputRef}
@@ -320,152 +327,253 @@ export function SidebarWorkspaces({
 
   if (collapsed) {
     return (
-      <div className="ml-sidebar-section ml-sidebar-section--workspaces ml-sidebar-section--compact">
-        <Tooltip title={t('workspaces.compactTooltip')} placement="right">
-          <div className="ml-sidebar-compact-mark" aria-label={t('workspaces.compactTooltip')}>
-            {t('workspaces.compactMark')}
-          </div>
-        </Tooltip>
-        <div className="ml-sidebar-list ml-sidebar-list--compact-workspaces">
-          {compactWorkspaceClusters.map(({ cluster, workspaceNames }) => (
-            <Tooltip
-              key={cluster.id}
-              title={`${cluster.customName || cluster.contextName} · ${workspaceNames.join(', ')}`}
-              placement="right"
-            >
-              <div>
-                <FavoriteClusterBox
-                  cluster={cluster}
-                  active={cluster.id === activeClusterId}
-                  compact
-                  onActivate={onNavigate}
-                  onEdit={onEditCluster}
-                />
-              </div>
+      <div
+        className={`ml-sidebar-section ml-sidebar-section--workspaces ml-sidebar-section--compact${
+          sectionExpanded ? '' : ' ml-sidebar-section--workspaces-collapsed'
+        }`}
+      >
+        {sectionExpanded ? (
+          <>
+            <Tooltip title={t('workspaces.compactTooltip')} placement="right" arrow={false}>
+              <button
+                type="button"
+                className="ml-sidebar-compact-mark"
+                aria-label={t('workspaces.compactTooltip')}
+                onClick={onToggleSection}
+              >
+                <Icon icon={Layers} variant="action" />
+              </button>
             </Tooltip>
-          ))}
-        </div>
-        <Tooltip title={t('workspaces.newTooltip')} placement="right">
-          <button
-            type="button"
-            className="ml-sidebar-btn ml-sidebar-btn--ghost"
-            aria-label={t('workspaces.new')}
-            onClick={openCreate}
-          >
-            <Icon icon={FolderPlus} variant="action" />
-          </button>
-        </Tooltip>
+            <div className="ml-sidebar-list ml-sidebar-list--compact-workspaces">
+              {groups.map((group) => {
+                const members = sortClustersByConnection(
+                  group.clusterIds
+                    .map((id) => clusters.find((c) => c.id === id))
+                    .filter((c): c is ClusterEntry => !!c)
+                )
+                const hasActive = members.some((c) => c.id === activeClusterId)
+                const flyout = (
+                  <div className="ml-resource-nav-flyout">
+                    <div className="ml-resource-nav-flyout-title">{group.name}</div>
+                    <div className="ml-resource-nav-flyout-list" role="menu">
+                      {members.length === 0 ? (
+                        <div className="ml-ws-flyout-empty">{t('workspaces.noClusters')}</div>
+                      ) : (
+                        members.map((cluster) => {
+                          const active = cluster.id === activeClusterId
+                          return (
+                            <button
+                              key={cluster.id}
+                              type="button"
+                              role="menuitem"
+                              className={`ml-resource-nav-flyout-item${active ? ' is-active' : ''}`}
+                              onClick={() => {
+                                openClusterTab(cluster.id)
+                                onNavigate?.()
+                              }}
+                            >
+                              <span className="ml-resource-nav-flyout-item-icon">
+                                <ClusterAvatar
+                                  logoUrl={cluster.logoUrl}
+                                  name={cluster.customName || cluster.contextName}
+                                  size={20}
+                                />
+                              </span>
+                              <span className="ml-resource-nav-flyout-item-label">
+                                {cluster.customName || cluster.contextName}
+                              </span>
+                            </button>
+                          )
+                        })
+                      )}
+                    </div>
+                  </div>
+                )
+
+                return (
+                  <Popover
+                    key={group.id}
+                    content={flyout}
+                    trigger={['hover']}
+                    placement="rightTop"
+                    arrow={false}
+                    mouseEnterDelay={0.05}
+                    mouseLeaveDelay={0.12}
+                    classNames={{ root: 'ml-resource-nav-flyout-overlay' }}
+                    destroyOnHidden
+                  >
+                    <span className="ml-ws-rail-slot">
+                      <button
+                        type="button"
+                        className={`ml-ws-rail-item${hasActive ? ' is-active' : ''}`}
+                        aria-label={group.name}
+                      >
+                        <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={28} />
+                      </button>
+                    </span>
+                  </Popover>
+                )
+              })}
+            </div>
+            <Tooltip title={t('workspaces.newTooltip')} placement="right" arrow={false}>
+              <button
+                type="button"
+                className="ml-nav-fab"
+                aria-label={t('workspaces.new')}
+                onClick={openCreate}
+              >
+                <Icon icon={FolderPlus} variant="action" />
+              </button>
+            </Tooltip>
+          </>
+        ) : null}
         {editorModal}
       </div>
     )
   }
 
   return (
-    <div className="ml-sidebar-section ml-sidebar-section--workspaces">
-      <div className="ml-sidebar-section-label-row">
-        <div className="ml-sidebar-section-label">{t('workspaces.title')}</div>
-        <Button
-          type="text"
-          size="small"
-          icon={<Icon icon={FolderPlus} variant="detail" />}
-          aria-label={t('workspaces.new')}
-          onClick={openCreate}
-        />
+    <div
+      className={`ml-sidebar-section ml-sidebar-section--workspaces${
+        sectionExpanded ? '' : ' ml-sidebar-section--workspaces-collapsed'
+      }`}
+      style={sectionExpanded ? undefined : { flex: 'none', minHeight: 0 }}
+    >
+      <div className="ml-sidebar-section-chrome ml-sidebar-section-chrome--rich">
+        <button
+          type="button"
+          className="ml-sidebar-section-chrome__toggle"
+          aria-expanded={sectionExpanded}
+          onClick={onToggleSection}
+        >
+          <Icon icon={sectionExpanded ? ChevronDown : ChevronRight} variant="micro" />
+          <span className="ml-sidebar-section-chrome__glyph" aria-hidden>
+            <Icon icon={Layers} variant="micro" />
+          </span>
+          <span className="ml-sidebar-section-chrome__copy">
+            <span className="ml-sidebar-section-chrome__label">{t('workspaces.title')}</span>
+            <span className="ml-sidebar-section-chrome__hint">{t('workspaces.sectionHint')}</span>
+          </span>
+        </button>
+        <Tooltip title={t('workspaces.newTooltip')}>
+          <span className="ml-sidebar-section-chrome__action-slot">
+            <button
+              type="button"
+              className="ml-sidebar-section-chrome__action"
+              aria-label={t('workspaces.new')}
+              onClick={openCreate}
+            >
+              <Icon icon={FolderPlus} variant="detail" />
+            </button>
+          </span>
+        </Tooltip>
+        <span className="ml-sidebar-section-chrome__count">{groups.length}</span>
       </div>
 
-      {groups.length > 0 && (
-        <div className="ml-sidebar-search">
-          <ClusterSearchInput
-            value={query}
-            onChange={setQuery}
-            placeholder={t('chrome.searchWorkspaces')}
-            size="small"
-          />
-        </div>
-      )}
+      {sectionExpanded ? (
+        <>
+          {groups.length > 0 && (
+            <div className="ml-sidebar-search">
+              <ClusterSearchInput
+                value={query}
+                onChange={setQuery}
+                placeholder={t('chrome.searchWorkspaces')}
+                size="small"
+              />
+            </div>
+          )}
 
-      {groups.length === 0 ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={<span className="ml-sidebar-empty">{t('workspaces.empty')}</span>}
-        />
-      ) : filteredGroups.length === 0 ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={<span className="ml-sidebar-empty">{t('chrome.noWorkspaceMatch')}</span>}
-        />
-      ) : (
-        <div className="ml-sidebar-workspaces">
-          {filteredGroups.map(({ group, members, forceOpen }) => {
-            const isCollapsed = forceOpen ? false : !!group.collapsed
-            const menu: MenuProps = {
-              items: [
-                {
-                  key: 'edit',
-                  icon: <Icon icon={Pencil} variant="detail" />,
-                  label: t('workspaces.edit'),
-                  onClick: () => openEdit(group.id)
-                },
-                {
-                  key: 'delete',
-                  danger: true,
-                  icon: <Icon icon={Trash2} variant="detail" />,
-                  label: t('workspaces.delete'),
-                  onClick: () => void removeGroup(group.id)
+          {groups.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={<span className="ml-sidebar-empty">{t('workspaces.empty')}</span>}
+            />
+          ) : filteredGroups.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={<span className="ml-sidebar-empty">{t('chrome.noWorkspaceMatch')}</span>}
+            />
+          ) : (
+            <div className="ml-sidebar-workspaces">
+              {filteredGroups.map(({ group, members, forceOpen }) => {
+                const isCollapsed = forceOpen ? false : !!group.collapsed
+                const menu: MenuProps = {
+                  items: [
+                    {
+                      key: 'edit',
+                      icon: <Icon icon={Pencil} variant="detail" />,
+                      label: t('workspaces.edit'),
+                      onClick: () => openEdit(group.id)
+                    },
+                    {
+                      key: 'delete',
+                      danger: true,
+                      icon: <Icon icon={Trash2} variant="detail" />,
+                      label: t('workspaces.delete'),
+                      onClick: () => void removeGroup(group.id)
+                    }
+                  ]
                 }
-              ]
-            }
 
-            return (
-              <div key={group.id} className="ml-sidebar-workspace">
-                <div className="ml-sidebar-workspace__head">
-                  <button
-                    type="button"
-                    className="ml-sidebar-workspace__toggle"
-                    onClick={() => void setCollapsed(group.id, !isCollapsed)}
+                return (
+                  <div
+                    key={group.id}
+                    className={`ml-ws-group${isCollapsed ? ' is-collapsed' : ' is-expanded'}`}
                   >
-                    <Icon icon={isCollapsed ? ChevronRight : ChevronDown} variant="micro" />
-                    <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={18} />
-                    <Typography.Text strong ellipsis style={{ maxWidth: 120 }}>
-                      {group.name}
-                    </Typography.Text>
-                    <span className="ml-sidebar-workspace__count">{members.length}</span>
-                    {group.shortcut && (
-                      <Typography.Text type="secondary" style={{ fontSize: 10, marginLeft: 4 }}>
-                        {formatShortcutBinding(group.shortcut, isMac)}
-                      </Typography.Text>
-                    )}
-                  </button>
-                  <Dropdown menu={menu} trigger={['click']}>
-                    <button type="button" className="ml-icon-btn" aria-label={t('workspaces.edit')}>
-                      <Icon icon={MoreHorizontal} variant="detail" />
-                    </button>
-                  </Dropdown>
-                </div>
-                {!isCollapsed && (
-                  <div className="ml-sidebar-workspace__list">
-                    {members.length === 0 ? (
-                      <Typography.Text type="secondary" style={{ fontSize: 12, padding: '4px 8px' }}>
-                        {t('workspaces.noClusters')}
-                      </Typography.Text>
-                    ) : (
-                      members.map((cluster) => (
-                        <FavoriteClusterBox
-                          key={`${group.id}-${cluster.id}`}
-                          cluster={cluster}
-                          active={cluster.id === activeClusterId}
-                          onActivate={onNavigate}
-                          onEdit={onEditCluster}
-                        />
-                      ))
+                    <div className="ml-ws-group__head">
+                      <button
+                        type="button"
+                        className="ml-ws-group__toggle"
+                        onClick={() => void setCollapsed(group.id, !isCollapsed)}
+                        aria-expanded={!isCollapsed}
+                      >
+                        <span className="ml-ws-group__chevron">
+                          <Icon icon={isCollapsed ? ChevronRight : ChevronDown} variant="micro" />
+                        </span>
+                        <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={22} />
+                        <span className="ml-ws-group__name">{group.name}</span>
+                        <span className="ml-ws-group__count">{members.length}</span>
+                        {group.shortcut ? (
+                          <span className="ml-ws-group__shortcut">
+                            {formatShortcutBinding(group.shortcut, isMac)}
+                          </span>
+                        ) : null}
+                      </button>
+                      <Dropdown menu={menu} trigger={['click']}>
+                        <button
+                          type="button"
+                          className="ml-ws-group__menu"
+                          aria-label={t('workspaces.edit')}
+                        >
+                          <Icon icon={MoreHorizontal} variant="detail" />
+                        </button>
+                      </Dropdown>
+                    </div>
+                    {!isCollapsed && (
+                      <div className="ml-ws-group__list">
+                        {members.length === 0 ? (
+                          <div className="ml-ws-group__empty">{t('workspaces.noClusters')}</div>
+                        ) : (
+                          members.map((cluster) => (
+                            <FavoriteClusterBox
+                              key={`${group.id}-${cluster.id}`}
+                              cluster={cluster}
+                              active={cluster.id === activeClusterId}
+                              nested
+                              onActivate={onNavigate}
+                              onEdit={onEditCluster}
+                            />
+                          ))
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+                )
+              })}
+            </div>
+          )}
+        </>
+      ) : null}
 
       {editorModal}
     </div>

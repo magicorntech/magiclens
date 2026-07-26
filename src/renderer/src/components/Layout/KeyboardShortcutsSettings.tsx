@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Button, Space, Typography, theme } from 'antd'
+import { Button } from 'antd'
+import { RotateCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
   bindingFromKeyboardEvent,
@@ -10,6 +11,8 @@ import {
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useClusterGroupsStore } from '../../stores/clusterGroupsStore'
 import { ClusterAvatar } from '../ClusterTabs/ClusterAvatar'
+import { Icon } from '../ui/Icon'
+import { SettingsSection } from './SettingsPrimitives'
 
 const ACTION_ORDER: ShortcutActionId[] = [
   'globalSearch',
@@ -22,7 +25,6 @@ const ACTION_ORDER: ShortcutActionId[] = [
 
 export function KeyboardShortcutsSettings(): React.JSX.Element {
   const { t } = useTranslation()
-  const { token } = theme.useToken()
   const shortcuts = useDisplaySettingsStore((s) => s.keyboardShortcuts)
   const setShortcut = useDisplaySettingsStore((s) => s.setShortcut)
   const resetShortcuts = useDisplaySettingsStore((s) => s.resetShortcuts)
@@ -86,152 +88,104 @@ export function KeyboardShortcutsSettings(): React.JSX.Element {
     return (
       <button
         type="button"
+        className={`ml-shortcut-key${isListening ? ' is-listening' : ''}`}
         onClick={onClick}
-        style={{
-          flexShrink: 0,
-          cursor: 'pointer',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          padding: '6px 10px',
-          borderRadius: token.borderRadiusSM,
-          border: `1px dashed ${isListening ? token.colorPrimary : token.colorBorder}`,
-          background: token.colorBgElevated,
-          color: token.colorText,
-          fontFamily: 'inherit',
-          fontSize: 12,
-          minWidth: 88,
-          justifyContent: 'center'
-        }}
         aria-label={ariaLabel}
       >
         {isListening ? (
-          <span style={{ color: token.colorPrimary }}>{t('settings.keyboard.pressKeys')}</span>
+          <span className="ml-shortcut-key__listening">{t('settings.keyboard.pressKeys')}</span>
         ) : parts ? (
           parts.map((part) => (
-            <kbd
-              key={`${key}-${part}`}
-              style={{
-                display: 'inline-block',
-                padding: '2px 6px',
-                borderRadius: 4,
-                border: `1px solid ${token.colorBorderSecondary}`,
-                background: token.colorFillQuaternary,
-                fontSize: 11,
-                lineHeight: 1.2
-              }}
-            >
+            <kbd key={`${key}-${part}`} className="ml-shortcut-kbd">
               {part}
             </kbd>
           ))
         ) : (
-          <span style={{ color: token.colorTextSecondary }}>{t('workspaces.shortcutNone')}</span>
+          <span className="ml-shortcut-key__none">{t('workspaces.shortcutNone')}</span>
         )}
       </button>
     )
   }
 
   return (
-    <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {t('settings.keyboard.hint')}
-        </Typography.Text>
-        <Button size="small" onClick={() => void resetShortcuts()}>
-          {t('settings.keyboard.reset')}
-        </Button>
-      </div>
-
-      {error ? (
-        <Typography.Text type="danger" style={{ fontSize: 12 }}>
-          {error}
-        </Typography.Text>
-      ) : null}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {ACTION_ORDER.map((id) => {
-          const label = t(`settings.keyboard.actions.${id}.label`)
-          const description = t(`settings.keyboard.actions.${id}.description`)
-          const isListening = listening === id
-          return (
-            <div
-              key={id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 16,
-                padding: '10px 12px',
-                borderRadius: token.borderRadius,
-                border: `1px solid ${isListening ? token.colorPrimary : token.colorBorderSecondary}`,
-                background: isListening ? token.colorPrimaryBg : token.colorBgContainer
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <Typography.Text strong style={{ display: 'block', fontSize: 13 }}>
-                  {label}
-                </Typography.Text>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {description}
-                </Typography.Text>
+    <>
+      <SettingsSection
+        title={t('settings.keyboard.globalTitle')}
+        description={t('settings.keyboard.hint')}
+        actions={
+          <Button
+            size="small"
+            icon={<Icon icon={RotateCcw} variant="detail" />}
+            onClick={() => void resetShortcuts()}
+          >
+            {t('settings.keyboard.reset')}
+          </Button>
+        }
+      >
+        {error && !listeningWorkspaceId ? (
+          <p className="ml-settings-inline-hint ml-settings-inline-hint--danger">{error}</p>
+        ) : null}
+        <div className="ml-shortcut-list">
+          {ACTION_ORDER.map((id) => {
+            const label = t(`settings.keyboard.actions.${id}.label`)
+            const description = t(`settings.keyboard.actions.${id}.description`)
+            const isListening = listening === id
+            return (
+              <div
+                key={id}
+                className={`ml-shortcut-row${isListening ? ' is-listening' : ''}`}
+              >
+                <div className="ml-shortcut-row__copy">
+                  <span className="ml-shortcut-row__title">{label}</span>
+                  <span className="ml-shortcut-row__desc">{description}</span>
+                </div>
+                {renderBindingButton(
+                  id,
+                  shortcuts[id],
+                  isListening,
+                  () => {
+                    setError(null)
+                    setListeningWorkspaceId(null)
+                    setListening(isListening ? null : id)
+                  },
+                  t('settings.keyboard.changeAria', { label })
+                )}
               </div>
-              {renderBindingButton(
-                id,
-                shortcuts[id],
-                isListening,
-                () => {
-                  setError(null)
-                  setListeningWorkspaceId(null)
-                  setListening(isListening ? null : id)
-                },
-                t('settings.keyboard.changeAria', { label })
-              )}
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      </SettingsSection>
 
-      <div>
-        <Typography.Text strong style={{ display: 'block', marginBottom: 4 }}>
-          {t('settings.keyboard.workspacesTitle')}
-        </Typography.Text>
-        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-          {t('settings.keyboard.workspacesHint')}
-        </Typography.Text>
+      <SettingsSection
+        title={t('settings.keyboard.workspacesTitle')}
+        description={t('settings.keyboard.workspacesHint')}
+      >
+        {error && listeningWorkspaceId ? (
+          <p className="ml-settings-inline-hint ml-settings-inline-hint--danger">{error}</p>
+        ) : null}
         {groups.length === 0 ? (
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('settings.keyboard.workspacesEmpty')}
-          </Typography.Text>
+          <p className="ml-settings-inline-hint">{t('settings.keyboard.workspacesEmpty')}</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="ml-shortcut-list">
             {groups.map((group) => {
               const isListening = listeningWorkspaceId === group.id
               return (
                 <div
                   key={group.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 16,
-                    padding: '10px 12px',
-                    borderRadius: token.borderRadius,
-                    border: `1px solid ${isListening ? token.colorPrimary : token.colorBorderSecondary}`,
-                    background: isListening ? token.colorPrimaryBg : token.colorBgContainer
-                  }}
+                  className={`ml-shortcut-row${isListening ? ' is-listening' : ''}`}
                 >
-                  <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="ml-shortcut-row__identity">
                     <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={28} />
-                    <div style={{ minWidth: 0 }}>
-                      <Typography.Text strong style={{ display: 'block', fontSize: 13 }}>
-                        {group.name}
-                      </Typography.Text>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        {t('settings.keyboard.workspaceOpenDesc', { count: group.clusterIds.length })}
-                      </Typography.Text>
+                    <div className="ml-shortcut-row__copy">
+                      <span className="ml-shortcut-row__title">{group.name}</span>
+                      <span className="ml-shortcut-row__desc">
+                        {t('settings.keyboard.workspaceOpenDesc', {
+                          count: group.clusterIds.length
+                        })}
+                      </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div className="ml-shortcut-row__actions">
                     {renderBindingButton(
                       group.id,
                       group.shortcut,
@@ -243,23 +197,22 @@ export function KeyboardShortcutsSettings(): React.JSX.Element {
                       },
                       t('settings.keyboard.changeAria', { label: group.name })
                     )}
-                    {group.shortcut && (
-                      <Button
-                        type="link"
-                        size="small"
-                        danger
+                    {group.shortcut ? (
+                      <button
+                        type="button"
+                        className="ml-shortcut-clear"
                         onClick={() => void setGroupShortcut(group.id, null)}
                       >
                         {t('workspaces.shortcutClear')}
-                      </Button>
-                    )}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               )
             })}
           </div>
         )}
-      </div>
-    </Space>
+      </SettingsSection>
+    </>
   )
 }

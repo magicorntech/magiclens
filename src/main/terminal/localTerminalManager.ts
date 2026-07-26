@@ -46,30 +46,37 @@ class LocalTerminalManager {
         if (!sender.isDestroyed()) sender.send(channel, payload)
       }
 
+      const session: Session = { proc, senderId: sender.id, tempPaths }
+
       proc.onData((chunk) => send(IPC.TERMINAL_DATA, { sessionId, chunk }))
       proc.onExit(({ exitCode }) => {
+        // A previous pty for this same session id can exit *after* its replacement was
+        // registered (React re-runs effects, restarts, …). Only tear down when this pty
+        // is still the live one, otherwise we would drop the replacement's session and
+        // silently swallow all of its input.
+        // Temp paths are derived from the session id, so the replacement shares them —
+        // leave cleanup to whichever pty is actually live.
+        if (this.sessions.get(sessionId) !== session) return
         this.sessions.delete(sessionId)
-        for (const p of tempPaths ?? []) {
-          try {
-            unlinkSync(p)
-          } catch {
-            // ignore
-          }
-        }
+        this.cleanupTempPaths(tempPaths)
         send(IPC.TERMINAL_EXIT, { sessionId, exitCode })
       })
 
-      this.sessions.set(sessionId, { proc, senderId: sender.id, tempPaths })
+      this.sessions.set(sessionId, session)
       return { ok: true }
     } catch (err) {
-      for (const p of tempPaths ?? []) {
-        try {
-          unlinkSync(p)
-        } catch {
-          // ignore
-        }
-      }
+      this.cleanupTempPaths(tempPaths)
       return { ok: false, error: err instanceof Error ? err.message : String(err) }
+    }
+  }
+
+  private cleanupTempPaths(tempPaths: string[] | undefined): void {
+    for (const p of tempPaths ?? []) {
+      try {
+        unlinkSync(p)
+      } catch {
+        // ignore
+      }
     }
   }
 
@@ -88,19 +95,13 @@ class LocalTerminalManager {
   stop(sessionId: string): void {
     const session = this.sessions.get(sessionId)
     if (!session) return
+    this.sessions.delete(sessionId)
     try {
       session.proc.kill()
     } catch {
       // Already dead.
     }
-    for (const p of session.tempPaths ?? []) {
-      try {
-        unlinkSync(p)
-      } catch {
-        // ignore
-      }
-    }
-    this.sessions.delete(sessionId)
+    this.cleanupTempPaths(session.tempPaths)
   }
 
   stopAllForSender(senderId: number): void {

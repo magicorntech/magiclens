@@ -16,6 +16,7 @@ import type {
   TopologyNode,
   TopologyNodeKind
 } from '@shared/types/topology'
+import { isAllNamespaces, parseNamespaceSelection } from '@shared/namespaceSelection'
 import { clusterManager } from './clusterManager'
 import { derivePodStatus } from './podStatus'
 import { getPrometheusStatus, prometheusQuery } from './prometheusService'
@@ -120,39 +121,53 @@ function stsHealth(sts: V1StatefulSet): { status: TopologyHealth; detail?: strin
 
 export async function buildTopologyGraph(req: TopologyGraphRequest): Promise<TopologyGraphResponse> {
   const clients = clusterManager.require(req.clusterId)
-  const ns = req.namespace
+  const selection = parseNamespaceSelection(req.namespace)
+
+  if (selection.length === 0) {
+    return { nodes: [], edges: [], applications: [] }
+  }
+
+  const all = isAllNamespaces(selection)
+  const multi = !all && selection.length > 1
+  // Single concrete namespace can use the cheaper namespaced list; ALL and multi
+  // fetch cluster-wide, then multi filters down to the selected set.
+  const single = !all && !multi ? selection[0] : null
 
   const [podsRes, depsRes, stsRes, rsRes, svcRes, ingRes, cmRes] = await Promise.all([
-    ns === 'ALL'
-      ? clients.core.listPodForAllNamespaces()
-      : clients.core.listNamespacedPod({ namespace: ns }),
-    ns === 'ALL'
-      ? clients.apps.listDeploymentForAllNamespaces()
-      : clients.apps.listNamespacedDeployment({ namespace: ns }),
-    ns === 'ALL'
-      ? clients.apps.listStatefulSetForAllNamespaces()
-      : clients.apps.listNamespacedStatefulSet({ namespace: ns }),
-    ns === 'ALL'
-      ? clients.apps.listReplicaSetForAllNamespaces()
-      : clients.apps.listNamespacedReplicaSet({ namespace: ns }),
-    ns === 'ALL'
-      ? clients.core.listServiceForAllNamespaces()
-      : clients.core.listNamespacedService({ namespace: ns }),
-    ns === 'ALL'
-      ? clients.networking.listIngressForAllNamespaces()
-      : clients.networking.listNamespacedIngress({ namespace: ns }),
-    ns === 'ALL'
-      ? clients.core.listConfigMapForAllNamespaces()
-      : clients.core.listNamespacedConfigMap({ namespace: ns })
+    single
+      ? clients.core.listNamespacedPod({ namespace: single })
+      : clients.core.listPodForAllNamespaces(),
+    single
+      ? clients.apps.listNamespacedDeployment({ namespace: single })
+      : clients.apps.listDeploymentForAllNamespaces(),
+    single
+      ? clients.apps.listNamespacedStatefulSet({ namespace: single })
+      : clients.apps.listStatefulSetForAllNamespaces(),
+    single
+      ? clients.apps.listNamespacedReplicaSet({ namespace: single })
+      : clients.apps.listReplicaSetForAllNamespaces(),
+    single
+      ? clients.core.listNamespacedService({ namespace: single })
+      : clients.core.listServiceForAllNamespaces(),
+    single
+      ? clients.networking.listNamespacedIngress({ namespace: single })
+      : clients.networking.listIngressForAllNamespaces(),
+    single
+      ? clients.core.listNamespacedConfigMap({ namespace: single })
+      : clients.core.listConfigMapForAllNamespaces()
   ])
 
-  const pods = (podsRes.items ?? []) as V1Pod[]
-  const deployments = (depsRes.items ?? []) as V1Deployment[]
-  const statefulSets = (stsRes.items ?? []) as V1StatefulSet[]
-  const replicaSets = (rsRes.items ?? []) as V1ReplicaSet[]
-  const services = (svcRes.items ?? []) as V1Service[]
-  const ingresses = (ingRes.items ?? []) as V1Ingress[]
-  const configMaps = (cmRes.items ?? []) as V1ConfigMap[]
+  const nsSet = multi ? new Set(selection) : null
+  const inSelection = <T extends { metadata?: { namespace?: string } }>(items: T[]): T[] =>
+    nsSet ? items.filter((i) => !!i.metadata?.namespace && nsSet.has(i.metadata.namespace)) : items
+
+  const pods = inSelection((podsRes.items ?? []) as V1Pod[])
+  const deployments = inSelection((depsRes.items ?? []) as V1Deployment[])
+  const statefulSets = inSelection((stsRes.items ?? []) as V1StatefulSet[])
+  const replicaSets = inSelection((rsRes.items ?? []) as V1ReplicaSet[])
+  const services = inSelection((svcRes.items ?? []) as V1Service[])
+  const ingresses = inSelection((ingRes.items ?? []) as V1Ingress[])
+  const configMaps = inSelection((cmRes.items ?? []) as V1ConfigMap[])
 
   const nodes: TopologyNode[] = []
   const edges: TopologyEdge[] = []

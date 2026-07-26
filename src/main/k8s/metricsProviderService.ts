@@ -67,17 +67,59 @@ export async function getNodeMetricsRange(req: NodeMetricsRangeRequest): Promise
   const rate = rateIntervalForDuration(durationSeconds)
   const node = escapePromQlLabel(req.nodeName)
   const base = `{container!="",node="${node}"}`
+  const fsFilter = 'fstype!~"tmpfs|overlay|squashfs|nsfs|aufs|iso9660"'
+  // node-exporter uses instance; join via node_uname_info.nodename (standard kube-prometheus)
+  const fsJoin = `* on(instance) group_left(nodename) node_uname_info{nodename="${node}"}`
+  const mountLabel = (metric: Record<string, string>) => metric.mountpoint || metric.device || 'disk'
 
-  const [cpu, memory, networkReceive, networkTransmit, diskUsage, restartCount] = await Promise.all([
+  const [
+    cpu,
+    memory,
+    networkReceive,
+    networkTransmit,
+    diskUsage,
+    restartCount,
+    filesystemUsageBytes,
+    filesystemSizeBytes,
+    filesystemPercent
+  ] = await Promise.all([
     queryRangeMatrix(req.clusterId, req.range, `sum(rate(container_cpu_usage_seconds_total${base}[${rate}]))`),
     queryRangeMatrix(req.clusterId, req.range, `sum(container_memory_working_set_bytes${base})`),
     queryRangeMatrix(req.clusterId, req.range, `sum(rate(container_network_receive_bytes_total${base}[${rate}]))`),
     queryRangeMatrix(req.clusterId, req.range, `sum(rate(container_network_transmit_bytes_total${base}[${rate}]))`),
     queryRangeMatrix(req.clusterId, req.range, `sum(container_fs_usage_bytes${base})`),
-    queryRangeMatrix(req.clusterId, req.range, `sum(kube_pod_container_status_restarts_total{node="${node}"})`)
+    queryRangeMatrix(req.clusterId, req.range, `sum(kube_pod_container_status_restarts_total{node="${node}"})`),
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `(node_filesystem_size_bytes{${fsFilter}} - node_filesystem_avail_bytes{${fsFilter}}) ${fsJoin}`,
+      mountLabel
+    ),
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `node_filesystem_size_bytes{${fsFilter}} ${fsJoin}`,
+      mountLabel
+    ),
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `100 * (1 - node_filesystem_avail_bytes{${fsFilter}} / node_filesystem_size_bytes{${fsFilter}}) ${fsJoin}`,
+      mountLabel
+    )
   ])
 
-  const error = [cpu, memory, networkReceive, networkTransmit, diskUsage, restartCount].find((r) => r.error)?.error
+  const error = [
+    cpu,
+    memory,
+    networkReceive,
+    networkTransmit,
+    diskUsage,
+    restartCount,
+    filesystemUsageBytes,
+    filesystemSizeBytes,
+    filesystemPercent
+  ].find((r) => r.error)?.error
   if (error) return errorResponse(error)
   if (!cpu.available) return unavailableResponse()
 
@@ -87,7 +129,10 @@ export async function getNodeMetricsRange(req: NodeMetricsRangeRequest): Promise
     networkReceive: networkReceive.series,
     networkTransmit: networkTransmit.series,
     diskUsage: diskUsage.series,
-    restartCount: restartCount.series
+    restartCount: restartCount.series,
+    filesystemUsageBytes: filesystemUsageBytes.series,
+    filesystemSizeBytes: filesystemSizeBytes.series,
+    filesystemPercent: filesystemPercent.series
   })
 }
 
@@ -98,22 +143,88 @@ export async function getPodMetricsRange(req: PodMetricsRangeRequest): Promise<M
   const pod = escapePromQlLabel(req.podName)
   const base = `{namespace="${namespace}",pod="${pod}",container!=""}`
   const byContainer = (metric: Record<string, string>) => metric.container ?? 'unknown'
+  const byPvc = (metric: Record<string, string>) => metric.persistentvolumeclaim ?? metric.volume ?? 'volume'
+  // Join kubelet volume stats to this pod's PVCs via kube-state-metrics
+  const pvcJoin = `* on(namespace, persistentvolumeclaim) group_left() kube_pod_spec_volumes_persistentvolumeclaims{namespace="${namespace}",pod="${pod}"}`
 
-  const [cpu, memory, networkReceive, networkTransmit, diskUsage, restartCount] = await Promise.all([
-    queryRangeMatrix(req.clusterId, req.range, `sum(rate(container_cpu_usage_seconds_total${base}[${rate}])) by (container)`, byContainer),
-    queryRangeMatrix(req.clusterId, req.range, `sum(container_memory_working_set_bytes${base}) by (container)`, byContainer),
-    queryRangeMatrix(req.clusterId, req.range, `sum(rate(container_network_receive_bytes_total${base}[${rate}])) by (container)`, byContainer),
-    queryRangeMatrix(req.clusterId, req.range, `sum(rate(container_network_transmit_bytes_total${base}[${rate}])) by (container)`, byContainer),
-    queryRangeMatrix(req.clusterId, req.range, `sum(container_fs_usage_bytes${base}) by (container)`, byContainer),
+  const [
+    cpu,
+    memory,
+    networkReceive,
+    networkTransmit,
+    diskUsage,
+    restartCount,
+    volumeUsageBytes,
+    volumeCapacityBytes,
+    volumePercent
+  ] = await Promise.all([
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `sum(rate(container_cpu_usage_seconds_total${base}[${rate}])) by (container)`,
+      byContainer
+    ),
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `sum(container_memory_working_set_bytes${base}) by (container)`,
+      byContainer
+    ),
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `sum(rate(container_network_receive_bytes_total${base}[${rate}])) by (container)`,
+      byContainer
+    ),
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `sum(rate(container_network_transmit_bytes_total${base}[${rate}])) by (container)`,
+      byContainer
+    ),
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `sum(container_fs_usage_bytes${base}) by (container)`,
+      byContainer
+    ),
     queryRangeMatrix(
       req.clusterId,
       req.range,
       `sum(kube_pod_container_status_restarts_total{namespace="${namespace}",pod="${pod}"}) by (container)`,
       byContainer
+    ),
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `kubelet_volume_stats_used_bytes{namespace="${namespace}"} ${pvcJoin}`,
+      byPvc
+    ),
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `kubelet_volume_stats_capacity_bytes{namespace="${namespace}"} ${pvcJoin}`,
+      byPvc
+    ),
+    queryRangeMatrix(
+      req.clusterId,
+      req.range,
+      `100 * kubelet_volume_stats_used_bytes{namespace="${namespace}"} / kubelet_volume_stats_capacity_bytes{namespace="${namespace}"} ${pvcJoin}`,
+      byPvc
     )
   ])
 
-  const error = [cpu, memory, networkReceive, networkTransmit, diskUsage, restartCount].find((r) => r.error)?.error
+  const error = [
+    cpu,
+    memory,
+    networkReceive,
+    networkTransmit,
+    diskUsage,
+    restartCount,
+    volumeUsageBytes,
+    volumeCapacityBytes,
+    volumePercent
+  ].find((r) => r.error)?.error
   if (error) return errorResponse(error)
   if (!cpu.available) return unavailableResponse()
 
@@ -123,7 +234,10 @@ export async function getPodMetricsRange(req: PodMetricsRangeRequest): Promise<M
     networkReceive: networkReceive.series,
     networkTransmit: networkTransmit.series,
     diskUsage: diskUsage.series,
-    restartCount: restartCount.series
+    restartCount: restartCount.series,
+    volumeUsageBytes: volumeUsageBytes.series,
+    volumeCapacityBytes: volumeCapacityBytes.series,
+    volumePercent: volumePercent.series
   })
 }
 

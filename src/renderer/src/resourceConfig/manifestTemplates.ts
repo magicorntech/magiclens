@@ -1,5 +1,6 @@
 import type { ResourceKind } from '@shared/resourceKinds'
 import { isNamespaceScoped } from '@shared/resourceKinds'
+import { primaryNamespace } from '@shared/namespaceSelection'
 
 /** Mirrors `resourceRegistry.ts`'s GVK table + `K8S_KIND_NAME` on the main process side — kept in
  * sync manually since these are static Kubernetes API facts that don't change at runtime. Used to
@@ -97,11 +98,12 @@ const EXTRA_BODY: Partial<Record<ResourceKind, string>> = {
   Services: 'spec:\n  selector:\n    app: my-app\n  ports:\n    - port: 80\n      targetPort: 80\n'
 }
 
-export function buildCreateTemplate(kind: ResourceKind, namespace: string): string {
+export function buildCreateTemplate(kind: ResourceKind, namespaceSelection: string): string {
   const apiVersion = BUILTIN_API_VERSION[kind]
   const k8sKind = K8S_KIND_NAME[kind]
   const namespaced = isNamespaceScoped(kind)
-  const metaNamespace = namespaced && namespace !== 'ALL' ? `\n  namespace: ${namespace}` : ''
+  const ns = primaryNamespace(namespaceSelection)
+  const metaNamespace = namespaced && ns && ns !== 'ALL' ? `\n  namespace: ${ns}` : ''
   const body = EXTRA_BODY[kind] ?? ''
   return `apiVersion: ${apiVersion}\nkind: ${k8sKind}\nmetadata:\n  name: my-${k8sKind.toLowerCase()}${metaNamespace}\n${body}`
 }

@@ -1,9 +1,11 @@
-import { Dropdown, Tag, Tooltip, Typography } from 'antd'
+import { Dropdown, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
 import { MoreHorizontal, Pencil, Star, Unplug } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { formatNamespaceSelectionLabel, isAllNamespaces } from '@shared/namespaceSelection'
 import type { ClusterEntry } from '../../stores/clusterStore'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { disconnectCluster } from '../../clusterConnect'
 import { Icon } from '../ui/Icon'
 import { ClusterAvatar } from './ClusterAvatar'
@@ -14,6 +16,10 @@ interface FavoriteClusterBoxProps {
   cluster: ClusterEntry
   active: boolean
   compact?: boolean
+  /** Nested under a workspace — slightly denser + indented. */
+  nested?: boolean
+  /** Override compact-mode tooltip (defaults to cluster name). */
+  tooltipTitle?: string
   onActivate?: () => void
   onEdit?: (cluster: ClusterEntry) => void
 }
@@ -22,6 +28,8 @@ export function FavoriteClusterBox({
   cluster,
   active,
   compact = false,
+  nested = false,
+  tooltipTitle,
   onActivate,
   onEdit
 }: FavoriteClusterBoxProps): React.JSX.Element {
@@ -29,6 +37,7 @@ export function FavoriteClusterBox({
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
   const toggleFavorite = useClusterStore((s) => s.toggleFavorite)
   const removeCluster = useClusterStore((s) => s.removeCluster)
+  const showClusterNamespace = useDisplaySettingsStore((s) => s.showClusterNamespace)
 
   const canDisconnect =
     cluster.status === 'connected' || cluster.status === 'connecting' || cluster.status === 'error'
@@ -75,7 +84,10 @@ export function FavoriteClusterBox({
     onActivate?.()
   }
 
-  function handleMenuClick(key: string): void {
+  function handleMenuClick(info: Parameters<NonNullable<MenuProps['onClick']>>[0]): void {
+    info.domEvent.stopPropagation()
+    info.domEvent.preventDefault()
+    const key = String(info.key)
     if (key === 'open') handleOpen()
     if (key === 'edit') onEdit?.(cluster)
     if (key === 'disconnect') void disconnectCluster(cluster.id)
@@ -88,88 +100,83 @@ export function FavoriteClusterBox({
     }
   }
 
+  const statusClass =
+    cluster.status === 'connected'
+      ? 'is-connected'
+      : cluster.status === 'connecting'
+        ? 'is-connecting'
+        : cluster.status === 'error'
+          ? 'is-error'
+          : 'is-idle'
+  const favoriteConnected = cluster.isFavorite && cluster.status === 'connected'
+
   if (compact) {
     return (
       <Dropdown
-        menu={{ items: menuItems, onClick: ({ key }) => handleMenuClick(key) }}
+        menu={{ items: menuItems, onClick: handleMenuClick }}
         trigger={['contextMenu']}
       >
-        <Tooltip title={cluster.customName} placement="right">
-          <div
-            className={`favorite-cluster-row${active ? ' active' : ''}`}
+        <Tooltip
+          title={tooltipTitle ?? cluster.customName}
+          placement="right"
+          arrow={false}
+          mouseEnterDelay={0.35}
+        >
+          <button
+            type="button"
+            className={`ml-nav-item ml-nav-item--compact${active ? ' is-active' : ''}${favoriteConnected ? ' is-fav-connected' : ''} ${statusClass}`}
             onClick={handleOpen}
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: '6px 4px',
-              borderRadius: 6,
-              cursor: 'pointer'
-            }}
+            aria-label={cluster.customName}
           >
-            <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={28} />
-          </div>
+            <span className="ml-nav-item__avatar-wrap">
+              <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={28} />
+              <span className="ml-nav-item__status-dot" aria-hidden />
+            </span>
+          </button>
         </Tooltip>
       </Dropdown>
     )
   }
 
+  const ns =
+    showClusterNamespace &&
+    cluster.selectedNamespace &&
+    !isAllNamespaces(cluster.selectedNamespace)
+      ? formatNamespaceSelectionLabel(cluster.selectedNamespace, t('common.allNamespaces'))
+      : null
+
   return (
     <div
-      className={`favorite-cluster-row${active ? ' active' : ''}`}
-      onClick={handleOpen}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '6px 6px 6px 8px',
-        borderRadius: 6,
-        cursor: 'pointer',
-        minWidth: 0
-      }}
+      className={`ml-nav-item${active ? ' is-active' : ''}${nested ? ' ml-nav-item--nested' : ''}${favoriteConnected ? ' is-fav-connected' : ''} ${statusClass}`}
     >
-      <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={24} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <Typography.Text
-          ellipsis
-          style={{
-            display: 'block',
-            color: 'var(--ml-sidebar-text)',
-            fontSize: 13,
-            lineHeight: '18px'
-          }}
-        >
-          {cluster.customName}
-        </Typography.Text>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, overflow: 'hidden' }}>
-          <ConnectionStatusBadge status={cluster.status} errorMessage={cluster.errorMessage} compact />
-          <ClusterVpnBadge clusterId={cluster.id} compact />
-          {cluster.selectedNamespace && cluster.selectedNamespace !== 'ALL' && (
-            <Tag
-              style={{
-                fontSize: 10,
-                lineHeight: '14px',
-                padding: '0 4px',
-                margin: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                maxWidth: 80
-              }}
-            >
-              {cluster.selectedNamespace}
-            </Tag>
-          )}
+      <button
+        type="button"
+        className="ml-nav-item__open"
+        onClick={handleOpen}
+        aria-label={cluster.customName}
+      >
+        <span className="ml-nav-item__avatar-wrap">
+          <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={nested ? 22 : 26} />
+          <span className="ml-nav-item__status-dot" aria-hidden />
+        </span>
+        <div className="ml-nav-item__body">
+          <span className="ml-nav-item__title">{cluster.customName}</span>
+          <span className="ml-nav-item__meta">
+            <ConnectionStatusBadge status={cluster.status} errorMessage={cluster.errorMessage} compact />
+            <ClusterVpnBadge clusterId={cluster.id} compact />
+            {ns ? <span className="ml-nav-item__chip">{ns}</span> : null}
+          </span>
         </div>
-      </div>
-      <Dropdown menu={{ items: menuItems, onClick: ({ key }) => handleMenuClick(key) }} trigger={['click']}>
-        <span
-          className="favorite-cluster-row-menu"
-          style={{ color: 'var(--ml-sidebar-muted)', flexShrink: 0, padding: 4, display: 'inline-flex' }}
+      </button>
+      <Dropdown menu={{ items: menuItems, onClick: handleMenuClick }} trigger={['click']}>
+        <button
+          type="button"
+          className="ml-nav-item__menu"
+          aria-label={t('clusterActions.edit')}
           onClick={(e) => e.stopPropagation()}
         >
           <Icon icon={MoreHorizontal} variant="detail" />
-        </span>
+        </button>
       </Dropdown>
     </div>
   )

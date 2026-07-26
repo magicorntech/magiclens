@@ -1,48 +1,7 @@
 import { Alert, Drawer, Typography } from 'antd'
-import type { ResourceKind } from '@shared/resourceKinds'
-import type { ResourceListItem } from '@shared/types/resource'
-import type { TopologyNode, TopologyNodeKind } from '@shared/types/topology'
+import type { TopologyNode } from '@shared/types/topology'
 import { ResourceDetailDrawer } from '../ResourceTable/ResourceDetailDrawer'
-
-function toResourceKind(kind: TopologyNodeKind): ResourceKind | null {
-  switch (kind) {
-    case 'Pod':
-      return 'Pods'
-    case 'Deployment':
-      return 'Deployments'
-    case 'StatefulSet':
-      return 'StatefulSets'
-    case 'ReplicaSet':
-      return 'ReplicaSets'
-    case 'Service':
-      return 'Services'
-    case 'Ingress':
-      return 'Ingresses'
-    case 'ConfigMap':
-      return 'ConfigMaps'
-    default:
-      return null
-  }
-}
-
-function toListItem(node: TopologyNode): ResourceListItem {
-  return {
-    id: node.id,
-    name: node.name,
-    namespace: node.namespace,
-    ageTimestamp: node.ageTimestamp ?? null,
-    statusText: node.healthDetail || node.status,
-    statusColor:
-      node.status === 'healthy'
-        ? 'green'
-        : node.status === 'error'
-          ? 'red'
-          : node.status === 'degraded'
-            ? 'gold'
-            : 'default',
-    columns: {}
-  }
-}
+import { topologyToListItem, topologyToResourceKind } from './topologyResource'
 
 interface TopologyDetailDrawerProps {
   open: boolean
@@ -57,8 +16,8 @@ export function TopologyDetailDrawer({
   node,
   onClose
 }: TopologyDetailDrawerProps): React.JSX.Element {
-  const kind = node ? toResourceKind(node.kind) : null
-  const item = node && kind ? toListItem(node) : null
+  const kind = node ? topologyToResourceKind(node.kind) : null
+  const item = node && kind ? topologyToListItem(node) : null
 
   if (node?.kind === 'External') {
     return (

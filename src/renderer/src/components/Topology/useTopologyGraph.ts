@@ -12,6 +12,7 @@ const MIN_POLL_MS = 3_000
  * caches in the main process and ballooned RAM on Apple Silicon. A single polled
  * topology:getGraph call is enough for this view.
  */
+/** `namespace` accepts a single name, a comma-joined multi-selection, or 'ALL'. */
 export function useTopologyGraph(clusterId: string, namespace: string): {
   data: TopologyGraphResponse | null
   loading: boolean
@@ -21,7 +22,7 @@ export function useTopologyGraph(clusterId: string, namespace: string): {
   watchStatus: ResourceWatchStatus
   refresh: () => Promise<void>
 } {
-  const enabled = Boolean(clusterId && namespace && namespace !== 'ALL')
+  const enabled = Boolean(clusterId && namespace)
   const [data, setData] = useState<TopologyGraphResponse | null>(null)
   const [loading, setLoading] = useState(enabled)
   const [refreshing, setRefreshing] = useState(false)

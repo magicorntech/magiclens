@@ -129,3 +129,7 @@ export function favoritesHeightKey(scope: string): string {
 export function favoritesExpandedKey(scope: string): string {
   return `ml-favorites-section-expanded:${scope}`
 }
+
+export function workspacesExpandedKey(scope: string): string {
+  return `ml-workspaces-section-expanded:${scope}`
+}

@@ -12,6 +12,8 @@ export const en = {
     connectionError: 'Connection error',
     idle: 'Idle',
     allNamespaces: 'All namespaces',
+    selectNamespaces: 'Select namespaces',
+    namespacesSelected: '{{count}} namespaces',
     total: 'total',
     clusters: 'Clusters',
     vpn: 'VPN',
@@ -26,6 +28,7 @@ export const en = {
     vpnConnected: 'Connected · {{name}}',
     vpnConnecting: 'Connecting · {{name}}',
     searchFavorites: 'Search favorites',
+    favoritesHint: 'Pinned clusters',
     searchWorkspaces: 'Search workspaces…',
     noFavoriteClusters: 'No favorite clusters',
     noWorkspaceMatch: 'No workspaces match',
@@ -36,6 +39,11 @@ export const en = {
   },
   settings: {
     title: 'Settings',
+    subtitle: 'Preferences for MagicLens',
+    navGroups: {
+      preferences: 'Preferences',
+      system: 'System'
+    },
     sections: {
       general: 'General',
       updates: 'Updates',
@@ -45,6 +53,16 @@ export const en = {
       appearance: 'Appearance',
       developer: 'Developer',
       about: 'About'
+    },
+    sectionHints: {
+      general: 'Language, refresh cadence, kubeconfig scan path, and cluster housekeeping.',
+      updates: 'Control how MagicLens checks for and installs updates.',
+      display: 'Where details open, where Terminal/YAML docks, and what the sidebar shows.',
+      vpnExtensions: 'Install or repair OpenVPN and WireGuard helpers used by VPN profiles.',
+      keyboard: 'Customize global shortcuts. Conflicting bindings swap automatically.',
+      appearance: 'Light/dark mode and color themes for the whole app.',
+      developer: 'Host specs and live process usage for debugging.',
+      about: 'Version and runtime information for this MagicLens build.'
     },
     language: {
       title: 'Language',
@@ -91,6 +109,15 @@ export const en = {
       placementDrawer: 'Right drawer (recommended)',
       placementRight: 'Right panel (split view)',
       placementBottom: 'Bottom tab',
+      detailMaskBlur: 'Blur background behind details',
+      detailMaskBlurHint:
+        'When a resource detail drawer is open, blur the list behind it. Off by default so the table stays sharp.',
+      panelTitle: 'Terminal & YAML panel',
+      panelHint:
+        'Dock the Terminal and Edit YAML panel to the bottom, right, or left of the workspace. You can also switch from the panel toolbar icons.',
+      panelPlacementBottom: 'Bottom',
+      panelPlacementRight: 'Right',
+      panelPlacementLeft: 'Left',
       nodesTitle: 'Nodes page layout',
       nodesHint:
         'Toggle sections on or off and drag to reorder. The table section stays flexible and fills remaining space when visible.',
@@ -102,6 +129,9 @@ export const en = {
       showWorkspaces: 'Show Workspaces section',
       showWorkspacesHint:
         'When enabled, Workspaces appear in the left sidebar for grouping clusters. Collapsed sidebar shows a W marker above workspace clusters.',
+      showClusterNamespace: 'Show connected namespace',
+      showClusterNamespaceHint:
+        'When enabled, the selected namespace is shown as a chip on connected clusters in the left sidebar.',
       tabIconsTitle: 'Tab icons',
       showClusterLogos: 'Show logos on cluster tabs',
       showResourceIcons: 'Show icons on resource tabs',
@@ -118,6 +148,7 @@ export const en = {
     },
     keyboard: {
       hint: 'Click a shortcut to record a new key combo. Conflicting bindings swap automatically. Esc cancels.',
+      globalTitle: 'App shortcuts',
       reset: 'Reset defaults',
       pressKeys: 'Press keys…',
       recordError: 'Use a shortcut with ⌘/Ctrl (or Alt), or press Esc to cancel',
@@ -156,7 +187,11 @@ export const en = {
     },
     appearance: {
       intro:
-        'Pick a preset or choose your own accent color. Sidebar, resource menu, and panels all follow the active theme. Use the header toggle for light / dark mode.',
+        'Pick a preset or choose your own accent color. Sidebar, resource menu, and panels all follow the active theme.',
+      modeTitle: 'Color mode',
+      modeHint: 'Switch between light, dark, or follow the system appearance.',
+      groupClassic: 'Classic',
+      groupWorlds: 'Worlds — anime & heroes',
       customAccent: 'Custom accent',
       customAccentHint: 'Applies to sidebars, buttons, highlights, and chart accents.',
       customSwatch: 'Your own accent color'
@@ -204,7 +239,9 @@ export const en = {
       openDevTools: 'Open DevTools'
     },
     about: {
-      platform: 'Platform'
+      platform: 'Platform',
+      appTitle: 'MagicLens',
+      appHint: 'Desktop Kubernetes client — version and runtime details for this install.'
     },
     vpnExtensions: {
       intro:
@@ -232,6 +269,9 @@ export const en = {
       installFailed: 'Install failed',
       packagesTitle: 'Packages / commands',
       packagesHint: 'Copy these commands to install manually in a terminal.',
+      copyCmd: 'Copy',
+      copied: 'Copied to clipboard',
+      copyFailed: 'Copy failed',
       manualTitle: 'Manual setup steps',
       manual: {
         darwin: [
@@ -479,6 +519,7 @@ export const en = {
 
   workspaces: {
     title: 'Workspaces',
+    sectionHint: 'Grouped clusters',
     compactMark: 'W',
     compactTooltip: 'Workspaces',
     new: 'New workspace',
@@ -526,6 +567,10 @@ export const en = {
       'custom-resources': 'Custom Resources'
     },
     virtual: {
+      clusterOverview: 'Cluster',
+      applications: 'Applications',
+      workloadsOverview: 'Overview',
+      configOverview: 'Overview',
       topology: 'Topology',
       portForwarding: 'Port Forwarding',
       helmCharts: 'Charts',
@@ -534,6 +579,96 @@ export const en = {
       dynamicCustomResources: 'Dynamic Resources',
       definitions: 'Definitions'
     }
+  },
+  nodesOverview: {
+    tableTitle: 'Nodes',
+    tableCount: '{{count}} total',
+    emptyTitle: 'No nodes found',
+    emptyHint: 'This cluster has no registered nodes, or your search filter excluded all results.',
+    hiddenTitle: 'Nodes dashboard hidden',
+    hiddenHint: 'Enable sections in Settings → Display → Nodes page layout.',
+    hotspots: 'Hotspots',
+    hotspotsCount: '{{count}} insights',
+    topConsumers: 'Top consumers'
+  },
+  metricsCharts: {
+    networkReceive: 'Network receive',
+    networkTransmit: 'Network transmit',
+    containerDisk: 'Container disk usage',
+    restarts: 'Restart count',
+    nodeDisks: 'Node disks',
+    nodeDisksUnavailable:
+      'No node filesystem metrics (needs Prometheus + node-exporter with node_filesystem_*).',
+    podVolumes: 'Persistent volumes',
+    podVolumesUnavailable:
+      'No PVC usage metrics (needs Prometheus kubelet volume stats + kube-state-metrics).',
+    filesystemPercent: 'Disk fullness over time',
+    filesystemUsed: 'Disk used over time',
+    volumePercent: 'Volume fullness over time',
+    volumeUsed: 'Volume used over time'
+  },
+  clusterOverview: {
+    title: 'Cluster overview',
+    subtitle: 'Health, capacity, and recent activity across the cluster.',
+    metricsUnavailable: 'metrics-server unavailable — usage data may be incomplete',
+    nodes: 'Nodes',
+    nodesHint: '{{ready}} ready · {{notReady}} not ready',
+    pods: 'Pods',
+    podsHint: '{{running}} running · {{pending}} pending · {{failed}} failed',
+    namespaces: 'Namespaces',
+    deployments: 'Deployments',
+    services: 'Services',
+    problemPods: 'Problem pods',
+    resources: 'Resource usage',
+    cpuCapacity: 'CPU capacity',
+    memCapacity: 'Memory capacity',
+    cpuAlloc: 'CPU allocatable',
+    memAlloc: 'Memory allocatable',
+    recentEvents: 'Recent events'
+  },
+  workloadsOverview: {
+    title: 'Workloads overview',
+    subtitle: 'Counts, health, and problem workloads across namespaces.',
+    healthy: 'Healthy',
+    unhealthy: 'Unhealthy',
+    byNamespace: 'By namespace',
+    empty: 'No workloads found',
+    problems: 'Problem workloads',
+    noProblems: 'No unhealthy workloads detected',
+    highRestarts: 'High restart pods',
+    noRestarts: 'No pods with high restart counts',
+    restarts: '{{count}} restarts'
+  },
+  applicationsOverview: {
+    title: 'Applications',
+    subtitle: 'Apps grouped from workload labels in the selected namespace.',
+    pickNamespace: 'Namespace',
+    search: 'Search apps…',
+    needNamespace: 'Pick a namespace',
+    needNamespaceHint: 'Application grouping needs a namespace context.',
+    error: 'Failed to load applications',
+    total: 'Apps',
+    apps: 'Applications',
+    empty: 'No applications in this namespace',
+    replicas: 'Replicas',
+    errors: 'Errors',
+    resources: 'Resources'
+  },
+  configOverview: {
+    title: 'Config overview',
+    subtitle: 'ConfigMaps, Secrets, quotas, autoscaling, and admission webhooks.',
+    highlights: 'Highlights',
+    configMaps: 'ConfigMaps',
+    secrets: 'Secrets',
+    tlsSecrets: 'TLS secrets',
+    hpas: 'HPAs',
+    pdbs: 'PDBs',
+    webhooks: 'Webhooks',
+    quotas: 'Resource quotas',
+    noQuotas: 'No resource quotas',
+    quotaWarnings: '{{count}} quotas look constrained',
+    hpaList: 'Horizontal Pod Autoscalers',
+    noHpas: 'No HPAs defined'
   },
   topology: {
     title: 'Topology & Applications',
@@ -584,6 +719,8 @@ export const en = {
       replicas: 'Replicas',
       uptime: 'Age',
       errors: 'Errors',
+      search: 'Search applications…',
+      noMatch: 'No applications match your search.',
       empty: 'No applications found. Label workloads with app.kubernetes.io/name.'
     },
     drawer: {
@@ -683,6 +820,171 @@ export const en = {
     lastOpened: 'Last opened',
     splitScreen: 'Split screen',
     exitSplit: 'Exit split view'
+  },
+  clusterSettings: {
+    nav: {
+      appearance: 'Appearance',
+      general: 'General',
+      proxy: 'Proxy',
+      terminal: 'Terminal',
+      namespaces: 'Namespaces',
+      metrics: 'Metrics',
+      lensMetrics: 'Lens Metrics',
+      nodeShell: 'Node Shell',
+      security: 'Security',
+      network: 'Network',
+      storage: 'Storage',
+      integrations: 'Integrations',
+      performance: 'Performance',
+      ui: 'UI / UX',
+      debug: 'Debug / Advanced'
+    },
+    general: {
+      infoTitle: 'Cluster identity',
+      infoHint: 'Read-only connection details from the active kubeconfig context.',
+      context: 'Kubeconfig context',
+      endpoint: 'API server',
+      version: 'Kubernetes version',
+      clusterId: 'Cluster ID',
+      status: 'Connection status',
+      lastOpened: 'Last opened',
+      metaTitle: 'Tags & environment',
+      environment: 'Environment',
+      environmentHint: 'dev / staging / prod label for this cluster.',
+      tags: 'Tags',
+      tagsHint: 'Press Enter to add tags.',
+      tagsPlaceholder: 'prod, eu-west…',
+      notes: 'Notes'
+    },
+    proxy: {
+      title: 'HTTP / HTTPS proxy',
+      hint: 'Optional outbound proxy for API traffic. VPN profile linking is below.',
+      noProxyHint: 'Comma-separated hosts that bypass the proxy.',
+      username: 'Username',
+      password: 'Password',
+      failover: 'Failover support',
+      failoverHint: 'Try alternate endpoints when the primary proxy fails.'
+    },
+    terminal: {
+      title: 'Terminal defaults',
+      hint: 'Applied when opening a local terminal for this cluster.',
+      shell: 'Default shell',
+      cwd: 'Working directory',
+      cwdCustom: 'Custom path',
+      cwdPath: 'Custom directory',
+      defaultNs: 'Default namespace',
+      syncContext: 'Sync kubectl context',
+      syncContextHint: 'Set KUBECONFIG / context when the terminal opens.',
+      history: 'Keep command history',
+      autoComplete: 'Auto-complete',
+      rbac: 'RBAC validation hints',
+      multiTab: 'Multi-tab support',
+      env: 'Extra environment variables',
+      envHint: 'One KEY=value per line.'
+    },
+    namespaces: {
+      title: 'Namespaces',
+      hint: 'Defaults and filters for the namespace selector.',
+      accessible: 'Accessible namespaces',
+      default: 'Default namespace',
+      pinned: 'Pinned namespaces',
+      pinnedHint: 'Always shown near the top of the selector.',
+      rbacFilter: 'RBAC-based filtering',
+      labelGrouping: 'Label-based grouping'
+    },
+    metrics: {
+      title: 'Metrics source',
+      hint: 'Prometheus endpoint and scrape behavior for this cluster.',
+      source: 'Source',
+      sourceAuto: 'Auto-detect',
+      sourceCustom: 'Custom',
+      endpoint: 'Endpoint URL',
+      scrape: 'Scrape interval (s)',
+      timeout: 'Query timeout (s)',
+      auth: 'Authentication',
+      authNone: 'None',
+      pathPrefix: 'Path prefix',
+      hideUnused: 'Hide unused metrics',
+      testQuery: 'Test / rediscover'
+    },
+    lensMetrics: {
+      title: 'Lens Metrics stack',
+      hint: 'Optional in-cluster Prometheus / exporters (install support coming).',
+      enabled: 'Enable Lens Metrics',
+      autoInstall: 'Auto-install on connect',
+      autoUpgrade: 'Auto-upgrade'
+    },
+    nodeShell: {
+      title: 'Node shell debug pod',
+      hint: 'Privileged pod used for host shell on a node (nsenter).',
+      image: 'Shell image',
+      imageHint: 'Default is {{default}}. Change if your nodes need a private or custom image.',
+      resetDefault: 'Default',
+      pullPolicy: 'Image pull policy',
+      pullSecret: 'Image pull secret',
+      cpuLimit: 'CPU limit',
+      memoryLimit: 'Memory limit',
+      privileged: 'Privileged',
+      runAsRoot: 'Run as root',
+      nodeSelector: 'Node selector',
+      nodeSelectorHint: 'key=value pairs or JSON object.',
+      tolerations: 'Tolerations (JSON)',
+      tolerationsHint: 'JSON array of tolerations. Default Exists matches all taints.',
+      cleanupTtl: 'Cleanup TTL (seconds)'
+    },
+    security: {
+      title: 'Security',
+      hint: 'Access and kubeconfig handling preferences.',
+      rbacViewer: 'Show RBAC roles / permissions',
+      encrypt: 'Encrypt kubeconfig at rest',
+      encryptHint: 'Uses OS keychain / safeStorage when available.',
+      audit: 'Client-side audit log'
+    },
+    network: {
+      title: 'Network',
+      hint: 'Informational cluster networking fields.',
+      domain: 'Cluster domain',
+      serviceCidr: 'Service CIDR',
+      podCidr: 'Pod CIDR',
+      dnsNotes: 'DNS notes'
+    },
+    storage: {
+      title: 'Storage',
+      hint: 'Defaults related to persistent volumes.',
+      defaultClass: 'Default storage class',
+      snapshots: 'Volume snapshot support',
+      csi: 'Show CSI drivers'
+    },
+    integrations: {
+      title: 'Integrations',
+      hint: 'External observability endpoints for this cluster.'
+    },
+    performance: {
+      title: 'Performance',
+      hint: 'Client-side rate limits and refresh behavior.',
+      rateLimit: 'API request rate limit',
+      cache: 'Enable response cache',
+      refresh: 'UI refresh interval (s)',
+      concurrency: 'Concurrency limit'
+    },
+    ui: {
+      title: 'UI / UX',
+      hint: 'Per-cluster display preferences.',
+      density: 'Table density',
+      comfortable: 'Comfortable',
+      compact: 'Compact',
+      defaultView: 'Default resource view',
+      favoritesFirst: 'Favorites first'
+    },
+    debug: {
+      title: 'Debug / Advanced',
+      hint: 'Diagnostics and experimental flags.',
+      kubectlProxy: 'kubectl proxy toggle',
+      apiInspector: 'API request inspector',
+      clientLogs: 'Verbose client logs',
+      experimental: 'Experimental settings',
+      featureFlags: 'Feature flags'
+    }
   },
   clusterEdit: {
     title: 'Edit Cluster',
@@ -825,7 +1127,174 @@ export const en = {
   chromeExtra: {
     splitScreen: 'Split screen',
     exitSplit: 'Exit split view',
-    terminal: 'Terminal'
+    terminal: 'Terminal',
+    closePanel: 'Close panel'
+  },
+  resourceDetail: {
+    tabs: {
+      overview: 'Overview',
+      events: 'Events',
+      yaml: 'YAML',
+      portForward: 'Port Forward',
+      replicaHistory: 'Replica history',
+      exec: 'Exec',
+      metrics: 'Metrics',
+      pressure: 'Pressure'
+    },
+    overview: {
+      title: 'Overview',
+      status: 'Status',
+      age: 'Age',
+      namespace: 'Namespace'
+    },
+    metadata: {
+      title: 'Ownership & metadata',
+      controlledBy: 'Controlled by',
+      labels: 'Labels',
+      annotations: 'Annotations',
+      selector: 'Selector',
+      apiVersion: 'API version'
+    },
+    conditions: {
+      title: 'Conditions'
+    },
+    data: {
+      secretTitle: 'Secret data',
+      configMapTitle: 'ConfigMap data',
+      empty: 'No data keys'
+    },
+    actions: {
+      kubectl: 'Copy kubectl',
+      copyGet: 'kubectl get',
+      copyDescribe: 'kubectl describe',
+      copyDelete: 'kubectl delete',
+      copyYaml: 'kubectl get -o yaml',
+      copied: 'Command copied to clipboard',
+      copyFailed: 'Copy failed',
+      editYaml: 'Edit YAML',
+      delete: 'Delete',
+      deleteTitle: 'Delete "{{name}}"?',
+      deleteBody: 'This action cannot be undone.',
+      deleted: 'Deleted "{{name}}"',
+      deleteFailed: 'Delete failed: {{error}}'
+    }
+  },
+  podDetail: {
+    loadError: 'Failed to load pod details',
+    tabs: {
+      overview: 'Overview',
+      containers: 'Containers',
+      metrics: 'Metrics',
+      network: 'Network',
+      logs: 'Logs',
+      exec: 'Exec',
+      events: 'Events',
+      yaml: 'YAML'
+    },
+    overview: {
+      title: 'Overview',
+      status: 'Status',
+      ready: 'Ready',
+      restarts: 'Restarts',
+      age: 'Age',
+      node: 'Node',
+      podIP: 'Pod IP',
+      hostIP: 'Host IP',
+      qos: 'QoS class',
+      serviceAccount: 'Service account',
+      priorityClass: 'Priority class',
+      restartPolicy: 'Restart policy'
+    },
+    metadata: {
+      title: 'Ownership & metadata',
+      controlledBy: 'Controlled by',
+      labels: 'Labels',
+      annotations: 'Annotations'
+    },
+    conditions: {
+      title: 'Conditions'
+    },
+    scheduling: {
+      title: 'Scheduling',
+      node: 'Node',
+      nodeSelector: 'Node selector',
+      tolerations: 'Tolerations',
+      affinity: 'Affinity',
+      none: 'None'
+    },
+    security: {
+      title: 'Security',
+      pod: 'Pod security context',
+      container: 'Container security context',
+      none: 'Not set'
+    },
+    storage: {
+      title: 'Storage',
+      volume: 'Volume',
+      type: 'Type',
+      source: 'Source',
+      mounts: 'Volume mounts',
+      none: 'No volumes',
+      usage: 'Usage',
+      capacity: 'Capacity'
+    },
+    health: {
+      title: 'Health checks',
+      liveness: 'Liveness',
+      readiness: 'Readiness',
+      startup: 'Startup'
+    },
+    containers: {
+      title: 'Containers',
+      initTitle: 'Init containers',
+      init: 'init',
+      ready: 'Ready',
+      notReady: 'Not ready',
+      restarts: '{{count}} restarts',
+      image: 'Image',
+      pullPolicy: 'Pull policy',
+      requests: 'Requests',
+      limits: 'Limits',
+      message: 'Message',
+      lastState: 'Last state',
+      ports: 'Ports',
+      env: 'Environment',
+      containers: 'Containers'
+    },
+    actions: {
+      kubectl: 'Copy kubectl',
+      copyGet: 'kubectl get -o yaml',
+      copyDescribe: 'kubectl describe',
+      copyLogs: 'kubectl logs',
+      copyExec: 'kubectl exec',
+      copyDelete: 'kubectl delete',
+      copied: 'Command copied to clipboard',
+      copyFailed: 'Copy failed',
+      restart: 'Restart',
+      restartTitle: 'Restart "{{name}}"?',
+      restartBody: 'The pod will be deleted and its controller will recreate it.',
+      restartBodyOrphan: 'This pod has no controller — deleting it will NOT recreate it. Continue?',
+      delete: 'Delete',
+      deleteTitle: 'Delete "{{name}}"?',
+      deleteBody: 'This action cannot be undone.',
+      deleted: 'Deleted "{{name}}"',
+      deleteFailed: 'Delete failed: {{error}}'
+    },
+    insights: {
+      crashLoop: '{{container}} is crashing ({{reason}}).',
+      oomKilled: '{{container}} was OOMKilled — consider raising its memory limit.',
+      highRestarts: 'High restart count ({{count}}) — the pod is unstable.',
+      notReady: 'Only {{ready}} of {{total}} containers are ready.',
+      unschedulable: 'Pod cannot be scheduled: {{reason}}.',
+      noLiveness: '{{container}} has no liveness probe.',
+      noReadiness: '{{container}} has no readiness probe.',
+      noLimits: '{{container}} has no CPU/memory limits set.',
+      floatingTag: '{{container}} uses a floating image tag (:latest) — pin a version for reproducible deploys.',
+      privileged: '{{container}} runs in privileged mode — a security risk.',
+      privilegeEscalation: '{{container}} allows privilege escalation.',
+      bestEffort: 'QoS is BestEffort — this pod is first to be evicted under pressure.',
+      healthy: 'No issues detected. The pod looks healthy.'
+    }
   }
 
 } as const

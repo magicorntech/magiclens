@@ -1,15 +1,20 @@
 import { useMemo, useState } from 'react'
-import { Alert, Button, Segmented, Space, Spin, Tooltip, Typography, message } from 'antd'
+import { Alert, Button, Segmented, Space, Spin, Splitter, Tooltip, Typography, message } from 'antd'
 import { AppWindow, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { TopologyApplication, TopologyNode } from '@shared/types/topology'
 import { Icon } from '../ui/Icon'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
+import { ResourceDetailPanel } from '../ResourceTable/ResourceDetailPanel'
+import { useBottomPanelOptional } from '../Layout/BottomPanelContext'
+import { canUseSplitLayouts, useLayoutMode } from '../../hooks/useLayoutMode'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { TopologyAppsView } from './TopologyAppsView'
 import { TopologyDetailDrawer } from './TopologyDetailDrawer'
 import { TopologyGraphView } from './TopologyGraphView'
 import { TopologyResourcePanel } from './TopologyResourcePanel'
 import { buildTopologyInsights } from './topologyInsights'
+import { topologyToListItem, topologyToResourceKind } from './topologyResource'
 import { useTopologyGraph } from './useTopologyGraph'
 import './topology.css'
 
@@ -27,22 +32,47 @@ export function TopologyPage({
   popout = false
 }: TopologyPageProps): React.JSX.Element {
   const { t } = useTranslation()
-  const needsNamespace = !namespace || namespace === 'ALL'
-  const { data, loading, error, watchStatus, refresh } = useTopologyGraph(
-    clusterId,
-    needsNamespace ? '' : namespace
-  )
+  const needsNamespace = !namespace
+  const { data, loading, error, watchStatus, refresh } = useTopologyGraph(clusterId, namespace)
   const [mode, setMode] = useState<Mode>('graph')
   const [selected, setSelected] = useState<TopologyNode | null>(null)
   const [focusNodeIds, setFocusNodeIds] = useState<string[] | undefined>()
+  const bottomPanel = useBottomPanelOptional()
+  const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
+  const layoutMode = useLayoutMode()
+  const detailInSidebar =
+    (resourceDetailPlacement === 'right' && canUseSplitLayouts(layoutMode)) ||
+    (resourceDetailPlacement === 'bottom' && !bottomPanel)
+  const detailInDrawer =
+    !detailInSidebar &&
+    (resourceDetailPlacement === 'drawer' ||
+      (resourceDetailPlacement === 'right' && !canUseSplitLayouts(layoutMode)))
+  const detailInBottom = resourceDetailPlacement === 'bottom' && !!bottomPanel
 
   const insights = useMemo(() => (data ? buildTopologyInsights(data) : []), [data])
+
+  const selectedKind = selected ? topologyToResourceKind(selected.kind) : null
+  const selectedItem = selected && selectedKind ? topologyToListItem(selected) : null
+  const showSidebarDetail = detailInSidebar && !!selected && (selected.kind === 'External' || !!selectedItem)
+
+  function selectNode(node: TopologyNode | null): void {
+    setSelected(node)
+    if (!node || !detailInBottom) return
+    const kind = topologyToResourceKind(node.kind)
+    if (!kind) return
+    bottomPanel.openResourceDetail({
+      clusterId,
+      resourceKind: kind,
+      namespace: node.namespace || namespace,
+      item: topologyToListItem(node)
+    })
+  }
 
   function handleSelectApp(app: TopologyApplication): void {
     setFocusNodeIds(app.resourceIds)
     setMode('graph')
     const first = data?.nodes.find((n) => app.resourceIds.includes(n.id))
-    if (first) setSelected(first)
+    if (first) selectNode(first)
   }
 
   function handleOpenWindow(): void {
@@ -55,6 +85,63 @@ export function TopologyPage({
         message.error(err instanceof Error ? err.message : String(err))
       })
   }
+
+  const mainBody = (
+    <div className="ml-topo-page__body">
+      <div className="ml-topo-page__main">
+        {needsNamespace ? (
+          <div className="ml-topo-empty">{t('topology.pickNamespaceHint')}</div>
+        ) : loading && !data ? (
+          <div className="ml-topo-empty">
+            <Spin tip={t('topology.loading')} />
+          </div>
+        ) : data ? (
+          <>
+            {mode === 'graph' && (
+              <TopologyGraphView
+                graph={data}
+                onSelectNode={selectNode}
+                focusNodeIds={focusNodeIds}
+                popout={popout}
+              />
+            )}
+            {mode === 'apps' && <TopologyAppsView graph={data} onSelectApp={handleSelectApp} />}
+            {mode === 'resources' && (
+              <TopologyResourcePanel graph={data} onSelectNode={selectNode} />
+            )}
+          </>
+        ) : (
+          <div className="ml-topo-empty">{t('topology.empty')}</div>
+        )}
+      </div>
+
+      {mode === 'graph' && !needsNamespace && !showSidebarDetail ? (
+        <aside className="ml-topo-page__insights">
+          <Typography.Text strong>{t('topology.insights')}</Typography.Text>
+          {insights.length === 0 ? (
+            <Typography.Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
+              {t('topology.noInsights')}
+            </Typography.Paragraph>
+          ) : (
+            insights.map((insight) => (
+              <div
+                key={insight.id}
+                className={`ml-topo-insight ml-topo-insight--${insight.severity}`}
+                onClick={() => {
+                  setFocusNodeIds(insight.nodeIds)
+                  const n = data?.nodes.find((x) => insight.nodeIds?.includes(x.id))
+                  if (n) selectNode(n)
+                }}
+              >
+                <span className="ml-topo-insight__title">{insight.title}</span>
+                <span className="ml-topo-insight__detail">{insight.detail}</span>
+              </div>
+            ))
+          )}
+        </aside>
+      ) : null}
+    </div>
+  )
 
   return (
     <div className={`ml-topo-page${popout ? ' ml-topo-page--popout' : ''}`}>
@@ -108,67 +195,66 @@ export function TopologyPage({
         <Alert type="error" showIcon message={t('topology.error')} description={error} />
       )}
 
-      <div className="ml-topo-page__body">
-        <div className="ml-topo-page__main">
-          {needsNamespace ? (
-            <div className="ml-topo-empty">{t('topology.pickNamespaceHint')}</div>
-          ) : loading && !data ? (
-            <div className="ml-topo-empty">
-              <Spin tip={t('topology.loading')} />
-            </div>
-          ) : data ? (
-            <>
-              {mode === 'graph' && (
-                <TopologyGraphView
-                  graph={data}
-                  onSelectNode={setSelected}
-                  focusNodeIds={focusNodeIds}
-                  popout={popout}
-                />
-              )}
-              {mode === 'apps' && <TopologyAppsView graph={data} onSelectApp={handleSelectApp} />}
-              {mode === 'resources' && (
-                <TopologyResourcePanel graph={data} onSelectNode={setSelected} />
-              )}
-            </>
-          ) : (
-            <div className="ml-topo-empty">{t('topology.empty')}</div>
-          )}
-        </div>
-
-        {mode === 'graph' && !needsNamespace && (
-          <aside className="ml-topo-page__insights">
-            <Typography.Text strong>{t('topology.insights')}</Typography.Text>
-            {insights.length === 0 ? (
-              <Typography.Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
-                {t('topology.noInsights')}
-              </Typography.Paragraph>
-            ) : (
-              insights.map((insight) => (
-                <div
-                  key={insight.id}
-                  className={`ml-topo-insight ml-topo-insight--${insight.severity}`}
-                  onClick={() => {
-                    setFocusNodeIds(insight.nodeIds)
-                    const n = data?.nodes.find((x) => insight.nodeIds?.includes(x.id))
-                    if (n) setSelected(n)
-                  }}
-                >
-                  <span className="ml-topo-insight__title">{insight.title}</span>
-                  <span className="ml-topo-insight__detail">{insight.detail}</span>
+      {showSidebarDetail ? (
+        <Splitter className="ml-topo-page__splitter">
+          <Splitter.Panel defaultSize="58%" min="35%">
+            {mainBody}
+          </Splitter.Panel>
+          <Splitter.Panel defaultSize="42%" min="25%">
+            {selected?.kind === 'External' ? (
+              <div className="ml-topo-external-detail">
+                <div className="ml-resource-detail-header">
+                  <Typography.Text strong style={{ fontSize: 15 }}>
+                    {selected.name}
+                  </Typography.Text>
+                  <Button type="text" size="small" onClick={() => selectNode(null)}>
+                    Close
+                  </Button>
                 </div>
-              ))
-            )}
-          </aside>
-        )}
-      </div>
+                <Alert
+                  type="info"
+                  showIcon
+                  message="External dependency"
+                  description={
+                    <Typography.Paragraph style={{ marginBottom: 0 }}>
+                      {selected.protocol ? `Kind: ${selected.protocol}` : null}
+                      {selected.externalHost ? (
+                        <>
+                          <br />
+                          Host: {selected.externalHost}
+                        </>
+                      ) : null}
+                      <br />
+                      Declared via magiclens.io/depends-on (or magiclens.io/external-db) annotations.
+                    </Typography.Paragraph>
+                  }
+                />
+              </div>
+            ) : selectedItem && selectedKind ? (
+              <ResourceDetailPanel
+                clusterId={clusterId}
+                kind={selectedKind}
+                item={selectedItem}
+                isActive
+                layout="sidebar"
+                listQueryKey={['topology', clusterId]}
+                onClose={() => selectNode(null)}
+              />
+            ) : null}
+          </Splitter.Panel>
+        </Splitter>
+      ) : (
+        mainBody
+      )}
 
-      <TopologyDetailDrawer
-        open={!!selected}
-        clusterId={clusterId}
-        node={selected}
-        onClose={() => setSelected(null)}
-      />
+      {detailInDrawer ? (
+        <TopologyDetailDrawer
+          open={!!selected}
+          clusterId={clusterId}
+          node={selected}
+          onClose={() => selectNode(null)}
+        />
+      ) : null}
     </div>
   )
 }

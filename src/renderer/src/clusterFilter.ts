@@ -1,3 +1,4 @@
+import { parseNamespaceSelection } from '@shared/namespaceSelection'
 import type { ClusterEntry } from './stores/clusterStore'
 
 export type ClusterFilter = 'all' | 'favorites' | 'connected' | 'disconnected' | 'error' | 'recent'
@@ -10,6 +11,28 @@ export const clusterFilterValues: ClusterFilter[] = [
   'error',
   'recent'
 ]
+
+function connectionRank(status: ClusterEntry['status']): number {
+  switch (status) {
+    case 'connected':
+      return 0
+    case 'connecting':
+      return 1
+    case 'error':
+      return 2
+    default:
+      return 3
+  }
+}
+
+/** Connected first, then connecting, error, idle — stable by name within a tier. */
+export function sortClustersByConnection(clusters: ClusterEntry[]): ClusterEntry[] {
+  return [...clusters].sort((a, b) => {
+    const byStatus = connectionRank(a.status) - connectionRank(b.status)
+    if (byStatus !== 0) return byStatus
+    return (a.customName || a.contextName).localeCompare(b.customName || b.contextName)
+  })
+}
 
 export function matchesFilter(cluster: ClusterEntry, filter: ClusterFilter): boolean {
   switch (filter) {
@@ -35,7 +58,7 @@ export function matchesSearch(cluster: ClusterEntry, query: string): boolean {
     cluster.customName.toLowerCase().includes(q) ||
     cluster.contextName.toLowerCase().includes(q) ||
     (cluster.endpoint ?? '').toLowerCase().includes(q) ||
-    cluster.selectedNamespace.toLowerCase().includes(q) ||
+    parseNamespaceSelection(cluster.selectedNamespace).some((ns) => ns.toLowerCase().includes(q)) ||
     (cluster.serverVersion ?? '').toLowerCase().includes(q) ||
     cluster.status.toLowerCase().includes(q)
   )
@@ -50,5 +73,5 @@ export function applyClusterFilterAndSearch(
   if (filter === 'recent') {
     return [...filtered].sort((a, b) => (b.lastOpenedAt ?? '').localeCompare(a.lastOpenedAt ?? ''))
   }
-  return filtered
+  return sortClustersByConnection(filtered)
 }
