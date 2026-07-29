@@ -87,6 +87,8 @@ import type {
   PodLogsStartRequest,
   PodMetricsResponse,
   PodNetworkResponse,
+  NamespacePodMetricsRequest,
+  NamespacePodMetricsResponse,
   PodResourceRequest
 } from '@shared/types/pod'
 import type {
@@ -280,6 +282,36 @@ const api = {
     remove: (id: string): Promise<import('@shared/types/clusterGroup').ClusterGroupsState> =>
       ipcRenderer.invoke(IPC.CLUSTER_GROUPS_REMOVE, { id })
   },
+  notes: {
+    list: (
+      req?: import('@shared/types/notes').ListNotesRequest
+    ): Promise<import('@shared/types/notes').ResourceNote[]> => ipcRenderer.invoke(IPC.NOTES_LIST, req),
+    get: (id: string): Promise<import('@shared/types/notes').ResourceNote | null> =>
+      ipcRenderer.invoke(IPC.NOTES_GET, { id }),
+    create: (
+      req: import('@shared/types/notes').CreateNoteRequest
+    ): Promise<import('@shared/types/notes').ResourceNote> => ipcRenderer.invoke(IPC.NOTES_CREATE, req),
+    update: (
+      id: string,
+      patch: import('@shared/types/notes').NotePatch
+    ): Promise<import('@shared/types/notes').ResourceNote | null> =>
+      ipcRenderer.invoke(IPC.NOTES_UPDATE, { id, patch }),
+    remove: (id: string): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.NOTES_REMOVE, { id }),
+    testNotification: (): Promise<import('@shared/types/notes').NotesTestNotificationResult> =>
+      ipcRenderer.invoke(IPC.NOTES_TEST_NOTIFICATION),
+    fireReminder: (id: string): Promise<import('@shared/types/notes').NotesReminderEvent | null> =>
+      ipcRenderer.invoke(IPC.NOTES_FIRE_REMINDER, { id }),
+    onReminderFired: (
+      cb: (payload: import('@shared/types/notes').NotesReminderEvent) => void
+    ): (() => void) => {
+      const listener = (
+        _: Electron.IpcRendererEvent,
+        payload: import('@shared/types/notes').NotesReminderEvent
+      ): void => cb(payload)
+      ipcRenderer.on(IPC.NOTES_REMINDER_FIRED, listener)
+      return () => ipcRenderer.removeListener(IPC.NOTES_REMINDER_FIRED, listener)
+    }
+  },
   uiState: {
     get: (): Promise<PersistedUiState> => ipcRenderer.invoke(IPC.UI_STATE_GET),
     set: (state: PersistedUiState): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.UI_STATE_SET, state)
@@ -379,6 +411,8 @@ const api = {
     getDetail: (req: PodResourceRequest): Promise<PodDetailResponse> => ipcRenderer.invoke(IPC.POD_GET_DETAIL, req),
     getMetrics: (req: PodResourceRequest): Promise<PodMetricsResponse> =>
       ipcRenderer.invoke(IPC.POD_GET_METRICS, req),
+    getNamespaceMetrics: (req: NamespacePodMetricsRequest): Promise<NamespacePodMetricsResponse> =>
+      ipcRenderer.invoke(IPC.POD_GET_NAMESPACE_METRICS, req),
     getNetwork: (req: PodResourceRequest): Promise<PodNetworkResponse> =>
       ipcRenderer.invoke(IPC.POD_GET_NETWORK, req),
     logs: {

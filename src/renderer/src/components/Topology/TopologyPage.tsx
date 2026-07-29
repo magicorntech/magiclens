@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Alert, Button, Segmented, Space, Spin, Splitter, Tooltip, Typography, message } from 'antd'
-import { AppWindow, RefreshCw } from 'lucide-react'
+import { Alert, Button, Segmented, Spin, Splitter, Tooltip, Typography, message } from 'antd'
+import { AppWindow, RefreshCw, Waypoints } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { TopologyApplication, TopologyNode } from '@shared/types/topology'
 import { Icon } from '../ui/Icon'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
 import { ResourceDetailPanel } from '../ResourceTable/ResourceDetailPanel'
+import { NamespaceSelector } from '../Layout/NamespaceSelector'
+import { HubPageHero } from '../Layout/HubPageHero'
 import { useBottomPanelOptional } from '../Layout/BottomPanelContext'
 import { canUseSplitLayouts, useLayoutMode } from '../../hooks/useLayoutMode'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
@@ -23,12 +25,14 @@ type Mode = 'graph' | 'apps' | 'resources'
 interface TopologyPageProps {
   clusterId: string
   namespace: string
+  onNamespaceChange?: (namespace: string) => void
   popout?: boolean
 }
 
 export function TopologyPage({
   clusterId,
   namespace,
+  onNamespaceChange,
   popout = false
 }: TopologyPageProps): React.JSX.Element {
   const { t } = useTranslation()
@@ -145,46 +149,58 @@ export function TopologyPage({
 
   return (
     <div className={`ml-topo-page${popout ? ' ml-topo-page--popout' : ''}`}>
-      <div className={`ml-topo-page__header${popout ? ' titlebar-drag-region' : ''}`}>
-        <div className={popout ? 'titlebar-no-drag' : undefined}>
-          <div className="ml-topo-page__title-row">
-            <Typography.Title level={4} className="ml-topo-page__title">
-              {t('topology.title')}
-            </Typography.Title>
-            {!needsNamespace ? (
-              <WatchStatusBadge isError={Boolean(error)} watchStatus={watchStatus} />
-            ) : null}
-          </div>
-          <Typography.Text type="secondary">{t('topology.subtitle')}</Typography.Text>
-        </div>
-        <Space wrap className={popout ? 'titlebar-no-drag' : undefined}>
-          <Segmented
-            value={mode}
-            onChange={(v) => setMode(v as Mode)}
-            options={[
-              { value: 'graph', label: t('topology.modes.graph') },
-              { value: 'apps', label: t('topology.modes.apps') },
-              { value: 'resources', label: t('topology.modes.resources') }
-            ]}
-          />
-          <Tooltip title={t('topology.refresh')}>
-            <Button
-              icon={<Icon icon={RefreshCw} variant="action" />}
-              loading={loading && !data}
-              disabled={needsNamespace}
-              onClick={() => void refresh()}
-            />
-          </Tooltip>
-          {!popout && (
-            <Tooltip title={t('topology.openWindow')}>
-              <Button
-                icon={<Icon icon={AppWindow} variant="action" />}
-                disabled={needsNamespace}
-                onClick={handleOpenWindow}
+      <div className="ml-hub-glow" aria-hidden />
+
+      <div className={popout ? 'titlebar-drag-region' : undefined}>
+        <HubPageHero
+          className={`ml-topo-page__hero${popout ? ' titlebar-no-drag' : ''}`}
+          icon={Waypoints}
+          eyebrow={t('topology.brandEyebrow')}
+          title={t('topology.title')}
+          subtitle={t('topology.subtitle')}
+          actions={
+            <div className="ml-topo-page__actions">
+              {!needsNamespace ? (
+                <WatchStatusBadge isError={Boolean(error)} watchStatus={watchStatus} />
+              ) : null}
+              <Segmented
+                value={mode}
+                onChange={(v) => setMode(v as Mode)}
+                options={[
+                  { value: 'graph', label: t('topology.modes.graph') },
+                  { value: 'apps', label: t('topology.modes.apps') },
+                  { value: 'resources', label: t('topology.modes.resources') }
+                ]}
               />
-            </Tooltip>
-          )}
-        </Space>
+              <Tooltip title={t('topology.refresh')}>
+                <Button
+                  icon={<Icon icon={RefreshCw} variant="action" />}
+                  loading={loading && !data}
+                  disabled={needsNamespace}
+                  onClick={() => void refresh()}
+                />
+              </Tooltip>
+              {!popout && (
+                <Tooltip title={t('topology.openWindow')}>
+                  <Button
+                    icon={<Icon icon={AppWindow} variant="action" />}
+                    disabled={needsNamespace}
+                    onClick={handleOpenWindow}
+                  />
+                </Tooltip>
+              )}
+              {onNamespaceChange ? (
+                <div className="ml-topo-page__ns">
+                  <NamespaceSelector
+                    clusterId={clusterId}
+                    value={namespace}
+                    onChange={onNamespaceChange}
+                  />
+                </div>
+              ) : null}
+            </div>
+          }
+        />
       </div>
 
       {needsNamespace ? (

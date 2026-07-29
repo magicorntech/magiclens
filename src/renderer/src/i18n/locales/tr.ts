@@ -16,17 +16,35 @@ export const tr: TranslationOverrides = {
     allNamespaces: 'Tüm namespace’ler',
     selectNamespaces: 'Namespace seçin',
     namespacesSelected: '{{count}} namespace',
+    namespace: 'Namespace',
+    namespaceSearch: 'Namespace filtrele…',
+    namespaceFilter: 'Namespace filtreleri',
+    namespaceFilterAll: 'Tümü',
+    namespaceFilterPinned: 'Sabit',
+    namespaceFilterSystem: 'Sistem',
+    namespaceFilterApp: 'Uygulama',
+    namespacePinned: 'Sabitlenenler',
+    namespaceOther: 'Namespace’ler',
+    namespaceCount: '{{count}} mevcut',
+    namespaceNoMatch: 'Eşleşen namespace yok',
+    namespaceEmpty: 'Namespace bulunamadı',
+    refresh: 'Yenile',
+    clear: 'Temizle',
+    loading: 'Yükleniyor…',
     total: 'toplam',
     clusters: 'Kümeler',
     vpn: 'VPN',
+    notes: 'Sparks',
     favorites: 'Favoriler',
-    cancel: 'İptal'
+    cancel: 'İptal',
+    close: 'Kapat'
   },
   chrome: {
     searchPlaceholder: 'Küme, kaynak, namespace ara…',
     manageClusters: 'Kümeleri yönet',
     clustersMeta: '{{total}} toplam · {{connected}} bağlı',
     vpnTooltip: 'VPN profilleri (OpenVPN, Pritunl, WireGuard)',
+    notesTooltip: 'Sparks — notlar ve hatırlatıcılar',
     vpnConnected: 'Bağlı · {{name}}',
     vpnConnecting: 'Bağlanıyor · {{name}}',
     searchFavorites: 'Favorilerde ara',
@@ -40,6 +58,7 @@ export const tr: TranslationOverrides = {
     exitFullscreen: 'Tam ekrandan çık'
   },
   clustersHub: {
+    brandEyebrow: 'MagicLens',
     title: 'Kümeler',
     subtitle: 'Tüm Kubernetes kümelerini tek yerden ekleyin, bağlanın ve yönetin.',
     add: 'Küme ekle',
@@ -172,6 +191,20 @@ export const tr: TranslationOverrides = {
       panelPlacementBottom: 'Alt',
       panelPlacementRight: 'Sağ',
       panelPlacementLeft: 'Sol',
+      fabTitle: 'Hızlı açılış balonu',
+      fabHint:
+        'Terminal, boş YAML veya yeni Spark için köşe balonu. Sol orta / sağ orta / sol alt / sağ alt seçin — ya da + üzerine uzun basıp sürükleyin.',
+      showUtilityFab: 'Hızlı açılış balonunu göster',
+      showUtilityFabHint:
+        'Açıkken çalışma alanı köşesinde kayan bir balon görünür. Uzun basıp sürükleyerek taşıyın; köşe seçmek serbest konumu sıfırlar.',
+      fabDockLabel: 'Balon köşesi',
+      fabSideLeftMiddle: 'Sol orta',
+      fabSideRightMiddle: 'Sağ orta',
+      fabSideLeftBottom: 'Sol alt',
+      fabSideRightBottom: 'Sağ alt',
+      fabSideLeft: 'Sol',
+      fabSideBottom: 'Alt',
+      fabSideRight: 'Sağ',
       nodesTitle: 'Nodes sayfa düzeni',
       nodesHint:
         'Bölümleri açıp kapatın ve sürükleyerek sıralayın. Tablo bölümü görünürken kalan alanı doldurur.',
@@ -183,6 +216,9 @@ export const tr: TranslationOverrides = {
       showWorkspaces: 'Workspaces bölümünü göster',
       showWorkspacesHint:
         'Açıkken Workspaces sol kenar çubuğunda görünür. Daraltılmış sidebar’da W işareti workspace kümelerinin üzerindedir.',
+      showWorkspaceClusterCounts: 'Workspace küme sayılarını göster',
+      showWorkspaceClusterCountsHint:
+        'Açıkken her workspace başlığında kaç küme olduğu gösterilir.',
       showClusterNamespace: 'Bağlı namespace’i göster',
       showClusterNamespaceHint:
         'Açıkken, sol kenar çubuğundaki bağlı kümelerde seçili namespace bir etiket olarak gösterilir.',
@@ -190,7 +226,21 @@ export const tr: TranslationOverrides = {
       showClusterLogos: 'Küme sekmelerinde logo göster',
       showResourceIcons: 'Kaynak sekmelerinde simge göster',
       tabIconsHint:
-        'Küme sekmeleri, küme eklerken ayarladığınız logoyu kullanır. Kaynak sekmeleri sol menüdeki aynı simgeleri kullanır.'
+        'Küme sekmeleri, küme eklerken ayarladığınız logoyu kullanır. Kaynak sekmeleri sol menüdeki aynı simgeleri kullanır.',
+      chromeToolbarTitle: 'Araç çubuğu simgeleri',
+      chromeToolbarHint:
+        'Üst çubuk simgelerini gösterin, gizleyin ve sıralayın. Ayarlar sağda sabit kalır; taşınamaz veya gizlenemez.',
+      chromeToolbarChooser:
+        'Sıralamak için sürükleyin. Görünürlüğü açıp kapatın. Ayarlar kilitlidir.',
+      chromeToolbarFixed: 'Sabit'
+    },
+    chromeToolbar: {
+      search: 'Arama',
+      terminal: 'Terminal',
+      theme: 'Tema',
+      fullscreen: 'Tam ekran',
+      split: 'Küme bölme',
+      settings: 'Ayarlar'
     },
     nodesSections: {
       health: 'Küme sağlığı',
@@ -359,8 +409,10 @@ export const tr: TranslationOverrides = {
     }
   },
   vpn: {
-    heroEyebrow: 'Güvenli tünel',
+    brandEyebrow: 'MagicLens',
     title: 'VPN',
+    heroSubtitle: 'Özel kümeler ve uzak erişim için güvenli tünel.',
+    heroEyebrow: 'Güvenli tünel',
     status: {
       connected: 'Bağlı',
       connecting: 'Bağlanıyor',
@@ -506,11 +558,12 @@ export const tr: TranslationOverrides = {
       autoConnect: 'Otomatik bağlan · {{name}}'
     },
     clusterLink: {
-      title: 'VPN profili (otomatik bağlan)',
+      title: 'VPN profili (isteğe bağlı)',
       placeholder: 'VPN yok — elle bağlan',
-      empty: 'Önce VPN sayfasından bir profil ekleyin',
+      none: 'VPN yok',
+      empty: 'Henüz VPN profili yok — boş bırakın veya VPN sayfasından ekleyin',
       hint:
-        'Bu küme sekmesine geçince MagicLens bu VPN’e otomatik bağlanır. PIN ve MFA, ilk başarılı bağlantıdan sonra gün boyu profil bazında hatırlanır.'
+        'İsteğe bağlı. Seçerseniz küme sekmesine geçince MagicLens bu VPN’e otomatik bağlanır. Boş bırakırsanız VPN’i kendiniz yönetirsiniz. PIN ve MFA, ilk başarılı bağlantıdan sonra gün boyu profil bazında hatırlanır.'
     }
   },
   tour: {
@@ -652,7 +705,39 @@ export const tr: TranslationOverrides = {
     hiddenHint: 'Ayarlar → Görünüm → Nodes sayfa düzeninden bölümleri açın.',
     hotspots: 'Hotspot’lar',
     hotspotsCount: '{{count}} içgörü',
-    topConsumers: 'En çok tüketenler'
+    topConsumers: 'En çok tüketenler',
+    resizeHotspots: 'Hotspot panelini yeniden boyutlandır',
+    growHotspots: 'Hotspot panelini büyüt',
+    shrinkHotspots: 'Hotspot panelini küçült',
+    resizeTable: 'Node tablosunu yeniden boyutlandır',
+    growTable: 'Node tablosunu büyüt',
+    shrinkTable: 'Node tablosunu küçült',
+    health: {
+      cluster: 'Cluster sağlığı',
+      healthy: 'Sağlıklı',
+      warning: 'Uyarı',
+      degraded: 'Bozulmuş',
+      healthyMsg: 'Kritik uyarı yok',
+      warningMsg: '{{pending}} bekleyen pod',
+      degradedMsg: '{{notReady}} hazır değil · {{failed}} başarısız pod',
+      nodes: 'Nodes',
+      nodesUnit: 'toplam',
+      pods: 'Pods',
+      podsUnit: 'toplam',
+      ready: '{{count}} hazır',
+      notReady: '{{count}} hazır değil',
+      running: '{{count}} çalışıyor',
+      pending: '{{count}} bekliyor',
+      failed: '{{count}} başarısız'
+    }
+  },
+  nodePods: {
+    name: 'Ad',
+    namespace: 'Namespace',
+    status: 'Durum',
+    memory: 'Bellek',
+    restarts: 'Yeniden başlatma',
+    empty: 'Bu node üzerinde planlanmış pod yok'
   },
   metricsCharts: {
     networkReceive: 'Ağ alımı',
@@ -673,7 +758,7 @@ export const tr: TranslationOverrides = {
   clusterOverview: {
     title: 'Cluster genel bakış',
     subtitle: 'Cluster genelinde sağlık, kapasite ve son aktivite.',
-    metricsUnavailable: 'metrics-server yok — kullanım verileri eksik olabilir',
+    metricsUnavailable: 'Kullanım metrikleri yok — metrics-server kurun veya Prometheus bağlayın',
     nodes: 'Nodes',
     nodesHint: '{{ready}} hazır · {{notReady}} hazır değil',
     pods: 'Podlar',
@@ -697,6 +782,7 @@ export const tr: TranslationOverrides = {
     byNamespace: 'Namespace’e göre',
     empty: 'Workload bulunamadı',
     problems: 'Sorunlu workload’lar',
+    problemsTotal: '{{count}} toplam',
     noProblems: 'Sorunlu workload yok',
     highRestarts: 'Yüksek restart podlar',
     noRestarts: 'Yüksek restart’lı pod yok',
@@ -734,6 +820,7 @@ export const tr: TranslationOverrides = {
     noHpas: 'HPA tanımlı değil'
   },
   topology: {
+    brandEyebrow: 'MagicLens',
     title: 'Topoloji ve Uygulamalar',
     subtitle: 'Bu namespace’teki iş yükleri, servisler ve bağımlılıkların canlı haritası.',
     modes: {
@@ -826,7 +913,9 @@ export const tr: TranslationOverrides = {
       replicaHistory: 'Replica geçmişi',
       exec: 'Terminal',
       metrics: 'Metrikler',
-      pressure: 'Basınç'
+      pressure: 'Basınç',
+      pods: 'Pod\'lar',
+      notes: 'Sparks'
     },
     overview: {
       title: 'Genel bakış',
@@ -876,6 +965,7 @@ export const tr: TranslationOverrides = {
       logs: 'Loglar',
       exec: 'Terminal',
       events: 'Olaylar',
+      notes: 'Sparks',
       yaml: 'YAML'
     },
     overview: {
@@ -1189,6 +1279,8 @@ export const tr: TranslationOverrides = {
     noKubeconfigChanges: 'Kaydedilecek değişiklik yok',
     kubeconfigSaved: 'Bu küme için kubeconfig kaydedildi',
     reconnectHint: 'Kubeconfig değişikliklerini uygulamak için kümeyi yeniden bağlayın',
+    searchSections: 'Ayarlarda ara…',
+    noSectionMatch: 'Eşleşen bölüm yok',
     save: 'Kaydet',
     cancel: 'İptal',
     close: 'Kapat'
@@ -1309,5 +1401,80 @@ export const tr: TranslationOverrides = {
     exitSplit: 'Bölünmüş görünümden çık',
     terminal: 'Terminal',
     closePanel: 'Paneli kapat'
+  },
+  utilityFab: {
+    expand: 'Hızlı işlemler',
+    collapse: 'Menüyü kapat',
+    terminal: 'Yeni terminal',
+    emptyEditor: 'Boş YAML editörü',
+    addSpark: 'Spark ekle',
+    dragHint: 'Konumu değiştirmek için uzun basıp sürükleyin'
+  },
+  notes: {
+    brandEyebrow: 'MagicLens',
+    hubTitle: 'Sparks',
+    hubSubtitle: 'Bağlamı kaydet, önemliyi sabitle, zamanı gelince kendini dürt.',
+    add: 'Yeni spark',
+    create: 'Oluştur',
+    save: 'Kaydet',
+    delete: 'Sil',
+    createTitle: 'Yeni spark',
+    editTitle: 'Spark düzenle',
+    created: 'Spark oluşturuldu',
+    updated: 'Spark güncellendi',
+    deleted: 'Spark silindi',
+    deleteConfirm: 'Bu spark silinsin mi?',
+    empty: 'Henüz spark yok — ilkini yak.',
+    emptyFiltered: 'Filtrelere uyan spark yok',
+    count: '{{count}} spark',
+    searchPlaceholder: 'Sparks’ta ara…',
+    reminderToast: 'Spark hatırlatıcı: {{title}}',
+    scheduled: 'Hatırlatıcı {{time}} için ayarlandı — MagicLens açık kalsın',
+    testNotification: 'Test ping',
+    testSent: 'Bildirim gönderildi',
+    testSentOs: 'OS + uygulama içi bildirim gönderildi',
+    testSentInAppOnly:
+      'Uygulama içi bildirim geldi — macOS OS bildirimi için Electron imzalanmalı (npm run sign:electron-dev)',
+    notifyNow: 'Şimdi pingle',
+    stats: {
+      total: 'Sparks',
+      pinned: 'Sabitlenen',
+      upcoming: 'Yaklaşan'
+    },
+    inbox: {
+      title: 'Sparks gelen kutusu',
+      empty: 'Henüz ping yok',
+      markAllRead: 'Tümünü okundu say',
+      clear: 'Temizle',
+      openNotes: 'Sparks’a git'
+    },
+    filter: {
+      all: 'Tümü'
+    },
+    scope: {
+      global: 'Genel',
+      workspace: 'Workspace',
+      cluster: 'Küme',
+      resource: 'Kaynak'
+    },
+    fields: {
+      title: 'Başlık',
+      titleRequired: 'Bu sparka bir başlık ver',
+      titlePlaceholder: 'Ne hatırlansın?',
+      body: 'İçerik',
+      bodyPlaceholder: 'Bağlam, kubectl notları, linkler…',
+      scope: 'Bağla',
+      cluster: 'Küme',
+      clusterPlaceholder: 'Herhangi bir küme',
+      workspace: 'Workspace',
+      workspacePlaceholder: 'Herhangi bir workspace',
+      kind: 'Kaynak türü',
+      namespace: 'Namespace',
+      resourceName: 'Kaynak adı',
+      remindAt: 'Hatırlat',
+      remindAtPlaceholder: 'İleri bir zaman seç (isteğe bağlı)',
+      remindAtFuture: 'En az ~30 saniye sonrası bir zaman seç',
+      pinned: 'Sabitle'
+    }
   }
 }

@@ -22,6 +22,7 @@ interface ResolvedPrometheus {
 
 const statusCache = new Map<string, PrometheusStatus>()
 const resolvedCache = new Map<string, ResolvedPrometheus>()
+const discoverInFlight = new Map<string, Promise<PrometheusStatus>>()
 
 const PREFERRED_NAMESPACES = ['monitoring', 'prometheus', 'observability', 'kube-system']
 
@@ -30,7 +31,8 @@ function nowIso(): string {
 }
 
 function manualUrlForCluster(clusterId: string): string | undefined {
-  const trimmed = listClusters().find((c) => c.id === clusterId)?.prometheusUrl?.trim()
+  const cluster = listClusters().find((c) => c.id === clusterId)
+  const trimmed = cluster?.prometheusUrl?.trim() || cluster?.settings?.metrics?.endpointUrl?.trim()
   return trimmed || undefined
 }
 
@@ -192,27 +194,51 @@ function toStatus(resolved: ResolvedPrometheus | null, error?: string): Promethe
 }
 
 export async function discoverPrometheus(req: PrometheusDiscoverRequest): Promise<PrometheusStatus> {
-  const clients = clusterManager.require(req.clusterId)
-  const server = clients.kc.getCurrentCluster()?.server ?? ''
-  const manualUrl = req.manualUrl?.trim() || manualUrlForCluster(req.clusterId)
-
-  let resolved: ResolvedPrometheus | null = null
-
-  if (manualUrl) {
-    resolved = await tryManualUrl(clients, server, manualUrl)
-  }
-  if (!resolved) {
-    resolved = await tryPrometheusOperator(clients, server)
-  }
-  if (!resolved) {
-    resolved = await tryServiceDiscovery(clients, server)
+  const force = Boolean(req.manualUrl?.trim())
+  if (!force) {
+    const inflight = discoverInFlight.get(req.clusterId)
+    if (inflight) return inflight
   }
 
-  const status = toStatus(resolved)
-  statusCache.set(req.clusterId, status)
-  if (resolved) resolvedCache.set(req.clusterId, resolved)
-  else resolvedCache.delete(req.clusterId)
-  return status
+  const run = async (): Promise<PrometheusStatus> => {
+    const clients = clusterManager.require(req.clusterId)
+    const server = clients.kc.getCurrentCluster()?.server ?? ''
+    const manualUrl = req.manualUrl?.trim() || manualUrlForCluster(req.clusterId)
+
+    let resolved: ResolvedPrometheus | null = null
+
+    if (manualUrl) {
+      resolved = await tryManualUrl(clients, server, manualUrl)
+    }
+    if (!resolved) {
+      resolved = await tryPrometheusOperator(clients, server)
+    }
+    if (!resolved) {
+      resolved = await tryServiceDiscovery(clients, server)
+    }
+
+    const status = toStatus(resolved)
+    statusCache.set(req.clusterId, status)
+    if (resolved) resolvedCache.set(req.clusterId, resolved)
+    else resolvedCache.delete(req.clusterId)
+    return status
+  }
+
+  const promise = run().finally(() => {
+    if (discoverInFlight.get(req.clusterId) === promise) discoverInFlight.delete(req.clusterId)
+  })
+  discoverInFlight.set(req.clusterId, promise)
+  return promise
+}
+
+/** Discover Prometheus once if needed; coalesce concurrent callers. */
+export async function ensurePrometheusDiscovered(clusterId: string): Promise<PrometheusStatus> {
+  if (resolvedCache.has(clusterId)) return getPrometheusStatus(clusterId)
+  const cached = statusCache.get(clusterId)
+  if (cached && cached.error !== 'Prometheus has not been discovered yet') return cached
+  const inflight = discoverInFlight.get(clusterId)
+  if (inflight) return inflight
+  return discoverPrometheus({ clusterId })
 }
 
 export function getPrometheusStatus(clusterId: string): PrometheusStatus {

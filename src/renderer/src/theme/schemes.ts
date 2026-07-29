@@ -76,12 +76,13 @@ function buildPalette(colors: SchemeColors, isDark: boolean): AppPalette {
       terminalBg: '#0d1117',
       terminalFg: '#ddd6e8',
       terminalMuted: mixHex('#b0a8be', layout, 0.4),
-      shadow: '0 1px 4px rgba(0, 0, 0, 0.35)',
+      shadow: 'none',
       selectionBg: withAlpha(accent, 0.14)
     }
   }
 
   const container = '#ffffff'
+  const sidebarSurface = mixHex(layout, '#ffffff', 0.28)
   return {
     primary,
     primaryHover,
@@ -98,11 +99,11 @@ function buildPalette(colors: SchemeColors, isDark: boolean): AppPalette {
     text: '#1a1225',
     textSecondary: mixHex('#1a1225', layout, 0.55),
     textTertiary: mixHex('#1a1225', layout, 0.4),
-    sidebarBg: container,
+    sidebarBg: sidebarSurface,
     sidebarText: '#1a1225',
     sidebarMuted: mixHex('#1a1225', layout, 0.55),
     sidebarSubtle: mixHex('#1a1225', layout, 0.4),
-    sidebarDivider: 'rgba(15,23,42,0.06)',
+    sidebarDivider: 'rgba(15,23,42,0.08)',
     sidebarHover: withAlpha(accent, 0.07),
     sidebarActive: withAlpha(accent, 0.12),
     sidebarControlBg: colors.spotlightLight,
@@ -112,7 +113,7 @@ function buildPalette(colors: SchemeColors, isDark: boolean): AppPalette {
     terminalBg: '#1a1625',
     terminalFg: '#e2e0ea',
     terminalMuted: '#9b93ad',
-    shadow: `0 1px 4px ${withAlpha(accent, 0.08)}`,
+    shadow: 'none',
     selectionBg: withAlpha(accent, 0.1)
   }
 }
@@ -180,16 +181,16 @@ const SCHEME_COLORS: Record<Exclude<ColorSchemeId, 'custom'>, SchemeColors> = {
     layoutDark: '#0b0f14'
   },
   rose: {
-    primaryLight: '#e11d48',
-    primaryLightHover: '#be123c',
-    primaryDark: '#fb7185',
-    primaryDarkHover: '#fda4af',
-    resourceSiderLight: '#881337',
-    resourceSiderDark: '#14060c',
-    spotlightLight: '#fff1f2',
-    spotlightDark: '#241018',
-    layoutLight: '#fff7f8',
-    layoutDark: '#0f0608'
+    primaryLight: '#e84d5c',
+    primaryLightHover: '#d64555',
+    primaryDark: '#FF5F6D',
+    primaryDarkHover: '#ff7a85',
+    resourceSiderLight: '#1a1520',
+    resourceSiderDark: '#0a0c10',
+    spotlightLight: '#f7f8fa',
+    spotlightDark: '#14181f',
+    layoutLight: '#f4f5f7',
+    layoutDark: '#0b0d11'
   },
 
   /* —— Worlds (anime / hero inspired, original names) —— */
@@ -337,10 +338,10 @@ export const COLOR_SCHEME_DEFINITIONS: ColorSchemeDefinition[] = [
   },
   {
     id: 'rose',
-    name: 'Rose',
-    description: 'Soft rose and blush pink',
+    name: 'Coral',
+    description: 'MagicLens coral accent (#FF5F6D)',
     group: 'classic',
-    swatches: ['#e11d48', '#fb7185', '#fff1f2']
+    swatches: ['#FF5F6D', '#ff7a85', '#f7f8fa']
   },
   {
     id: 'skywings',
@@ -412,7 +413,7 @@ export function getSchemePalette(
 ): AppPalette {
   const colors =
     scheme === 'custom'
-      ? deriveSchemeFromAccent(customAccent ?? '#7c3aed')
-      : (SCHEME_COLORS[scheme] ?? SCHEME_COLORS.violet)
+      ? deriveSchemeFromAccent(customAccent ?? '#FF5F6D')
+      : (SCHEME_COLORS[scheme] ?? SCHEME_COLORS.rose)
   return buildPalette(colors, isDark)
 }

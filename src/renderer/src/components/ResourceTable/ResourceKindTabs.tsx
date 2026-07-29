@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Modal, Splitter, Tabs, Tooltip, message } from 'antd'
-import { Columns2, ListX } from 'lucide-react'
-import type { TabsProps } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { Modal, Splitter, message } from 'antd'
+import { Columns2, PanelLeft, PanelRight } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
+import type { VirtualPageKey } from '@shared/types/navigation'
 import { useClusterStore } from '../../stores/clusterStore'
 import { sortResourceKinds } from '../../utils/resourceTabPreferences'
+import { RESOURCE_TAB_SPLIT_PANEL_MIN_PX } from '../../constants/clusterSplitLimits'
 import { canUseSplitLayouts, useLayoutMode } from '../../hooks/useLayoutMode'
 import { Icon } from '../ui/Icon'
 import { ResourceTable } from './ResourceTable'
-import { ResourceTabLabel } from './ResourceTabLabel'
+import { ResourceKindTabBar, type ResourceTabContextActions } from './ResourceKindTabBar'
 import { EmptyState } from './EmptyErrorStates'
 
 interface ResourceKindTabsProps {
@@ -16,17 +17,26 @@ interface ResourceKindTabsProps {
   namespace: string
   openResourceKinds: ResourceKind[]
   selectedResourceKind: ResourceKind | null
+  openVirtualPages?: VirtualPageKey[]
+  selectedVirtualPage?: VirtualPageKey | null
+  renderVirtualPage?: (page: VirtualPageKey) => React.ReactNode
 }
 
 export function ResourceKindTabs({
   clusterId,
   namespace,
   openResourceKinds,
-  selectedResourceKind
+  selectedResourceKind,
+  openVirtualPages = [],
+  selectedVirtualPage = null,
+  renderVirtualPage
 }: ResourceKindTabsProps): React.JSX.Element {
   const setSelectedResourceKind = useClusterStore((s) => s.setSelectedResourceKind)
+  const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const closeResourceKind = useClusterStore((s) => s.closeResourceKind)
   const closeAllResourceKinds = useClusterStore((s) => s.closeAllResourceKinds)
+  const openVirtualPage = useClusterStore((s) => s.openVirtualPage)
+  const closeVirtualPage = useClusterStore((s) => s.closeVirtualPage)
   const reorderResourceKinds = useClusterStore((s) => s.reorderResourceKinds)
   const getResourceTabPrefs = useClusterStore((s) => s.getResourceTabPrefs)
   const updateResourceTabPrefs = useClusterStore((s) => s.updateResourceTabPrefs)
@@ -35,7 +45,6 @@ export function ResourceKindTabs({
   const allowResourceSplit = canUseSplitLayouts(layoutMode)
 
   const [, forceRender] = useState(0)
-  const dragKindRef = useRef<ResourceKind | null>(null)
 
   const prefs = getResourceTabPrefs(clusterId)
   const orderedKinds = useMemo(
@@ -43,13 +52,15 @@ export function ResourceKindTabs({
     [openResourceKinds, prefs.pinned]
   )
 
-  const activeKind = selectedResourceKind ?? orderedKinds[0]
+  const showingVirtual = selectedVirtualPage != null && openVirtualPages.includes(selectedVirtualPage)
+  const activeKind = showingVirtual ? null : (selectedResourceKind ?? orderedKinds[0] ?? null)
 
   useEffect(() => {
+    if (showingVirtual) return
     if (!selectedResourceKind && orderedKinds.length > 0) {
       setSelectedResourceKind(clusterId, orderedKinds[0])
     }
-  }, [clusterId, selectedResourceKind, orderedKinds, setSelectedResourceKind])
+  }, [clusterId, selectedResourceKind, orderedKinds, setSelectedResourceKind, showingVirtual])
 
   useEffect(() => {
     if (orderedKinds.length > 0 && orderedKinds.join(',') !== openResourceKinds.join(',')) {
@@ -64,15 +75,19 @@ export function ResourceKindTabs({
     }
   }, [allowResourceSplit, clusterId, prefs.splitView, updateResourceTabPrefs])
 
-  if (orderedKinds.length === 0) {
+  if (orderedKinds.length === 0 && openVirtualPages.length === 0) {
     return <EmptyState />
   }
 
   const splitLeftKind = prefs.splitLeftKind ?? selectedResourceKind ?? orderedKinds[0]
   const splitRightKind =
-    prefs.splitRightKind ?? orderedKinds.find((k) => k !== splitLeftKind) ?? orderedKinds[0]
+    prefs.splitRightKind ??
+    (splitLeftKind ? orderedKinds.find((k) => k !== splitLeftKind) : undefined) ??
+    orderedKinds[0]
 
   const closableKinds = orderedKinds.filter((kind) => !prefs.pinned.includes(kind))
+  const splitTabKinds = [splitLeftKind, splitRightKind].filter((k): k is ResourceKind => !!k)
+  const closableSplitKinds = splitTabKinds.filter((kind) => !prefs.pinned.includes(kind))
 
   function refreshPrefs(): void {
     forceRender((n) => n + 1)
@@ -95,21 +110,17 @@ export function ResourceKindTabs({
     refreshPrefs()
   }
 
-  function handleReorder(targetKind: ResourceKind): void {
-    const dragKind = dragKindRef.current
-    dragKindRef.current = null
-    if (!dragKind || dragKind === targetKind) return
-    const kinds = [...orderedKinds]
-    const from = kinds.indexOf(dragKind)
-    const to = kinds.indexOf(targetKind)
-    if (from < 0 || to < 0) return
-    kinds.splice(from, 1)
-    kinds.splice(to, 0, dragKind)
-    reorderResourceKinds(clusterId, sortResourceKinds(kinds, prefs.pinned))
+  function handleReorderPinned(nextPinned: ResourceKind[]): void {
+    const unpinned = orderedKinds.filter((k) => !prefs.pinned.includes(k))
+    reorderResourceKinds(clusterId, [...nextPinned, ...unpinned])
   }
 
-  function handleTabChange(key: string): void {
-    const kind = key as ResourceKind
+  function handleReorderUnpinned(nextUnpinned: ResourceKind[]): void {
+    const pinned = orderedKinds.filter((k) => prefs.pinned.includes(k))
+    reorderResourceKinds(clusterId, [...pinned, ...nextUnpinned])
+  }
+
+  function handleTabSelect(kind: ResourceKind): void {
     if (prefs.splitView) {
       if (prefs.focusedSplitPane === 'left') {
         updateResourceTabPrefs(clusterId, { splitLeftKind: kind })
@@ -121,14 +132,44 @@ export function ResourceKindTabs({
     setSelectedResourceKind(clusterId, kind)
   }
 
-  function handleEdit(targetKey: React.MouseEvent | React.KeyboardEvent | string, action: 'add' | 'remove'): void {
-    if (action !== 'remove') return
-    const kind = targetKey as ResourceKind
+  function handlePaneTabSelect(kind: ResourceKind, pane: 'left' | 'right'): void {
+    updateResourceTabPrefs(clusterId, {
+      focusedSplitPane: pane,
+      ...(pane === 'left' ? { splitLeftKind: kind } : { splitRightKind: kind })
+    })
+    setSelectedResourceKind(clusterId, kind)
+    refreshPrefs()
+  }
+
+  function handleCloseTab(kind: ResourceKind): void {
     if (prefs.pinned.includes(kind)) {
       message.info('Unpin this tab before closing it')
       return
     }
     closeResourceKind(clusterId, kind)
+    refreshPrefs()
+  }
+
+  function handleCloseOthers(keep: ResourceKind): void {
+    const toClose = orderedKinds.filter((k) => k !== keep && !prefs.pinned.includes(k))
+    if (toClose.length === 0) {
+      message.info('No other closable tabs')
+      return
+    }
+    for (const kind of toClose) closeResourceKind(clusterId, kind)
+    setSelectedResourceKind(clusterId, keep)
+    refreshPrefs()
+  }
+
+  function handleCloseToRight(from: ResourceKind): void {
+    const index = orderedKinds.indexOf(from)
+    if (index < 0) return
+    const toClose = orderedKinds.slice(index + 1).filter((k) => !prefs.pinned.includes(k))
+    if (toClose.length === 0) {
+      message.info('No closable tabs to the right')
+      return
+    }
+    for (const kind of toClose) closeResourceKind(clusterId, kind)
     refreshPrefs()
   }
 
@@ -150,8 +191,32 @@ export function ResourceKindTabs({
     })
   }
 
+  function handleCloseSplitTabs(): void {
+    if (closableSplitKinds.length === 0) {
+      message.info('Split tabs are pinned')
+      return
+    }
+    Modal.confirm({
+      title: 'Close both split tabs?',
+      content: `Close ${closableSplitKinds.map(String).join(' and ')}? Pinned tabs stay open.`,
+      okText: 'Close',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: () => {
+        for (const kind of closableSplitKinds) closeResourceKind(clusterId, kind)
+        updateResourceTabPrefs(clusterId, { splitView: false })
+        refreshPrefs()
+      }
+    })
+  }
+
   function toggleSplitView(): void {
     if (prefs.splitView) {
+      const focusedNs =
+        prefs.focusedSplitPane === 'left'
+          ? (prefs.splitLeftNamespace ?? namespace)
+          : (prefs.splitRightNamespace ?? namespace)
+      setSelectedNamespace(clusterId, focusedNs)
       updateResourceTabPrefs(clusterId, { splitView: false })
       refreshPrefs()
       return
@@ -166,158 +231,254 @@ export function ResourceKindTabs({
       splitView: true,
       splitLeftKind: left,
       splitRightKind: right,
+      splitLeftNamespace: namespace,
+      splitRightNamespace: namespace,
       focusedSplitPane: 'left'
     })
     refreshPrefs()
   }
 
-  const tabActiveKey = prefs.splitView && allowResourceSplit
-    ? prefs.focusedSplitPane === 'left'
-      ? splitLeftKind
-      : splitRightKind
-    : activeKind
+  function openInPane(kind: ResourceKind, pane: 'left' | 'right'): void {
+    const patch =
+      pane === 'left'
+        ? {
+            splitView: true as const,
+            splitLeftKind: kind,
+            focusedSplitPane: 'left' as const,
+            splitLeftNamespace: prefs.splitLeftNamespace ?? namespace,
+            splitRightNamespace: prefs.splitRightNamespace ?? namespace,
+            splitRightKind: prefs.splitRightKind ?? orderedKinds.find((k) => k !== kind) ?? kind
+          }
+        : {
+            splitView: true as const,
+            splitRightKind: kind,
+            focusedSplitPane: 'right' as const,
+            splitLeftNamespace: prefs.splitLeftNamespace ?? namespace,
+            splitRightNamespace: prefs.splitRightNamespace ?? namespace,
+            splitLeftKind: prefs.splitLeftKind ?? orderedKinds.find((k) => k !== kind) ?? kind
+          }
+    updateResourceTabPrefs(clusterId, patch)
+    setSelectedResourceKind(clusterId, kind)
+    refreshPrefs()
+  }
 
-  const items: TabsProps['items'] = orderedKinds.map((kind) => ({
-    key: kind,
-    label: (
-      <ResourceTabLabel
-        kind={kind}
-        pinned={prefs.pinned.includes(kind)}
-        favorite={prefs.favorites.includes(kind)}
-        closable={!prefs.pinned.includes(kind)}
-        draggable
-        onDragStart={(k) => {
-          dragKindRef.current = k
-        }}
-        onDrop={handleReorder}
-        onTogglePin={togglePin}
-        onToggleFavorite={toggleFavorite}
-        onClose={(k) => handleEdit(k, 'remove')}
-      />
-    ),
-    closable: false,
-    children: null
-  }))
+  function handlePaneNamespaceChange(pane: 'left' | 'right', ns: string): void {
+    updateResourceTabPrefs(
+      clusterId,
+      pane === 'left' ? { splitLeftNamespace: ns } : { splitRightNamespace: ns }
+    )
+    if (prefs.focusedSplitPane === pane) {
+      setSelectedNamespace(clusterId, ns)
+    }
+    refreshPrefs()
+  }
 
-  const tabBarExtra = (
-    <div className="ml-resource-tab-extra">
-      {prefs.splitView && allowResourceSplit && (
-        <>
+  function focusPane(pane: 'left' | 'right'): void {
+    if (!splitLeftKind || !splitRightKind) return
+    const paneNs =
+      pane === 'left'
+        ? (prefs.splitLeftNamespace ?? namespace)
+        : (prefs.splitRightNamespace ?? namespace)
+    updateResourceTabPrefs(clusterId, { focusedSplitPane: pane })
+    setSelectedNamespace(clusterId, paneNs)
+    setSelectedResourceKind(clusterId, pane === 'left' ? splitLeftKind : splitRightKind)
+    refreshPrefs()
+  }
+
+  const tabActiveKey =
+    showingVirtual
+      ? null
+      : prefs.splitView && allowResourceSplit
+        ? prefs.focusedSplitPane === 'left'
+          ? splitLeftKind
+          : splitRightKind
+        : activeKind
+
+  const contextActions: ResourceTabContextActions = {
+    onClose: handleCloseTab,
+    onCloseOthers: handleCloseOthers,
+    onCloseAll: handleCloseAllTabs,
+    onCloseToRight: handleCloseToRight,
+    onCloseSplitTabs: handleCloseSplitTabs,
+    onTogglePin: togglePin,
+    onToggleFavorite: toggleFavorite,
+    onToggleSplit: toggleSplitView,
+    onOpenInLeftPane: (kind) => openInPane(kind, 'left'),
+    onOpenInRightPane: (kind) => openInPane(kind, 'right'),
+    allowSplit: allowResourceSplit && orderedKinds.length >= 1,
+    splitActive: Boolean(prefs.splitView && allowResourceSplit),
+    canCloseAll: closableKinds.length > 0,
+    canCloseSplitTabs: Boolean(prefs.splitView && closableSplitKinds.length > 0),
+    pinnedKinds: prefs.pinned,
+    favoriteKinds: prefs.favorites,
+    orderedKinds
+  }
+
+  const tabBarExtra =
+    allowResourceSplit && (prefs.splitView || orderedKinds.length >= 2) ? (
+      <div className="ml-resource-tab-extra ml-action-bar ml-action-bar--end">
+        <div className="ml-action-group ml-action-group--end ml-resource-tab-extra__tools">
+          {prefs.splitView ? (
+            <>
+              <button
+                type="button"
+                className={`ml-icon-btn ml-resource-tab-tool${prefs.focusedSplitPane === 'left' ? ' ml-icon-btn--active' : ''}`}
+                onClick={() => focusPane('left')}
+                aria-label="Focus left pane"
+                title="Left pane"
+              >
+                <Icon icon={PanelLeft} variant="micro" />
+              </button>
+              <button
+                type="button"
+                className={`ml-icon-btn ml-resource-tab-tool${prefs.focusedSplitPane === 'right' ? ' ml-icon-btn--active' : ''}`}
+                onClick={() => focusPane('right')}
+                aria-label="Focus right pane"
+                title="Right pane"
+              >
+                <Icon icon={PanelRight} variant="micro" />
+              </button>
+            </>
+          ) : null}
           <button
             type="button"
-            className={`ml-btn ml-btn--ghost ml-btn--sm${prefs.focusedSplitPane === 'left' ? ' ml-btn--active' : ''}`}
-            onClick={() => {
-              updateResourceTabPrefs(clusterId, { focusedSplitPane: 'left' })
-              refreshPrefs()
-            }}
-          >
-            Left
-          </button>
-          <button
-            type="button"
-            className={`ml-btn ml-btn--ghost ml-btn--sm${prefs.focusedSplitPane === 'right' ? ' ml-btn--active' : ''}`}
-            onClick={() => {
-              updateResourceTabPrefs(clusterId, { focusedSplitPane: 'right' })
-              refreshPrefs()
-            }}
-          >
-            Right
-          </button>
-        </>
-      )}
-      {closableKinds.length >= 2 && (
-        <Tooltip title="Close all unpinned tabs">
-          <button
-            type="button"
-            className="ml-btn ml-btn--ghost ml-btn--sm"
-            onClick={handleCloseAllTabs}
-            aria-label="Close all tabs"
-          >
-            <Icon icon={ListX} variant="detail" />
-            <span>Close all</span>
-          </button>
-        </Tooltip>
-      )}
-      {allowResourceSplit && (
-        <Tooltip title={prefs.splitView ? 'Close split view' : 'Split resource tabs side by side'}>
-          <button
-            type="button"
-            className={`ml-btn ml-btn--ghost ml-btn--sm${prefs.splitView ? ' ml-btn--active' : ''}`}
+            className={`ml-icon-btn ml-resource-tab-tool${prefs.splitView ? ' ml-icon-btn--active' : ''}`}
             onClick={toggleSplitView}
-            aria-label={prefs.splitView ? 'Close split view' : 'Split view'}
+            aria-label={prefs.splitView ? 'Exit split view' : 'Split view'}
+            title={prefs.splitView ? 'Exit split view' : 'Split view'}
           >
-            <Icon icon={Columns2} variant="detail" />
+            <Icon icon={Columns2} variant="micro" />
           </button>
-        </Tooltip>
-      )}
+        </div>
+      </div>
+    ) : null
+
+  const splitToggleExtra = (
+    <div className="ml-resource-tab-extra ml-action-bar ml-action-bar--end">
+      <div className="ml-action-group ml-action-group--end ml-resource-tab-extra__tools">
+        <button
+          type="button"
+          className="ml-icon-btn ml-resource-tab-tool ml-icon-btn--active"
+          onClick={toggleSplitView}
+          aria-label="Exit split view"
+          title="Exit split view"
+        >
+          <Icon icon={Columns2} variant="micro" />
+        </button>
+      </div>
     </div>
   )
 
-  return (
-    <div className="resource-kind-tabs-root">
-      <Tabs
-        type="editable-card"
-        hideAdd
-        className="resource-kind-tabs-bar"
-        activeKey={tabActiveKey}
-        onChange={handleTabChange}
-        onEdit={handleEdit}
-        items={items}
-        tabBarExtraContent={tabBarExtra}
-      />
-      <div className="resource-kind-tabs-content">
-        {prefs.splitView && allowResourceSplit ? (
+  const leftNamespace = prefs.splitLeftNamespace ?? namespace
+  const rightNamespace = prefs.splitRightNamespace ?? namespace
+
+  const sharedTabBarProps = {
+    orderedKinds,
+    pinnedKinds: prefs.pinned,
+    favoriteKinds: prefs.favorites,
+    onReorderPinned: handleReorderPinned,
+    onReorderUnpinned: handleReorderUnpinned,
+    onTogglePin: togglePin,
+    onToggleFavorite: toggleFavorite,
+    onClose: handleCloseTab,
+    contextActions
+  }
+
+  const isSplit = Boolean(prefs.splitView && allowResourceSplit && splitLeftKind && splitRightKind && !showingVirtual)
+
+  if (isSplit) {
+    return (
+      <div className="resource-kind-tabs-root resource-kind-tabs-root--split">
+        <div className="resource-kind-tabs-content">
           <Splitter style={{ height: '100%' }}>
             <Splitter.Panel
               defaultSize="50%"
-              min="25%"
+              min={RESOURCE_TAB_SPLIT_PANEL_MIN_PX}
               className={prefs.focusedSplitPane === 'left' ? 'ml-split-pane--focused' : 'ml-split-pane'}
             >
-              <div
-                className="ml-split-pane-inner"
-                onMouseDown={() => {
-                  updateResourceTabPrefs(clusterId, { focusedSplitPane: 'left' })
-                  refreshPrefs()
-                }}
-              >
-                <ResourceTable
-                  clusterId={clusterId}
-                  namespace={namespace}
-                  kind={splitLeftKind}
-                  isActive={isClusterActive}
+              <div className="ml-split-pane-inner" onMouseDown={() => focusPane('left')}>
+                <ResourceKindTabBar
+                  {...sharedTabBarProps}
+                  className="ml-resource-tab-bar--pane"
+                  activeKind={splitLeftKind}
+                  openVirtualPages={[]}
+                  activeVirtualPage={null}
+                  onSelectKind={(kind) => handlePaneTabSelect(kind, 'left')}
+                  extra={splitToggleExtra}
                 />
+                <div className="ml-split-pane-body">
+                  <ResourceTable
+                    clusterId={clusterId}
+                    namespace={leftNamespace}
+                    kind={splitLeftKind}
+                    isActive={isClusterActive}
+                    onNamespaceChange={(ns) => handlePaneNamespaceChange('left', ns)}
+                  />
+                </div>
               </div>
             </Splitter.Panel>
             <Splitter.Panel
               defaultSize="50%"
-              min="25%"
+              min={RESOURCE_TAB_SPLIT_PANEL_MIN_PX}
               className={prefs.focusedSplitPane === 'right' ? 'ml-split-pane--focused' : 'ml-split-pane'}
             >
-              <div
-                className="ml-split-pane-inner"
-                onMouseDown={() => {
-                  updateResourceTabPrefs(clusterId, { focusedSplitPane: 'right' })
-                  refreshPrefs()
-                }}
-              >
-                <ResourceTable
-                  clusterId={clusterId}
-                  namespace={namespace}
-                  kind={splitRightKind}
-                  isActive={isClusterActive}
+              <div className="ml-split-pane-inner" onMouseDown={() => focusPane('right')}>
+                <ResourceKindTabBar
+                  {...sharedTabBarProps}
+                  className="ml-resource-tab-bar--pane"
+                  activeKind={splitRightKind}
+                  openVirtualPages={[]}
+                  activeVirtualPage={null}
+                  onSelectKind={(kind) => handlePaneTabSelect(kind, 'right')}
+                  extra={splitToggleExtra}
                 />
+                <div className="ml-split-pane-body">
+                  <ResourceTable
+                    clusterId={clusterId}
+                    namespace={rightNamespace}
+                    kind={splitRightKind}
+                    isActive={isClusterActive}
+                    onNamespaceChange={(ns) => handlePaneNamespaceChange('right', ns)}
+                  />
+                </div>
               </div>
             </Splitter.Panel>
           </Splitter>
-        ) : (
-          <ResourceTable
-            clusterId={clusterId}
-            namespace={namespace}
-            kind={activeKind}
-            isActive={isClusterActive}
-          />
-        )}
+        </div>
       </div>
+    )
+  }
+
+  function renderResourceContent(): React.ReactNode {
+    if (showingVirtual && selectedVirtualPage && renderVirtualPage) {
+      return renderVirtualPage(selectedVirtualPage)
+    }
+    if (activeKind) {
+      return (
+        <ResourceTable
+          clusterId={clusterId}
+          namespace={namespace}
+          kind={activeKind}
+          isActive={isClusterActive}
+        />
+      )
+    }
+    return <EmptyState />
+  }
+
+  return (
+    <div className="resource-kind-tabs-root">
+      <ResourceKindTabBar
+        {...sharedTabBarProps}
+        activeKind={tabActiveKey ?? null}
+        openVirtualPages={openVirtualPages}
+        activeVirtualPage={showingVirtual ? selectedVirtualPage : null}
+        onSelectKind={handleTabSelect}
+        onSelectVirtualPage={(page) => openVirtualPage(clusterId, page)}
+        onCloseVirtualPage={(page) => closeVirtualPage(clusterId, page)}
+        extra={tabBarExtra}
+      />
+      <div className="resource-kind-tabs-content">{renderResourceContent()}</div>
     </div>
   )
 }

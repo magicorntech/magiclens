@@ -20,7 +20,8 @@ export const ko: TranslationOverrides = {
     clusters: '클러스터',
     vpn: 'VPN',
     favorites: '즐겨찾기',
-    cancel: '취소'
+    cancel: '취소',
+    close: '닫기'
   },
   chrome: {
     searchPlaceholder: '클러스터, 리소스, 네임스페이스 검색…',
@@ -99,10 +100,17 @@ export const ko: TranslationOverrides = {
       showFavoritesHint: '켜면 왼쪽 사이드바의 Workspaces 위에 즐겨찾기가 표시됩니다. 제목을 클릭해 접거나 펼칠 수 있습니다.',
       showWorkspaces: 'Workspaces 섹션 표시',
       showWorkspacesHint: '켜면 왼쪽 사이드바에 Workspaces가 표시됩니다. 접힌 상태에서는 W 표시가 워크스페이스 클러스터 위에 나타납니다.',
+      showWorkspaceClusterCounts: '워크스페이스 클러스터 수 표시',
+      showWorkspaceClusterCountsHint: '켜면 각 워크스페이스 헤더에 포함된 클러스터 수가 표시됩니다.',
       tabIconsTitle: '탭 아이콘',
       showClusterLogos: '클러스터 탭에 로고 표시',
       showResourceIcons: '리소스 탭에 아이콘 표시',
       tabIconsHint: '클러스터 탭은 클러스터 추가 시 설정한 로고를 사용합니다. 리소스 탭은 왼쪽 메뉴와 같은 아이콘을 사용합니다.',
+      chromeToolbarTitle: '도구 모음 아이콘',
+      chromeToolbarHint:
+        '상단 바 아이콘을 표시·숨기고 순서를 바꿉니다. 설정은 오른쪽에 고정되며 이동하거나 숨길 수 없습니다.',
+      chromeToolbarChooser: '드래그로 순서를 바꾸고 표시를 전환합니다. 설정은 잠겨 있습니다.',
+      chromeToolbarFixed: '고정',
       detailMaskBlur: '세부 사항 뒤의 배경을 흐리게 합니다.',
       detailMaskBlurHint: '리소스 세부정보 서랍이 열리면 그 뒤의 목록을 흐리게 만듭니다. 기본적으로 꺼져 있으므로 테이블이 선명하게 유지됩니다.',
       panelTitle: '터미널 및 YAML 패널',
@@ -112,6 +120,14 @@ export const ko: TranslationOverrides = {
       panelPlacementLeft: '왼쪽',
       showClusterNamespace: '연결된 네임스페이스 표시',
       showClusterNamespaceHint: '활성화되면 선택한 네임스페이스가 왼쪽 사이드바의 연결된 클러스터에 칩으로 표시됩니다.'
+    },
+    chromeToolbar: {
+      search: '검색',
+      terminal: '터미널',
+      theme: '테마',
+      fullscreen: '전체 화면',
+      split: '클러스터 분할',
+      settings: '설정'
     },
     nodesSections: {
       health: '클러스터 상태',
@@ -287,8 +303,10 @@ export const ko: TranslationOverrides = {
     }
   },
   vpn: {
-    heroEyebrow: '보안 터널',
+    brandEyebrow: 'MagicLens',
     title: 'VPN',
+    heroSubtitle: '프라이빗 클러스터와 원격 접속을 위한 보안 터널.',
+    heroEyebrow: '보안 터널',
     status: {
       connected: '연결됨',
       connecting: '연결 중',
@@ -527,6 +545,7 @@ export const ko: TranslationOverrides = {
     }
   },
   topology: {
+    brandEyebrow: 'MagicLens',
     title: '토폴로지 및 애플리케이션',
     subtitle: '이 네임스페이스의 워크로드, 서비스, 의존성의 실시간 맵.',
     modes: {
@@ -653,7 +672,7 @@ export const ko: TranslationOverrides = {
   clusterOverview: {
     title: '클러스터 개요',
     subtitle: '클러스터 전체의 상태, 용량 및 최근 활동.',
-    metricsUnavailable: '메트릭 서버를 사용할 수 없음 - 사용량 데이터가 불완전할 수 있음',
+    metricsUnavailable: '사용량 메트릭을 사용할 수 없음 — metrics-server를 설치하거나 Prometheus에 연결하세요',
     nodes: '노드',
     nodesHint: '{{준비됨}} 준비됨 · {{notReady}} 준비되지 않음',
     pods: '포드',
@@ -714,6 +733,7 @@ export const ko: TranslationOverrides = {
     noHpas: '정의된 HPA 없음'
   },
   clustersHub: {
+    brandEyebrow: 'MagicLens',
     title: '클러스터',
     subtitle: '모든 Kubernetes 클러스터를 한 곳에서 추가, 연결, 관리하세요.',
     add: '클러스터 추가',
@@ -933,7 +953,8 @@ export const ko: TranslationOverrides = {
       replicaHistory: '복제본 기록',
       exec: '임원',
       metrics: '측정항목',
-      pressure: '압력'
+      pressure: '압력',
+      pods: 'Pods'
     },
     overview: {
       title: '개요',

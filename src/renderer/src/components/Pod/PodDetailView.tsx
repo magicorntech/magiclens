@@ -38,6 +38,7 @@ import { PodMetricsPanel } from './PodMetricsPanel'
 import { PodNetworkPanel } from './PodNetworkPanel'
 import { PodLogsPanel } from './PodLogsPanel'
 import { PodExecPanel } from './PodExecPanel'
+import { ResourceNotesTab } from '../Notes/ResourceNotesTab'
 import { Icon } from '../ui/Icon'
 import { computePodInsights } from './podInsights'
 
@@ -788,6 +789,19 @@ export function PodDetailView({
           name={podName}
           target={target}
           isActive={isActive}
+        />
+      )
+    },
+    {
+      key: 'notes',
+      label: t('podDetail.tabs.notes'),
+      children: paddedPane(
+        <ResourceNotesTab
+          clusterId={clusterId}
+          resourceKind="Pods"
+          namespace={namespace}
+          resourceName={podName}
+          isActive={isActive && activeTab === 'notes'}
         />
       )
     },

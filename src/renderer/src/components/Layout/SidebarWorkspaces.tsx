@@ -32,6 +32,7 @@ import {
 } from '@shared/types/keyboardShortcuts'
 import { useClusterStore, type ClusterEntry } from '../../stores/clusterStore'
 import { useClusterGroupsStore } from '../../stores/clusterGroupsStore'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { sortClustersByConnection } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { ClusterAvatar } from '../ClusterTabs/ClusterAvatar'
@@ -72,7 +73,9 @@ export function SidebarWorkspaces({
   const { t } = useTranslation()
   const clusters = useClusterStore((s) => s.clusters)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
+  const openedTabs = useClusterStore((s) => s.openedTabs)
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
+  const showWorkspaceClusterCounts = useDisplaySettingsStore((s) => s.showWorkspaceClusterCounts)
   const groups = useClusterGroupsStore((s) => s.groups)
   const createGroup = useClusterGroupsStore((s) => s.createGroup)
   const renameGroup = useClusterGroupsStore((s) => s.renameGroup)
@@ -352,6 +355,11 @@ export function SidebarWorkspaces({
                     .filter((c): c is ClusterEntry => !!c)
                 )
                 const hasActive = members.some((c) => c.id === activeClusterId)
+                const hasLive = members.some(
+                  (c) =>
+                    c.status === 'connected' &&
+                    (c.id === activeClusterId || openedTabs.includes(c.id))
+                )
                 const flyout = (
                   <div className="ml-resource-nav-flyout">
                     <div className="ml-resource-nav-flyout-title">{group.name}</div>
@@ -361,12 +369,15 @@ export function SidebarWorkspaces({
                       ) : (
                         members.map((cluster) => {
                           const active = cluster.id === activeClusterId
+                          const live =
+                            cluster.status === 'connected' &&
+                            (active || openedTabs.includes(cluster.id))
                           return (
                             <button
                               key={cluster.id}
                               type="button"
                               role="menuitem"
-                              className={`ml-resource-nav-flyout-item${active ? ' is-active' : ''}`}
+                              className={`ml-resource-nav-flyout-item${active ? ' is-active' : ''}${live ? ' is-session-live' : ''}`}
                               onClick={() => {
                                 openClusterTab(cluster.id)
                                 onNavigate?.()
@@ -400,12 +411,24 @@ export function SidebarWorkspaces({
                     mouseEnterDelay={0.05}
                     mouseLeaveDelay={0.12}
                     classNames={{ root: 'ml-resource-nav-flyout-overlay' }}
+                    styles={{
+                      container: {
+                        padding: 0,
+                        background: 'transparent',
+                        boxShadow: 'none',
+                        border: 'none'
+                      },
+                      content: {
+                        padding: 0,
+                        background: 'transparent'
+                      }
+                    }}
                     destroyOnHidden
                   >
                     <span className="ml-ws-rail-slot">
                       <button
                         type="button"
-                        className={`ml-ws-rail-item${hasActive ? ' is-active' : ''}`}
+                        className={`ml-ws-rail-item${hasActive ? ' is-active' : ''}${hasLive ? ' is-session-live' : ''}`}
                         aria-label={group.name}
                       >
                         <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={28} />
@@ -452,20 +475,17 @@ export function SidebarWorkspaces({
           </span>
           <span className="ml-sidebar-section-chrome__copy">
             <span className="ml-sidebar-section-chrome__label">{t('workspaces.title')}</span>
-            <span className="ml-sidebar-section-chrome__hint">{t('workspaces.sectionHint')}</span>
           </span>
         </button>
         <Tooltip title={t('workspaces.newTooltip')}>
-          <span className="ml-sidebar-section-chrome__action-slot">
-            <button
-              type="button"
-              className="ml-sidebar-section-chrome__action"
-              aria-label={t('workspaces.new')}
-              onClick={openCreate}
-            >
-              <Icon icon={FolderPlus} variant="detail" />
-            </button>
-          </span>
+          <button
+            type="button"
+            className="ml-sidebar-section-chrome__action"
+            aria-label={t('workspaces.new')}
+            onClick={openCreate}
+          >
+            <Icon icon={FolderPlus} variant="detail" />
+          </button>
         </Tooltip>
         <span className="ml-sidebar-section-chrome__count">{groups.length}</span>
       </div>
@@ -527,17 +547,25 @@ export function SidebarWorkspaces({
                         onClick={() => void setCollapsed(group.id, !isCollapsed)}
                         aria-expanded={!isCollapsed}
                       >
-                        <span className="ml-ws-group__chevron">
+                        <span className="ml-ws-group__chevron" aria-hidden>
                           <Icon icon={isCollapsed ? ChevronRight : ChevronDown} variant="micro" />
                         </span>
-                        <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={22} />
-                        <span className="ml-ws-group__name">{group.name}</span>
-                        <span className="ml-ws-group__count">{members.length}</span>
-                        {group.shortcut ? (
-                          <span className="ml-ws-group__shortcut">
-                            {formatShortcutBinding(group.shortcut, isMac)}
+                        <span className="ml-ws-group__avatar">
+                          <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={20} />
+                        </span>
+                        <span className="ml-ws-group__meta">
+                          <span className="ml-ws-group__name">{group.name}</span>
+                          <span className="ml-ws-group__meta-trail">
+                            {showWorkspaceClusterCounts ? (
+                              <span className="ml-ws-group__count">{members.length}</span>
+                            ) : null}
+                            {group.shortcut ? (
+                              <span className="ml-ws-group__shortcut">
+                                {formatShortcutBinding(group.shortcut, isMac)}
+                              </span>
+                            ) : null}
                           </span>
-                        ) : null}
+                        </span>
                       </button>
                       <Dropdown menu={menu} trigger={['click']}>
                         <button

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Alert, Popover } from 'antd'
+import { useTranslation } from 'react-i18next'
 import { Box, Cpu, MemoryStick } from 'lucide-react'
 import { DEFAULT_METRICS_TIME_RANGE, type MetricsTimeRange } from '@shared/metricsTimeRange'
 import type { ClusterMetricsSummary } from '@shared/types/metrics'
@@ -16,6 +17,7 @@ interface NodesResourceGridProps {
 }
 
 export function NodesResourceGrid({ clusterId, data, isActive }: NodesResourceGridProps): React.JSX.Element {
+  const { t } = useTranslation()
   const [timeRange, setTimeRange] = useState<MetricsTimeRange>(DEFAULT_METRICS_TIME_RANGE)
   const [hoverMetric, setHoverMetric] = useState<'cpu' | 'memory' | null>(null)
   const { data: rangeData, isLoading: rangeLoading } = useClusterMetricsRange(
@@ -53,7 +55,7 @@ export function NodesResourceGrid({ clusterId, data, isActive }: NodesResourceGr
           />
         }
       >
-        <div>{card}</div>
+        <div className="ml-nodes-resource-grid__cell">{card}</div>
       </Popover>
     )
   }
@@ -65,7 +67,7 @@ export function NodesResourceGrid({ clusterId, data, isActive }: NodesResourceGr
           type="warning"
           showIcon
           className="ml-nodes-dashboard-alert"
-          message="metrics-server unavailable — usage data may be incomplete"
+          message={t('clusterOverview.metricsUnavailable')}
         />
       )}
       <div className="ml-nodes-resource-grid">

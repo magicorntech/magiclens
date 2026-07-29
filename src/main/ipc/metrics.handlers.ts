@@ -26,7 +26,9 @@ export function registerMetricsHandlers(): void {
   ipcMain.handle(
     IPC.METRICS_GET_CLUSTER_SUMMARY,
     async (_e, req: ClusterIdRequest): Promise<ClusterMetricsSummary | { error: string }> => {
-      const result = await withClusterClients(req.clusterId, (clients) => getClusterMetricsSummary(clients))
+      const result = await withClusterClients(req.clusterId, (clients) =>
+        getClusterMetricsSummary(clients, req.clusterId)
+      )
       if ('error' in result) return result
       return result
     }
@@ -35,7 +37,9 @@ export function registerMetricsHandlers(): void {
   ipcMain.handle(
     IPC.METRICS_GET_NODE_METRICS,
     async (_e, req: ClusterIdRequest): Promise<NodeMetricsResponse | { error: string }> => {
-      const result = await withClusterClients(req.clusterId, (clients) => getNodeMetricsTable(clients))
+      const result = await withClusterClients(req.clusterId, (clients) =>
+        getNodeMetricsTable(clients, req.clusterId)
+      )
       if ('error' in result) return result
       return result
     }

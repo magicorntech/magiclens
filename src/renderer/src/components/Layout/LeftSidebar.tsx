@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Empty, Tooltip } from 'antd'
-import { ChevronDown, ChevronLeft, ChevronRight, Layers, Network, Star } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Layers, Network, Settings, Sparkles, Star } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import logo from '../../assets/logo.png'
@@ -8,6 +8,7 @@ import { useClusterStore, type ClusterEntry } from '../../stores/clusterStore'
 import { useVpnStore } from '../../stores/vpnStore'
 import { useClusterVpnStore } from '../../stores/clusterVpnStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
+import { useSettingsUiStore } from '../../stores/settingsUiStore'
 import { resolveUserScope, favoritesExpandedKey, favoritesHeightKey, workspacesExpandedKey } from '../../workspace'
 import { applyClusterFilterAndSearch } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
@@ -16,11 +17,11 @@ import { EditClusterModal } from '../ClusterTabs/EditClusterModal'
 import { SidebarWorkspaces } from './SidebarWorkspaces'
 import { Icon } from '../ui/Icon'
 
-const COLLAPSED_WIDTH = 60
-const EXPANDED_WIDTH = 252
-const DEFAULT_FAVORITES_HEIGHT = 220
-const MIN_FAVORITES_HEIGHT = 100
-const MAX_FAVORITES_HEIGHT = 520
+const COLLAPSED_WIDTH = 72
+const EXPANDED_WIDTH = 236
+const DEFAULT_FAVORITES_HEIGHT = 184
+const MIN_FAVORITES_HEIGHT = 96
+const MAX_FAVORITES_HEIGHT = 480
 const IS_MAC = navigator.platform.includes('Mac')
 
 interface LeftSidebarProps {
@@ -66,6 +67,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const storedCollapsed = useClusterStore((s) => s.leftSidebarCollapsed)
   const setCollapsed = useClusterStore((s) => s.setLeftSidebarCollapsed)
   const setActiveView = useClusterStore((s) => s.setActiveView)
+  const openSettings = useSettingsUiStore((s) => s.openSettings)
   const showFavoritesSection = useDisplaySettingsStore((s) => s.showFavoritesSection)
   const showWorkspacesSection = useDisplaySettingsStore((s) => s.showWorkspacesSection)
   const vpnStatus = useVpnStore((s) => s.status)
@@ -87,11 +89,6 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
     [clusters, favoriteSearch, collapsed]
   )
 
-  const connectedCount = useMemo(
-    () => clusters.filter((c) => c.status === 'connected').length,
-    [clusters]
-  )
-
   const contextVpnId =
     activeView === 'tabs' && activeClusterId ? clusterVpnLinks[activeClusterId] : undefined
   const displayVpnId = contextVpnId ?? vpnStatus?.activeProfileId
@@ -103,22 +100,6 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
     : vpnStatus?.status === 'connected'
   const vpnConnecting =
     vpnStatus?.activeProfileId === displayVpnId && vpnStatus?.status === 'connecting'
-  const vpnError = vpnStatus?.status === 'error' && vpnStatus.activeProfileId === displayVpnId
-  const vpnMeta = displayProfile
-    ? vpnConnected
-      ? displayProfile.name
-      : vpnConnecting
-        ? `${displayProfile.name} · ${t('common.connecting')}`
-        : vpnError
-          ? vpnStatus?.message ?? t('common.error')
-          : displayProfile.name
-    : vpnStatus?.status === 'connected'
-      ? vpnProfiles.find((p) => p.id === vpnStatus.activeProfileId)?.name ?? t('common.connected')
-      : vpnStatus?.status === 'connecting'
-        ? t('common.connecting')
-        : vpnStatus?.status === 'error'
-          ? vpnStatus?.message ?? t('common.error')
-          : t('common.disconnected')
 
   useEffect(() => {
     setFavoritesHeight(loadFavoritesHeight(userScope))
@@ -187,6 +168,15 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const showFavoritesInRail = showFavoritesSection && (!collapsed || favoritesExpanded)
   const showWorkspacesInRail = showWorkspacesSection && (!collapsed || workspacesExpanded)
 
+  useEffect(() => {
+    if (isDrawer) return
+    const px = `${collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH}px`
+    document.documentElement.style.setProperty('--ml-left-sidebar-width', px)
+    return () => {
+      document.documentElement.style.removeProperty('--ml-left-sidebar-width')
+    }
+  }, [collapsed, isDrawer])
+
   return (
     <motion.aside
       className={`ml-sidebar${collapsed ? ' ml-sidebar--collapsed' : ''}${isDrawer ? ' ml-sidebar--drawer' : ''}`}
@@ -217,77 +207,112 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
       </div>
 
       <div className="ml-sidebar-actions titlebar-no-drag">
-        {(() => {
-          const clustersBtn = (
-            <button
-              type="button"
-              className={`ml-sidebar-hub-btn${activeView === 'clusters' ? ' ml-sidebar-hub-btn--active' : ''}`}
-              onClick={() => handleNavigate(() => setActiveView('clusters'))}
-            >
-              <span className="ml-sidebar-hub-btn-icon">
-                <Icon icon={Layers} variant="action" />
-              </span>
-              {!collapsed && (
-                <span className="ml-sidebar-hub-btn-text">
-                  <span className="ml-sidebar-hub-btn-title">{t('common.clusters')}</span>
-                  <span className="ml-sidebar-hub-btn-meta">
-                    {t('chrome.clustersMeta', { total: clusters.length, connected: connectedCount })}
-                  </span>
+        <div
+          className={`ml-sidebar-hub${collapsed ? ' ml-sidebar-hub--collapsed' : ''}`}
+          role="tablist"
+          aria-label="Navigation"
+        >
+          {(() => {
+            const clustersBtn = (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeView === 'clusters'}
+                className={`ml-sidebar-hub-btn${activeView === 'clusters' ? ' ml-sidebar-hub-btn--active' : ''}`}
+                onClick={() => handleNavigate(() => setActiveView('clusters'))}
+              >
+                <span className="ml-sidebar-hub-btn-icon">
+                  <Icon icon={Layers} variant="action" />
                 </span>
-              )}
-              {!collapsed && clusters.length > 0 && (
-                <span className="ml-sidebar-hub-btn-badge">{clusters.length}</span>
-              )}
-            </button>
-          )
-          return collapsed ? (
-            <Tooltip title={t('chrome.manageClusters')} placement="right" arrow={false}>
-              {clustersBtn}
-            </Tooltip>
-          ) : (
-            clustersBtn
-          )
-        })()}
+                {!collapsed && (
+                  <span className="ml-sidebar-hub-btn-text">
+                    <span className="ml-sidebar-hub-btn-title">{t('common.clusters')}</span>
+                  </span>
+                )}
+              </button>
+            )
+            return collapsed ? (
+              <Tooltip title={t('chrome.manageClusters')} placement="right" arrow={false}>
+                {clustersBtn}
+              </Tooltip>
+            ) : (
+              clustersBtn
+            )
+          })()}
 
-        {(() => {
-          const vpnBtn = (
-            <button
-              type="button"
-              className={`ml-sidebar-hub-btn${activeView === 'vpn' ? ' ml-sidebar-hub-btn--active' : ''}`}
-              onClick={() => handleNavigate(() => setActiveView('vpn'))}
-            >
-              <span
-                className={`ml-sidebar-hub-btn-icon${
+          {(() => {
+            const vpnBtn = (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeView === 'vpn'}
+                className={`ml-sidebar-hub-btn${activeView === 'vpn' ? ' ml-sidebar-hub-btn--active' : ''}${
                   vpnConnected
-                    ? ' ml-sidebar-hub-btn-icon--vpn-connected'
+                    ? ' ml-sidebar-hub-btn--vpn-connected'
                     : vpnConnecting
-                      ? ' ml-sidebar-hub-btn-icon--vpn-connecting'
+                      ? ' ml-sidebar-hub-btn--vpn-connecting'
                       : ''
                 }`}
+                onClick={() => handleNavigate(() => setActiveView('vpn'))}
               >
-                <Icon icon={Network} variant="action" />
-              </span>
-              {!collapsed && (
-                <span className="ml-sidebar-hub-btn-text">
-                  <span className="ml-sidebar-hub-btn-title">{t('common.vpn')}</span>
-                  <span className="ml-sidebar-hub-btn-meta">{vpnMeta}</span>
+                <span
+                  className={`ml-sidebar-hub-btn-icon${
+                    vpnConnected
+                      ? ' ml-sidebar-hub-btn-icon--vpn-connected'
+                      : vpnConnecting
+                        ? ' ml-sidebar-hub-btn-icon--vpn-connecting'
+                        : ''
+                  }`}
+                >
+                  <Icon icon={Network} variant="action" />
                 </span>
-              )}
-            </button>
-          )
-          const vpnTitle = vpnConnected
-            ? t('chrome.vpnConnected', { name: displayProfile?.name ?? 'VPN' })
-            : vpnConnecting
-              ? t('chrome.vpnConnecting', { name: displayProfile?.name ?? 'VPN' })
-              : t('chrome.vpnTooltip')
-          return collapsed ? (
-            <Tooltip title={vpnTitle} placement="right" arrow={false}>
-              {vpnBtn}
-            </Tooltip>
-          ) : (
-            vpnBtn
-          )
-        })()}
+                {!collapsed && (
+                  <span className="ml-sidebar-hub-btn-text">
+                    <span className="ml-sidebar-hub-btn-title">{t('common.vpn')}</span>
+                  </span>
+                )}
+              </button>
+            )
+            const vpnTitle = vpnConnected
+              ? t('chrome.vpnConnected', { name: displayProfile?.name ?? 'VPN' })
+              : vpnConnecting
+                ? t('chrome.vpnConnecting', { name: displayProfile?.name ?? 'VPN' })
+                : t('chrome.vpnTooltip')
+            return (
+              <Tooltip title={vpnTitle} placement="right" arrow={false}>
+                {vpnBtn}
+              </Tooltip>
+            )
+          })()}
+
+          {(() => {
+            const notesBtn = (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeView === 'notes'}
+                className={`ml-sidebar-hub-btn${activeView === 'notes' ? ' ml-sidebar-hub-btn--active' : ''}`}
+                onClick={() => handleNavigate(() => setActiveView('notes'))}
+              >
+                <span className="ml-sidebar-hub-btn-icon">
+                  <Icon icon={Sparkles} variant="action" />
+                </span>
+                {!collapsed && (
+                  <span className="ml-sidebar-hub-btn-text">
+                    <span className="ml-sidebar-hub-btn-title">{t('common.notes')}</span>
+                  </span>
+                )}
+              </button>
+            )
+            return collapsed ? (
+              <Tooltip title={t('chrome.notesTooltip')} placement="right" arrow={false}>
+                {notesBtn}
+              </Tooltip>
+            ) : (
+              notesBtn
+            )
+          })()}
+        </div>
       </div>
 
       {showFavoritesInRail ? (
@@ -317,7 +342,6 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
                 </span>
                 <span className="ml-sidebar-section-chrome__copy">
                   <span className="ml-sidebar-section-chrome__label">{t('common.favorites')}</span>
-                  <span className="ml-sidebar-section-chrome__hint">{t('chrome.favoritesHint')}</span>
                 </span>
               </button>
               <span className="ml-sidebar-section-chrome__action-slot" aria-hidden />
@@ -384,17 +408,38 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
       ) : null}
 
       <div className="ml-sidebar-footer titlebar-no-drag">
-        {!isDrawer && (
-          <Tooltip
-            title={collapsed ? t('chrome.expandSidebar') : t('chrome.collapseSidebar')}
-            placement="right"
-            arrow={false}
-          >
-            <button type="button" className="ml-sidebar-btn ml-sidebar-btn--ghost" onClick={() => setCollapsed(!collapsed)}>
-              <Icon icon={collapsed ? ChevronRight : ChevronLeft} variant="action" />
+        <div className="ml-sidebar-footer__row">
+          <Tooltip title={t('common.settings')} placement="right" arrow={false}>
+            <button
+              type="button"
+              className="ml-sidebar-btn ml-sidebar-btn--ghost"
+              aria-label={t('common.settings')}
+              onClick={() => {
+                openSettings()
+                onNavigate?.()
+              }}
+            >
+              <Icon icon={Settings} variant="action" />
+              {!collapsed ? <span>{t('common.settings')}</span> : null}
             </button>
           </Tooltip>
-        )}
+          {!isDrawer ? (
+            <Tooltip
+              title={collapsed ? t('chrome.expandSidebar') : t('chrome.collapseSidebar')}
+              placement="right"
+              arrow={false}
+            >
+              <button
+                type="button"
+                className="ml-sidebar-btn ml-sidebar-btn--ghost ml-sidebar-footer__collapse"
+                onClick={() => setCollapsed(!collapsed)}
+                aria-label={collapsed ? t('chrome.expandSidebar') : t('chrome.collapseSidebar')}
+              >
+                <Icon icon={collapsed ? ChevronRight : ChevronLeft} variant="action" />
+              </button>
+            </Tooltip>
+          ) : null}
+        </div>
       </div>
       <EditClusterModal cluster={editingCluster} onClose={() => setEditingCluster(null)} />
     </motion.aside>

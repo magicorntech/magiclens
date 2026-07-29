@@ -14,17 +14,35 @@ export const en = {
     allNamespaces: 'All namespaces',
     selectNamespaces: 'Select namespaces',
     namespacesSelected: '{{count}} namespaces',
+    namespace: 'Namespace',
+    namespaceSearch: 'Filter namespaces…',
+    namespaceFilter: 'Namespace filters',
+    namespaceFilterAll: 'All',
+    namespaceFilterPinned: 'Pinned',
+    namespaceFilterSystem: 'System',
+    namespaceFilterApp: 'Apps',
+    namespacePinned: 'Pinned',
+    namespaceOther: 'Namespaces',
+    namespaceCount: '{{count}} available',
+    namespaceNoMatch: 'No namespaces match',
+    namespaceEmpty: 'No namespaces found',
+    refresh: 'Refresh',
+    clear: 'Clear',
+    loading: 'Loading…',
     total: 'total',
     clusters: 'Clusters',
     vpn: 'VPN',
+    notes: 'Sparks',
     favorites: 'Favorites',
-    cancel: 'Cancel'
+    cancel: 'Cancel',
+    close: 'Close'
   },
   chrome: {
     searchPlaceholder: 'Search clusters, resources, namespaces…',
     manageClusters: 'Manage clusters',
     clustersMeta: '{{total}} total · {{connected}} connected',
     vpnTooltip: 'VPN profiles (OpenVPN, Pritunl, WireGuard)',
+    notesTooltip: 'Sparks — notes & reminders',
     vpnConnected: 'Connected · {{name}}',
     vpnConnecting: 'Connecting · {{name}}',
     searchFavorites: 'Search favorites',
@@ -118,6 +136,20 @@ export const en = {
       panelPlacementBottom: 'Bottom',
       panelPlacementRight: 'Right',
       panelPlacementLeft: 'Left',
+      fabTitle: 'Quick launch balloon',
+      fabHint:
+        'Expandable corner control for Terminal, blank YAML, or a new Spark. Pick a dock corner — or long-press + and drag to park it anywhere.',
+      showUtilityFab: 'Show quick-launch balloon',
+      showUtilityFabHint:
+        'When enabled, a floating balloon appears on a workspace corner. Long-press and drag to move it; picking a corner resets the free position.',
+      fabDockLabel: 'Balloon dock corner',
+      fabSideLeftMiddle: 'Left middle',
+      fabSideRightMiddle: 'Right middle',
+      fabSideLeftBottom: 'Bottom left',
+      fabSideRightBottom: 'Bottom right',
+      fabSideLeft: 'Left',
+      fabSideBottom: 'Bottom',
+      fabSideRight: 'Right',
       nodesTitle: 'Nodes page layout',
       nodesHint:
         'Toggle sections on or off and drag to reorder. The table section stays flexible and fills remaining space when visible.',
@@ -129,6 +161,9 @@ export const en = {
       showWorkspaces: 'Show Workspaces section',
       showWorkspacesHint:
         'When enabled, Workspaces appear in the left sidebar for grouping clusters. Collapsed sidebar shows a W marker above workspace clusters.',
+      showWorkspaceClusterCounts: 'Show workspace cluster counts',
+      showWorkspaceClusterCountsHint:
+        'When enabled, each workspace header shows how many clusters it contains.',
       showClusterNamespace: 'Show connected namespace',
       showClusterNamespaceHint:
         'When enabled, the selected namespace is shown as a chip on connected clusters in the left sidebar.',
@@ -136,7 +171,21 @@ export const en = {
       showClusterLogos: 'Show logos on cluster tabs',
       showResourceIcons: 'Show icons on resource tabs',
       tabIconsHint:
-        'Cluster tabs use the cluster logo you set when adding a cluster. Resource tabs use the same icons as the left menu.'
+        'Cluster tabs use the cluster logo you set when adding a cluster. Resource tabs use the same icons as the left menu.',
+      chromeToolbarTitle: 'Toolbar icons',
+      chromeToolbarHint:
+        'Show, hide, and reorder top-bar icons. Settings stays fixed on the right and cannot be moved or hidden.',
+      chromeToolbarChooser:
+        'Drag to reorder toolbar icons. Toggle visibility for each control. Settings remains locked.',
+      chromeToolbarFixed: 'Fixed'
+    },
+    chromeToolbar: {
+      search: 'Search',
+      terminal: 'Terminal',
+      theme: 'Theme',
+      fullscreen: 'Fullscreen',
+      split: 'Split clusters',
+      settings: 'Settings'
     },
     nodesSections: {
       health: 'Cluster Health',
@@ -306,8 +355,10 @@ export const en = {
     }
   },
   vpn: {
-    heroEyebrow: 'Secure tunnel',
+    brandEyebrow: 'MagicLens',
     title: 'VPN',
+    heroSubtitle: 'Secure tunnel for private clusters and remote access.',
+    heroEyebrow: 'Secure tunnel',
     status: {
       connected: 'Connected',
       connecting: 'Connecting',
@@ -453,10 +504,11 @@ export const en = {
       autoConnect: 'Auto-connect · {{name}}'
     },
     clusterLink: {
-      title: 'VPN profile (auto-connect)',
+      title: 'VPN profile (optional)',
       placeholder: 'No VPN — connect manually',
-      empty: 'Add a VPN profile in the VPN page first',
-      hint: 'When you switch to this cluster tab, MagicLens connects this VPN automatically. PIN and MFA are remembered per VPN profile for the day after the first successful connect.'
+      none: 'No VPN',
+      empty: 'No VPN profiles yet — leave empty or add one on the VPN page',
+      hint: 'Optional. If set, MagicLens auto-connects this VPN when you open the cluster tab. Leave empty to manage VPN yourself. PIN and MFA are remembered per profile for the day after the first successful connect.'
     }
   },
   tour: {
@@ -589,7 +641,39 @@ export const en = {
     hiddenHint: 'Enable sections in Settings → Display → Nodes page layout.',
     hotspots: 'Hotspots',
     hotspotsCount: '{{count}} insights',
-    topConsumers: 'Top consumers'
+    topConsumers: 'Top consumers',
+    resizeHotspots: 'Resize hotspots panel',
+    growHotspots: 'Enlarge hotspots panel',
+    shrinkHotspots: 'Shrink hotspots panel',
+    resizeTable: 'Resize nodes table',
+    growTable: 'Enlarge nodes table',
+    shrinkTable: 'Shrink nodes table',
+    health: {
+      cluster: 'Cluster health',
+      healthy: 'Healthy',
+      warning: 'Warning',
+      degraded: 'Degraded',
+      healthyMsg: 'No critical alerts',
+      warningMsg: '{{pending}} pending pods',
+      degradedMsg: '{{notReady}} not ready · {{failed}} failed pods',
+      nodes: 'Nodes',
+      nodesUnit: 'total',
+      pods: 'Pods',
+      podsUnit: 'total',
+      ready: '{{count}} ready',
+      notReady: '{{count}} not ready',
+      running: '{{count}} running',
+      pending: '{{count}} pending',
+      failed: '{{count}} failed'
+    }
+  },
+  nodePods: {
+    name: 'Name',
+    namespace: 'Namespace',
+    status: 'Status',
+    memory: 'Memory',
+    restarts: 'Restarts',
+    empty: 'No pods scheduled on this node'
   },
   metricsCharts: {
     networkReceive: 'Network receive',
@@ -610,7 +694,7 @@ export const en = {
   clusterOverview: {
     title: 'Cluster overview',
     subtitle: 'Health, capacity, and recent activity across the cluster.',
-    metricsUnavailable: 'metrics-server unavailable — usage data may be incomplete',
+    metricsUnavailable: 'Usage metrics unavailable — install metrics-server or connect Prometheus',
     nodes: 'Nodes',
     nodesHint: '{{ready}} ready · {{notReady}} not ready',
     pods: 'Pods',
@@ -634,6 +718,7 @@ export const en = {
     byNamespace: 'By namespace',
     empty: 'No workloads found',
     problems: 'Problem workloads',
+    problemsTotal: '{{count}} total',
     noProblems: 'No unhealthy workloads detected',
     highRestarts: 'High restart pods',
     noRestarts: 'No pods with high restart counts',
@@ -671,6 +756,7 @@ export const en = {
     noHpas: 'No HPAs defined'
   },
   topology: {
+    brandEyebrow: 'MagicLens',
     title: 'Topology & Applications',
     subtitle: 'Live map of workloads, services, and dependencies in this namespace.',
     modes: {
@@ -755,6 +841,7 @@ export const en = {
     }
   },
   clustersHub: {
+    brandEyebrow: 'MagicLens',
     title: 'Clusters',
     subtitle: 'Add, connect, and manage all Kubernetes clusters from one place.',
     add: 'Add cluster',
@@ -1011,6 +1098,8 @@ export const en = {
     noKubeconfigChanges: 'No changes to save',
     kubeconfigSaved: 'Kubeconfig saved for this cluster',
     reconnectHint: 'Reconnect the cluster to apply kubeconfig changes',
+    searchSections: 'Search settings…',
+    noSectionMatch: 'No matching sections',
     save: 'Save',
     cancel: 'Cancel',
     close: 'Close'
@@ -1130,6 +1219,81 @@ export const en = {
     terminal: 'Terminal',
     closePanel: 'Close panel'
   },
+  utilityFab: {
+    expand: 'Quick actions',
+    collapse: 'Close menu',
+    terminal: 'New terminal',
+    emptyEditor: 'Blank YAML editor',
+    addSpark: 'Add spark',
+    dragHint: 'Long-press and drag to reposition'
+  },
+  notes: {
+    brandEyebrow: 'MagicLens',
+    hubTitle: 'Sparks',
+    hubSubtitle: 'Capture context, pin what matters, and nudge yourself when it’s time.',
+    add: 'New spark',
+    create: 'Create spark',
+    save: 'Save',
+    delete: 'Delete',
+    createTitle: 'New spark',
+    editTitle: 'Edit spark',
+    created: 'Spark created',
+    updated: 'Spark updated',
+    deleted: 'Spark deleted',
+    deleteConfirm: 'Delete this spark?',
+    empty: 'No sparks yet — light the first one.',
+    emptyFiltered: 'Nothing matches these filters',
+    count: '{{count}} sparks',
+    searchPlaceholder: 'Search sparks…',
+    reminderToast: 'Spark reminder: {{title}}',
+    scheduled: 'Reminder set for {{time}} — keep MagicLens open',
+    testNotification: 'Test ping',
+    testSent: 'Notification sent',
+    testSentOs: 'OS + in-app notification sent',
+    testSentInAppOnly:
+      'In-app notification sent — macOS OS alert needs a signed Electron.app (npm run sign:electron-dev)',
+    notifyNow: 'Ping now',
+    stats: {
+      total: 'Sparks',
+      pinned: 'Pinned',
+      upcoming: 'Upcoming'
+    },
+    inbox: {
+      title: 'Sparks inbox',
+      empty: 'No pings yet',
+      markAllRead: 'Mark all read',
+      clear: 'Clear',
+      openNotes: 'Open Sparks'
+    },
+    filter: {
+      all: 'All'
+    },
+    scope: {
+      global: 'Global',
+      workspace: 'Workspace',
+      cluster: 'Cluster',
+      resource: 'Resource'
+    },
+    fields: {
+      title: 'Title',
+      titleRequired: 'Give this spark a title',
+      titlePlaceholder: 'What should spark later?',
+      body: 'Body',
+      bodyPlaceholder: 'Context, kubectl tips, links, whatever you’ll need…',
+      scope: 'Attach to',
+      cluster: 'Cluster',
+      clusterPlaceholder: 'Any cluster',
+      workspace: 'Workspace',
+      workspacePlaceholder: 'Any workspace',
+      kind: 'Resource kind',
+      namespace: 'Namespace',
+      resourceName: 'Resource name',
+      remindAt: 'Remind me',
+      remindAtPlaceholder: 'Pick a future time (optional)',
+      remindAtFuture: 'Pick a time at least ~30 seconds from now',
+      pinned: 'Pin'
+    }
+  },
   resourceDetail: {
     tabs: {
       overview: 'Overview',
@@ -1139,7 +1303,9 @@ export const en = {
       replicaHistory: 'Replica history',
       exec: 'Exec',
       metrics: 'Metrics',
-      pressure: 'Pressure'
+      pressure: 'Pressure',
+      pods: 'Pods',
+      notes: 'Sparks'
     },
     overview: {
       title: 'Overview',
@@ -1189,6 +1355,7 @@ export const en = {
       logs: 'Logs',
       exec: 'Exec',
       events: 'Events',
+      notes: 'Sparks',
       yaml: 'YAML'
     },
     overview: {

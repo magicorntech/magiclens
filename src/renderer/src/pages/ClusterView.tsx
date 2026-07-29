@@ -5,7 +5,6 @@ import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceFocus } from '@shared/types/navigation'
 import { useClusterStore } from '../stores/clusterStore'
 import { connectCluster } from '../clusterConnect'
-import { clusterNeedsVpn } from '../clusterVpn'
 import { cssBackgroundImage, normalizeBackgroundPanelOpacity, resolveClusterBackgroundUrl } from '../clusterBackgrounds'
 import { AppShell } from '../components/Layout/AppShell'
 import { ResourceKindTabs } from '../components/ResourceTable/ResourceKindTabs'
@@ -20,6 +19,7 @@ import { ClusterOverviewPage } from '../components/Overview/ClusterOverviewPage'
 import { WorkloadsOverviewPage } from '../components/Overview/WorkloadsOverviewPage'
 import { ApplicationsOverviewPage } from '../components/Overview/ApplicationsOverviewPage'
 import { ConfigOverviewPage } from '../components/Overview/ConfigOverviewPage'
+import { OverviewDetailShell } from '../components/Overview/OverviewDetailShell'
 import type { VirtualPageKey } from '../resourceConfig/kinds.renderer'
 
 interface ClusterViewProps {
@@ -32,9 +32,9 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
   const cluster = useClusterStore((s) => s.clusters.find((c) => c.id === clusterId))
   const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const openResourceKind = useClusterStore((s) => s.openResourceKind)
+  const openVirtualPage = useClusterStore((s) => s.openVirtualPage)
   const navigateToResource = useClusterStore((s) => s.navigateToResource)
   const clearPendingNavigation = useClusterStore((s) => s.clearPendingNavigation)
-  const [virtualPage, setVirtualPage] = useState<VirtualPageKey | null>(null)
   const [helmReleaseFocus, setHelmReleaseFocus] = useState<{ namespace: string; name: string } | null>(null)
   const [dynamicResourceFocus, setDynamicResourceFocus] = useState<
     import('@shared/types/navigation').DynamicResourceFocus | null
@@ -55,15 +55,14 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
   useEffect(() => {
     if (!cluster?.pendingNavigation) return
     const pending = cluster.pendingNavigation
-    if (pending.virtualPage) setVirtualPage(pending.virtualPage)
+    if (pending.virtualPage) openVirtualPage(clusterId, pending.virtualPage)
     if (pending.helmRelease) setHelmReleaseFocus(pending.helmRelease)
     if (pending.dynamicResource) setDynamicResourceFocus(pending.dynamicResource)
     clearPendingNavigation(clusterId)
-  }, [cluster?.pendingNavigation, clusterId, clearPendingNavigation])
+  }, [cluster?.pendingNavigation, clusterId, clearPendingNavigation, openVirtualPage])
 
   useEffect(() => {
     if (cluster?.status !== 'idle') return
-    if (clusterNeedsVpn(cluster.id)) return
     void connectCluster(cluster.id, cluster.source, cluster.contextName)
   }, [cluster?.id, cluster?.status, cluster?.source, cluster?.contextName])
 
@@ -132,10 +131,8 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
   }
 
   if (cluster.status !== 'connected') {
-    const waitingVpn = clusterNeedsVpn(cluster.id)
-    const description = waitingVpn
-      ? t('clusterView.connectingVpn')
-      : cluster.status === 'connecting' && cluster.errorMessage
+    const description =
+      cluster.status === 'connecting' && cluster.errorMessage
         ? cluster.errorMessage
         : cluster.status === 'error'
           ? cluster.errorMessage
@@ -153,30 +150,96 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
     setSelectedNamespace(clusterId, namespace)
   }
 
-  function handleSelectKind(kind: ResourceKind): void {
-    setVirtualPage(null)
+  function handleOpenResourceKind(kind: ResourceKind): void {
     openResourceKind(clusterId, kind)
   }
 
   function handleNavigateToResource(focus: ResourceFocus): void {
-    setVirtualPage(null)
     navigateToResource(clusterId, focus)
+  }
+
+  function handleSelectKind(kind: ResourceKind): void {
+    handleOpenResourceKind(kind)
+  }
+
+  function handleSelectVirtualPage(key: VirtualPageKey): void {
+    openVirtualPage(clusterId, key)
   }
 
   function renderVirtualPage(page: VirtualPageKey): React.JSX.Element {
     switch (page) {
       case 'clusterOverview':
-        return <ClusterOverviewPage clusterId={clusterId} isActive />
+        return (
+          <OverviewDetailShell
+            clusterId={clusterId}
+            isActive
+            onOpenResourceKind={handleOpenResourceKind}
+          >
+            {(handlers) => (
+              <ClusterOverviewPage
+                clusterId={clusterId}
+                isActive
+                {...handlers}
+              />
+            )}
+          </OverviewDetailShell>
+        )
       case 'applications':
         return (
-          <ApplicationsOverviewPage clusterId={clusterId} namespace={selectedNamespace} />
+          <OverviewDetailShell
+            clusterId={clusterId}
+            isActive
+            onOpenResourceKind={handleOpenResourceKind}
+          >
+            {(handlers) => (
+              <ApplicationsOverviewPage
+                clusterId={clusterId}
+                namespace={selectedNamespace}
+                onNavigateToResource={handlers.onNavigateToResource}
+              />
+            )}
+          </OverviewDetailShell>
         )
       case 'workloadsOverview':
-        return <WorkloadsOverviewPage clusterId={clusterId} isActive />
+        return (
+          <OverviewDetailShell
+            clusterId={clusterId}
+            isActive
+            onOpenResourceKind={handleOpenResourceKind}
+          >
+            {(handlers) => (
+              <WorkloadsOverviewPage
+                clusterId={clusterId}
+                isActive
+                {...handlers}
+              />
+            )}
+          </OverviewDetailShell>
+        )
       case 'configOverview':
-        return <ConfigOverviewPage clusterId={clusterId} isActive />
+        return (
+          <OverviewDetailShell
+            clusterId={clusterId}
+            isActive
+            onOpenResourceKind={handleOpenResourceKind}
+          >
+            {(handlers) => (
+              <ConfigOverviewPage
+                clusterId={clusterId}
+                isActive
+                {...handlers}
+              />
+            )}
+          </OverviewDetailShell>
+        )
       case 'topology':
-        return <TopologyPage clusterId={clusterId} namespace={selectedNamespace} />
+        return (
+          <TopologyPage
+            clusterId={clusterId}
+            namespace={selectedNamespace}
+            onNamespaceChange={handleNamespaceChange}
+          />
+        )
       case 'portForwarding':
         return <PortForwardingPage clusterId={clusterId} />
       case 'discoveredApiGroups':
@@ -223,19 +286,18 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
       splitPane={splitPane}
       onNamespaceChange={handleNamespaceChange}
       onSelectKind={handleSelectKind}
-      selectedVirtualPage={virtualPage}
-      onSelectVirtualPage={setVirtualPage}
+      selectedVirtualPage={cluster.selectedVirtualPage}
+      onSelectVirtualPage={handleSelectVirtualPage}
     >
-      {virtualPage ? (
-        renderVirtualPage(virtualPage)
-      ) : (
-        <ResourceKindTabs
-          clusterId={clusterId}
-          namespace={cluster.selectedNamespace}
-          openResourceKinds={cluster.openResourceKinds}
-          selectedResourceKind={cluster.selectedResourceKind}
-        />
-      )}
+      <ResourceKindTabs
+        clusterId={clusterId}
+        namespace={cluster.selectedNamespace}
+        openResourceKinds={cluster.openResourceKinds}
+        selectedResourceKind={cluster.selectedResourceKind}
+        openVirtualPages={cluster.openVirtualPages}
+        selectedVirtualPage={cluster.selectedVirtualPage}
+        renderVirtualPage={renderVirtualPage}
+      />
     </AppShell>
   )
 }

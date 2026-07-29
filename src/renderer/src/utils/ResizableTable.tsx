@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Table } from 'antd'
 import type { ColumnType, TableProps } from 'antd/es/table'
+import {
+  paginationFitsPageSize
+} from './tableLayout'
 
 const STORAGE_PREFIX = 'ml-table-widths:'
 
@@ -236,6 +239,8 @@ export type ResizableTableProps<T extends object> = TableProps<T> & {
   resizable?: boolean
   /** Enable virtual scrolling for large lists. */
   virtualScroll?: boolean
+  /** Grow table body to show all rows on the current page (no inner scroll). */
+  fitPageSize?: boolean
 }
 
 const SELECTION_COLUMN_WIDTH = 48
@@ -248,6 +253,7 @@ export function ResizableTable<T extends object>({
   columns,
   resizable = true,
   virtualScroll = false,
+  fitPageSize: fitPageSizeProp,
   scroll: scrollProp,
   components: componentsProp,
   tableLayout,
@@ -255,10 +261,21 @@ export function ResizableTable<T extends object>({
   pagination,
   dataSource,
   loading,
+  size = 'middle',
   ...rest
 }: ResizableTableProps<T>): React.JSX.Element {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [bodyHeight, setBodyHeight] = useState<number | undefined>()
+
+  const fitPageSize =
+    fitPageSizeProp ??
+    (hasPaginationCandidate(pagination) && paginationFitsPageSize(pagination as TableProps<T>['pagination']))
+
+  function hasPaginationCandidate(
+    value: TableProps<T>['pagination']
+  ): value is Exclude<TableProps<T>['pagination'], false | undefined> {
+    return value !== false && value != null
+  }
 
   const selectionWidth = rowSelection
     ? typeof rowSelection.columnWidth === 'number'
@@ -280,6 +297,12 @@ export function ResizableTable<T extends object>({
   const hasPagination = pagination !== false && pagination != null
 
   useEffect(() => {
+    if (fitPageSize) {
+      // Grow with current page rows; Ant pagination already limits rendered rows.
+      setBodyHeight(undefined)
+      return
+    }
+
     const el = wrapRef.current
     if (!el) return
 
@@ -304,19 +327,31 @@ export function ResizableTable<T extends object>({
       window.cancelAnimationFrame(raf)
       ro.disconnect()
     }
-  }, [pagination, columnSig, dataLength, tableKey, layoutEpoch, hasPagination])
+  }, [fitPageSize, pagination, columnSig, dataLength, tableKey, layoutEpoch, hasPagination])
 
-  const mergedScroll =
-    resizable && scroll
-      ? {
-          ...scroll,
-          ...scrollProp,
-          ...(bodyHeight != null ? { y: scrollProp?.y ?? bodyHeight } : {})
-        }
-      : scrollProp
+  const mergedScroll = useMemo<TableProps<T>['scroll']>(() => {
+    const base: NonNullable<TableProps<T>['scroll']> = {
+      ...(resizable && scroll ? scroll : {}),
+      ...(scrollProp ?? {})
+    }
+
+    if (fitPageSize) {
+      const next = { ...base }
+      if (scrollProp?.y == null) {
+        delete next.y
+      }
+      return Object.keys(next).length > 0 ? next : undefined
+    }
+
+    const shouldSetY = bodyHeight != null && resizable && Boolean(scroll) && scrollProp?.y == null
+    if (shouldSetY) {
+      return { ...base, y: bodyHeight }
+    }
+    return Object.keys(base).length > 0 ? base : scrollProp
+  }, [resizable, scroll, scrollProp, bodyHeight, fitPageSize])
 
   const rowCount = dataLength
-  const useVirtual = virtualScroll && rowCount > 100
+  const useVirtual = !fitPageSize && virtualScroll && rowCount > 100
   const finalScroll = useVirtual ? { ...mergedScroll, y: mergedScroll?.y ?? bodyHeight ?? 520 } : mergedScroll
 
   const mergedRowSelection = rowSelection
@@ -338,10 +373,14 @@ export function ResizableTable<T extends object>({
     loading === true ? { spinning: true, size: 'large' as const } : loading
 
   return (
-    <div ref={wrapRef} className="ml-table-wrap">
+    <div
+      ref={wrapRef}
+      className={`ml-table-wrap${fitPageSize ? ' ml-table-wrap--fit-page' : ''}`}
+    >
       <Table<T>
         key={tableInstanceKey}
         {...rest}
+        size={size}
         dataSource={dataSource}
         loading={mergedLoading}
         rowSelection={mergedRowSelection}

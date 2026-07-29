@@ -13,8 +13,11 @@ export async function connectCluster(clusterId: string, source: KubeconfigSource
     if (result.ok) {
       const namespacesRes = await window.api.cluster.listNamespaces({ clusterId })
       setClusterConnected(clusterId, result.serverVersion, namespacesRes.namespaces, result.endpoint)
-      const manualUrl = useClusterStore.getState().clusters.find((c) => c.id === clusterId)?.prometheusUrl
-      void window.api.prometheus.discover({ clusterId, manualUrl })
+      const cluster = useClusterStore.getState().clusters.find((c) => c.id === clusterId)
+      const manualUrl =
+        cluster?.prometheusUrl?.trim() || cluster?.settings?.metrics?.endpointUrl?.trim() || undefined
+      const promStatus = await window.api.prometheus.discover({ clusterId, manualUrl })
+      queryClient.setQueryData(['prometheus-status', clusterId], promStatus)
     } else {
       setClusterStatus(clusterId, 'error', result.error)
     }

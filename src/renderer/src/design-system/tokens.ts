@@ -17,27 +17,27 @@ export const iconSize = {
 } as const
 
 export const iconStroke = 1.8 as const
-export const iconLabelGap = 12 as const
+export const iconLabelGap = 8 as const
 
 export const spacing = {
   xs: 4,
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  '2xl': 24,
-  '3xl': 32
+  md: 16,
+  lg: 24,
+  xl: 32,
+  '2xl': 40,
+  '3xl': 48
 } as const
 
 export const motion = {
-  fast: 0.15,
-  normal: 0.22,
-  slow: 0.32,
+  fast: 0.12,
+  normal: 0.18,
+  slow: 0.28,
   spring: { type: 'spring' as const, stiffness: 420, damping: 32 }
 } as const
 
 export const typography = {
-  fontSans: "'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontSans: "'Inter Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif",
   fontMono: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
   largeTitle: { size: 28, weight: 600, lineHeight: 1.2 },
   pageTitle: { size: 20, weight: 500, lineHeight: 1.3 },
@@ -48,8 +48,11 @@ export const typography = {
 } as const
 
 export const elevation = {
-  sm: 'var(--ml-shadow-sm)',
-  md: 'var(--ml-shadow-md)',
+  sm: 'none',
+  md: 'none',
   lg: 'var(--ml-shadow-lg)',
   glass: 'var(--ml-glass-bg)'
 } as const
+
+/** Default MagicLens coral accent */
+export const brandAccent = '#FF5F6D' as const

@@ -46,6 +46,15 @@ export const IPC = {
   CLUSTER_GROUPS_UPDATE: 'clusterGroups:update',
   CLUSTER_GROUPS_REMOVE: 'clusterGroups:remove',
 
+  NOTES_LIST: 'notes:list',
+  NOTES_GET: 'notes:get',
+  NOTES_CREATE: 'notes:create',
+  NOTES_UPDATE: 'notes:update',
+  NOTES_REMOVE: 'notes:remove',
+  NOTES_REMINDER_FIRED: 'notes:reminderFired',
+  NOTES_TEST_NOTIFICATION: 'notes:testNotification',
+  NOTES_FIRE_REMINDER: 'notes:fireReminder',
+
   UI_STATE_GET: 'uiState:get',
   UI_STATE_SET: 'uiState:set',
 
@@ -99,6 +108,7 @@ export const IPC = {
 
   POD_GET_DETAIL: 'pod:getDetail',
   POD_GET_METRICS: 'pod:getMetrics',
+  POD_GET_NAMESPACE_METRICS: 'pod:getNamespaceMetrics',
   POD_GET_NETWORK: 'pod:getNetwork',
 
   POD_LOGS_START: 'pod:logs:start',

@@ -11,35 +11,75 @@ export function WatchStatusBadge({ isError, watchStatus }: WatchStatusBadgeProps
   const interval = useLiveRefreshStore((s) => s.interval)
   const paused = useLiveRefreshStore((s) => s.paused)
 
-  if (isError) return <Badge status="error" text="Error" />
+  if (isError) {
+    return (
+      <Tooltip title="Watch error">
+        <span className="ml-live-badge ml-live-badge--dot">
+          <Badge status="error" />
+        </span>
+      </Tooltip>
+    )
+  }
 
   switch (watchStatus) {
     case 'live':
       return (
         <Tooltip title="Streaming live updates via the Kubernetes Watch API">
-          <span className="ml-live-badge">
-            <Badge status="success" text="Live" />
+          <span className="ml-live-badge ml-live-badge--dot">
+            <Badge status="success" />
           </span>
         </Tooltip>
       )
     case 'connecting':
-      return <Badge status="processing" text="Connecting..." />
+      return (
+        <Tooltip title="Connecting…">
+          <span className="ml-live-badge ml-live-badge--dot">
+            <Badge status="processing" />
+          </span>
+        </Tooltip>
+      )
     case 'reconnecting':
       return (
         <Tooltip title="Watch connection dropped, reconnecting automatically">
-          <Badge status="warning" text="Reconnecting..." />
+          <span className="ml-live-badge ml-live-badge--dot">
+            <Badge status="warning" />
+          </span>
         </Tooltip>
       )
     case 'error':
-      return <Badge status="error" text="Watch error" />
+      return (
+        <Tooltip title="Watch error">
+          <span className="ml-live-badge ml-live-badge--dot">
+            <Badge status="error" />
+          </span>
+        </Tooltip>
+      )
     case 'fallback-polling':
     case 'disconnected':
     default: {
-      if (paused) return <Badge status="default" text="Paused" />
-      if (interval === 'manual') return <Badge status="default" text="Manual" />
+      if (paused) {
+        return (
+          <Tooltip title="Paused">
+            <span className="ml-live-badge ml-live-badge--dot">
+              <Badge status="default" />
+            </span>
+          </Tooltip>
+        )
+      }
+      if (interval === 'manual') {
+        return (
+          <Tooltip title="Manual refresh">
+            <span className="ml-live-badge ml-live-badge--dot">
+              <Badge status="default" />
+            </span>
+          </Tooltip>
+        )
+      }
       return (
-        <Tooltip title="Live watch unavailable — falling back to polling">
-          <Badge status="processing" text={`Polling (${interval / 1000}s)`} />
+        <Tooltip title={`Live watch unavailable — polling every ${interval / 1000}s`}>
+          <span className="ml-live-badge ml-live-badge--dot">
+            <Badge status="processing" />
+          </span>
         </Tooltip>
       )
     }

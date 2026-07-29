@@ -17,7 +17,7 @@ const VARIANT_STYLES: Record<StatusBadgeVariant, { bg: string; fg: string; dot: 
   failed: { bg: 'var(--ml-status-danger-bg)', fg: 'var(--ml-status-danger-fg)', dot: 'var(--ml-error)' },
   unknown: { bg: 'var(--ml-status-neutral-bg)', fg: 'var(--ml-status-neutral-fg)', dot: 'var(--ml-text-tertiary)' },
   warning: { bg: 'var(--ml-status-warning-bg)', fg: 'var(--ml-status-warning-fg)', dot: 'var(--ml-warning)' },
-  crashloop: { bg: 'var(--ml-status-orange-bg)', fg: 'var(--ml-status-orange-fg)', dot: '#f97316' },
+  crashloop: { bg: 'var(--ml-status-orange-bg)', fg: 'var(--ml-status-orange-fg)', dot: 'var(--ml-status-orange-fg)' },
   imagepull: { bg: 'var(--ml-status-danger-bg)', fg: 'var(--ml-status-danger-fg)', dot: 'var(--ml-error)' },
   info: { bg: 'var(--ml-status-info-bg)', fg: 'var(--ml-status-info-fg)', dot: 'var(--ml-info)' },
   default: { bg: 'var(--ml-status-neutral-bg)', fg: 'var(--ml-status-neutral-fg)', dot: 'var(--ml-text-tertiary)' }

@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { app, BrowserWindow } from 'electron'
 import { applyChromiumPerformanceFlags } from './chromiumPerf'
 import { registerIpcHandlers } from './ipc/register'
+import { startNotesReminderScheduler } from './notes/reminderScheduler'
 import { installApplicationMenu, installReloadConfirm } from './reloadConfirm'
 import { initAutoUpdater } from './update/autoUpdateService'
 import { fixShellPath } from './util/fixShellPath'
@@ -22,6 +23,7 @@ app.whenReady().then(() => {
   const window = createMainWindow()
   installReloadConfirm(window)
   initAutoUpdater(window)
+  startNotesReminderScheduler()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

@@ -3,7 +3,10 @@ import {
   defaultDisplaySettings,
   type DisplaySettings,
   type ResourceDetailPlacement,
-  type UtilityPanelPlacement
+  type UtilityFabOffset,
+  type UtilityFabSide,
+  type UtilityPanelPlacement,
+  normalizeUtilityFabSide
 } from '@shared/types/app'
 import {
   normalizeKeyboardShortcuts,
@@ -18,6 +21,11 @@ import {
   type NodesDashboardPrefs,
   type NodesDashboardSectionId
 } from '@shared/types/nodesDashboard'
+import {
+  normalizeChromeToolbarPrefs,
+  type ChromeToolbarActionId,
+  type ChromeToolbarPrefs
+} from '@shared/types/chromeToolbar'
 import i18n from '../i18n'
 import { applyDayjsLocale } from '../i18n/antdLocales'
 
@@ -28,14 +36,21 @@ interface DisplaySettingsState extends DisplaySettings {
   setShowResourceTabIcons: (value: boolean) => Promise<void>
   setShowFavoritesSection: (value: boolean) => Promise<void>
   setShowWorkspacesSection: (value: boolean) => Promise<void>
+  setShowWorkspaceClusterCounts: (value: boolean) => Promise<void>
   setShowClusterNamespace: (value: boolean) => Promise<void>
   setResourceDetailPlacement: (value: ResourceDetailPlacement) => Promise<void>
   setResourceDetailMaskBlur: (value: boolean) => Promise<void>
   setUtilityPanelPlacement: (value: UtilityPanelPlacement) => Promise<void>
+  setUtilityFabSide: (value: UtilityFabSide) => Promise<void>
+  setUtilityFabOffset: (value: UtilityFabOffset | null) => Promise<void>
+  setShowUtilityFab: (value: boolean) => Promise<void>
   setShowNodesPageEvents: (value: boolean) => Promise<void>
   setNodesDashboardPrefs: (prefs: NodesDashboardPrefs) => Promise<void>
   toggleNodesDashboardSection: (id: NodesDashboardSectionId) => Promise<void>
   reorderNodesDashboardSections: (fromId: NodesDashboardSectionId, toId: NodesDashboardSectionId) => Promise<void>
+  setChromeToolbarPrefs: (prefs: ChromeToolbarPrefs) => Promise<void>
+  toggleChromeToolbarAction: (id: ChromeToolbarActionId) => Promise<void>
+  reorderChromeToolbarActions: (fromId: ChromeToolbarActionId, toId: ChromeToolbarActionId) => Promise<void>
   setShortcut: (action: ShortcutActionId, binding: ShortcutBinding) => Promise<void>
   resetShortcuts: () => Promise<void>
   setLocale: (locale: AppLocale) => Promise<void>
@@ -46,7 +61,9 @@ function applyDisplay(next: DisplaySettings): DisplaySettings {
   return {
     ...defaultDisplaySettings,
     ...next,
+    utilityFabSide: normalizeUtilityFabSide(next.utilityFabSide),
     nodesDashboard: normalizeNodesDashboardPrefs(next.nodesDashboard),
+    chromeToolbar: normalizeChromeToolbarPrefs(next.chromeToolbar),
     keyboardShortcuts: normalizeKeyboardShortcuts(next.keyboardShortcuts),
     locale: normalizeAppLocale(next.locale)
   }
@@ -84,6 +101,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
     const next = await window.api.app.setDisplaySettings({ showWorkspacesSection: value })
     set(applyDisplay(next))
   },
+  setShowWorkspaceClusterCounts: async (value) => {
+    const next = await window.api.app.setDisplaySettings({ showWorkspaceClusterCounts: value })
+    set(applyDisplay(next))
+  },
   setShowClusterNamespace: async (value) => {
     const next = await window.api.app.setDisplaySettings({ showClusterNamespace: value })
     set(applyDisplay(next))
@@ -98,6 +119,21 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
   },
   setUtilityPanelPlacement: async (value) => {
     const next = await window.api.app.setDisplaySettings({ utilityPanelPlacement: value })
+    set(applyDisplay(next))
+  },
+  setUtilityFabSide: async (value) => {
+    const next = await window.api.app.setDisplaySettings({
+      utilityFabSide: value,
+      utilityFabOffset: null
+    })
+    set(applyDisplay(next))
+  },
+  setUtilityFabOffset: async (value) => {
+    const next = await window.api.app.setDisplaySettings({ utilityFabOffset: value })
+    set(applyDisplay(next))
+  },
+  setShowUtilityFab: async (value) => {
+    const next = await window.api.app.setDisplaySettings({ showUtilityFab: value })
     set(applyDisplay(next))
   },
   setShowNodesPageEvents: async (value) => {
@@ -123,6 +159,26 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
     order.splice(from, 1)
     order.splice(to, 0, fromId)
     await get().setNodesDashboardPrefs({ ...current, order })
+  },
+  setChromeToolbarPrefs: async (prefs) => {
+    const normalized = normalizeChromeToolbarPrefs(prefs)
+    const next = await window.api.app.setDisplaySettings({ chromeToolbar: normalized })
+    set(applyDisplay(next))
+  },
+  toggleChromeToolbarAction: async (id) => {
+    const current = normalizeChromeToolbarPrefs(get().chromeToolbar)
+    const visible = { ...current.visible, [id]: !current.visible[id] }
+    await get().setChromeToolbarPrefs({ ...current, visible })
+  },
+  reorderChromeToolbarActions: async (fromId, toId) => {
+    const current = normalizeChromeToolbarPrefs(get().chromeToolbar)
+    const order = [...current.order]
+    const from = order.indexOf(fromId)
+    const to = order.indexOf(toId)
+    if (from < 0 || to < 0 || from === to) return
+    order.splice(from, 1)
+    order.splice(to, 0, fromId)
+    await get().setChromeToolbarPrefs({ ...current, order })
   },
   setShortcut: async (action, binding) => {
     const current = normalizeKeyboardShortcuts(get().keyboardShortcuts)

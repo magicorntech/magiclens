@@ -1,11 +1,11 @@
 import { Empty, Splitter } from 'antd'
 import { Layers } from 'lucide-react'
 import logo from '../../assets/logo.png'
+import { CLUSTER_SPLIT_PANEL_MIN_PX } from '../../constants/clusterSplitLimits'
 import { useClusterStore } from '../../stores/clusterStore'
 import { canUseSplitLayouts, useLayoutMode } from '../../hooks/useLayoutMode'
 import { ClusterView } from '../../pages/ClusterView'
 import { Icon } from '../ui/Icon'
-import { ClusterTabStrip } from './ClusterTabStrip'
 import { SplitClusterPane } from './SplitClusterPane'
 
 export function ClusterTabBar(): React.JSX.Element {
@@ -19,14 +19,13 @@ export function ClusterTabBar(): React.JSX.Element {
 
   return (
     <div className="ml-cluster-workspace">
-      {!(splitView && allowClusterSplit && splitLeftClusterId && splitRightClusterId) && <ClusterTabStrip />}
       <div className="ml-cluster-workspace-body">
         {splitView && allowClusterSplit && splitLeftClusterId && splitRightClusterId ? (
           <Splitter style={{ height: '100%' }}>
-            <Splitter.Panel defaultSize="50%" min="20%">
+            <Splitter.Panel defaultSize="50%" min={CLUSTER_SPLIT_PANEL_MIN_PX}>
               <SplitClusterPane clusterId={splitLeftClusterId} pane="left" focused={focusedSplitPane === 'left'} />
             </Splitter.Panel>
-            <Splitter.Panel defaultSize="50%" min="20%">
+            <Splitter.Panel defaultSize="50%" min={CLUSTER_SPLIT_PANEL_MIN_PX}>
               <SplitClusterPane clusterId={splitRightClusterId} pane="right" focused={focusedSplitPane === 'right'} />
             </Splitter.Panel>
           </Splitter>

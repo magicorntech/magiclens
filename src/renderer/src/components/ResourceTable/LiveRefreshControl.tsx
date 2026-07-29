@@ -10,7 +10,7 @@ export function LiveRefreshControl({ isFetching, onManualRefresh }: LiveRefreshC
   return (
     <button
       type="button"
-      className="ml-btn ml-btn--ghost"
+      className="ml-btn ml-btn--ghost ml-action-control"
       disabled={isFetching}
       onClick={onManualRefresh}
       aria-label="Refresh"

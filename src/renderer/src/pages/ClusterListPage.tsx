@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Empty, List } from 'antd'
-import { Plus } from 'lucide-react'
+import { Layers, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useClusterStore } from '../stores/clusterStore'
 import type { ClusterEntry } from '../stores/clusterStore'
@@ -10,6 +10,7 @@ import { ClusterListRow } from '../components/ClusterTabs/ClusterListRow'
 import { ClusterFilterBar } from '../components/ClusterTabs/ClusterFilterBar'
 import { ClusterSearchInput } from '../components/ClusterTabs/ClusterSearchInput'
 import { EditClusterModal } from '../components/ClusterTabs/EditClusterModal'
+import { HubPageHero } from '../components/Layout/HubPageHero'
 import { Icon } from '../components/ui/Icon'
 
 export function ClusterListPage(): React.JSX.Element {
@@ -31,17 +32,21 @@ export function ClusterListPage(): React.JSX.Element {
 
   return (
     <div className="ml-cluster-hub">
-      <header className="ml-cluster-hub-header">
-        <div className="ml-cluster-hub-header-main">
-          <div>
-            <h1 className="ml-cluster-hub-title">{t('clustersHub.title')}</h1>
-            <p className="ml-cluster-hub-subtitle">{t('clustersHub.subtitle')}</p>
-          </div>
-          <button type="button" className="ml-btn ml-btn--primary" onClick={() => setAddClusterModalOpen(true)}>
-            <Icon icon={Plus} variant="action" />
-            <span>{t('clustersHub.add')}</span>
-          </button>
-        </div>
+      <div className="ml-hub-glow" aria-hidden />
+
+      <div className="ml-cluster-hub-header">
+        <HubPageHero
+          icon={Layers}
+          eyebrow={t('clustersHub.brandEyebrow')}
+          title={t('clustersHub.title')}
+          subtitle={t('clustersHub.subtitle')}
+          actions={
+            <button type="button" className="ml-btn ml-btn--primary" onClick={() => setAddClusterModalOpen(true)}>
+              <Icon icon={Plus} variant="action" />
+              <span>{t('clustersHub.add')}</span>
+            </button>
+          }
+        />
 
         <div className="ml-cluster-hub-stats">
           <div className="ml-cluster-hub-stat">
@@ -72,7 +77,7 @@ export function ClusterListPage(): React.JSX.Element {
           />
           <ClusterFilterBar value={filter} onChange={setFilter} />
         </div>
-      </header>
+      </div>
 
       <div className="ml-cluster-hub-body">
         {filtered.length === 0 ? (

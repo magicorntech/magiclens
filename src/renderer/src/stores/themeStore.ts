@@ -19,8 +19,8 @@ export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
       mode: 'system',
-      colorScheme: 'slate',
-      customAccentColor: '#4f46e5',
+      colorScheme: 'rose',
+      customAccentColor: '#FF5F6D',
       setMode: (mode) => set({ mode }),
       setColorScheme: (colorScheme) => set({ colorScheme }),
       setCustomAccentColor: (color) =>

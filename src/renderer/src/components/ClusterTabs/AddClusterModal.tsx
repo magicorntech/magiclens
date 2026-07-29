@@ -265,6 +265,8 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
           ...persisted,
           status: 'idle',
           openResourceKinds: ['Pods'],
+          openVirtualPages: [],
+          selectedVirtualPage: null,
           resourceFocus: null,
           pendingNavigation: null
         })

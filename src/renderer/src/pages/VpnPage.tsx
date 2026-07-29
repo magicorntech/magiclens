@@ -27,6 +27,7 @@ import {
   ShieldCheck,
   Search
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { VpnProfileSummary } from '@shared/types/vpn'
 import { parseVpnConfigMeta } from '@shared/types/vpn'
 import { useVpnStore } from '../stores/vpnStore'
@@ -34,7 +35,7 @@ import { useVpnSessionStore } from '../stores/vpnSessionStore'
 import { useSettingsUiStore } from '../stores/settingsUiStore'
 import { VpnConnectionPanel } from '../components/Vpn/VpnConnectionPanel'
 import { VpnDottedWorldMap } from '../components/Vpn/VpnDottedWorldMap'
-import { useTranslation } from 'react-i18next'
+import { HubPageHero } from '../components/Layout/HubPageHero'
 import { Icon } from '../components/ui/Icon'
 
 type ProfileDraft = {
@@ -235,56 +236,56 @@ export function VpnPage(): React.JSX.Element {
 
   return (
     <div className="ml-vpn-page">
+      <div className="ml-hub-glow ml-vpn-page__glow" aria-hidden />
       <div className="ml-vpn-page__stage">
         <div className="ml-vpn-page__layout">
           <div className="ml-vpn-page__map-col">
-            <div className="ml-vpn-page__backdrop" aria-hidden>
+            <div className="ml-vpn-page__backdrop ml-vpn-page__backdrop--subtle" aria-hidden>
               <VpnDottedWorldMap connected={anyConnected} />
-              <div className="ml-vpn-page__backdrop-glow" />
             </div>
 
-            <header className="ml-vpn-hero ml-vpn-hero--overlay">
-              <div className="ml-vpn-hero__copy">
-                <div className="ml-vpn-hero__eyebrow">
-                  <Icon icon={Network} variant="action" />
-                  <span>{t('vpn.heroEyebrow')}</span>
+            <HubPageHero
+              className="ml-vpn-hub-hero"
+              icon={Network}
+              eyebrow={t('vpn.brandEyebrow')}
+              title={t('vpn.title')}
+              subtitle={t('vpn.heroSubtitle')}
+              actions={
+                <div className={`ml-vpn-status-pill ml-vpn-status-pill--${tone}`}>
+                  <span className="ml-vpn-status-pill__dot" />
+                  <div className="ml-vpn-status-pill__text">
+                    <strong>
+                      {tone === 'connected'
+                        ? t('vpn.status.connected')
+                        : tone === 'connecting'
+                          ? t('vpn.status.connecting')
+                          : tone === 'error'
+                            ? t('vpn.status.error')
+                            : t('vpn.status.disconnected')}
+                    </strong>
+                    <span>
+                      {status?.message ||
+                        (connectedIds.size > 1
+                          ? t('vpn.tunnelsUp', { count: connectedIds.size })
+                          : activeProfile?.name || t('vpn.noActiveProfile'))}
+                    </span>
+                  </div>
+                  {anyConnected && (
+                    <Button
+                      size="small"
+                      danger
+                      icon={<Icon icon={Unplug} variant="action" />}
+                      onClick={async () => {
+                        await disconnect()
+                        message.success(t('vpn.disconnectedToast'))
+                      }}
+                    >
+                      {t('vpn.disconnect')}
+                    </Button>
+                  )}
                 </div>
-              </div>
-
-              <div className={`ml-vpn-status-pill ml-vpn-status-pill--${tone}`}>
-                <span className="ml-vpn-status-pill__dot" />
-                <div className="ml-vpn-status-pill__text">
-                  <strong>
-                    {tone === 'connected'
-                      ? t('vpn.status.connected')
-                      : tone === 'connecting'
-                        ? t('vpn.status.connecting')
-                        : tone === 'error'
-                          ? t('vpn.status.error')
-                          : t('vpn.status.disconnected')}
-                  </strong>
-                  <span>
-                    {status?.message ||
-                      (connectedIds.size > 1
-                        ? t('vpn.tunnelsUp', { count: connectedIds.size })
-                        : activeProfile?.name || t('vpn.noActiveProfile'))}
-                  </span>
-                </div>
-                {anyConnected && (
-                  <Button
-                    size="small"
-                    danger
-                    icon={<Icon icon={Unplug} variant="action" />}
-                    onClick={async () => {
-                      await disconnect()
-                      message.success(t('vpn.disconnectedToast'))
-                    }}
-                  >
-                    {t('vpn.disconnect')}
-                  </Button>
-                )}
-              </div>
-            </header>
+              }
+            />
 
             <div className="ml-vpn-page__map-spacer" />
 

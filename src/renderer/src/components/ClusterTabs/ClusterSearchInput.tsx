@@ -1,4 +1,6 @@
 import { Input } from 'antd'
+import { Search } from 'lucide-react'
+import { Icon } from '../ui/Icon'
 
 interface ClusterSearchInputProps {
   value: string
@@ -7,14 +9,21 @@ interface ClusterSearchInputProps {
   size?: 'small' | 'middle' | 'large'
 }
 
-export function ClusterSearchInput({ value, onChange, placeholder, size }: ClusterSearchInputProps): React.JSX.Element {
+export function ClusterSearchInput({
+  value,
+  onChange,
+  placeholder,
+  size
+}: ClusterSearchInputProps): React.JSX.Element {
   return (
-    <Input.Search
+    <Input
       allowClear
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder ?? 'Search clusters'}
       size={size}
+      prefix={<Icon icon={Search} variant="micro" className="ml-sidebar-search__icon" />}
+      className="ml-sidebar-search__input"
     />
   )
 }

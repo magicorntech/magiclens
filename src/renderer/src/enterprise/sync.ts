@@ -24,6 +24,8 @@ export async function reloadLocalClusters(): Promise<void> {
         namespaces: old.namespaces,
         errorMessage: old.errorMessage,
         openResourceKinds: old.openResourceKinds.length ? old.openResourceKinds : c.openResourceKinds,
+        openVirtualPages: old.openVirtualPages?.length ? old.openVirtualPages : c.openVirtualPages,
+        selectedVirtualPage: old.selectedVirtualPage ?? c.selectedVirtualPage,
         selectedResourceKind: old.selectedResourceKind ?? c.selectedResourceKind,
         selectedNamespace: c.selectedNamespace
       }

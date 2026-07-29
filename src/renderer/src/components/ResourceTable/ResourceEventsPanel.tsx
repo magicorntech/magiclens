@@ -3,7 +3,7 @@ import type { ColumnsType } from 'antd/es/table'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
 import type { ResourceEventItem } from '@shared/types/resourceEvents'
 import { useResourceEvents } from '../../queries/useResourceEvents'
-import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import { readPaginationChange, embeddedTablePagination, EMBEDDED_TABLE_PAGE_SIZE, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from './AgeCell'
 
@@ -46,7 +46,10 @@ export function ResourceEventsPanel({
   embedded = false
 }: ResourceEventsPanelProps): React.JSX.Element {
   const { data, isLoading, isError, error } = useResourceEvents(clusterId, namespace, name, target, isActive)
-  const { setPagination, paginationProps } = useTablePagination([clusterId, namespace, name, target])
+  const { pagination, setPagination, paginationProps } = useTablePagination(
+    [clusterId, namespace, name, target],
+    { defaultPageSize: embedded ? EMBEDDED_TABLE_PAGE_SIZE : undefined }
+  )
 
   if (isError) {
     return (
@@ -61,7 +64,7 @@ export function ResourceEventsPanel({
   }
 
   const events = data?.events ?? []
-  const tableScroll = embedded ? { y: 220, x: 720 } : undefined
+  const tableScroll = embedded ? { x: 720 } : undefined
 
   if (!isLoading && events.length === 0) {
     return <Empty description="No events for this resource" />
@@ -76,7 +79,7 @@ export function ResourceEventsPanel({
           columns={columns}
           dataSource={events}
           loading={isLoading}
-          pagination={embedded ? { pageSize: 10, size: 'small', hideOnSinglePage: true } : paginationProps(events.length)}
+          pagination={embedded ? embeddedTablePagination(pagination, events.length) : paginationProps(events.length)}
           onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
           size="small"
           scroll={tableScroll}

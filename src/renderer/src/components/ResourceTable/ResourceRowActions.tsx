@@ -1,13 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, Dropdown, Modal, Tooltip, message } from 'antd'
 import type { MenuProps } from 'antd'
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Sparkles, Trash2 } from 'lucide-react'
 import { Icon } from '../ui/Icon'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
 import { useResourcePermissions } from '../../queries/useMetricsRange'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
 import { refreshNamespaces } from '../../queries/useNamespaces'
-import { batchDeleteResources, removeItemsById } from './batchDelete'
+import { removeItemsById } from './batchDelete'
+import { useNotesStore } from '../../stores/notesStore'
 
 interface ListLike {
   items: { id: string }[]
@@ -39,10 +40,13 @@ export function ResourceRowActions({
 }: ResourceRowActionsProps): React.JSX.Element {
   const queryClient = useQueryClient()
   const { openYamlEditor } = useBottomPanel()
+  const openCreateNote = useNotesStore((s) => s.openCreate)
   const { data: permissions } = useResourcePermissions(clusterId, target, namespace, name, true)
 
   const canEdit = (permissions?.canGet ?? true) && ((permissions?.canUpdate ?? true) || (permissions?.canPatch ?? true))
   const canDelete = permissions?.canDelete ?? true
+
+  const resourceKind = target.type === 'builtin' ? target.kind : target.kind
 
   function openEditor(): void {
     if (!canEdit) return
@@ -55,6 +59,18 @@ export function ResourceRowActions({
       name,
       initialYaml: '',
       listQueryKey
+    })
+  }
+
+  function openNote(): void {
+    openCreateNote({
+      title: '',
+      body: '',
+      scope: 'resource',
+      clusterId,
+      resourceKind,
+      namespace: namespace === 'ALL' ? undefined : namespace,
+      resourceName: name
     })
   }
 
@@ -101,6 +117,11 @@ export function ResourceRowActions({
       icon: <Icon icon={Pencil} variant="detail" />,
       disabled: !canEdit
     },
+    {
+      key: 'note',
+      label: 'Add spark',
+      icon: <Icon icon={Sparkles} variant="detail" />
+    },
     { type: 'divider' },
     {
       key: 'delete',
@@ -117,6 +138,7 @@ export function ResourceRowActions({
 
   function handleMenuClick({ key }: { key: string }): void {
     if (key === 'edit') openEditor()
+    if (key === 'note') openNote()
     if (key === 'delete') confirmDelete()
   }
 

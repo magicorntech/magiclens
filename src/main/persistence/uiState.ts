@@ -37,6 +37,7 @@ function normalizeActiveView(view: unknown): PersistedUiState['activeView'] {
   return view === 'admin' ||
     view === 'profile' ||
     view === 'vpn' ||
+    view === 'notes' ||
     view === 'tabs' ||
     view === 'clusters'
     ? view

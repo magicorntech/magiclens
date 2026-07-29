@@ -27,6 +27,7 @@ import {
   Settings2
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { normalizeUtilityFabSide } from '@shared/types/app'
 import { Icon } from '../ui/Icon'
 import logo from '../../assets/logo.png'
 import { refreshIntervalOptions, useLiveRefreshStore } from '../../stores/liveRefreshStore'
@@ -39,6 +40,7 @@ import { APP_LOCALES, APP_LOCALE_LABELS, type AppLocale } from '@shared/types/lo
 import { useLayoutMode } from '../../hooks/useLayoutMode'
 import { applyDedupeResult } from '../../clusterDedupe'
 import { NodesDashboardSettings } from '../Nodes/NodesDashboardSettings'
+import { ChromeToolbarSettings } from './ChromeToolbarSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { VpnExtensionsSettings } from './VpnExtensionsSettings'
 import { DeveloperSettings } from './DeveloperSettings'
@@ -103,16 +105,22 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
   const resourceDetailMaskBlur = useDisplaySettingsStore((s) => s.resourceDetailMaskBlur)
   const utilityPanelPlacement = useDisplaySettingsStore((s) => s.utilityPanelPlacement)
+  const utilityFabSide = useDisplaySettingsStore((s) => s.utilityFabSide)
+  const showUtilityFab = useDisplaySettingsStore((s) => s.showUtilityFab)
   const locale = useDisplaySettingsStore((s) => s.locale)
   const kubeconfigScanPath = useDisplaySettingsStore((s) => s.kubeconfigScanPath)
   const setShowClusterTabLogos = useDisplaySettingsStore((s) => s.setShowClusterTabLogos)
   const setShowResourceTabIcons = useDisplaySettingsStore((s) => s.setShowResourceTabIcons)
   const setShowFavoritesSection = useDisplaySettingsStore((s) => s.setShowFavoritesSection)
   const setShowWorkspacesSection = useDisplaySettingsStore((s) => s.setShowWorkspacesSection)
+  const showWorkspaceClusterCounts = useDisplaySettingsStore((s) => s.showWorkspaceClusterCounts)
+  const setShowWorkspaceClusterCounts = useDisplaySettingsStore((s) => s.setShowWorkspaceClusterCounts)
   const setShowClusterNamespace = useDisplaySettingsStore((s) => s.setShowClusterNamespace)
   const setResourceDetailPlacement = useDisplaySettingsStore((s) => s.setResourceDetailPlacement)
   const setResourceDetailMaskBlur = useDisplaySettingsStore((s) => s.setResourceDetailMaskBlur)
   const setUtilityPanelPlacement = useDisplaySettingsStore((s) => s.setUtilityPanelPlacement)
+  const setUtilityFabSide = useDisplaySettingsStore((s) => s.setUtilityFabSide)
+  const setShowUtilityFab = useDisplaySettingsStore((s) => s.setShowUtilityFab)
   const setLocale = useDisplaySettingsStore((s) => s.setLocale)
   const setKubeconfigScanPath = useDisplaySettingsStore((s) => s.setKubeconfigScanPath)
   const [kubePathDraft, setKubePathDraft] = useState(kubeconfigScanPath)
@@ -418,6 +426,47 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             </SettingsSection>
 
             <SettingsSection
+              title={t('settings.display.fabTitle')}
+              description={t('settings.display.fabHint')}
+            >
+              <SettingsToggleRow
+                title={t('settings.display.showUtilityFab')}
+                description={t('settings.display.showUtilityFabHint')}
+                checked={showUtilityFab}
+                onChange={(checked) => void setShowUtilityFab(checked)}
+              />
+              <div className="ml-fab-dock-picker" role="radiogroup" aria-label={t('settings.display.fabDockLabel')}>
+                {(
+                  [
+                    ['left-middle', 'fabSideLeftMiddle'],
+                    ['right-middle', 'fabSideRightMiddle'],
+                    ['left-bottom', 'fabSideLeftBottom'],
+                    ['right-bottom', 'fabSideRightBottom']
+                  ] as const
+                ).map(([value, labelKey]) => {
+                  const selected = normalizeUtilityFabSide(utilityFabSide) === value
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={!showUtilityFab}
+                      className={`ml-fab-dock-picker__cell${selected ? ' is-selected' : ''}`}
+                      data-dock={value}
+                      onClick={() => void setUtilityFabSide(value)}
+                    >
+                      <span className="ml-fab-dock-picker__frame" aria-hidden>
+                        <span className="ml-fab-dock-picker__dot" />
+                      </span>
+                      <span className="ml-fab-dock-picker__label">{t(`settings.display.${labelKey}`)}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </SettingsSection>
+
+            <SettingsSection
               title={t('settings.display.sidebarTitle')}
               description={t('settings.display.showFavoritesHint')}
             >
@@ -432,6 +481,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 description={t('settings.display.showWorkspacesHint')}
                 checked={showWorkspacesSection}
                 onChange={(checked) => void setShowWorkspacesSection(checked)}
+              />
+              <SettingsToggleRow
+                title={t('settings.display.showWorkspaceClusterCounts')}
+                description={t('settings.display.showWorkspaceClusterCountsHint')}
+                checked={showWorkspaceClusterCounts}
+                onChange={(checked) => void setShowWorkspaceClusterCounts(checked)}
               />
               <SettingsToggleRow
                 title={t('settings.display.showClusterNamespace')}
@@ -455,6 +510,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 checked={showResourceTabIcons}
                 onChange={(checked) => void setShowResourceTabIcons(checked)}
               />
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.display.chromeToolbarTitle')}
+              description={t('settings.display.chromeToolbarHint')}
+            >
+              <ChromeToolbarSettings />
             </SettingsSection>
 
             <SettingsSection

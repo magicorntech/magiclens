@@ -20,7 +20,8 @@ export const zh: TranslationOverrides = {
     clusters: '集群',
     vpn: 'VPN',
     favorites: '收藏',
-    cancel: '取消'
+    cancel: '取消',
+    close: '关闭'
   },
   chrome: {
     searchPlaceholder: '搜索集群、资源、命名空间…',
@@ -98,10 +99,16 @@ export const zh: TranslationOverrides = {
       showFavoritesHint: '启用后，收藏会显示在左侧边栏的 Workspaces 上方。点击标题可折叠或展开。',
       showWorkspaces: '显示 Workspaces 部分',
       showWorkspacesHint: '启用后，Workspaces 会出现在左侧边栏。折叠时用 W 标记工作区集群。',
+      showWorkspaceClusterCounts: '显示工作区集群数量',
+      showWorkspaceClusterCountsHint: '启用后，每个工作区标题会显示包含的集群数量。',
       tabIconsTitle: '标签图标',
       showClusterLogos: '在集群标签上显示徽标',
       showResourceIcons: '在资源标签上显示图标',
       tabIconsHint: '集群标签使用添加集群时设置的徽标。资源标签使用与左侧菜单相同的图标。',
+      chromeToolbarTitle: '工具栏图标',
+      chromeToolbarHint: '显示、隐藏并重新排序顶栏图标。设置固定在右侧，无法移动或隐藏。',
+      chromeToolbarChooser: '拖动以重新排序，切换可见性。设置保持锁定。',
+      chromeToolbarFixed: '固定',
       detailMaskBlur: '模糊细节背后的背景',
       detailMaskBlurHint: '当资源详细信息抽屉打开时，模糊其后面的列表。默认情况下关闭，以便桌子保持清晰。',
       panelTitle: '终端和 YAML 面板',
@@ -111,6 +118,14 @@ export const zh: TranslationOverrides = {
       panelPlacementLeft: '左边',
       showClusterNamespace: '显示连接的命名空间',
       showClusterNamespaceHint: '启用后，选定的命名空间将显示为左侧边栏中连接的集群上的一个芯片。'
+    },
+    chromeToolbar: {
+      search: '搜索',
+      terminal: '终端',
+      theme: '主题',
+      fullscreen: '全屏',
+      split: '拆分集群',
+      settings: '设置'
     },
     nodesSections: {
       health: '集群健康',
@@ -286,8 +301,10 @@ export const zh: TranslationOverrides = {
     }
   },
   vpn: {
-    heroEyebrow: '安全隧道',
+    brandEyebrow: 'MagicLens',
     title: 'VPN',
+    heroSubtitle: '面向私有集群与远程访问的安全隧道。',
+    heroEyebrow: '安全隧道',
     status: {
       connected: '已连接',
       connecting: '正在连接',
@@ -526,6 +543,7 @@ export const zh: TranslationOverrides = {
     }
   },
   topology: {
+    brandEyebrow: 'MagicLens',
     title: '拓扑与应用',
     subtitle: '此命名空间中工作负载、服务与依赖的实时地图。',
     modes: {
@@ -652,7 +670,7 @@ export const zh: TranslationOverrides = {
   clusterOverview: {
     title: '集群概览',
     subtitle: '整个集群的运行状况、容量和近期活动。',
-    metricsUnavailable: '指标服务器不可用——使用数据可能不完整',
+    metricsUnavailable: '用量指标不可用——请安装 metrics-server 或连接 Prometheus',
     nodes: '节点',
     nodesHint: '{{ready}} 准备好 · {{notReady}} 未准备好',
     pods: '豆荚',
@@ -713,6 +731,7 @@ export const zh: TranslationOverrides = {
     noHpas: '未定义 HPA'
   },
   clustersHub: {
+    brandEyebrow: 'MagicLens',
     title: '集群',
     subtitle: '从一处添加、连接和管理所有 Kubernetes 集群。',
     add: '添加集群',
@@ -931,7 +950,8 @@ export const zh: TranslationOverrides = {
       replicaHistory: '复制历史',
       exec: '执行者',
       metrics: '指标',
-      pressure: '压力'
+      pressure: '压力',
+      pods: 'Pods'
     },
     overview: {
       title: '概述',

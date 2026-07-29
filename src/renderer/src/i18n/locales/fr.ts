@@ -20,7 +20,8 @@ export const fr: TranslationOverrides = {
     clusters: 'Clusters',
     vpn: 'VPN',
     favorites: 'Favoris',
-    cancel: 'Annuler'
+    cancel: 'Annuler',
+    close: 'Fermer'
   },
   chrome: {
     searchPlaceholder: 'Rechercher clusters, ressources, namespaces…',
@@ -109,11 +110,20 @@ export const fr: TranslationOverrides = {
       showWorkspaces: 'Afficher la section Workspaces',
       showWorkspacesHint:
         'Lorsqu’elle est activée, Workspaces apparaît dans la barre latérale. En mode réduit, un W marque les clusters de workspace.',
+      showWorkspaceClusterCounts: 'Afficher le nombre de clusters par workspace',
+      showWorkspaceClusterCountsHint:
+        'Lorsqu’elle est activée, chaque en-tête de workspace indique combien de clusters il contient.',
       tabIconsTitle: 'Icônes des onglets',
       showClusterLogos: 'Afficher les logos sur les onglets cluster',
       showResourceIcons: 'Afficher les icônes sur les onglets ressource',
       tabIconsHint:
         'Les onglets cluster utilisent le logo défini à l’ajout. Les onglets ressource utilisent les mêmes icônes que le menu de gauche.',
+      chromeToolbarTitle: 'Icônes de la barre d’outils',
+      chromeToolbarHint:
+        'Affichez, masquez et réordonnez les icônes de la barre supérieure. Paramètres reste fixe à droite et ne peut pas être déplacé ni masqué.',
+      chromeToolbarChooser:
+        'Glissez pour réordonner. Activez la visibilité. Paramètres reste verrouillé.',
+      chromeToolbarFixed: 'Fixe',
       detailMaskBlur: 'Arrière-plan flou derrière les détails',
       detailMaskBlurHint:
         'Lorsqu’un tiroir de détails de ressources est ouvert, brouillez la liste derrière celui-ci. Désactivé par défaut pour que le tableau reste net.',
@@ -126,6 +136,14 @@ export const fr: TranslationOverrides = {
       showClusterNamespace: 'Afficher l\'espace de noms connecté',
       showClusterNamespaceHint:
         'Lorsqu\'il est activé, l\'espace de noms sélectionné est affiché sous forme de puce sur les clusters connectés dans la barre latérale gauche.'
+    },
+    chromeToolbar: {
+      search: 'Recherche',
+      terminal: 'Terminal',
+      theme: 'Thème',
+      fullscreen: 'Plein écran',
+      split: 'Diviser les clusters',
+      settings: 'Paramètres'
     },
     nodesSections: {
       health: 'Santé du cluster',
@@ -314,8 +332,10 @@ export const fr: TranslationOverrides = {
     }
   },
   vpn: {
-    heroEyebrow: 'Tunnel sécurisé',
+    brandEyebrow: 'MagicLens',
     title: 'VPN',
+    heroSubtitle: 'Tunnel sécurisé pour les clusters privés et l’accès distant.',
+    heroEyebrow: 'Tunnel sécurisé',
     status: {
       connected: 'Connecté',
       connecting: 'Connexion',
@@ -569,6 +589,7 @@ export const fr: TranslationOverrides = {
     }
   },
   topology: {
+    brandEyebrow: 'MagicLens',
     title: 'Topologie et applications',
     subtitle: 'Carte live des workloads, services et dépendances de ce namespace.',
     modes: {
@@ -698,7 +719,7 @@ export const fr: TranslationOverrides = {
   clusterOverview: {
     title: 'Présentation du cluster',
     subtitle: 'État de santé, capacité et activité récente dans l’ensemble du cluster.',
-    metricsUnavailable: 'serveur de métriques indisponible — les données d\'utilisation peuvent être incomplètes',
+    metricsUnavailable: 'Métriques d\'utilisation indisponibles — installez metrics-server ou connectez Prometheus',
     nodes: 'Nœuds',
     nodesHint: '{{ready}} prêt · {{notReady}} pas prêt',
     pods: 'Gousses',
@@ -760,6 +781,7 @@ export const fr: TranslationOverrides = {
     noHpas: 'Aucun HPA défini'
   },
   clustersHub: {
+    brandEyebrow: 'MagicLens',
     title: 'Groupes',
     subtitle: 'Ajoutez, connectez et gérez tous les clusters Kubernetes à partir d\'un seul endroit.',
     add: 'Ajouter un cluster',
@@ -985,7 +1007,8 @@ export const fr: TranslationOverrides = {
       replicaHistory: 'Historique des répliques',
       exec: 'Exécutif',
       metrics: 'Métrique',
-      pressure: 'Pression'
+      pressure: 'Pression',
+      pods: 'Pods'
     },
     overview: {
       title: 'Aperçu',

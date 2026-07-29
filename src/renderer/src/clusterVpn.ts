@@ -12,8 +12,9 @@ const CLUSTER_CONNECT_ATTEMPTS = 5
 const CLUSTER_CONNECT_GAP_MS = 2000
 
 /**
- * Ensure the linked VPN tunnel is up (without tearing down other VPNs),
- * then (re)connect the cluster API if needed.
+ * Ensure optional MagicLens VPN (if linked) then (re)connect the cluster API.
+ * Linked VPN is best-effort only — external VPN tools are enough; we never
+ * block cluster connect waiting for an in-app tunnel.
  */
 export async function ensureClusterAccess(
   clusterId: string,
@@ -59,69 +60,38 @@ function isVpnProfileUp(vpnProfileId: string): boolean {
 
 async function runEnsureAccess(clusterId: string, clusterName?: string): Promise<void> {
   const vpnProfileId = useClusterVpnStore.getState().getLink(clusterId)
+
+  // Optional in-app VPN in the background — never blocks cluster API connect.
+  // Users often reach the API via an external VPN / corporate network instead.
   if (vpnProfileId) {
     void window.api.vpn.setFocus(vpnProfileId)
+    void connectLinkedVpn(clusterId, clusterName)
   }
 
-  const alreadyUp = vpnProfileId ? isVpnProfileUp(vpnProfileId) : true
-
-  const vpnReady = await connectLinkedVpn(clusterId, clusterName)
-  if (!vpnReady) return
-
   if (useClusterStore.getState().activeClusterId !== clusterId) return
-
-  // Drop cluster clients whose VPN tunnel is no longer up (keep others — multi-tunnel).
-  await staleClustersMissingVpn(clusterId)
 
   const cluster = useClusterStore.getState().clusters.find((c) => c.id === clusterId)
   if (!cluster) return
 
-  if (alreadyUp && cluster.status === 'connected') {
+  if (cluster.status === 'connected') {
     return
   }
 
-  const newlyBroughtUp = !!vpnProfileId && !alreadyUp
-  if (newlyBroughtUp) {
-    await sleep(VPN_SETTLE_MS)
-    if (useClusterStore.getState().activeClusterId !== clusterId) return
-  }
-
-  await reconnectClusterWithRetry(clusterId, {
-    force: newlyBroughtUp || cluster.status !== 'connected'
-  })
-}
-
-async function staleClustersMissingVpn(activeClusterId: string): Promise<void> {
-  const { clusters } = useClusterStore.getState()
-  const links = useClusterVpnStore.getState().links
-  const status = useVpnStore.getState().status
-  const up = new Set(status?.connectedProfileIds ?? [])
-  if (status?.activeProfileId && status.status === 'connected') {
-    up.add(status.activeProfileId)
-  }
-
-  for (const cluster of clusters) {
-    if (cluster.id === activeClusterId) continue
-    const link = links[cluster.id]
-    if (!link) continue
-    if (up.has(link)) continue
-    if (cluster.status !== 'connected' && cluster.status !== 'connecting') continue
-    await disconnectCluster(cluster.id)
-    useClusterStore.getState().setClusterStatus(cluster.id, 'idle')
-  }
+  await reconnectClusterWithRetry(clusterId, { force: true })
 }
 
 /**
- * Returns false when VPN is required but not ready yet (auth prompt / failed).
- * Does NOT disconnect other VPN tunnels.
+ * Best-effort MagicLens VPN connect for a linked profile.
+ * Returns false when auth is needed or connect failed — callers must still
+ * attempt the cluster API (user may already be on an external VPN).
  */
 async function connectLinkedVpn(clusterId: string, clusterName?: string): Promise<boolean> {
   const vpnProfileId = useClusterVpnStore.getState().getLink(clusterId)
-  if (!vpnProfileId) return true
+  if (!vpnProfileId) return false
 
   const profiles = useVpnStore.getState().profiles
   const profile = profiles.find((p) => p.id === vpnProfileId)
-  if (!profile || !profile.hasConfig) return true
+  if (!profile || !profile.hasConfig) return false
 
   if (isVpnProfileUp(vpnProfileId)) {
     return true
@@ -233,7 +203,7 @@ async function reconnectClusterWithRetry(
         .setClusterStatus(
           clusterId,
           'connecting',
-          `Waiting for VPN route… (try ${attempt + 1}/${CLUSTER_CONNECT_ATTEMPTS})`
+          `Retrying connection… (try ${attempt + 1}/${CLUSTER_CONNECT_ATTEMPTS})`
         )
       await sleep(CLUSTER_CONNECT_GAP_MS)
     }
@@ -269,11 +239,13 @@ export async function connectVpnWithSession(
   return result
 }
 
-/** True when this cluster should wait for VPN before attempting API connect. */
-export function clusterNeedsVpn(clusterId: string): boolean {
-  const vpnProfileId = useClusterVpnStore.getState().getLink(clusterId)
-  if (!vpnProfileId) return false
-  return !isVpnProfileUp(vpnProfileId)
+/**
+ * Previously gated cluster connect on MagicLens VPN.
+ * Always false now: external VPN / direct network access is enough.
+ * Linked in-app VPN remains optional auto-connect only.
+ */
+export function clusterNeedsVpn(_clusterId: string): boolean {
+  return false
 }
 
 function sleep(ms: number): Promise<void> {

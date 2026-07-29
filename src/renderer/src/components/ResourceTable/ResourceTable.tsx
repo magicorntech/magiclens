@@ -22,6 +22,10 @@ import {
   type TableSortState
 } from '../../utils/tableSort'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
+import {
+  RESOURCE_TABLE_DETAIL_MIN_PX,
+  RESOURCE_TABLE_LIST_MIN_PX
+} from '../../constants/clusterSplitLimits'
 import { ResizableTable, resetStoredTableWidths } from '../../utils/ResizableTable'
 import { useTableColumnPrefs } from '../../utils/useTableColumnPrefs'
 import { TableColumnPicker } from '../ui/TableColumnPicker'
@@ -50,6 +54,8 @@ interface ResourceTableProps {
   namespace: string
   kind: ResourceKind
   isActive: boolean
+  /** Override cluster-wide namespace changes (e.g. per split pane). */
+  onNamespaceChange?: (namespace: string) => void
 }
 
 function applySortOrder(
@@ -60,7 +66,13 @@ function applySortOrder(
   return { ...col, sortOrder: sortState.order ?? null }
 }
 
-export function ResourceTable({ clusterId, namespace, kind, isActive }: ResourceTableProps): React.JSX.Element {
+export function ResourceTable({
+  clusterId,
+  namespace,
+  kind,
+  isActive,
+  onNamespaceChange
+}: ResourceTableProps): React.JSX.Element {
   const [search, setSearch] = useState('')
   const [tableLayoutEpoch, setTableLayoutEpoch] = useState(0)
   const [selectedItem, setSelectedItem] = useState<ResourceListItem | null>(null)
@@ -75,7 +87,7 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
     (s) => s.clusters.find((c) => c.id === clusterId)?.selectedResourceKind ?? null
   )
   const setResourceWatchDisplay = useResourceWatchDisplayStore((s) => s.setDisplay)
-  const { setPagination, paginationProps } = useTablePagination([clusterId, namespace, kind, search])
+  const { pagination, setPagination, paginationProps } = useTablePagination([clusterId, namespace, kind, search])
   const { openYamlEditor, openResourceDetail } = useBottomPanel()
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
   const layoutMode = useLayoutMode()
@@ -94,6 +106,14 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
   )
   const tableLoading = isLoading
   const { data: nodeMetrics } = useNodeMetrics(isNodesKind ? clusterId : null, isActive)
+
+  function applyNamespaceChange(ns: string): void {
+    if (onNamespaceChange) {
+      onNamespaceChange(ns)
+      return
+    }
+    setSelectedNamespace(clusterId, ns)
+  }
 
   useEffect(() => {
     setSelectedItem(null)
@@ -120,7 +140,7 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
 
   const columns = useMemo<ColumnsType<ResourceListItem>>(() => {
     const columnActions = {
-      onNamespaceFilter: (ns: string) => setSelectedNamespace(clusterId, ns),
+      onNamespaceFilter: (ns: string) => applyNamespaceChange(ns),
       onNavigateToNode: (nodeName: string) =>
         navigateToResource(clusterId, { kind: 'Nodes', namespace: '', name: nodeName })
     }
@@ -266,7 +286,7 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
         )
     })
     return cols
-  }, [kind, namespace, isNodesKind, nodeMetrics, clusterId, listQueryKey, sortState, isActive, setSelectedNamespace, navigateToResource])
+  }, [kind, namespace, isNodesKind, nodeMetrics, clusterId, listQueryKey, sortState, isActive, onNamespaceChange, navigateToResource])
 
   const allColumnKeys = useMemo(
     () => columns.map((c) => String(c.key ?? '')).filter(Boolean),
@@ -377,7 +397,16 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
       onSelectRowKeys={setSelectedRowKeys}
       onTableChange={handleTableChange}
       paginationProps={paginationProps}
+      tablePageSize={pagination.pageSize}
       nodeMetrics={nodeMetrics}
+      columnPicker={
+        <TableColumnPicker
+          columns={columnPickerItems}
+          onToggle={toggleColumn}
+          onReorder={reorderColumns}
+          onReset={resetColumns}
+        />
+      }
     />
   )
 
@@ -391,7 +420,7 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
           <NamespaceSelector
             clusterId={clusterId}
             value={namespace}
-            onChange={(ns) => setSelectedNamespace(clusterId, ns)}
+            onChange={applyNamespaceChange}
           />
         }
         search={
@@ -404,16 +433,20 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
           />
         }
         actions={
-          <>
-            {selectedRowKeys.length > 0 && (
-              <button type="button" className="ml-btn ml-btn--ghost ml-btn--danger" onClick={handleBatchDelete}>
+          <div className="ml-action-group ml-action-group--end ml-resource-toolbar-actions-primary">
+            {selectedRowKeys.length > 0 ? (
+              <button
+                type="button"
+                className="ml-btn ml-btn--ghost ml-btn--danger ml-action-control"
+                onClick={handleBatchDelete}
+              >
                 <Icon icon={Trash2} variant="detail" />
                 <span>Delete ({selectedRowKeys.length})</span>
               </button>
-            )}
+            ) : null}
             <button
               type="button"
-              className="ml-btn ml-btn--ghost"
+              className="ml-btn ml-btn--ghost ml-action-control"
               onClick={() =>
                 openYamlEditor({
                   title: `New ${kind}`,
@@ -429,8 +462,15 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
               <span>Create</span>
             </button>
             <LiveRefreshControl isFetching={isFetching} onManualRefresh={() => refetch()} />
-            <TableColumnPicker columns={columnPickerItems} onToggle={toggleColumn} onReorder={reorderColumns} onReset={resetColumns} />
-          </>
+            {!isNodesKind ? (
+              <TableColumnPicker
+                columns={columnPickerItems}
+                onToggle={toggleColumn}
+                onReorder={reorderColumns}
+                onReset={resetColumns}
+              />
+            ) : null}
+          </div>
         }
       />
       <div className="ml-resource-page-body">
@@ -457,6 +497,7 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
                 dataSource={filtered}
                 pagination={paginationProps(filtered.length)}
                 size="middle"
+                fitPageSize
                 virtualScroll={filtered.length > 60}
                 onChange={handleTableChange}
                 rowSelection={{
@@ -495,10 +536,10 @@ export function ResourceTable({ clusterId, namespace, kind, isActive }: Resource
 
   return (
     <Splitter style={{ height: '100%' }}>
-      <Splitter.Panel defaultSize="58%" min="35%">
+      <Splitter.Panel defaultSize="58%" min={RESOURCE_TABLE_LIST_MIN_PX}>
         {listPanel}
       </Splitter.Panel>
-      <Splitter.Panel defaultSize="42%" min="25%">
+      <Splitter.Panel defaultSize="42%" min={RESOURCE_TABLE_DETAIL_MIN_PX}>
         <ResourceDetailPanel
           clusterId={clusterId}
           kind={kind}

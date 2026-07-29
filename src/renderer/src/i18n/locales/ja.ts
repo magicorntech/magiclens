@@ -20,7 +20,8 @@ export const ja: TranslationOverrides = {
     clusters: 'クラスター',
     vpn: 'VPN',
     favorites: 'お気に入り',
-    cancel: 'キャンセル'
+    cancel: 'キャンセル',
+    close: '閉じる'
   },
   chrome: {
     searchPlaceholder: 'クラスター、リソース、名前空間を検索…',
@@ -99,10 +100,17 @@ export const ja: TranslationOverrides = {
       showFavoritesHint: '有効にすると、左サイドバーの Workspaces の上にお気に入りが表示されます。見出しをクリックして折りたたみ／展開できます。',
       showWorkspaces: 'Workspaces セクションを表示',
       showWorkspacesHint: '有効にすると左サイドバーに Workspaces が表示されます。折りたたみ時は W マーカーがワークスペースのクラスター上に出ます。',
+      showWorkspaceClusterCounts: 'ワークスペースのクラスター数を表示',
+      showWorkspaceClusterCountsHint: '有効にすると、各ワークスペースの見出しに含まれるクラスター数が表示されます。',
       tabIconsTitle: 'タブのアイコン',
       showClusterLogos: 'クラスタータブにロゴを表示',
       showResourceIcons: 'リソースタブにアイコンを表示',
       tabIconsHint: 'クラスタータブは追加時に設定したロゴを使います。リソースタブは左メニューと同じアイコンを使います。',
+      chromeToolbarTitle: 'ツールバーアイコン',
+      chromeToolbarHint:
+        '上部バーのアイコンの表示／非表示と並べ替え。設定は右側に固定され、移動や非表示にはできません。',
+      chromeToolbarChooser: 'ドラッグで並べ替え、表示を切り替え。設定はロックされています。',
+      chromeToolbarFixed: '固定',
       detailMaskBlur: '細部の背後にある背景をぼかす',
       detailMaskBlurHint: 'リソース詳細ドロワーが開いているときは、その背後にあるリストをぼかします。デフォルトではオフになっているため、テーブルは鮮明なままになります。',
       panelTitle: 'ターミナルと YAML パネル',
@@ -112,6 +120,14 @@ export const ja: TranslationOverrides = {
       panelPlacementLeft: '左',
       showClusterNamespace: '接続されている名前空間を表示する',
       showClusterNamespaceHint: '有効にすると、選択した名前空間が左側のサイドバーに接続されたクラスター上のチップとして表示されます。'
+    },
+    chromeToolbar: {
+      search: '検索',
+      terminal: 'ターミナル',
+      theme: 'テーマ',
+      fullscreen: 'フルスクリーン',
+      split: 'クラスター分割',
+      settings: '設定'
     },
     nodesSections: {
       health: 'クラスターの健全性',
@@ -287,8 +303,10 @@ export const ja: TranslationOverrides = {
     }
   },
   vpn: {
-    heroEyebrow: 'セキュアトンネル',
+    brandEyebrow: 'MagicLens',
     title: 'VPN',
+    heroSubtitle: 'プライベートクラスターとリモートアクセスのためのセキュアトンネル。',
+    heroEyebrow: 'セキュアトンネル',
     status: {
       connected: '接続済み',
       connecting: '接続中',
@@ -527,6 +545,7 @@ export const ja: TranslationOverrides = {
     }
   },
   topology: {
+    brandEyebrow: 'MagicLens',
     title: 'トポロジーとアプリケーション',
     subtitle: 'このネームスペースのワークロード、サービス、依存関係のライブマップ。',
     modes: {
@@ -653,7 +672,7 @@ export const ja: TranslationOverrides = {
   clusterOverview: {
     title: 'クラスターの概要',
     subtitle: 'クラスター全体の健全性、容量、および最近のアクティビティ。',
-    metricsUnavailable: 'metrics-server が利用できません — 使用状況データが不完全である可能性があります',
+    metricsUnavailable: '使用量メトリクスを取得できません — metrics-server を入れるか Prometheus に接続してください',
     nodes: 'ノード',
     nodesHint: '{{ready}} は準備完了ですが、{{notReady}} は準備ができていません',
     pods: 'ポッド',
@@ -714,6 +733,7 @@ export const ja: TranslationOverrides = {
     noHpas: 'HPA が定義されていません'
   },
   clustersHub: {
+    brandEyebrow: 'MagicLens',
     title: 'クラスター',
     subtitle: 'すべての Kubernetes クラスターを 1 か所から追加、接続、管理します。',
     add: 'クラスターの追加',
@@ -933,7 +953,8 @@ export const ja: TranslationOverrides = {
       replicaHistory: 'レプリカ履歴',
       exec: '幹部',
       metrics: 'メトリクス',
-      pressure: 'プレッシャー'
+      pressure: 'プレッシャー',
+      pods: 'Pods'
     },
     overview: {
       title: '概要',

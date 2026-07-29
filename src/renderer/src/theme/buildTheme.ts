@@ -7,7 +7,7 @@ import { typography, radius } from '../design-system/tokens'
 
 export function buildAntdTheme(
   isDark: boolean,
-  colorScheme: ColorSchemeId = 'slate',
+  colorScheme: ColorSchemeId = 'rose',
   customAccent?: string
 ): ThemeConfig {
   const p = getSchemePalette(colorScheme, isDark, customAccent)
@@ -37,10 +37,9 @@ export function buildAntdTheme(
       controlHeight: 32,
       motionDurationMid: '0.18s',
       motionEaseInOut: 'cubic-bezier(0.22, 1, 0.36, 1)',
-      // Keep a single soft elevation for popovers/dropdowns; tooltips override to none in CSS
       boxShadowSecondary: isDark
-        ? '0 4px 16px rgba(0, 0, 0, 0.45)'
-        : '0 4px 14px rgba(15, 23, 42, 0.12)'
+        ? '0 0 0 1px rgba(255,255,255,0.06)'
+        : '0 0 0 1px rgba(15, 23, 42, 0.08)'
     },
     components: {
       Tooltip: {
@@ -71,11 +70,11 @@ export function buildAntdTheme(
         horizontalMargin: '0'
       },
       Table: {
-        headerBg: p.bgSpotlight,
+        headerBg: p.bgContainer,
         rowHoverBg: p.selectionBg,
         borderColor: 'transparent',
         headerBorderRadius: 0,
-        cellPaddingBlock: 8,
+        cellPaddingBlock: 6,
         cellPaddingInline: 12,
         lineWidth: 0,
         lineType: 'solid'
@@ -128,7 +127,7 @@ export function buildAntdTheme(
 /** Pushes palette values to CSS custom properties for non-antd surfaces. */
 export function syncDocumentTheme(
   isDark: boolean,
-  colorScheme: ColorSchemeId = 'slate',
+  colorScheme: ColorSchemeId = 'rose',
   customAccent?: string
 ): void {
   const p = getSchemePalette(colorScheme, isDark, customAccent)
@@ -165,9 +164,11 @@ export function syncDocumentTheme(
     '--ml-terminal-bg': p.terminalBg,
     '--ml-terminal-fg': p.terminalFg,
     '--ml-terminal-muted': p.terminalMuted,
-    '--ml-shadow-sm': isDark ? '0 1px 2px rgba(0,0,0,0.25)' : '0 1px 2px rgba(15,23,42,0.04)',
-    '--ml-shadow-md': isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(15,23,42,0.06)',
-    '--ml-shadow-lg': isDark ? '0 8px 24px rgba(0,0,0,0.4)' : '0 8px 24px rgba(15,23,42,0.08)',
+    '--ml-shadow-sm': 'none',
+    '--ml-shadow-md': 'none',
+    '--ml-shadow-lg': isDark
+      ? '0 0 0 1px rgba(255,255,255,0.06)'
+      : '0 0 0 1px rgba(15,23,42,0.08)',
     '--ml-selection-bg': p.selectionBg,
     '--ml-splash-accent': p.primary,
     '--ml-splash-accent-2': p.primaryHover,
@@ -177,13 +178,14 @@ export function syncDocumentTheme(
     '--ml-radius-xl': '8px',
     '--ml-radius-xs': '4px',
     '--ml-icon-gap': '8px',
-    '--ml-icon-label-gap': '12px',
-    '--ml-page-padding': '24px',
+    '--ml-icon-label-gap': '8px',
+    '--ml-page-padding': '16px',
     '--ml-card-padding': '16px',
-    '--ml-toolbar-spacing': '12px',
+    '--ml-toolbar-spacing': '8px',
     '--ml-component-spacing': '8px',
-    '--ml-resource-sider-width': '232px',
-    '--ml-glass-bg': isDark ? 'rgba(22,27,34,0.82)' : 'rgba(255,255,255,0.82)',
+    '--ml-resource-sider-width': '220px',
+    '--ml-glass-bg': withAlpha(p.sidebarBg, isDark ? 0.88 : 0.92),
+    '--ml-glass-border': p.sidebarDivider,
     '--ml-status-success-bg': isDark ? 'rgba(52,211,153,0.12)' : 'rgba(5,150,105,0.1)',
     '--ml-status-success-fg': isDark ? '#6ee7b7' : '#047857',
     '--ml-status-warning-bg': isDark ? 'rgba(251,191,36,0.12)' : 'rgba(217,119,6,0.1)',

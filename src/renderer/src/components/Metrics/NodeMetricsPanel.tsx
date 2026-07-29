@@ -59,27 +59,27 @@ export function NodeMetricsPanel({ clusterId, nodeName, isActive }: NodeMetricsP
 
   if (isLoading || !data || rangeLoading) return <LoadingState />
 
-  if (!data.metricsAvailable) {
+  if (!data.metricsAvailable && !useHistorical) {
     return (
       <Alert
         type="info"
         showIcon
         message="Metrics unavailable"
-        description="The metrics-server does not appear to be installed on this cluster, or usage data isn't ready yet."
+        description="Neither metrics-server nor Prometheus returned usage data for this node yet."
       />
     )
   }
 
-  if (!node) {
+  if (!node && !useHistorical) {
     return <Empty description="No metrics found for this node" image={Empty.PRESENTED_IMAGE_SIMPLE} />
   }
 
-  const cpuPercent = nodeResourcePercent(node.cpuUsageCores, node.cpuAllocatableCores, node.cpuCapacityCores)
-  const memoryPercent = nodeResourcePercent(
-    node.memoryUsageBytes,
-    node.memoryAllocatableBytes,
-    node.memoryCapacityBytes
-  )
+  const cpuPercent = node
+    ? nodeResourcePercent(node.cpuUsageCores, node.cpuAllocatableCores, node.cpuCapacityCores)
+    : undefined
+  const memoryPercent = node
+    ? nodeResourcePercent(node.memoryUsageBytes, node.memoryAllocatableBytes, node.memoryCapacityBytes)
+    : undefined
   const firstSampleAt = history?.[0]?.t
 
   return (
@@ -90,38 +90,50 @@ export function NodeMetricsPanel({ clusterId, nodeName, isActive }: NodeMetricsP
         <Alert type="warning" showIcon message={HISTORICAL_METRICS_WARNING} style={{ marginBottom: 12 }} />
       )}
       {rangeData?.error ? (
-        <Alert type="error" showIcon message="Prometheus query failed" description={rangeData.error} style={{ marginBottom: 12 }} />
+        <Alert
+          type="error"
+          showIcon
+          message="Prometheus query failed"
+          description={rangeData.error}
+          style={{ marginBottom: 12 }}
+        />
       ) : null}
 
-      <Row gutter={16}>
-        <Col span={12}>
-          <Card size="small" title="CPU">
-            {cpuPercent !== undefined && (
-              <Progress percent={cpuPercent} format={(p) => `${p}%`} status={cpuPercent >= 90 ? 'exception' : undefined} />
-            )}
-            <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-              {node.cpuUsageCores !== undefined && <>Usage: {formatCores(node.cpuUsageCores)} · </>}
-              Allocatable: {formatCores(node.cpuAllocatableCores)} · Capacity: {formatCores(node.cpuCapacityCores)}
-            </Typography.Text>
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card size="small" title="Memory">
-            {memoryPercent !== undefined && (
-              <Progress
-                percent={memoryPercent}
-                format={(p) => `${p}%`}
-                status={memoryPercent >= 90 ? 'exception' : undefined}
-              />
-            )}
-            <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
-              {node.memoryUsageBytes !== undefined && <>Usage: {formatBytes(node.memoryUsageBytes)} · </>}
-              Allocatable: {formatBytes(node.memoryAllocatableBytes)} · Capacity:{' '}
-              {formatBytes(node.memoryCapacityBytes)}
-            </Typography.Text>
-          </Card>
-        </Col>
-      </Row>
+      {node ? (
+        <Row gutter={16}>
+          <Col span={12}>
+            <Card size="small" title="CPU">
+              {cpuPercent !== undefined && (
+                <Progress
+                  percent={cpuPercent}
+                  format={(p) => `${p}%`}
+                  status={cpuPercent >= 90 ? 'exception' : undefined}
+                />
+              )}
+              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                {node.cpuUsageCores !== undefined && <>Usage: {formatCores(node.cpuUsageCores)} · </>}
+                Allocatable: {formatCores(node.cpuAllocatableCores)} · Capacity: {formatCores(node.cpuCapacityCores)}
+              </Typography.Text>
+            </Card>
+          </Col>
+          <Col span={12}>
+            <Card size="small" title="Memory">
+              {memoryPercent !== undefined && (
+                <Progress
+                  percent={memoryPercent}
+                  format={(p) => `${p}%`}
+                  status={memoryPercent >= 90 ? 'exception' : undefined}
+                />
+              )}
+              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                {node.memoryUsageBytes !== undefined && <>Usage: {formatBytes(node.memoryUsageBytes)} · </>}
+                Allocatable: {formatBytes(node.memoryAllocatableBytes)} · Capacity:{' '}
+                {formatBytes(node.memoryCapacityBytes)}
+              </Typography.Text>
+            </Card>
+          </Col>
+        </Row>
+      ) : null}
 
       <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
         <PodMetricsChart

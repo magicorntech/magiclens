@@ -12,7 +12,7 @@ import type {
 } from '@shared/types/metrics'
 import type { MetricsTimeRange } from '@shared/metricsTimeRange'
 import { HISTORICAL_METRICS_WARNING, rateIntervalForDuration, resolveMetricsWindow } from '@shared/metricsTimeRange'
-import { getPrometheusStatus, prometheusQueryRange } from './prometheusService'
+import { ensurePrometheusDiscovered, prometheusQueryRange } from './prometheusService'
 
 function escapePromQlLabel(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
@@ -54,7 +54,8 @@ async function queryRangeMatrix(
   query: string,
   labelFn: (metric: Record<string, string>) => string = () => 'Usage'
 ): Promise<{ series: MetricsSeries[]; error?: string; available: boolean }> {
-  if (!getPrometheusStatus(clusterId).available) return { available: false, series: [] }
+  const status = await ensurePrometheusDiscovered(clusterId)
+  if (!status.available) return { available: false, series: [] }
   const { start, end, step } = resolveMetricsWindow(range)
   const res = await prometheusQueryRange({ clusterId, query, start, end, step })
   if (!res.available) return { available: false, series: [] }
@@ -282,7 +283,8 @@ export async function getDeploymentMetricsRange(req: DeploymentMetricsRangeReque
 
 export async function getNodePressureMetrics(req: NodePressureRequest): Promise<MetricsRangeResponse> {
   const node = escapePromQlLabel(req.nodeName)
-  if (!getPrometheusStatus(req.clusterId).available) return unavailableResponse()
+  const status = await ensurePrometheusDiscovered(req.clusterId)
+  if (!status.available) return unavailableResponse()
   const { start, end, step } = resolveMetricsWindow(req.range)
   const conditions = ['MemoryPressure', 'DiskPressure', 'PIDPressure']
   const pressureEvents: MetricsPressureEvent[] = []

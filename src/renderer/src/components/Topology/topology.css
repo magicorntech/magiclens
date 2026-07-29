@@ -4,28 +4,55 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  padding: 12px 16px 16px;
+  padding: 20px 20px 16px;
   gap: 12px;
   overflow: hidden;
+  background: var(--ml-bg-layout, #f4f6f8);
 }
 
-.ml-topo-page__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+.ml-topo-page > :not(.ml-hub-glow) {
+  position: relative;
+  z-index: 1;
 }
 
-.ml-topo-page__title-row {
-  display: flex;
+.ml-topo-page__hero {
+  margin-bottom: 4px;
+}
+
+.ml-topo-page__hero.ml-hub-hero {
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
-.ml-topo-page__title {
-  margin: 0 !important;
+.ml-topo-page__hero .ml-hub-hero__actions {
+  flex: none;
+  flex-wrap: nowrap;
+  align-items: center;
+  max-width: none;
+}
+
+.ml-topo-page__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
+  max-width: 100%;
+}
+
+.ml-topo-page__actions > * {
+  flex: none;
+}
+
+.ml-topo-page__ns {
+  flex: none;
+  width: 200px;
+  min-width: 160px;
+}
+
+.ml-topo-page__ns .ml-namespace-selector,
+.ml-topo-page__ns .ml-ns-trigger {
+  width: 100%;
+  min-width: 0;
 }
 
 .ml-topo-live-tag {

@@ -14,6 +14,7 @@ import type {
   PodDetailResponse,
   PodEnvVar,
   PodMetricsResponse,
+  NamespacePodMetricsResponse,
   PodNetworkResponse,
   PodProbeInfo,
   PodResourceQuantities,
@@ -23,6 +24,7 @@ import type {
 import type { ClusterClients } from './clusterManager'
 import { parseCpuQuantity, parseMemoryQuantity } from './quantity'
 import { derivePodStatus } from './podStatus'
+import { namespacePodUsageFromPrometheus, podUsageFromPrometheus } from './metricsService'
 
 function summarizeContainerState(state: V1ContainerState | undefined): {
   state: string
@@ -314,29 +316,70 @@ export async function getPodDetail(
 
 export async function getPodMetrics(
   clients: ClusterClients,
+  clusterId: string,
   namespace: string,
   podName: string
 ): Promise<PodMetricsResponse> {
   try {
     const podMetrics = await clients.metrics.getPodMetrics(namespace)
     const match = podMetrics.items.find((item) => item.metadata.name === podName)
-    if (!match) {
-      return { metricsAvailable: false, containers: [], totalCpuUsageCores: 0, totalMemoryUsageBytes: 0 }
-    }
-    const containers = match.containers.map((c) => ({
-      name: c.name,
-      cpuUsageCores: parseCpuQuantity(c.usage.cpu),
-      memoryUsageBytes: parseMemoryQuantity(c.usage.memory)
-    }))
-    return {
-      metricsAvailable: true,
-      containers,
-      totalCpuUsageCores: containers.reduce((sum, c) => sum + c.cpuUsageCores, 0),
-      totalMemoryUsageBytes: containers.reduce((sum, c) => sum + c.memoryUsageBytes, 0)
+    if (match) {
+      const containers = match.containers.map((c) => ({
+        name: c.name,
+        cpuUsageCores: parseCpuQuantity(c.usage.cpu),
+        memoryUsageBytes: parseMemoryQuantity(c.usage.memory)
+      }))
+      return {
+        metricsAvailable: true,
+        containers,
+        totalCpuUsageCores: containers.reduce((sum, c) => sum + c.cpuUsageCores, 0),
+        totalMemoryUsageBytes: containers.reduce((sum, c) => sum + c.memoryUsageBytes, 0)
+      }
     }
   } catch {
-    return { metricsAvailable: false, containers: [], totalCpuUsageCores: 0, totalMemoryUsageBytes: 0 }
+    // fall through to Prometheus
   }
+
+  const fromProm = await podUsageFromPrometheus(clusterId, namespace, podName)
+  if (fromProm) {
+    return {
+      metricsAvailable: true,
+      containers: fromProm.containers,
+      totalCpuUsageCores: fromProm.containers.reduce((sum, c) => sum + c.cpuUsageCores, 0),
+      totalMemoryUsageBytes: fromProm.containers.reduce((sum, c) => sum + c.memoryUsageBytes, 0)
+    }
+  }
+
+  return { metricsAvailable: false, containers: [], totalCpuUsageCores: 0, totalMemoryUsageBytes: 0 }
+}
+
+export async function getNamespacePodMetrics(
+  clients: ClusterClients,
+  clusterId: string,
+  namespace: string
+): Promise<NamespacePodMetricsResponse> {
+  try {
+    const podMetrics = await clients.metrics.getPodMetrics(namespace)
+    const pods = podMetrics.items.map((item) => {
+      const containers = item.containers.map((c) => ({
+        name: c.name,
+        cpuUsageCores: parseCpuQuantity(c.usage.cpu),
+        memoryUsageBytes: parseMemoryQuantity(c.usage.memory)
+      }))
+      return {
+        podName: item.metadata?.name ?? '',
+        cpuUsageCores: containers.reduce((sum, c) => sum + c.cpuUsageCores, 0),
+        memoryUsageBytes: containers.reduce((sum, c) => sum + c.memoryUsageBytes, 0)
+      }
+    })
+    return { metricsAvailable: true, pods: pods.filter((p) => p.podName) }
+  } catch {
+    // fall through to Prometheus
+  }
+
+  const fromProm = await namespacePodUsageFromPrometheus(clusterId, namespace)
+  if (fromProm) return { metricsAvailable: true, pods: fromProm }
+  return { metricsAvailable: false, pods: [] }
 }
 
 function selectorMatchesLabels(selector: Record<string, string> | undefined, labels: Record<string, string>): boolean {

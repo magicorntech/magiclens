@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { Input, Select, Tag } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { TopologyApplication, TopologyHealth } from '@shared/types/topology'
+import type { ResourceFocus } from '@shared/types/navigation'
+import type { ResourceListItem } from '@shared/types/resource'
 import {
   ALL_NAMESPACES,
   formatNamespaceSelectionLabel,
@@ -10,14 +12,15 @@ import {
 } from '@shared/namespaceSelection'
 import { useNamespaces } from '../../queries/useNamespaces'
 import { useTopologyGraph } from '../Topology/useTopologyGraph'
+import { topologyToListItem, topologyToResourceKind } from '../Topology/topologyResource'
 import { LoadingState, EmptyState } from '../ResourceTable/EmptyErrorStates'
 import { DetailOverview, DetailSection } from '../Detail/detailPrimitives'
 import { OverviewGrid, OverviewPage, OverviewStat } from './OverviewPage'
-import { useClusterStore } from '../../stores/clusterStore'
 
 interface ApplicationsOverviewPageProps {
   clusterId: string
   namespace: string
+  onNavigateToResource: (focus: ResourceFocus, item?: ResourceListItem) => void
 }
 
 function healthTone(h: TopologyHealth): 'ok' | 'warn' | 'error' | 'neutral' {
@@ -29,7 +32,8 @@ function healthTone(h: TopologyHealth): 'ok' | 'warn' | 'error' | 'neutral' {
 
 export function ApplicationsOverviewPage({
   clusterId,
-  namespace
+  namespace,
+  onNavigateToResource
 }: ApplicationsOverviewPageProps): React.JSX.Element {
   const { t } = useTranslation()
   // null → follow the cluster-wide namespace selection; string → local override.
@@ -45,7 +49,6 @@ export function ApplicationsOverviewPage({
       ? selection[0]
       : undefined
   const { data: graph, loading, error } = useTopologyGraph(clusterId, effectiveNs)
-  const navigateToResource = useClusterStore((s) => s.navigateToResource)
 
   const apps = useMemo(() => {
     const list = graph?.applications ?? []
@@ -65,15 +68,12 @@ export function ApplicationsOverviewPage({
   function openApp(app: TopologyApplication): void {
     const node = graph?.nodes.find((n) => app.resourceIds.includes(n.id))
     if (!node) return
-    const kindMap: Record<string, 'Deployments' | 'StatefulSets' | 'Pods' | 'Services'> = {
-      Deployment: 'Deployments',
-      StatefulSet: 'StatefulSets',
-      Pod: 'Pods',
-      Service: 'Services'
-    }
-    const kind = kindMap[node.kind]
+    const kind = topologyToResourceKind(node.kind)
     if (!kind) return
-    navigateToResource(clusterId, { kind, namespace: node.namespace, name: node.name })
+    onNavigateToResource(
+      { kind, namespace: node.namespace, name: node.name },
+      topologyToListItem(node)
+    )
   }
 
   return (

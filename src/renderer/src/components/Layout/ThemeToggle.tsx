@@ -18,9 +18,9 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps): React.JSX.El
       value={mode}
       onChange={(v) => setMode(v as ThemeMode)}
       options={[
-        { value: 'light', icon: <Icon icon={Sun} variant="detail" /> },
-        { value: 'dark', icon: <Icon icon={Moon} variant="detail" /> },
-        { value: 'system', icon: <Icon icon={Monitor} variant="detail" /> }
+        { value: 'light', icon: <Icon icon={Sun} variant="toolbar" /> },
+        { value: 'dark', icon: <Icon icon={Moon} variant="toolbar" /> },
+        { value: 'system', icon: <Icon icon={Monitor} variant="toolbar" /> }
       ]}
       size={compact ? 'small' : 'middle'}
       block={!compact}

@@ -33,13 +33,24 @@ export function OverviewStat({
   label,
   value,
   hint,
-  tone
+  tone,
+  onClick
 }: {
   label: string
   value: ReactNode
   hint?: string
   tone?: 'ok' | 'warn' | 'error' | 'neutral'
+  onClick?: () => void
 }): React.JSX.Element {
+  if (onClick) {
+    return (
+      <button type="button" className={`ml-overview-stat ml-overview-stat--clickable${tone ? ` ml-overview-stat--${tone}` : ''}`} onClick={onClick}>
+        <span className="ml-overview-stat__label">{label}</span>
+        <span className="ml-overview-stat__value">{value}</span>
+        {hint ? <span className="ml-overview-stat__hint">{hint}</span> : null}
+      </button>
+    )
+  }
   return (
     <div className={`ml-overview-stat${tone ? ` ml-overview-stat--${tone}` : ''}`}>
       <span className="ml-overview-stat__label">{label}</span>

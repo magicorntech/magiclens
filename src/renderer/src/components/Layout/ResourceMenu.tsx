@@ -549,6 +549,18 @@ export function ResourceMenu({
         mouseEnterDelay={0.05}
         mouseLeaveDelay={0.1}
         classNames={{ root: 'ml-resource-nav-flyout-overlay' }}
+        styles={{
+          container: {
+            padding: 0,
+            background: 'transparent',
+            boxShadow: 'none',
+            border: 'none'
+          },
+          content: {
+            padding: 0,
+            background: 'transparent'
+          }
+        }}
         destroyOnHidden
       >
         <span className="ml-resource-nav-rail-slot">

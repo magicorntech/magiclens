@@ -137,13 +137,15 @@ export function NodeInspectorDrawer({
                   tableKey="node-inspector-pods"
                   rowKey="id"
                   size="small"
-                  pagination={{ pageSize: 10, showSizeChanger: false }}
+                  resizable={false}
+                  fitPageSize
+                  pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ['10','20','50'] }}
                   dataSource={nodePods}
                   columns={[
-                    { title: 'Name', dataIndex: 'name', key: 'name' },
-                    { title: 'Namespace', dataIndex: 'namespace', key: 'namespace' },
-                    { title: 'Status', key: 'status', render: (_, r) => <StatusTag text={r.statusText} color={r.statusColor} /> },
-                    { title: 'Restarts', key: 'restarts', render: (_, r) => r.columns.restarts ?? '0' }
+                    { title: 'Name', dataIndex: 'name', key: 'name', ellipsis: true },
+                    { title: 'Namespace', dataIndex: 'namespace', key: 'namespace', width: 130, ellipsis: true },
+                    { title: 'Status', key: 'status', width: 110, render: (_, r) => <StatusTag text={r.statusText} color={r.statusColor} /> },
+                    { title: 'Restarts', key: 'restarts', width: 80, render: (_, r) => r.columns.restarts ?? '0' }
                   ]}
                 />
               )}

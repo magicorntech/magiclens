@@ -2,6 +2,7 @@ import type { MeResponse } from './enterprise/api'
 import { useClusterStore } from './stores/clusterStore'
 import { useClusterVpnStore } from './stores/clusterVpnStore'
 import { useClusterGroupsStore } from './stores/clusterGroupsStore'
+import { useNotesStore } from './stores/notesStore'
 import { connectCluster, disconnectCluster } from './clusterConnect'
 import { ensureClusterAccess } from './clusterVpn'
 
@@ -23,6 +24,7 @@ function normalizeUiStateForClusters(
   // Admin/profile require org login (disabled). Remap to clusters.
   const activeView =
     uiState.activeView === 'vpn' ||
+    uiState.activeView === 'notes' ||
     uiState.activeView === 'tabs' ||
     uiState.activeView === 'clusters'
       ? uiState.activeView
@@ -78,6 +80,7 @@ export async function switchWorkspace(
   useClusterStore.getState().hydrateUiState(normalized)
   await useClusterVpnStore.getState().hydrate()
   await useClusterGroupsStore.getState().hydrate()
+  await useNotesStore.getState().hydrate()
 
   if (!reconnect) return
 

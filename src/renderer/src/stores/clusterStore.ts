@@ -3,7 +3,7 @@ import type { ResourceKind } from '@shared/resourceKinds'
 import type { ConnectionStatus, PersistedClusterEntry, PersistedUiState } from '@shared/types/cluster'
 import type { ClusterSettings } from '@shared/types/clusterSettings'
 import { mergeClusterSettings } from '@shared/types/clusterSettings'
-import type { ResourceFocus, PendingNavigation } from '@shared/types/navigation'
+import type { ResourceFocus, PendingNavigation, VirtualPageKey } from '@shared/types/navigation'
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import { isNamespaceScoped } from '@shared/resourceKinds'
 import {
@@ -33,6 +33,9 @@ export interface ClusterEntry {
   selectedNamespace: string
   selectedResourceKind: ResourceKind | null
   openResourceKinds: ResourceKind[]
+  /** Overview / virtual pages open as tabs alongside resource kinds. */
+  openVirtualPages: VirtualPageKey[]
+  selectedVirtualPage: VirtualPageKey | null
   resourceFocus: ResourceFocus | null
   pendingNavigation: PendingNavigation | null
   lastOpenedAt?: string
@@ -48,7 +51,7 @@ interface ClusterStoreState {
   clusters: ClusterEntry[]
   openedTabs: string[]
   activeClusterId: string | null
-  activeView: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn'
+  activeView: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn' | 'notes'
   splitView: boolean
   splitLeftClusterId: string | null
   splitRightClusterId: string | null
@@ -61,8 +64,9 @@ interface ClusterStoreState {
   removeCluster: (id: string) => void
   openClusterTab: (id: string) => void
   closeClusterTab: (id: string) => void
+  reorderOpenedTabs: (fromId: string, toId: string) => void
   setActiveCluster: (id: string) => void
-  setActiveView: (view: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn') => void
+  setActiveView: (view: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn' | 'notes') => void
   enableSplitView: () => void
   disableSplitView: () => void
   setFocusedSplitPane: (pane: 'left' | 'right') => void
@@ -95,6 +99,9 @@ interface ClusterStoreState {
   openResourceKind: (id: string, kind: ResourceKind) => void
   closeResourceKind: (id: string, kind: ResourceKind) => void
   closeAllResourceKinds: (id: string) => void
+  openVirtualPage: (id: string, page: VirtualPageKey) => void
+  closeVirtualPage: (id: string, page: VirtualPageKey) => void
+  setSelectedVirtualPage: (id: string, page: VirtualPageKey | null) => void
   navigateToResource: (id: string, focus: ResourceFocus) => void
   navigateToHelmRelease: (id: string, namespace: string, name: string) => void
   navigateToDynamicResource: (
@@ -182,9 +189,28 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
       }
     }),
 
+  reorderOpenedTabs: (fromId, toId) =>
+    set((state) => {
+      if (fromId === toId) return state
+      const openedTabs = [...state.openedTabs]
+      const from = openedTabs.indexOf(fromId)
+      const to = openedTabs.indexOf(toId)
+      if (from < 0 || to < 0) return state
+      openedTabs.splice(from, 1)
+      openedTabs.splice(to, 0, fromId)
+      return { openedTabs }
+    }),
+
   setActiveCluster: (id) =>
     set((state) => {
       if (state.splitView) {
+        // Clicking a tab already in a pane focuses that pane (don't reassign).
+        if (id === state.splitLeftClusterId) {
+          return { activeClusterId: id, focusedSplitPane: 'left' }
+        }
+        if (id === state.splitRightClusterId) {
+          return { activeClusterId: id, focusedSplitPane: 'right' }
+        }
         const pane = state.focusedSplitPane
         return {
           activeClusterId: id,
@@ -271,7 +297,9 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
     set((state) => ({ clusters: updateCluster(state.clusters, id, { selectedNamespace: namespace }) })),
 
   setSelectedResourceKind: (id, kind) =>
-    set((state) => ({ clusters: updateCluster(state.clusters, id, { selectedResourceKind: kind }) })),
+    set((state) => ({
+      clusters: updateCluster(state.clusters, id, { selectedResourceKind: kind, selectedVirtualPage: null })
+    })),
 
   openResourceKind: (id, kind) =>
     set((state) => {
@@ -282,7 +310,13 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         ? cluster.openResourceKinds
         : [...cluster.openResourceKinds, kind]
       openResourceKinds = sortResourceKinds(openResourceKinds, prefs.pinned)
-      return { clusters: updateCluster(state.clusters, id, { openResourceKinds, selectedResourceKind: kind }) }
+      return {
+        clusters: updateCluster(state.clusters, id, {
+          openResourceKinds,
+          selectedResourceKind: kind,
+          selectedVirtualPage: null
+        })
+      }
     }),
 
   closeResourceKind: (id, kind) =>
@@ -341,6 +375,46 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
     saveResourceTabPreferences(id, { ...current, ...patch })
   },
 
+  openVirtualPage: (id, page) =>
+    set((state) => {
+      const cluster = state.clusters.find((c) => c.id === id)
+      if (!cluster) return {}
+      const openVirtualPages = cluster.openVirtualPages.includes(page)
+        ? cluster.openVirtualPages
+        : [...cluster.openVirtualPages, page]
+      return {
+        clusters: updateCluster(state.clusters, id, {
+          openVirtualPages,
+          selectedVirtualPage: page
+        })
+      }
+    }),
+
+  closeVirtualPage: (id, page) =>
+    set((state) => {
+      const cluster = state.clusters.find((c) => c.id === id)
+      if (!cluster) return {}
+      const openVirtualPages = cluster.openVirtualPages.filter((p) => p !== page)
+      let selectedVirtualPage = cluster.selectedVirtualPage
+      if (selectedVirtualPage === page) {
+        selectedVirtualPage = openVirtualPages[0] ?? null
+      }
+      const patch: Partial<ClusterEntry> = { openVirtualPages, selectedVirtualPage }
+      if (
+        selectedVirtualPage == null &&
+        cluster.selectedResourceKind == null &&
+        cluster.openResourceKinds[0]
+      ) {
+        patch.selectedResourceKind = cluster.openResourceKinds[0]
+      }
+      return { clusters: updateCluster(state.clusters, id, patch) }
+    }),
+
+  setSelectedVirtualPage: (id, page) =>
+    set((state) => ({
+      clusters: updateCluster(state.clusters, id, { selectedVirtualPage: page })
+    })),
+
   navigateToResource: (id, focus) =>
     set((state) => {
       const cluster = state.clusters.find((c) => c.id === id)
@@ -357,6 +431,7 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         clusters: updateCluster(state.clusters, id, {
           openResourceKinds,
           selectedResourceKind: focus.kind,
+          selectedVirtualPage: null,
           selectedNamespace,
           resourceFocus: focus,
           pendingNavigation: null
@@ -423,6 +498,8 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
         selectedNamespace: entry.selectedNamespace ?? 'ALL',
         selectedResourceKind: entry.selectedResourceKind,
         openResourceKinds: entry.selectedResourceKind ? [entry.selectedResourceKind] : [],
+        openVirtualPages: [],
+        selectedVirtualPage: null,
         resourceFocus: null,
         pendingNavigation: null,
         origin: entry.origin,

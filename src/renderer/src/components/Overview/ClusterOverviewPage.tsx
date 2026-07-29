@@ -1,6 +1,9 @@
 import { Alert } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { Box, Cpu, MemoryStick, Server } from 'lucide-react'
+import type { ResourceKind } from '@shared/resourceKinds'
+import type { ResourceFocus } from '@shared/types/navigation'
+import type { ResourceListItem } from '@shared/types/resource'
 import { useClusterMetrics } from '../../queries/useClusterMetrics'
 import { useResourceList } from '../../queries/useResourceList'
 import { formatBytes, formatCores, percentOf } from '../../format'
@@ -9,14 +12,21 @@ import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { ClusterEventsPanel } from '../ResourceTable/ClusterEventsPanel'
 import { DetailSection, DetailFactGrid, DetailOverview } from '../Detail/detailPrimitives'
 import { OverviewGrid, OverviewPage, OverviewStat } from './OverviewPage'
-import { clusterHealthStatus } from '../Nodes/nodesOverviewUtils'
+import { NodesHealthBanner } from '../Nodes/NodesHealthBanner'
 
 interface ClusterOverviewPageProps {
   clusterId: string
   isActive: boolean
+  onOpenResourceKind: (kind: ResourceKind) => void
+  onNavigateToResource: (focus: ResourceFocus, item?: ResourceListItem) => void
 }
 
-export function ClusterOverviewPage({ clusterId, isActive }: ClusterOverviewPageProps): React.JSX.Element {
+export function ClusterOverviewPage({
+  clusterId,
+  isActive,
+  onOpenResourceKind,
+  onNavigateToResource
+}: ClusterOverviewPageProps): React.JSX.Element {
   const { t } = useTranslation()
   const { data: metrics, isLoading: metricsLoading } = useClusterMetrics(clusterId, isActive)
   const { data: nsData } = useResourceList(clusterId, 'ALL', 'Namespaces', isActive)
@@ -24,14 +34,13 @@ export function ClusterOverviewPage({ clusterId, isActive }: ClusterOverviewPage
   const { data: svcData } = useResourceList(clusterId, 'ALL', 'Services', isActive)
   const { data: podsData } = useResourceList(clusterId, 'ALL', 'Pods', isActive)
 
-  const health = metrics ? clusterHealthStatus(metrics) : null
   const nsCount = nsData && !('error' in nsData) ? nsData.items.length : 0
   const deployCount = deployData && !('error' in deployData) ? deployData.items.length : 0
   const svcCount = svcData && !('error' in svcData) ? svcData.items.length : 0
   const warningPods =
     podsData && !('error' in podsData)
-      ? podsData.items.filter((p) => /crash|error|fail|pending|unknown/i.test(p.statusText)).length
-      : 0
+      ? podsData.items.filter((p) => /crash|error|fail|pending|unknown/i.test(p.statusText))
+      : []
 
   if (metricsLoading && !metrics) return <LoadingState />
 
@@ -42,15 +51,7 @@ export function ClusterOverviewPage({ clusterId, isActive }: ClusterOverviewPage
   return (
     <OverviewPage title={t('clusterOverview.title')} subtitle={t('clusterOverview.subtitle')}>
       <DetailOverview>
-        {health ? (
-          <div className={`ml-overview-health ml-overview-health--${health.tone}`}>
-            <span className="ml-overview-health__dot" />
-            <div>
-              <strong>{health.label}</strong>
-              <p>{health.message}</p>
-            </div>
-          </div>
-        ) : null}
+        {metrics ? <NodesHealthBanner data={metrics} /> : null}
 
         {!metrics?.metricsAvailable ? (
           <Alert type="warning" showIcon message={t('clusterOverview.metricsUnavailable')} />
@@ -58,39 +59,39 @@ export function ClusterOverviewPage({ clusterId, isActive }: ClusterOverviewPage
 
         <OverviewGrid>
           <OverviewStat
-            label={t('clusterOverview.nodes')}
-            value={metrics?.totalNodes ?? '—'}
-            hint={
-              metrics
-                ? t('clusterOverview.nodesHint', {
-                    ready: metrics.readyNodes,
-                    notReady: metrics.notReadyNodes
-                  })
-                : undefined
-            }
-            tone={metrics && metrics.notReadyNodes > 0 ? 'warn' : 'ok'}
+            label={t('clusterOverview.namespaces')}
+            value={nsCount}
+            onClick={() => onOpenResourceKind('Namespaces')}
           />
           <OverviewStat
-            label={t('clusterOverview.pods')}
-            value={totalPods}
-            hint={
-              metrics
-                ? t('clusterOverview.podsHint', {
-                    running: metrics.runningPods,
-                    pending: metrics.pendingPods,
-                    failed: metrics.failedPods
-                  })
-                : undefined
-            }
-            tone={metrics && metrics.failedPods > 0 ? 'error' : 'ok'}
+            label={t('clusterOverview.deployments')}
+            value={deployCount}
+            onClick={() => onOpenResourceKind('Deployments')}
           />
-          <OverviewStat label={t('clusterOverview.namespaces')} value={nsCount} />
-          <OverviewStat label={t('clusterOverview.deployments')} value={deployCount} />
-          <OverviewStat label={t('clusterOverview.services')} value={svcCount} />
+          <OverviewStat
+            label={t('clusterOverview.services')}
+            value={svcCount}
+            onClick={() => onOpenResourceKind('Services')}
+          />
           <OverviewStat
             label={t('clusterOverview.problemPods')}
-            value={warningPods}
-            tone={warningPods > 0 ? 'warn' : 'ok'}
+            value={warningPods.length}
+            tone={warningPods.length > 0 ? 'warn' : 'ok'}
+            onClick={() => {
+              const first = warningPods[0]
+              if (first) {
+                onNavigateToResource(
+                  {
+                    kind: 'Pods',
+                    namespace: first.namespace,
+                    name: first.name
+                  },
+                  first
+                )
+              } else {
+                onOpenResourceKind('Pods')
+              }
+            }}
           />
         </OverviewGrid>
 
@@ -163,7 +164,7 @@ export function ClusterOverviewPage({ clusterId, isActive }: ClusterOverviewPage
 
         <DetailSection title={t('clusterOverview.recentEvents')}>
           <div className="ml-overview-events-embed">
-            <ClusterEventsPanel clusterId={clusterId} isActive={isActive} compact embedded />
+            <ClusterEventsPanel clusterId={clusterId} isActive={isActive} compact embedded overviewEmbed />
           </div>
         </DetailSection>
       </DetailOverview>

@@ -73,7 +73,7 @@ export interface ClusterVersionResponse {
 export interface PersistedUiState {
   openedTabs: string[]
   activeClusterId: string | null
-  activeView: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn'
+  activeView: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn' | 'notes'
   splitView?: boolean
   splitLeftClusterId?: string | null
   splitRightClusterId?: string | null

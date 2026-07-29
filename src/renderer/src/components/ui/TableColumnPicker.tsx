@@ -46,7 +46,7 @@ export function TableColumnPicker({ columns, onToggle, onReorder, onReset }: Tab
 
   return (
     <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
-      <button type="button" className="ml-btn ml-btn--ghost" aria-label="Columns">
+      <button type="button" className="ml-btn ml-btn--ghost ml-action-control" aria-label="Columns">
         <Icon icon={Columns3} variant="detail" />
         Columns
       </button>

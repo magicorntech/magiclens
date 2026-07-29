@@ -1,17 +1,25 @@
-import { useMemo } from 'react'
-import { Tag } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { Pagination, Tag } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ResourceKind } from '@shared/resourceKinds'
+import type { ResourceFocus } from '@shared/types/navigation'
 import type { ResourceListItem } from '@shared/types/resource'
 import { useResourceList } from '../../queries/useResourceList'
-import { useClusterStore } from '../../stores/clusterStore'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { DetailOverview, DetailSection } from '../Detail/detailPrimitives'
 import { OverviewGrid, OverviewPage, OverviewStat } from './OverviewPage'
+import { DEFAULT_TABLE_PAGE_SIZE, TABLE_PAGE_SIZE_OPTIONS } from '../../utils/tablePagination'
+
+interface ProblemWorkload {
+  kind: ResourceKind
+  item: ResourceListItem
+}
 
 interface WorkloadsOverviewPageProps {
   clusterId: string
   isActive: boolean
+  onOpenResourceKind: (kind: ResourceKind) => void
+  onNavigateToResource: (focus: ResourceFocus, item?: ResourceListItem) => void
 }
 
 const WORKLOAD_KINDS: ResourceKind[] = [
@@ -43,11 +51,13 @@ function countByNamespace(items: ResourceListItem[]): { ns: string; count: numbe
 
 export function WorkloadsOverviewPage({
   clusterId,
-  isActive
+  isActive,
+  onOpenResourceKind,
+  onNavigateToResource
 }: WorkloadsOverviewPageProps): React.JSX.Element {
   const { t } = useTranslation()
-  const navigateToResource = useClusterStore((s) => s.navigateToResource)
-  const openResourceKind = useClusterStore((s) => s.openResourceKind)
+  const [problemsPage, setProblemsPage] = useState(1)
+  const [problemsPageSize, setProblemsPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
 
   const deploy = useResourceList(clusterId, 'ALL', 'Deployments', isActive)
   const sts = useResourceList(clusterId, 'ALL', 'StatefulSets', isActive)
@@ -80,14 +90,24 @@ export function WorkloadsOverviewPage({
   )
 
   const unhealthy = useMemo(
-    () =>
+    (): ProblemWorkload[] =>
       WORKLOAD_KINDS.flatMap((kind) =>
         (lists[kind as keyof typeof lists] ?? [])
           .filter(isUnhealthy)
           .map((item) => ({ kind, item }))
-      ).slice(0, 25),
+      ),
     [lists]
   )
+
+  const pagedUnhealthy = useMemo(() => {
+    const start = (problemsPage - 1) * problemsPageSize
+    return unhealthy.slice(start, start + problemsPageSize)
+  }, [unhealthy, problemsPage, problemsPageSize])
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(unhealthy.length / problemsPageSize))
+    if (problemsPage > maxPage) setProblemsPage(maxPage)
+  }, [unhealthy.length, problemsPage, problemsPageSize])
 
   const highRestartPods = useMemo(() => {
     return lists.Pods.filter((p) => {
@@ -113,7 +133,7 @@ export function WorkloadsOverviewPage({
               key={kind}
               type="button"
               className="ml-overview-stat ml-overview-stat--clickable"
-              onClick={() => openResourceKind(clusterId, kind)}
+              onClick={() => onOpenResourceKind(kind)}
             >
               <span className="ml-overview-stat__label">{kind}</span>
               <span className="ml-overview-stat__value">{lists[kind as keyof typeof lists].length}</span>
@@ -157,29 +177,48 @@ export function WorkloadsOverviewPage({
           {unhealthy.length === 0 ? (
             <span className="ml-detail-empty">{t('workloadsOverview.noProblems')}</span>
           ) : (
-            <div className="ml-overview-list">
-              {unhealthy.map(({ kind, item }) => (
-                <button
-                  key={`${kind}-${item.id}`}
-                  type="button"
-                  className="ml-overview-list__row"
-                  onClick={() =>
-                    navigateToResource(clusterId, {
-                      kind,
-                      namespace: item.namespace,
-                      name: item.name
-                    })
-                  }
-                >
-                  <Tag>{kind}</Tag>
-                  <strong>
-                    {item.namespace ? `${item.namespace}/` : ''}
-                    {item.name}
-                  </strong>
-                  <Tag color={item.statusColor || 'default'}>{item.statusText}</Tag>
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="ml-overview-list">
+                {pagedUnhealthy.map(({ kind, item }) => (
+                  <button
+                    key={`${kind}-${item.id}`}
+                    type="button"
+                    className="ml-overview-list__row"
+                    onClick={() =>
+                      onNavigateToResource(
+                        {
+                          kind,
+                          namespace: item.namespace,
+                          name: item.name
+                        },
+                        item
+                      )
+                    }
+                  >
+                    <Tag>{kind}</Tag>
+                    <strong>
+                      {item.namespace ? `${item.namespace}/` : ''}
+                      {item.name}
+                    </strong>
+                    <Tag color={item.statusColor || 'default'}>{item.statusText}</Tag>
+                  </button>
+                ))}
+              </div>
+              <Pagination
+                className="ml-overview-list-pagination"
+                size="small"
+                current={problemsPage}
+                pageSize={problemsPageSize}
+                total={unhealthy.length}
+                showSizeChanger
+                pageSizeOptions={[...TABLE_PAGE_SIZE_OPTIONS]}
+                showTotal={(total) => t('workloadsOverview.problemsTotal', { count: total })}
+                onChange={(page, pageSize) => {
+                  setProblemsPage(page)
+                  if (pageSize !== problemsPageSize) setProblemsPageSize(pageSize)
+                }}
+              />
+            </>
           )}
         </DetailSection>
 
@@ -194,11 +233,14 @@ export function WorkloadsOverviewPage({
                   type="button"
                   className="ml-overview-list__row"
                   onClick={() =>
-                    navigateToResource(clusterId, {
-                      kind: 'Pods',
-                      namespace: item.namespace,
-                      name: item.name
-                    })
+                    onNavigateToResource(
+                      {
+                        kind: 'Pods',
+                        namespace: item.namespace,
+                        name: item.name
+                      },
+                      item
+                    )
                   }
                 >
                   <strong>

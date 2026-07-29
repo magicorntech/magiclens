@@ -75,8 +75,48 @@ export type ResourceDetailPlacement = 'drawer' | 'right' | 'bottom'
 /** Where Terminal / YAML editor (utility dock) sits relative to the main workspace. */
 export type UtilityPanelPlacement = 'bottom' | 'right' | 'left'
 
+/** Dock corner / edge for the expandable quick-launch balloon. */
+export type UtilityFabSide =
+  | 'left-middle'
+  | 'right-middle'
+  | 'left-bottom'
+  | 'right-bottom'
+  /** @deprecated prefer left-middle */
+  | 'left'
+  /** @deprecated prefer right-middle */
+  | 'right'
+  /** @deprecated prefer right-bottom */
+  | 'bottom'
+
+const UTILITY_FAB_SIDES: readonly UtilityFabSide[] = [
+  'left-middle',
+  'right-middle',
+  'left-bottom',
+  'right-bottom'
+]
+
+/** Map legacy edge values and unknown input onto the four dock corners. */
+export function normalizeUtilityFabSide(value: unknown): UtilityFabSide {
+  if (value === 'left' || value === 'left-middle') return 'left-middle'
+  if (value === 'right' || value === 'right-middle') return 'right-middle'
+  if (value === 'left-bottom') return 'left-bottom'
+  if (value === 'bottom' || value === 'right-bottom') return 'right-bottom'
+  if (typeof value === 'string' && (UTILITY_FAB_SIDES as readonly string[]).includes(value)) {
+    return value as UtilityFabSide
+  }
+  return 'right-middle'
+}
+
+/** Free-drag position as % of the workspace (center of the balloon). */
+export interface UtilityFabOffset {
+  xPct: number
+  yPct: number
+}
+
 import type { NodesDashboardPrefs } from './nodesDashboard'
 import { defaultNodesDashboardPrefs } from './nodesDashboard'
+import type { ChromeToolbarPrefs } from './chromeToolbar'
+import { defaultChromeToolbarPrefs } from './chromeToolbar'
 import type { KeyboardShortcuts } from './keyboardShortcuts'
 import { defaultKeyboardShortcuts, normalizeKeyboardShortcuts } from './keyboardShortcuts'
 import type { AppLocale } from './locale'
@@ -108,6 +148,8 @@ export interface DisplaySettings {
   showFavoritesSection: boolean
   /** Left sidebar Workspaces section visibility (default on). */
   showWorkspacesSection: boolean
+  /** Show per-workspace cluster counts in the sidebar (default on). */
+  showWorkspaceClusterCounts: boolean
   /** Show the connected namespace chip on sidebar cluster items (default on). */
   showClusterNamespace: boolean
   resourceDetailPlacement: ResourceDetailPlacement
@@ -115,8 +157,16 @@ export interface DisplaySettings {
   resourceDetailMaskBlur: boolean
   /** Terminal + YAML editor dock position (default bottom). */
   utilityPanelPlacement: UtilityPanelPlacement
+  /** Quick-launch balloon edge for Terminal / empty editor (default right). */
+  utilityFabSide: UtilityFabSide
+  /** Custom drag position; when set, overrides utilityFabSide edge docking. */
+  utilityFabOffset: UtilityFabOffset | null
+  /** Show the expandable Terminal / Editor balloon (default on). */
+  showUtilityFab: boolean
   showNodesPageEvents: boolean
   nodesDashboard: NodesDashboardPrefs
+  /** Top chrome icon visibility + order (Settings stays fixed). */
+  chromeToolbar: ChromeToolbarPrefs
   keyboardShortcuts: KeyboardShortcuts
   locale: AppLocale
   /**
@@ -131,12 +181,17 @@ export const defaultDisplaySettings: DisplaySettings = {
   showResourceTabIcons: true,
   showFavoritesSection: true,
   showWorkspacesSection: true,
+  showWorkspaceClusterCounts: true,
   showClusterNamespace: true,
   resourceDetailPlacement: 'drawer',
   resourceDetailMaskBlur: false,
   utilityPanelPlacement: 'bottom',
+  utilityFabSide: 'right-middle',
+  utilityFabOffset: null,
+  showUtilityFab: true,
   showNodesPageEvents: true,
   nodesDashboard: defaultNodesDashboardPrefs,
+  chromeToolbar: defaultChromeToolbarPrefs,
   keyboardShortcuts: defaultKeyboardShortcuts,
   locale: defaultAppLocale,
   kubeconfigScanPath: ''

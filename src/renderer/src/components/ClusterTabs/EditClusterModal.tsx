@@ -96,6 +96,7 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
   const drawerWidth =
     layoutMode === 'mobile' ? '100%' : layoutMode === 'compact' ? 'min(860px, 98vw)' : 'min(1040px, 94vw)'
   const [section, setSection] = useState<NavId>('appearance')
+  const [navQuery, setNavQuery] = useState('')
   const [customName, setCustomName] = useState('')
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined)
   const [backgroundId, setBackgroundId] = useState<string | undefined>(undefined)
@@ -126,6 +127,7 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
   useEffect(() => {
     if (!cluster) return
     setSection('appearance')
+    setNavQuery('')
     setCustomName(cluster.customName)
     setLogoUrl(cluster.logoUrl)
     setBackgroundId(cluster.backgroundId)
@@ -141,11 +143,13 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
   }, [cluster, getVpnLink])
 
   const vpnProfileOptions = useMemo(
-    () =>
-      vpnProfiles
+    () => [
+      { value: '', label: t('vpn.clusterLink.none') },
+      ...vpnProfiles
         .filter((p) => p.hasConfig)
-        .map((p) => ({ value: p.id, label: p.name })),
-    [vpnProfiles]
+        .map((p) => ({ value: p.id, label: p.name }))
+    ],
+    [t, vpnProfiles]
   )
 
   const navItems: { id: NavId; label: string }[] = useMemo(
@@ -159,6 +163,19 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
     ],
     [t]
   )
+
+  const filteredNavItems = useMemo(() => {
+    const q = navQuery.trim().toLowerCase()
+    if (!q) return navItems
+    return navItems.filter((item) => item.label.toLowerCase().includes(q))
+  }, [navItems, navQuery])
+
+  useEffect(() => {
+    if (filteredNavItems.length === 0) return
+    if (!filteredNavItems.some((item) => item.id === section)) {
+      setSection(filteredNavItems[0].id)
+    }
+  }, [filteredNavItems, section])
 
   function patchSettings<K extends keyof ClusterSettings>(key: K, patch: Partial<ClusterSettings[K]>): void {
     setSettings((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
@@ -397,10 +414,9 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
                   allowClear
                   placeholder={t('vpn.clusterLink.placeholder')}
                   style={{ width: '100%' }}
-                  value={linkedVpnProfileId ?? undefined}
+                  value={linkedVpnProfileId ?? ''}
                   options={vpnProfileOptions}
-                  onChange={(value) => setLinkedVpnProfileId(value ?? null)}
-                  notFoundContent={vpnProfileOptions.length === 0 ? t('vpn.clusterLink.empty') : undefined}
+                  onChange={(value) => setLinkedVpnProfileId(value ? value : null)}
                 />
               </div>
             </div>
@@ -514,20 +530,36 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
       >
         <div className={`ml-cluster-settings${layoutMode === 'mobile' ? ' ml-cluster-settings--mobile' : ''}`}>
           <aside className="ml-cluster-settings-nav" aria-label={t('clusterEdit.title')}>
-            {navItems.map((item) => {
-              const NavIcon = NAV_ICONS[item.id]
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`ml-cluster-settings-nav__item${section === item.id ? ' is-active' : ''}`}
-                  onClick={() => setSection(item.id)}
-                >
-                  <Icon icon={NavIcon} variant="detail" />
-                  <span>{item.label}</span>
-                </button>
-              )
-            })}
+            <div className="ml-cluster-settings-nav__search">
+              <Input.Search
+                allowClear
+                size="small"
+                value={navQuery}
+                onChange={(e) => setNavQuery(e.target.value)}
+                placeholder={t('clusterEdit.searchSections')}
+                aria-label={t('clusterEdit.searchSections')}
+              />
+            </div>
+            <div className="ml-cluster-settings-nav__list">
+              {filteredNavItems.length === 0 ? (
+                <div className="ml-cluster-settings-nav__empty">{t('clusterEdit.noSectionMatch')}</div>
+              ) : (
+                filteredNavItems.map((item) => {
+                  const NavIcon = NAV_ICONS[item.id]
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`ml-cluster-settings-nav__item${section === item.id ? ' is-active' : ''}`}
+                      onClick={() => setSection(item.id)}
+                    >
+                      <Icon icon={NavIcon} variant="detail" />
+                      <span>{item.label}</span>
+                    </button>
+                  )
+                })
+              )}
+            </div>
           </aside>
           <div className="ml-cluster-settings-main">
             <header className="ml-cluster-settings-main__header">

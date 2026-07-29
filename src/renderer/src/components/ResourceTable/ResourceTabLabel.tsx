@@ -1,4 +1,4 @@
-import { Pin, Star, X } from 'lucide-react'
+import { GripVertical, Pin, Star, X } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
 import { kindIconLucide } from '../../icons/resourceKindIcons'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
@@ -9,10 +9,8 @@ interface ResourceTabLabelProps {
   pinned: boolean
   favorite: boolean
   closable?: boolean
-  draggable?: boolean
-  onDragStart?: (kind: ResourceKind) => void
-  onDragOver?: (e: React.DragEvent) => void
-  onDrop?: (kind: ResourceKind) => void
+  reorderable?: boolean
+  onDragHandlePointerDown?: (e: React.PointerEvent) => void
   onTogglePin: (kind: ResourceKind) => void
   onToggleFavorite: (kind: ResourceKind) => void
   onClose?: (kind: ResourceKind) => void
@@ -23,10 +21,8 @@ export function ResourceTabLabel({
   pinned,
   favorite,
   closable = false,
-  draggable,
-  onDragStart,
-  onDragOver,
-  onDrop,
+  reorderable = false,
+  onDragHandlePointerDown,
   onTogglePin,
   onToggleFavorite,
   onClose
@@ -34,29 +30,26 @@ export function ResourceTabLabel({
   const showIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
 
   return (
-    <span
-      className="ml-resource-tab-label"
-      draggable={draggable}
-      onDragStart={(e) => {
-        e.stopPropagation()
-        onDragStart?.(kind)
-      }}
-      onDragOver={(e) => {
-        e.preventDefault()
-        onDragOver?.(e)
-      }}
-      onDrop={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        onDrop?.(kind)
-      }}
-    >
+    <span className="ml-resource-tab-label">
+      {reorderable ? (
+        <button
+          type="button"
+          className="ml-resource-tab-drag-handle"
+          aria-label="Drag to reorder tab"
+          onPointerDown={onDragHandlePointerDown}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon icon={GripVertical} variant="micro" />
+        </button>
+      ) : null}
       {showIcons && (
         <span className="ml-resource-tab-label-icon">
-          <Icon icon={kindIconLucide[kind]} variant="detail" />
+          <Icon icon={kindIconLucide[kind]} variant="micro" />
         </span>
       )}
-      <span className="ml-resource-tab-label-text">{kind}</span>
+      <span className="ml-resource-tab-label-text" title={kind}>
+        {kind}
+      </span>
       <span className="ml-resource-tab-label-actions">
         <button
           type="button"

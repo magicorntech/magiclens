@@ -1,6 +1,6 @@
 import type { ReactNode, RefObject } from 'react'
 import { useEffect, useRef, useState } from 'react'
-import { Drawer, Layout, Splitter } from 'antd'
+import { Drawer, Layout, Splitter, Tooltip } from 'antd'
 import { Menu, Terminal } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ResourceKind } from '@shared/resourceKinds'
@@ -13,16 +13,16 @@ import { ResourceMenu } from './ResourceMenu'
 import { NamespaceSelector } from './NamespaceSelector'
 import { BottomPanel } from './BottomPanel'
 import { BottomPanelProvider, useBottomPanel } from './BottomPanelContext'
+import { UtilityDockFab } from './UtilityDockFab'
 import { canUseSplitLayouts, usesOverlayNavigation, useLayoutMode } from '../../hooks/useLayoutMode'
 import { Icon } from '../ui/Icon'
-import { StatusBadge } from '../ui/StatusBadge'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
 import { useResourceWatchDisplayStore } from '../../stores/resourceWatchDisplayStore'
 
-const TERMINAL_LABEL_MIN_WIDTH = 480
+const TERMINAL_LABEL_MIN_WIDTH = 720
 
 function useCompactToolbar(ref: RefObject<HTMLElement | null>): boolean {
-  const [compact, setCompact] = useState(false)
+  const [compact, setCompact] = useState(true)
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -90,6 +90,7 @@ function AppShellInner({
   const panelPlacement = resolvePanelPlacement(utilityPanelPlacement, allowSidePanel)
   const showHeaderNamespace =
     !!selectedVirtualPage &&
+    selectedVirtualPage !== 'topology' &&
     selectedVirtualPage !== 'clusterOverview' &&
     selectedVirtualPage !== 'workloadsOverview' &&
     selectedVirtualPage !== 'configOverview' &&
@@ -98,11 +99,31 @@ function AppShellInner({
     selectedVirtualPage !== 'dynamicCustomResources' &&
     selectedVirtualPage !== 'operatorResources'
 
+  const isTopologyPage = selectedVirtualPage === 'topology'
+  const showClusterName = !splitView && !isTopologyPage
+  const showHeaderTerminal = !isTopologyPage
+
+  /** Browser model: no dedicated cluster header — only overlay/split/namespace. */
+  const showChromeHeader = overlayResourceNav || splitView || showHeaderNamespace
+
+  const clusterMeta = [cluster.serverVersion, cluster.status === 'connected' ? 'Connected' : cluster.status]
+    .filter(Boolean)
+    .join(' · ')
+
   function handleTerminalClick(): void {
     const existing = tabs.find((tab) => tab.kind === 'terminal')
     if (existing) setActiveTab(existing.id)
     else addTerminalTab()
   }
+
+  useEffect(() => {
+    function onOpenTerminal(): void {
+      handleTerminalClick()
+    }
+    window.addEventListener('ml-open-terminal', onOpenTerminal)
+    return () => window.removeEventListener('ml-open-terminal', onOpenTerminal)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stable open handler for chrome bus
+  }, [tabs, addTerminalTab, setActiveTab])
 
   function handleSelectKind(kind: ResourceKind): void {
     onSelectKind(kind)
@@ -161,12 +182,13 @@ function AppShellInner({
   }
 
   return (
-    <Layout className="ml-app-shell">
+    <Layout className={`ml-app-shell${!showChromeHeader ? ' ml-app-shell--no-cluster-header' : ''}`}>
+      {showChromeHeader ? (
       <header
-        className={`ml-workspace-header${splitView ? ' ml-workspace-header--compact' : ''}${splitPane === 'left' ? ' ml-workspace-header--pane-left' : ''}${splitPane === 'right' ? ' ml-workspace-header--pane-right' : ''}`}
+        className={`ml-workspace-header ml-workspace-header--slim${splitView ? ' ml-workspace-header--compact' : ''}${splitPane === 'left' ? ' ml-workspace-header--pane-left' : ''}${splitPane === 'right' ? ' ml-workspace-header--pane-right' : ''}`}
       >
         <div ref={headerInnerRef} className="ml-workspace-header-inner">
-          {!splitView && (
+          {(showClusterName || overlayResourceNav) && (
             <div className="ml-workspace-header-leading">
               {overlayResourceNav && (
                 <button
@@ -178,21 +200,25 @@ function AppShellInner({
                   <Icon icon={Menu} variant="toolbar" />
                 </button>
               )}
-              <span className="ml-workspace-cluster-name">{cluster.customName}</span>
-              {!overlayResourceNav &&
-                (cluster.serverVersion || (!selectedVirtualPage && resourceWatchDisplay)) && (
-                  <div className="ml-workspace-header-meta">
-                    {cluster.serverVersion && (
-                      <StatusBadge label={cluster.serverVersion} variant="info" size="sm" />
-                    )}
-                    {!selectedVirtualPage && resourceWatchDisplay && (
-                      <WatchStatusBadge
-                        isError={resourceWatchDisplay.isError}
-                        watchStatus={resourceWatchDisplay.watchStatus}
+              {showClusterName ? (
+                <>
+                  <Tooltip title={clusterMeta || cluster.customName} placement="bottomLeft">
+                    <span className="ml-workspace-cluster-name">
+                      <span
+                        className={`ml-workspace-status-dot ml-workspace-status-dot--${cluster.status}`}
+                        aria-hidden
                       />
-                    )}
-                  </div>
-                )}
+                      {cluster.customName}
+                    </span>
+                  </Tooltip>
+                  {!selectedVirtualPage && resourceWatchDisplay ? (
+                    <WatchStatusBadge
+                      isError={resourceWatchDisplay.isError}
+                      watchStatus={resourceWatchDisplay.watchStatus}
+                    />
+                  ) : null}
+                </>
+              ) : null}
             </div>
           )}
           <div className="ml-workspace-header-actions">
@@ -203,22 +229,28 @@ function AppShellInner({
                 onChange={onNamespaceChange}
               />
             ) : null}
-            <button
-              type="button"
-              className={`ml-btn ml-btn--secondary${hasTerminalTab ? ' ml-btn--active' : ''}`}
-              onClick={handleTerminalClick}
-            >
-              <Icon icon={Terminal} variant="action" />
-              {!compactToolbar && <span>{t('chromeExtra.terminal')}</span>}
-            </button>
+            {showHeaderTerminal ? (
+              <Tooltip title={t('chromeExtra.terminal')}>
+                <button
+                  type="button"
+                  className={`ml-btn ml-btn--secondary ml-btn--icon${hasTerminalTab ? ' ml-btn--active' : ''}`}
+                  onClick={handleTerminalClick}
+                  aria-label={t('chromeExtra.terminal')}
+                >
+                  <Icon icon={Terminal} variant="action" />
+                  {!compactToolbar && <span>{t('chromeExtra.terminal')}</span>}
+                </button>
+              </Tooltip>
+            ) : null}
           </div>
         </div>
       </header>
+      ) : null}
 
       <Layout className="ml-workspace-body">
         {!overlayResourceNav && (
           <Sider
-            width={260}
+            width={220}
             collapsible
             collapsed={resourceMenuCollapsed}
             onCollapse={setResourceMenuCollapsed}
@@ -237,7 +269,10 @@ function AppShellInner({
           </Sider>
         )}
         <Content className="ml-workspace-content">
-          <div className="ml-workspace-content-inner">{renderWorkspaceBody()}</div>
+          <div className="ml-workspace-content-inner">
+            {renderWorkspaceBody()}
+            <UtilityDockFab clusterId={cluster.id} namespace={cluster.selectedNamespace} />
+          </div>
         </Content>
       </Layout>
 

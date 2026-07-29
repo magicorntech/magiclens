@@ -33,7 +33,7 @@ export function FullscreenToggle(): React.JSX.Element {
     <Tooltip title={label}>
       <button
         type="button"
-        className={`ml-icon-btn${fullscreen ? ' ml-icon-btn--active' : ''}`}
+        className={`ml-icon-btn ml-action-btn${fullscreen ? ' ml-icon-btn--active' : ''}`}
         aria-label={label}
         aria-pressed={fullscreen}
         onClick={() => void handleToggle()}

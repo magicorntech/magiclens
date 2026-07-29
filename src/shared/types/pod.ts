@@ -180,6 +180,22 @@ export interface PodResourceRequest {
   podName: string
 }
 
+export interface NamespacePodMetricsRequest {
+  clusterId: string
+  namespace: string
+}
+
+export interface NamespacePodMetricItem {
+  podName: string
+  cpuUsageCores: number
+  memoryUsageBytes: number
+}
+
+export interface NamespacePodMetricsResponse {
+  metricsAvailable: boolean
+  pods: NamespacePodMetricItem[]
+}
+
 export interface PodLogsStartRequest {
   sessionId: string
   clusterId: string

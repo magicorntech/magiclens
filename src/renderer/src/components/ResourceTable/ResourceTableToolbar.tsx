@@ -12,7 +12,7 @@ export function ResourceTableToolbar({
   actions
 }: ResourceTableToolbarProps): React.JSX.Element {
   return (
-    <div className="ml-resource-toolbar">
+    <div className="ml-resource-toolbar ml-action-bar-row">
       <div className="ml-resource-toolbar-start">
         {leading ? <div className="ml-resource-toolbar-leading">{leading}</div> : null}
         <div className="ml-resource-toolbar-search">{search}</div>
@@ -20,7 +20,7 @@ export function ResourceTableToolbar({
       {actions ? (
         <>
           <div className="ml-resource-toolbar-divider" aria-hidden />
-          <div className="ml-resource-toolbar-actions">{actions}</div>
+          <div className="ml-resource-toolbar-actions ml-action-bar ml-action-bar--end">{actions}</div>
         </>
       ) : null}
     </div>

@@ -22,6 +22,7 @@ import { registerVpnHandlers } from './vpn.handlers'
 import { registerSessionHandlers } from './session.handlers'
 import { registerClusterVpnHandlers } from './clusterVpn.handlers'
 import { registerClusterGroupsHandlers } from './clusterGroups.handlers'
+import { registerNotesHandlers } from './notes.handlers'
 import { registerTopologyHandlers } from './topology.handlers'
 
 export function registerIpcHandlers(): void {
@@ -32,6 +33,7 @@ export function registerIpcHandlers(): void {
   registerClusterStoreHandlers()
   registerClusterVpnHandlers()
   registerClusterGroupsHandlers()
+  registerNotesHandlers()
   registerUiStateHandlers()
   registerMetricsHandlers()
   registerPrometheusHandlers()

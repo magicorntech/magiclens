@@ -18,6 +18,8 @@ import { NodeMetricsPanel } from '../Metrics/NodeMetricsPanel'
 import { NodePressurePanel } from '../Metrics/NodePressurePanel'
 import { WorkloadReplicaHistoryPanel } from '../Metrics/WorkloadReplicaHistoryPanel'
 import { NodeExecPanel } from '../Node/NodeExecPanel'
+import { NodePodsPanel } from '../Node/NodePodsPanel'
+import { ResourceNotesTab } from '../Notes/ResourceNotesTab'
 import { kindColumnDefs } from '../../resourceConfig/kinds.renderer'
 import { useBottomPanelOptional } from '../Layout/BottomPanelContext'
 import { Icon } from '../ui/Icon'
@@ -378,6 +380,15 @@ export function GenericResourceDetailView({
     ...(kind === 'Nodes'
       ? [
           {
+            key: 'pods',
+            label: t('resourceDetail.tabs.pods'),
+            children: (
+              <DetailPane>
+                <NodePodsPanel clusterId={clusterId} nodeName={name} isActive={isActive && activeTab === 'pods'} />
+              </DetailPane>
+            )
+          },
+          {
             key: 'exec',
             label: t('resourceDetail.tabs.exec'),
             children: (
@@ -406,6 +417,21 @@ export function GenericResourceDetailView({
           }
         ]
       : []),
+    {
+      key: 'notes',
+      label: t('resourceDetail.tabs.notes'),
+      children: (
+        <DetailPane>
+          <ResourceNotesTab
+            clusterId={clusterId}
+            resourceKind={kind}
+            namespace={namespace === 'ALL' ? '' : namespace}
+            resourceName={name}
+            isActive={isActive && activeTab === 'notes'}
+          />
+        </DetailPane>
+      )
+    },
     {
       key: 'yaml',
       label: t('resourceDetail.tabs.yaml'),

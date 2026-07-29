@@ -1,9 +1,10 @@
 import Store from 'electron-store'
 import type { UpdateSettings } from '@shared/types/update'
-import { defaultDisplaySettings, type DisplaySettings } from '@shared/types/app'
+import { defaultDisplaySettings, type DisplaySettings, normalizeUtilityFabSide } from '@shared/types/app'
 import { normalizeKeyboardShortcuts } from '@shared/types/keyboardShortcuts'
 import { normalizeAppLocale } from '@shared/types/locale'
 import { normalizeNodesDashboardPrefs } from '@shared/types/nodesDashboard'
+import { normalizeChromeToolbarPrefs } from '@shared/types/chromeToolbar'
 
 interface AppSettings {
   hasSeenWelcome: boolean
@@ -70,10 +71,25 @@ export function setLastSeenSplashVersion(version: string): void {
 
 export function getDisplaySettings(): DisplaySettings {
   const stored = store.get('displaySettings')
+  const rawOffset = stored?.utilityFabOffset
+  const utilityFabOffset =
+    rawOffset &&
+    typeof rawOffset.xPct === 'number' &&
+    typeof rawOffset.yPct === 'number' &&
+    Number.isFinite(rawOffset.xPct) &&
+    Number.isFinite(rawOffset.yPct)
+      ? {
+          xPct: Math.min(96, Math.max(4, rawOffset.xPct)),
+          yPct: Math.min(96, Math.max(4, rawOffset.yPct))
+        }
+      : null
   return {
     ...defaultDisplaySettings,
     ...stored,
+    utilityFabSide: normalizeUtilityFabSide(stored?.utilityFabSide),
+    utilityFabOffset,
     nodesDashboard: normalizeNodesDashboardPrefs(stored?.nodesDashboard),
+    chromeToolbar: normalizeChromeToolbarPrefs(stored?.chromeToolbar),
     keyboardShortcuts: normalizeKeyboardShortcuts(stored?.keyboardShortcuts),
     locale: normalizeAppLocale(stored?.locale),
     kubeconfigScanPath: typeof stored?.kubeconfigScanPath === 'string' ? stored.kubeconfigScanPath : ''
@@ -85,9 +101,13 @@ export function setDisplaySettings(patch: Partial<DisplaySettings>): DisplaySett
   const next: DisplaySettings = {
     ...current,
     ...patch,
+    utilityFabSide: normalizeUtilityFabSide(patch.utilityFabSide ?? current.utilityFabSide),
     nodesDashboard: patch.nodesDashboard
       ? normalizeNodesDashboardPrefs({ ...current.nodesDashboard, ...patch.nodesDashboard })
       : current.nodesDashboard,
+    chromeToolbar: patch.chromeToolbar
+      ? normalizeChromeToolbarPrefs({ ...current.chromeToolbar, ...patch.chromeToolbar })
+      : current.chromeToolbar,
     keyboardShortcuts: patch.keyboardShortcuts
       ? normalizeKeyboardShortcuts({ ...current.keyboardShortcuts, ...patch.keyboardShortcuts })
       : current.keyboardShortcuts,

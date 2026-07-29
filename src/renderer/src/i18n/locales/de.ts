@@ -20,7 +20,8 @@ export const de: TranslationOverrides = {
     clusters: 'Cluster',
     vpn: 'VPN',
     favorites: 'Favoriten',
-    cancel: 'Stornieren'
+    cancel: 'Stornieren',
+    close: 'Schließen'
   },
   chrome: {
     searchPlaceholder: 'Cluster, Ressourcen, Namespaces suchen…',
@@ -110,11 +111,20 @@ export const de: TranslationOverrides = {
       showWorkspaces: 'Workspaces-Bereich anzeigen',
       showWorkspacesHint:
         'Wenn aktiv, erscheinen Workspaces in der linken Seitenleiste. In der eingeklappten Leiste markiert ein W die Workspace-Cluster.',
+      showWorkspaceClusterCounts: 'Workspace-Clusteranzahl anzeigen',
+      showWorkspaceClusterCountsHint:
+        'Wenn aktiv, zeigt jeder Workspace-Header an, wie viele Cluster er enthält.',
       tabIconsTitle: 'Tab-Symbole',
       showClusterLogos: 'Logos auf Cluster-Tabs anzeigen',
       showResourceIcons: 'Symbole auf Ressourcen-Tabs anzeigen',
       tabIconsHint:
         'Cluster-Tabs verwenden das Logo, das Sie beim Hinzufügen eines Clusters festlegen. Ressourcen-Tabs nutzen dieselben Symbole wie das linke Menü.',
+      chromeToolbarTitle: 'Symbolleistensymbole',
+      chromeToolbarHint:
+        'Obere Leistensymbole ein-/ausblenden und neu ordnen. Einstellungen bleibt rechts fixiert und kann nicht verschoben oder ausgeblendet werden.',
+      chromeToolbarChooser:
+        'Ziehen zum Neuordnen. Sichtbarkeit umschalten. Einstellungen bleibt gesperrt.',
+      chromeToolbarFixed: 'Fixiert',
       detailMaskBlur: 'Verwischen Sie den Hintergrund hinter Details',
       detailMaskBlurHint:
         'Wenn eine Schublade mit Ressourcendetails geöffnet ist, verwischen Sie die Liste dahinter. Standardmäßig deaktiviert, damit der Tisch scharf bleibt.',
@@ -127,6 +137,14 @@ export const de: TranslationOverrides = {
       showClusterNamespace: 'Verbundenen Namespace anzeigen',
       showClusterNamespaceHint:
         'Wenn diese Option aktiviert ist, wird der ausgewählte Namespace als Chip auf verbundenen Clustern in der linken Seitenleiste angezeigt.'
+    },
+    chromeToolbar: {
+      search: 'Suche',
+      terminal: 'Terminal',
+      theme: 'Design',
+      fullscreen: 'Vollbild',
+      split: 'Cluster teilen',
+      settings: 'Einstellungen'
     },
     nodesSections: {
       health: 'Cluster-Gesundheit',
@@ -319,8 +337,10 @@ export const de: TranslationOverrides = {
     }
   },
   vpn: {
-    heroEyebrow: 'Sicherer Tunnel',
+    brandEyebrow: 'MagicLens',
     title: 'VPN',
+    heroSubtitle: 'Sicherer Tunnel für private Cluster und Remote-Zugriff.',
+    heroEyebrow: 'Sicherer Tunnel',
     status: {
       connected: 'Verbunden',
       connecting: 'Verbinden',
@@ -572,6 +592,7 @@ export const de: TranslationOverrides = {
     }
   },
   topology: {
+    brandEyebrow: 'MagicLens',
     title: 'Topologie & Anwendungen',
     subtitle: 'Live-Karte von Workloads, Services und Abhängigkeiten in diesem Namespace.',
     modes: {
@@ -703,7 +724,7 @@ export const de: TranslationOverrides = {
   clusterOverview: {
     title: 'Clusterübersicht',
     subtitle: 'Zustand, Kapazität und aktuelle Aktivitäten im gesamten Cluster.',
-    metricsUnavailable: 'Metrikserver nicht verfügbar – Nutzungsdaten sind möglicherweise unvollständig',
+    metricsUnavailable: 'Nutzungsmetriken nicht verfügbar – metrics-server installieren oder Prometheus verbinden',
     nodes: 'Knoten',
     nodesHint: '{{ready}} bereit · {{notReady}} nicht bereit',
     pods: 'Schoten',
@@ -764,6 +785,7 @@ export const de: TranslationOverrides = {
     noHpas: 'Keine HPAs definiert'
   },
   clustersHub: {
+    brandEyebrow: 'MagicLens',
     title: 'Cluster',
     subtitle:
       'Fügen Sie alle Kubernetes-Cluster von einem Ort aus hinzu, verbinden Sie sie und verwalten Sie sie.',
@@ -990,7 +1012,8 @@ export const de: TranslationOverrides = {
       replicaHistory: 'Replikatgeschichte',
       exec: 'Geschäftsführer',
       metrics: 'Metriken',
-      pressure: 'Druck'
+      pressure: 'Druck',
+      pods: 'Pods'
     },
     overview: {
       title: 'Überblick',

@@ -1,8 +1,8 @@
 {
   "name": "magiclens",
   "productName": "MagicLens",
-  "version": "0.1.14",
-  "buildNumber": "14",
+  "version": "0.1.15",
+  "buildNumber": "15",
   "description": "A simple, fast Kubernetes cluster manager",
   "main": "./out/main/index.js",
   "author": {
@@ -25,7 +25,8 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
-    "postinstall": "node -e \"if (process.env.SKIP_ELECTRON_REBUILD || process.env.DOCKER) process.exit(0); try { require('child_process').execSync('electron-rebuild -f -w node-pty', {stdio:'inherit'}); } catch (e) { console.warn('electron-rebuild skipped:', e.message); process.exit(0); }\"",
+    "postinstall": "node -e \"if (process.env.SKIP_ELECTRON_REBUILD || process.env.DOCKER) process.exit(0); try { require('child_process').execSync('electron-rebuild -f -w node-pty', {stdio:'inherit'}); } catch (e) { console.warn('electron-rebuild skipped:', e.message); process.exit(0); }\" && node scripts/sign-electron-dev-macos.js",
+    "sign:electron-dev": "node scripts/sign-electron-dev-macos.js",
     "dist": "npm run build && electron-builder --publish never",
     "dist:mac": "npm run build && electron-builder --mac --publish never",
     "dist:win": "npm run build && electron-builder --win --publish never",

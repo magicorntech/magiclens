@@ -35,9 +35,11 @@ export function FavoriteClusterBox({
 }: FavoriteClusterBoxProps): React.JSX.Element {
   const { t } = useTranslation()
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
+  const openedTabs = useClusterStore((s) => s.openedTabs)
   const toggleFavorite = useClusterStore((s) => s.toggleFavorite)
   const removeCluster = useClusterStore((s) => s.removeCluster)
   const showClusterNamespace = useDisplaySettingsStore((s) => s.showClusterNamespace)
+  const isOpen = active || openedTabs.includes(cluster.id)
 
   const canDisconnect =
     cluster.status === 'connected' || cluster.status === 'connecting' || cluster.status === 'error'
@@ -108,7 +110,8 @@ export function FavoriteClusterBox({
         : cluster.status === 'error'
           ? 'is-error'
           : 'is-idle'
-  const favoriteConnected = cluster.isFavorite && cluster.status === 'connected'
+  /** Connected + open tab — green session cue in favorites / workspaces. */
+  const sessionLive = cluster.status === 'connected' && isOpen
 
   if (compact) {
     return (
@@ -124,7 +127,7 @@ export function FavoriteClusterBox({
         >
           <button
             type="button"
-            className={`ml-nav-item ml-nav-item--compact${active ? ' is-active' : ''}${favoriteConnected ? ' is-fav-connected' : ''} ${statusClass}`}
+            className={`ml-nav-item ml-nav-item--compact${active ? ' is-active' : ''}${sessionLive ? ' is-session-live' : ''} ${statusClass}`}
             onClick={handleOpen}
             aria-label={cluster.customName}
           >
@@ -147,7 +150,7 @@ export function FavoriteClusterBox({
 
   return (
     <div
-      className={`ml-nav-item${active ? ' is-active' : ''}${nested ? ' ml-nav-item--nested' : ''}${favoriteConnected ? ' is-fav-connected' : ''} ${statusClass}`}
+      className={`ml-nav-item${active ? ' is-active' : ''}${nested ? ' ml-nav-item--nested' : ''}${sessionLive ? ' is-session-live' : ''} ${statusClass}`}
     >
       <button
         type="button"

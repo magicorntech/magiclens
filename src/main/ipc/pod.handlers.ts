@@ -12,10 +12,12 @@ import type {
   PodLogsStartRequest,
   PodMetricsResponse,
   PodNetworkResponse,
+  NamespacePodMetricsRequest,
+  NamespacePodMetricsResponse,
   PodResourceRequest
 } from '@shared/types/pod'
 import { clusterManager } from '../k8s/clusterManager'
-import { getPodDetail, getPodMetrics, getPodNetwork } from '../k8s/podService'
+import { getPodDetail, getPodMetrics, getNamespacePodMetrics, getPodNetwork } from '../k8s/podService'
 import { podLogManager } from '../k8s/podLogManager'
 import { downloadPodLogs } from '../k8s/podLogDownload'
 import { podExecManager } from '../k8s/podExecManager'
@@ -32,8 +34,16 @@ export function registerPodHandlers(): void {
 
   ipcMain.handle(IPC.POD_GET_METRICS, async (_e, req: PodResourceRequest): Promise<PodMetricsResponse> => {
     const clients = clusterManager.require(req.clusterId)
-    return getPodMetrics(clients, req.namespace, req.podName)
+    return getPodMetrics(clients, req.clusterId, req.namespace, req.podName)
   })
+
+  ipcMain.handle(
+    IPC.POD_GET_NAMESPACE_METRICS,
+    async (_e, req: NamespacePodMetricsRequest): Promise<NamespacePodMetricsResponse> => {
+      const clients = clusterManager.require(req.clusterId)
+      return getNamespacePodMetrics(clients, req.clusterId, req.namespace)
+    }
+  )
 
   ipcMain.handle(IPC.POD_GET_NETWORK, async (_e, req: PodResourceRequest): Promise<PodNetworkResponse> => {
     const clients = clusterManager.require(req.clusterId)

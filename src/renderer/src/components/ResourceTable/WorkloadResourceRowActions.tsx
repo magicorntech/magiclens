@@ -1,6 +1,6 @@
 import { Button, Dropdown, Modal, Space, Tooltip, message } from 'antd'
 import type { MenuProps } from 'antd'
-import { MoreHorizontal, Pencil, PlayCircle, RefreshCw, Scissors, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, PlayCircle, RefreshCw, Scissors, Sparkles, Trash2 } from 'lucide-react'
 import { Icon } from '../ui/Icon'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
@@ -8,6 +8,7 @@ import type { WorkloadKind, WorkloadActionId } from '@shared/types/workload'
 import { actionRequiresPermission } from '@shared/workloadActions'
 import { useResourcePermissions } from '../../queries/useMetricsRange'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useNotesStore } from '../../stores/notesStore'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
 import { batchDeleteResources, removeItemsById } from './batchDelete'
 import { useWorkloadActions } from '../Workload/useWorkloadActions'
@@ -54,6 +55,7 @@ export function WorkloadResourceRowActions({
 }: WorkloadResourceRowActionsProps): React.JSX.Element {
   const queryClient = useQueryClient()
   const { openYamlEditor } = useBottomPanel()
+  const openCreateNote = useNotesStore((s) => s.openCreate)
   const clusterStatus = useClusterStore((s) => s.clusters.find((c) => c.id === clusterId)?.status)
   const isConnected = clusterStatus === 'connected'
   const { data: permissions } = useResourcePermissions(clusterId, target, namespace, name, isConnected)
@@ -115,55 +117,73 @@ export function WorkloadResourceRowActions({
     })
   }
 
-  const menuItems: MenuProps['items'] = workload.visibleActions.flatMap((def) => {
-    const items: MenuProps['items'] = []
-    if (def.dividerBefore) items.push({ type: 'divider' })
-    if (def.id === 'editYaml') {
+  const menuItems: MenuProps['items'] = [
+    ...workload.visibleActions.flatMap((def) => {
+      const items: MenuProps['items'] = []
+      if (def.dividerBefore) items.push({ type: 'divider' })
+      if (def.id === 'editYaml') {
+        items.push({
+          key: 'editYaml',
+          label: canEdit ? (
+            'Edit YAML'
+          ) : (
+            <Tooltip title="You don't have permission to update this resource">Edit YAML</Tooltip>
+          ),
+          icon: <Icon icon={Pencil} variant="detail" />,
+          disabled: !canEdit
+        })
+        return items
+      }
+      if (def.id === 'delete') {
+        items.push({
+          key: 'note',
+          label: 'Add spark',
+          icon: <Icon icon={Sparkles} variant="detail" />
+        })
+        items.push({ type: 'divider' })
+        items.push({
+          key: 'delete',
+          label: canDelete ? (
+            def.label
+          ) : (
+            <Tooltip title="You don't have permission to delete this resource">{def.label}</Tooltip>
+          ),
+          icon: <Icon icon={Trash2} variant="detail" />,
+          danger: true,
+          disabled: !canDelete
+        })
+        return items
+      }
+      const permKey = actionRequiresPermission(def.id)
+      const allowed = permKey ? workload.isActionAllowed(def.id) : true
       items.push({
-        key: 'editYaml',
-        label: canEdit ? (
-          'Edit YAML'
-        ) : (
-          <Tooltip title="You don't have permission to update this resource">Edit YAML</Tooltip>
-        ),
-        icon: <Icon icon={Pencil} variant="detail" />,
-        disabled: !canEdit
-      })
-      return items
-    }
-    if (def.id === 'delete') {
-      items.push({
-        key: 'delete',
-        label: canDelete ? (
+        key: def.id,
+        label: allowed ? (
           def.label
         ) : (
-          <Tooltip title="You don't have permission to delete this resource">{def.label}</Tooltip>
+          <Tooltip title={workload.actionDeniedReason(def.id)}>{def.label}</Tooltip>
         ),
-        icon: <Icon icon={Trash2} variant="detail" />,
-        danger: true,
-        disabled: !canDelete
+        icon: actionIcons[def.id],
+        danger: def.danger,
+        disabled: !allowed
       })
       return items
-    }
-    const permKey = actionRequiresPermission(def.id)
-    const allowed = permKey ? workload.isActionAllowed(def.id) : true
-    items.push({
-      key: def.id,
-      label: allowed ? (
-        def.label
-      ) : (
-        <Tooltip title={workload.actionDeniedReason(def.id)}>{def.label}</Tooltip>
-      ),
-      icon: actionIcons[def.id],
-      danger: def.danger,
-      disabled: !allowed
     })
-    return items
-  })
+  ]
 
   function handleMenuClick({ key }: { key: string }): void {
     if (key === 'editYaml') openEditor()
-    else if (key === 'delete') confirmDelete()
+    else if (key === 'note') {
+      openCreateNote({
+        title: '',
+        body: '',
+        scope: 'resource',
+        clusterId,
+        resourceKind: kind,
+        namespace,
+        resourceName: name
+      })
+    } else if (key === 'delete') confirmDelete()
     else void workload.handleAction(key as WorkloadActionId)
   }
 

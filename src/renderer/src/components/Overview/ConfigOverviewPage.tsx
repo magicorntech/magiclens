@@ -2,9 +2,9 @@ import { useMemo } from 'react'
 import { Tag } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ResourceKind } from '@shared/resourceKinds'
+import type { ResourceFocus } from '@shared/types/navigation'
 import type { ResourceListItem } from '@shared/types/resource'
 import { useResourceList } from '../../queries/useResourceList'
-import { useClusterStore } from '../../stores/clusterStore'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { DetailOverview, DetailSection } from '../Detail/detailPrimitives'
 import { OverviewGrid, OverviewPage, OverviewStat } from './OverviewPage'
@@ -12,6 +12,8 @@ import { OverviewGrid, OverviewPage, OverviewStat } from './OverviewPage'
 interface ConfigOverviewPageProps {
   clusterId: string
   isActive: boolean
+  onOpenResourceKind: (kind: ResourceKind) => void
+  onNavigateToResource: (focus: ResourceFocus, item?: ResourceListItem) => void
 }
 
 const CONFIG_KINDS: ResourceKind[] = [
@@ -32,10 +34,13 @@ function itemsOf(data: { items: ResourceListItem[] } | { error: string } | undef
   return data && !('error' in data) ? data.items : []
 }
 
-export function ConfigOverviewPage({ clusterId, isActive }: ConfigOverviewPageProps): React.JSX.Element {
+export function ConfigOverviewPage({
+  clusterId,
+  isActive,
+  onOpenResourceKind,
+  onNavigateToResource
+}: ConfigOverviewPageProps): React.JSX.Element {
   const { t } = useTranslation()
-  const openResourceKind = useClusterStore((s) => s.openResourceKind)
-  const navigateToResource = useClusterStore((s) => s.navigateToResource)
 
   const cm = useResourceList(clusterId, 'ALL', 'ConfigMaps', isActive)
   const sec = useResourceList(clusterId, 'ALL', 'Secrets', isActive)
@@ -90,7 +95,7 @@ export function ConfigOverviewPage({ clusterId, isActive }: ConfigOverviewPagePr
               key={kind}
               type="button"
               className="ml-overview-stat ml-overview-stat--clickable"
-              onClick={() => openResourceKind(clusterId, kind)}
+              onClick={() => onOpenResourceKind(kind)}
             >
               <span className="ml-overview-stat__label">{kind}</span>
               <span className="ml-overview-stat__value">{byKind[kind].length}</span>
@@ -100,17 +105,18 @@ export function ConfigOverviewPage({ clusterId, isActive }: ConfigOverviewPagePr
 
         <DetailSection title={t('configOverview.highlights')}>
           <OverviewGrid>
-            <OverviewStat label={t('configOverview.configMaps')} value={byKind.ConfigMaps.length} />
-            <OverviewStat label={t('configOverview.secrets')} value={byKind.Secrets.length} />
-            <OverviewStat label={t('configOverview.tlsSecrets')} value={tlsSecrets} />
-            <OverviewStat label={t('configOverview.hpas')} value={byKind.HorizontalPodAutoscalers.length} />
-            <OverviewStat label={t('configOverview.pdbs')} value={byKind.PodDisruptionBudgets.length} />
+            <OverviewStat label={t('configOverview.configMaps')} value={byKind.ConfigMaps.length} onClick={() => onOpenResourceKind('ConfigMaps')} />
+            <OverviewStat label={t('configOverview.secrets')} value={byKind.Secrets.length} onClick={() => onOpenResourceKind('Secrets')} />
+            <OverviewStat label={t('configOverview.tlsSecrets')} value={tlsSecrets} onClick={() => onOpenResourceKind('Secrets')} />
+            <OverviewStat label={t('configOverview.hpas')} value={byKind.HorizontalPodAutoscalers.length} onClick={() => onOpenResourceKind('HorizontalPodAutoscalers')} />
+            <OverviewStat label={t('configOverview.pdbs')} value={byKind.PodDisruptionBudgets.length} onClick={() => onOpenResourceKind('PodDisruptionBudgets')} />
             <OverviewStat
               label={t('configOverview.webhooks')}
               value={
                 byKind.MutatingWebhookConfigurations.length +
                 byKind.ValidatingWebhookConfigurations.length
               }
+              onClick={() => onOpenResourceKind('MutatingWebhookConfigurations')}
             />
           </OverviewGrid>
         </DetailSection>
@@ -126,11 +132,14 @@ export function ConfigOverviewPage({ clusterId, isActive }: ConfigOverviewPagePr
                   type="button"
                   className="ml-overview-list__row"
                   onClick={() =>
-                    navigateToResource(clusterId, {
-                      kind: 'ResourceQuotas',
-                      namespace: item.namespace,
-                      name: item.name
-                    })
+                    onNavigateToResource(
+                      {
+                        kind: 'ResourceQuotas',
+                        namespace: item.namespace,
+                        name: item.name
+                      },
+                      item
+                    )
                   }
                 >
                   <strong>
@@ -157,11 +166,14 @@ export function ConfigOverviewPage({ clusterId, isActive }: ConfigOverviewPagePr
                   type="button"
                   className="ml-overview-list__row"
                   onClick={() =>
-                    navigateToResource(clusterId, {
-                      kind: 'HorizontalPodAutoscalers',
-                      namespace: item.namespace,
-                      name: item.name
-                    })
+                    onNavigateToResource(
+                      {
+                        kind: 'HorizontalPodAutoscalers',
+                        namespace: item.namespace,
+                        name: item.name
+                      },
+                      item
+                    )
                   }
                 >
                   <strong>

@@ -6,6 +6,9 @@ export interface ResourceTabPreferences {
   splitView: boolean
   splitLeftKind: ResourceKind | null
   splitRightKind: ResourceKind | null
+  /** Per-pane namespace while resource tabs are split (falls back to cluster namespace). */
+  splitLeftNamespace: string | null
+  splitRightNamespace: string | null
   focusedSplitPane: 'left' | 'right'
 }
 
@@ -17,6 +20,8 @@ export const defaultResourceTabPreferences = (): ResourceTabPreferences => ({
   splitView: false,
   splitLeftKind: null,
   splitRightKind: null,
+  splitLeftNamespace: null,
+  splitRightNamespace: null,
   focusedSplitPane: 'left'
 })
 

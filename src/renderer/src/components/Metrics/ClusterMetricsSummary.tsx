@@ -69,7 +69,7 @@ export function ClusterMetricsSummary({ clusterId, isActiveTab }: ClusterMetrics
   return (
     <MotionDiv className="ml-nodes-dashboard" {...slideUp}>
       {!data.metricsAvailable && (
-        <Alert type="warning" showIcon className="ml-nodes-dashboard-alert" message="metrics-server unavailable — usage bars may be incomplete" />
+        <Alert type="warning" showIcon className="ml-nodes-dashboard-alert" message="Usage metrics unavailable — install metrics-server or connect Prometheus" />
       )}
 
       <section className="ml-nodes-dashboard-section">
