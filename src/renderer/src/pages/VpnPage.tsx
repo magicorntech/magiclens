@@ -276,8 +276,9 @@ export function VpnPage(): React.JSX.Element {
                       danger
                       icon={<Icon icon={Unplug} variant="action" />}
                       onClick={async () => {
-                        await disconnect()
-                        message.success(t('vpn.disconnectedToast'))
+                        const res = await disconnect()
+                        if (res.ok) message.success(t('vpn.disconnectedToast'))
+                        else message.error(res.error || t('vpn.disconnectFailed'))
                       }}
                     >
                       {t('vpn.disconnect')}
@@ -446,8 +447,9 @@ export function VpnPage(): React.JSX.Element {
                             onClick={async () => {
                               setBusyId(row.id)
                               try {
-                                await disconnect(row.id)
-                                message.success(t('vpn.disconnectedToast'))
+                                const res = await disconnect(row.id)
+                                if (res.ok) message.success(t('vpn.disconnectedToast'))
+                                else message.error(res.error || t('vpn.disconnectFailed'))
                               } finally {
                                 setBusyId(null)
                               }

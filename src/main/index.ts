@@ -2,17 +2,23 @@ import { join } from 'node:path'
 import { app, BrowserWindow } from 'electron'
 import { applyChromiumPerformanceFlags } from './chromiumPerf'
 import { registerIpcHandlers } from './ipc/register'
+import { installSparksMediaProtocol, registerSparksMediaScheme } from './notes/mediaProtocol'
 import { startNotesReminderScheduler } from './notes/reminderScheduler'
 import { installApplicationMenu, installReloadConfirm } from './reloadConfirm'
 import { initAutoUpdater } from './update/autoUpdateService'
 import { fixShellPath } from './util/fixShellPath'
 import { createMainWindow } from './window'
+import { vpnManager } from './vpn/vpnManager'
 
 // Must run before ready — Chromium ignores most switches after initialization.
 applyChromiumPerformanceFlags()
+registerSparksMediaScheme()
+
+let isQuitting = false
 
 app.whenReady().then(() => {
   fixShellPath()
+  installSparksMediaProtocol()
   installApplicationMenu()
 
   if (process.platform === 'darwin' && !app.isPackaged) {
@@ -31,6 +37,18 @@ app.whenReady().then(() => {
       installReloadConfirm(next)
     }
   })
+})
+
+app.on('before-quit', (event) => {
+  if (isQuitting) return
+  isQuitting = true
+  event.preventDefault()
+  void vpnManager
+    .disconnectAllForQuit()
+    .catch(() => undefined)
+    .finally(() => {
+      app.exit(0)
+    })
 })
 
 app.on('window-all-closed', () => {

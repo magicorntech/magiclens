@@ -49,6 +49,7 @@ export const ja: TranslationOverrides = {
       vpnExtensions: 'VPN 拡張機能',
       keyboard: 'キーボード',
       appearance: '外観',
+      sparks: 'Sparks',
       about: '情報',
       developer: '開発者'
     },
@@ -258,8 +259,18 @@ export const ja: TranslationOverrides = {
       vpnExtensions: 'VPN プロファイルで使用される OpenVPN および WireGuard ヘルパーをインストールまたは修復します。',
       keyboard: 'グローバル ショートカットをカスタマイズします。競合するバインディングは自動的に交換されます。',
       appearance: 'アプリ全体のライト/ダーク モードとカラー テーマ。',
+      sparks: 'Sparks vault themes and modules.',
       developer: 'デバッグのためのホストの仕様とライブ プロセスの使用状況。',
       about: 'この MagicLens ビルドのバージョンとランタイム情報。'
+    },
+    sparks: {
+      themesTitle: 'Sparks vault themes',
+      themesHint: 'Only changes the Sparks notebook look.',
+      lightThemes: 'Light',
+      darkThemes: 'Dark',
+      pluginsTitle: 'Sparks modules',
+      pluginsHint: 'Toggle built-in features. Your vault stays on this machine.',
+      localHint: 'Notes, graph, and canvas are stored locally in your Sparks vault folder.'
     },
     developer: {
       hostTitle: 'パソコンのスペック',
@@ -497,6 +508,12 @@ export const ja: TranslationOverrides = {
         eyebrow: 'VPN',
         title: 'プライベートクラスターとトンネル',
         body: 'OpenVPN / Pritunl / WireGuard を追加しクラスターに紐づけ、タブ切替中も複数トンネルを維持。'
+      },
+      sparks: {
+        eyebrow: 'Sparks',
+        title: '手元に残るローカルノート',
+        body:
+          'マシン上のボルトに Markdown を書く — フォルダ、Wiki リンク、グラフ＆キャンバス、描画、リマインダー、分割表示。ボルトフォルダを移さない限り端末外へは出ません。'
       },
       ops: {
         eyebrow: '日常',

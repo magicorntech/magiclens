@@ -49,6 +49,7 @@ export const de: TranslationOverrides = {
       vpnExtensions: 'VPN-Erweiterungen',
       keyboard: 'Tastatur',
       appearance: 'Erscheinungsbild',
+      sparks: 'Sparks',
       about: 'Info',
       developer: 'Entwickler'
     },
@@ -287,8 +288,18 @@ export const de: TranslationOverrides = {
       keyboard:
         'Passen Sie globale Verknüpfungen an. Widersprüchliche Bindungen werden automatisch ausgetauscht.',
       appearance: 'Hell-/Dunkelmodus und Farbthemen für die gesamte App.',
+      sparks: 'Sparks-Vault-Themen und Module.',
       developer: 'Host-Spezifikationen und Live-Prozessnutzung zum Debuggen.',
       about: 'Versions- und Laufzeitinformationen für diesen MagicLens-Build.'
+    },
+    sparks: {
+      themesTitle: 'Sparks vault themes',
+      themesHint: 'Only changes the Sparks notebook look.',
+      lightThemes: 'Light',
+      darkThemes: 'Dark',
+      pluginsTitle: 'Sparks modules',
+      pluginsHint: 'Toggle built-in features. Your vault stays on this machine.',
+      localHint: 'Notes, graph, and canvas are stored locally in your Sparks vault folder.'
     },
     developer: {
       hostTitle: 'Computerspezifikationen',
@@ -542,6 +553,12 @@ export const de: TranslationOverrides = {
         title: 'Private Cluster, Ihre Tunnel',
         body:
           'OpenVPN-/Pritunl-/WireGuard-Profile laden, mit Clustern verknüpfen und mehrere Tunnel offen halten.'
+      },
+      sparks: {
+        eyebrow: 'Sparks',
+        title: 'Lokale Notizen, die bei Ihnen bleiben',
+        body:
+          'Markdown in einem Vault auf Ihrem Rechner — Ordner, Wiki-Links, Graph & Canvas, Zeichnungen, Erinnerungen und Split-Ansichten. Nichts verlässt das Gerät, außer Sie verschieben den Vault-Ordner.'
       },
       ops: {
         eyebrow: 'Alltag',

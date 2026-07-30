@@ -301,6 +301,57 @@ const api = {
       ipcRenderer.invoke(IPC.NOTES_TEST_NOTIFICATION),
     fireReminder: (id: string): Promise<import('@shared/types/notes').NotesReminderEvent | null> =>
       ipcRenderer.invoke(IPC.NOTES_FIRE_REMINDER, { id }),
+    vaultStatus: (): Promise<import('@shared/types/notes').VaultStatus> =>
+      ipcRenderer.invoke(IPC.NOTES_VAULT_STATUS),
+    chooseVault: (): Promise<import('@shared/types/notes').ChooseVaultResult> =>
+      ipcRenderer.invoke(IPC.NOTES_VAULT_CHOOSE),
+    revealVault: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.NOTES_VAULT_REVEAL),
+    folderTree: (): Promise<import('@shared/types/notes').VaultFolderNode[]> =>
+      ipcRenderer.invoke(IPC.NOTES_FOLDER_TREE),
+    tags: (): Promise<{ tag: string; count: number }[]> => ipcRenderer.invoke(IPC.NOTES_TAGS),
+    createFolder: (
+      folder: string,
+      opts?: { icon?: string; image?: string }
+    ): Promise<{ ok: boolean; path: string }> =>
+      ipcRenderer.invoke(IPC.NOTES_CREATE_FOLDER, { folder, icon: opts?.icon, image: opts?.image }),
+    renameFolder: (
+      from: string,
+      to: string
+    ): Promise<{ ok: boolean; path: string; error?: string }> =>
+      ipcRenderer.invoke(IPC.NOTES_RENAME_FOLDER, { from, to }),
+    deleteFolder: (
+      folder: string,
+      withNotes?: boolean
+    ): Promise<import('@shared/types/notes').DeleteFolderResult> =>
+      ipcRenderer.invoke(IPC.NOTES_DELETE_FOLDER, { folder, withNotes }),
+    setFolderIcon: (
+      folder: string,
+      patch: { icon?: string | null; image?: string | null }
+    ): Promise<{ ok: boolean; path: string }> =>
+      ipcRenderer.invoke(IPC.NOTES_SET_FOLDER_ICON, { folder, ...patch }),
+    importFolderIcon: (): Promise<import('@shared/types/notes').FolderIconImportResult> =>
+      ipcRenderer.invoke(IPC.NOTES_FOLDER_ICON_IMPORT),
+    saveFolderIconDataUrl: (
+      dataUrl: string
+    ): Promise<import('@shared/types/notes').FolderIconImportResult> =>
+      ipcRenderer.invoke(IPC.NOTES_FOLDER_ICON_FROM_DATA_URL, { dataUrl }),
+    canvasGet: (): Promise<import('@shared/types/sparks').SparksCanvasDoc> =>
+      ipcRenderer.invoke(IPC.NOTES_CANVAS_GET),
+    canvasSave: (
+      doc: import('@shared/types/sparks').SparksCanvasDoc
+    ): Promise<import('@shared/types/sparks').SparksCanvasDoc> =>
+      ipcRenderer.invoke(IPC.NOTES_CANVAS_SAVE, doc),
+    sketchGet: (noteId: string): Promise<import('@shared/types/sparks').SparksSketchDoc> =>
+      ipcRenderer.invoke(IPC.NOTES_SKETCH_GET, { noteId }),
+    sketchSave: (
+      doc: import('@shared/types/sparks').SparksSketchDoc
+    ): Promise<import('@shared/types/sparks').SparksSketchDoc> =>
+      ipcRenderer.invoke(IPC.NOTES_SKETCH_SAVE, doc),
+    mediaImport: (
+      noteId: string,
+      kind?: 'image' | 'video' | 'file' | 'any'
+    ): Promise<import('@shared/types/sparks').SparksMediaImportResult> =>
+      ipcRenderer.invoke(IPC.NOTES_MEDIA_IMPORT, { noteId, kind }),
     onReminderFired: (
       cb: (payload: import('@shared/types/notes').NotesReminderEvent) => void
     ): (() => void) => {

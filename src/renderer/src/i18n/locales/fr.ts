@@ -49,6 +49,7 @@ export const fr: TranslationOverrides = {
       vpnExtensions: 'Extensions VPN',
       keyboard: 'Clavier',
       appearance: 'Apparence',
+      sparks: 'Sparks',
       about: 'À propos',
       developer: 'Promoteur'
     },
@@ -282,8 +283,18 @@ export const fr: TranslationOverrides = {
       vpnExtensions: 'Installez ou réparez les assistants OpenVPN et WireGuard utilisés par les profils VPN.',
       keyboard: 'Personnalisez les raccourcis globaux. Les liaisons en conflit s’échangent automatiquement.',
       appearance: 'Mode clair/sombre et thèmes de couleurs pour toute l\'application.',
+      sparks: 'Thèmes et modules du carnet Sparks.',
       developer: 'Spécifications de l\'hôte et utilisation des processus en direct pour le débogage.',
       about: 'Informations sur la version et l\'exécution de cette version de MagicLens.'
+    },
+    sparks: {
+      themesTitle: 'Sparks vault themes',
+      themesHint: 'Only changes the Sparks notebook look.',
+      lightThemes: 'Light',
+      darkThemes: 'Dark',
+      pluginsTitle: 'Sparks modules',
+      pluginsHint: 'Toggle built-in features. Your vault stays on this machine.',
+      localHint: 'Notes, graph, and canvas are stored locally in your Sparks vault folder.'
     },
     developer: {
       hostTitle: 'Spécifications de l\'ordinateur',
@@ -539,6 +550,12 @@ export const fr: TranslationOverrides = {
         title: 'Clusters privés, vos tunnels',
         body:
           'Chargez des profils OpenVPN / Pritunl / WireGuard, liez-les aux clusters et gardez plusieurs tunnels actifs.'
+      },
+      sparks: {
+        eyebrow: 'Sparks',
+        title: 'Notes locales qui restent chez vous',
+        body:
+          'Écrivez du Markdown dans un coffre sur votre machine — dossiers, liens wiki, graphe & canvas, dessins, rappels et vues scindées. Rien ne quitte l’appareil sauf si vous déplacez le dossier du coffre.'
       },
       ops: {
         eyebrow: 'Au quotidien',

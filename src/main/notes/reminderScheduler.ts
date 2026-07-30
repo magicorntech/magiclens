@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto'
 import { join } from 'node:path'
 import { IPC } from '@shared/ipc-contract'
 import type { NotesReminderEvent, ResourceNote } from '@shared/types/notes'
+import { computeNextRemindAt, normalizeReminderSchedule } from '@shared/reminderSchedule'
 import {
   listDueReminders,
   nextUpcomingRemindAt,
@@ -122,8 +123,19 @@ export async function deliverNoteReminder(
   const markFired = opts?.markFired !== false
   let delivered = note
   if (markFired) {
+    const firedAt = new Date().toISOString()
+    const schedule = normalizeReminderSchedule(note.reminderSchedule)
+    const recurring = schedule && schedule.kind !== 'once'
+    const nextRemindAt = recurring
+      ? computeNextRemindAt(schedule, new Date(Date.parse(firedAt) + 1000))
+      : note.remindAt ?? null
+
     delivered =
-      updateNoteAnywhere(note.id, { reminderFiredAt: new Date().toISOString() }) ?? note
+      updateNoteAnywhere(note.id, {
+        reminderFiredAt: firedAt,
+        // Advance recurring alarms; one-shot keeps remindAt and stays suppressed via firedAt >= remindAt
+        ...(recurring ? { remindAt: nextRemindAt } : {})
+      }) ?? note
   }
 
   const os = await showOsNotification(
@@ -206,6 +218,9 @@ export async function testNotesNotification(): Promise<TestNotificationResult> {
     title: 'MagicLens notification test',
     body: 'If you see this, OS and in-app notifications are working.',
     scope: 'global',
+    path: 'Inbox/notification-test.md',
+    folder: 'Inbox',
+    tags: [],
     createdAt: now,
     updatedAt: now,
     remindAt: now,

@@ -49,6 +49,7 @@ export const zh: TranslationOverrides = {
       vpnExtensions: 'VPN 扩展',
       keyboard: '键盘',
       appearance: '外观',
+      sparks: 'Sparks',
       about: '关于',
       developer: '开发商'
     },
@@ -256,8 +257,18 @@ export const zh: TranslationOverrides = {
       vpnExtensions: '安装或修复 VPN 配置文件使用的 OpenVPN 和 WireGuard 帮助程序。',
       keyboard: '自定义全局快捷方式。冲突的绑定会自动交换。',
       appearance: '整个应用程序的浅色/深色模式和颜色主题。',
+      sparks: 'Sparks vault themes and modules.',
       developer: '用于调试的主机规格和实时进程使用情况。',
       about: '此 MagicLens 版本的版本和运行时信息。'
+    },
+    sparks: {
+      themesTitle: 'Sparks vault themes',
+      themesHint: 'Only changes the Sparks notebook look.',
+      lightThemes: 'Light',
+      darkThemes: 'Dark',
+      pluginsTitle: 'Sparks modules',
+      pluginsHint: 'Toggle built-in features. Your vault stays on this machine.',
+      localHint: 'Notes, graph, and canvas are stored locally in your Sparks vault folder.'
     },
     developer: {
       hostTitle: '电脑规格',
@@ -495,6 +506,12 @@ export const zh: TranslationOverrides = {
         eyebrow: 'VPN',
         title: '私有集群与隧道',
         body: '上传 OpenVPN / Pritunl / WireGuard，关联到集群，切换标签时保持多条隧道。'
+      },
+      sparks: {
+        eyebrow: 'Sparks',
+        title: '留在本地的笔记',
+        body:
+          '在本机保险库中写 Markdown — 文件夹、Wiki 链接、图谱与画布、绘图、提醒与分屏。除非你移动保险库文件夹，否则不会离开本机。'
       },
       ops: {
         eyebrow: '日常运维',

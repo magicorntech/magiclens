@@ -24,7 +24,8 @@ import {
   Network,
   Palette,
   RefreshCw,
-  Settings2
+  Settings2,
+  Sparkles
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { normalizeUtilityFabSide } from '@shared/types/app'
@@ -43,6 +44,7 @@ import { NodesDashboardSettings } from '../Nodes/NodesDashboardSettings'
 import { ChromeToolbarSettings } from './ChromeToolbarSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { VpnExtensionsSettings } from './VpnExtensionsSettings'
+import { SparksSettings } from './SparksSettings'
 import { DeveloperSettings } from './DeveloperSettings'
 import { ThemeToggle } from './ThemeToggle'
 import {
@@ -66,6 +68,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { key: 'general', icon: Settings2, group: 'preferences' },
   { key: 'appearance', icon: Palette, group: 'preferences' },
+  { key: 'sparks', icon: Sparkles, group: 'preferences' },
   { key: 'display', icon: LayoutDashboard, group: 'preferences' },
   { key: 'keyboard', icon: Keyboard, group: 'preferences' },
   { key: 'updates', icon: CloudDownload, group: 'system' },
@@ -593,6 +596,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             </SettingsSection>
           </>
         )
+
+      case 'sparks':
+        return <SparksSettings />
 
       case 'vpnExtensions':
         return <VpnExtensionsSettings />

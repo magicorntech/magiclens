@@ -49,6 +49,7 @@ export const ko: TranslationOverrides = {
       vpnExtensions: 'VPN 확장',
       keyboard: '키보드',
       appearance: '모양',
+      sparks: 'Sparks',
       about: '정보',
       developer: '개발자'
     },
@@ -258,8 +259,18 @@ export const ko: TranslationOverrides = {
       vpnExtensions: 'VPN 프로필에서 사용되는 OpenVPN 및 WireGuard 도우미를 설치하거나 복구합니다.',
       keyboard: '전역 바로가기를 사용자 정의하세요. 충돌하는 바인딩은 자동으로 교체됩니다.',
       appearance: '전체 앱에 대한 밝은/어두운 모드 및 색상 테마.',
+      sparks: 'Sparks vault themes and modules.',
       developer: '디버깅을 위한 호스트 사양 및 라이브 프로세스 사용량입니다.',
       about: '이 MagicLens 빌드에 대한 버전 및 런타임 정보입니다.'
+    },
+    sparks: {
+      themesTitle: 'Sparks vault themes',
+      themesHint: 'Only changes the Sparks notebook look.',
+      lightThemes: 'Light',
+      darkThemes: 'Dark',
+      pluginsTitle: 'Sparks modules',
+      pluginsHint: 'Toggle built-in features. Your vault stays on this machine.',
+      localHint: 'Notes, graph, and canvas are stored locally in your Sparks vault folder.'
     },
     developer: {
       hostTitle: '컴퓨터 사양',
@@ -497,6 +508,12 @@ export const ko: TranslationOverrides = {
         eyebrow: 'VPN',
         title: '프라이빗 클러스터와 터널',
         body: 'OpenVPN / Pritunl / WireGuard 프로필을 추가하고 클러스터에 연결한 뒤 여러 터널을 유지하세요.'
+      },
+      sparks: {
+        eyebrow: 'Sparks',
+        title: '당신과 함께하는 로컬 노트',
+        body:
+          '기기 볼트에 Markdown을 작성하세요 — 폴더, 위키 링크, 그래프 & 캔버스, 그리기, 알림, 분할 보기. 볼트 폴더를 옮기지 않는 한 기기 밖으로 나가지 않습니다.'
       },
       ops: {
         eyebrow: '일상',

@@ -61,7 +61,7 @@ interface VpnState {
     id: string,
     options?: { preferExternal?: boolean; credentials?: VpnAuthCredentials }
   ) => Promise<{ ok: boolean; error?: string }>
-  disconnect: (id?: string) => Promise<void>
+  disconnect: (id?: string) => Promise<{ ok: boolean; error?: string }>
   reveal: (id: string) => Promise<void>
   syncOrgProfiles: () => Promise<number>
   subscribeStatus: () => () => void
@@ -145,10 +145,13 @@ export const useVpnStore = create<VpnState>((set, get) => ({
   },
 
   disconnect: async (id) => {
-    await window.api.vpn.disconnect(id)
-    // Manual disconnect ends the ~5h auth session for that profile (or all).
-    useVpnSessionStore.getState().clearCredentials(id)
+    const result = await window.api.vpn.disconnect(id)
+    if (result.ok) {
+      // Manual disconnect ends the ~5h auth session for that profile (or all).
+      useVpnSessionStore.getState().clearCredentials(id)
+    }
     await get().refresh()
+    return { ok: result.ok, error: result.error }
   },
 
   reveal: async (id) => {

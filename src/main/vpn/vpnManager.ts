@@ -566,8 +566,8 @@ fi
   }
 
   /**
-   * OpenVPN is started with --daemon, so tunnels survive app quit.
-   * Rebuild in-memory sessions from pid files / WG interfaces on restart.
+   * OpenVPN uses --daemon so processes can outlive Magiclens unless we tear them down.
+   * Rebuild in-memory sessions from pid files / WG interfaces on restart (or after a failed quit).
    */
   private syncSessionsWithOs(): void {
     let changed = false
@@ -1497,15 +1497,23 @@ fi
   async disconnect(profileId?: string): Promise<{ ok: boolean; error?: string }> {
     await this.recoverOrphanSessions()
     const ids = profileId ? [profileId] : [...this.sessions.keys()]
+
+    // Even with an empty session map, kill Magiclens-owned OpenVPN daemons / WG ifaces
+    // left behind after a previous incomplete disconnect or forced quit cancel.
     if (ids.length === 0) {
+      const leftovers = await this.teardownOrphanedTunnels(profileId)
       this.focusProfileId = null
-      this.setState('disconnected')
-      return { ok: true }
+      this.stopStatsPolling()
+      this.stats = null
+      this.setState('disconnected', leftovers ? 'Disconnected' : undefined)
+      return leftovers.ok ? { ok: true } : { ok: false, error: leftovers.error }
     }
 
+    const errors: string[] = []
     try {
       for (const id of ids) {
-        await this.disconnectSession(id)
+        const result = await this.disconnectSession(id)
+        if (!result.ok) errors.push(result.error || `Failed to disconnect ${id}`)
       }
       const primary = this.primarySession()
       if (primary) {
@@ -1516,9 +1524,9 @@ fi
         this.focusProfileId = null
         this.stopStatsPolling()
         this.stats = null
-        this.setState('disconnected', 'Disconnected')
+        this.setState(errors.length ? 'error' : 'disconnected', errors[0] || 'Disconnected')
       }
-      return { ok: true }
+      return errors.length === 0 ? { ok: true } : { ok: false, error: errors.join('; ') }
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err)
       this.setState('error', error)
@@ -1526,38 +1534,223 @@ fi
     }
   }
 
-  /** Kill one tunnel by pid — never killall (would drop other profiles). */
-  private async disconnectSession(profileId: string): Promise<void> {
-    const session = this.sessions.get(profileId)
-    const tools = await this.detectTools()
-
-    if (!session) {
-      // Orphan tunnel after crash/restart without recovery in map
-      const pid = this.readPidFile(profileId)
-      if (pid && this.isProcessAlive(pid)) {
+  /** Best-effort teardown used on app quit — never leave Magiclens tunnels running. */
+  async disconnectAllForQuit(): Promise<void> {
+    try {
+      await this.recoverOrphanSessions()
+      const ids = [...this.sessions.keys()]
+      for (const id of ids) {
         try {
-          await this.runElevated(`kill ${pid}`)
+          await this.disconnectSession(id)
         } catch {
-          // ignore
+          // continue other tunnels
         }
       }
-      this.clearPidFile(profileId)
-      const iface = this.wireguardIface(profileId)
+      await this.teardownOrphanedTunnels()
+    } catch {
+      // quitting — ignore
+    } finally {
+      this.sessions.clear()
+      this.focusProfileId = null
+      this.stopStatsPolling()
+      this.stats = null
+      this.status = 'disconnected'
+    }
+  }
+
+  private async killPidElevated(pid: number): Promise<boolean> {
+    if (!Number.isFinite(pid) || pid <= 0) return true
+    if (!this.isProcessAlive(pid)) return true
+    const soft =
+      process.platform === 'win32' ? `taskkill /PID ${pid}` : `kill ${pid}`
+    const hard =
+      process.platform === 'win32' ? `taskkill /F /PID ${pid}` : `kill -9 ${pid}`
+    try {
+      await this.runElevated(soft)
+    } catch {
+      // try harder below
+    }
+    await this.sleep(350)
+    if (!this.isProcessAlive(pid)) return true
+    try {
+      await this.runElevated(hard)
+    } catch {
+      // ignore
+    }
+    await this.sleep(250)
+    return !this.isProcessAlive(pid)
+  }
+
+  /** OpenVPN processes whose argv references Magiclens vpn config dir. */
+  private async listOwnedOpenVpnPids(): Promise<number[]> {
+    const dir = this.vpnDir()
+    try {
+      if (process.platform === 'darwin' || process.platform === 'linux') {
+        const { stdout } = await execFileAsync('pgrep', ['-f', `openvpn.*${dir}`], {
+          timeout: 5000
+        })
+        return stdout
+          .trim()
+          .split(/\n+/)
+          .map((line) => Number(line.trim()))
+          .filter((pid) => Number.isFinite(pid) && pid > 0)
+      }
+    } catch {
+      // pgrep exits 1 when no matches
+    }
+    return []
+  }
+
+  private async teardownOrphanedTunnels(
+    profileId?: string
+  ): Promise<{ ok: boolean; error?: string }> {
+    const tools = await this.detectTools()
+    const errors: string[] = []
+    const profiles = profileId
+      ? listVpnProfiles().filter((p) => p.id === profileId)
+      : listVpnProfiles()
+
+    for (const summary of profiles) {
+      const pid = this.readPidFile(summary.id)
+      if (pid && this.isProcessAlive(pid)) {
+        const dead = await this.killPidElevated(pid)
+        if (dead) this.clearPidFile(summary.id)
+        else errors.push(`OpenVPN pid ${pid} still running`)
+      } else if (pid) {
+        this.clearPidFile(summary.id)
+      }
+
+      const iface = this.wireguardIface(summary.id)
       const wgPath = join(this.vpnDir(), `${iface}.conf`)
       if (tools.wgQuickPath && existsSync(wgPath) && (await this.interfaceExists(iface))) {
         try {
           await this.runElevated(`"${tools.wgQuickPath}" down "${wgPath}"`)
-        } catch {
-          // ignore
+        } catch (err) {
+          errors.push(err instanceof Error ? err.message : String(err))
         }
       }
-      return
     }
 
-    if (session.method === 'cli') {
-      if (session.provider === 'wireguard' || session.interfaceName?.startsWith('ml-')) {
+    if (!profileId) {
+      for (const pid of await this.listOwnedOpenVpnPids()) {
+        const dead = await this.killPidElevated(pid)
+        if (!dead) errors.push(`OpenVPN pid ${pid} still running`)
+      }
+    }
+
+    return errors.length ? { ok: false, error: errors.join('; ') } : { ok: true }
+  }
+
+  private async disconnectExternal(session: ActiveSession): Promise<{ ok: boolean; error?: string }> {
+    const tools = await this.detectTools()
+    const profile = getVpnProfile(session.profileId)
+    const configName = profile?.name?.trim() || session.profileId
+
+    if (session.provider === 'wireguard' || session.interfaceName?.startsWith('ml-')) {
+      if (tools.wgQuickPath && session.configPath) {
+        try {
+          await this.runElevated(`"${tools.wgQuickPath}" down "${session.configPath}"`)
+          return { ok: true }
+        } catch (err) {
+          // fall through to platform-specific
+          const msg = err instanceof Error ? err.message : String(err)
+          if (process.platform !== 'win32' && process.platform !== 'darwin') {
+            return { ok: false, error: msg }
+          }
+        }
+      }
+      if (process.platform === 'win32') {
+        const wgExe = this.windowsWireGuardCandidates().find((p) => existsSync(p))
+        if (wgExe) {
+          const tunnelName =
+            session.interfaceName ||
+            (session.configPath ? session.configPath.replace(/^.*[/\\]/, '').replace(/\.conf$/i, '') : '')
+          if (tunnelName) {
+            try {
+              await execFileAsync(wgExe, ['/uninstalltunnelservice', tunnelName], {
+                timeout: 30_000,
+                env: this.enrichedEnv()
+              })
+              return { ok: true }
+            } catch (err) {
+              return { ok: false, error: err instanceof Error ? err.message : String(err) }
+            }
+          }
+        }
+      }
+    }
+
+    if (
+      (session.provider === 'openvpn' || session.provider === 'pritunl') &&
+      process.platform === 'darwin' &&
+      tools.tunnelblick
+    ) {
+      try {
+        // Prefer named disconnect; fall back to disconnect all Magiclens-managed configs.
+        const quoted = JSON.stringify(configName)
+        const script = `
+tell application "Tunnelblick"
+  try
+    disconnect ${quoted}
+  on error
+    disconnect all
+  end try
+end tell`
+        await execFileAsync('osascript', ['-e', script], { timeout: 60_000 })
+        return { ok: true }
+      } catch (err) {
+        return {
+          ok: false,
+          error:
+            err instanceof Error
+              ? err.message
+              : 'Tunnelblick disconnect failed — disconnect manually in Tunnelblick'
+        }
+      }
+    }
+
+    // Last resort for CLI-owned OpenVPN that was marked external incorrectly
+    const pid = this.readPidFile(session.profileId)
+    if (pid) {
+      const dead = await this.killPidElevated(pid)
+      if (dead) {
+        this.clearPidFile(session.profileId)
+        return { ok: true }
+      }
+      return { ok: false, error: `VPN process ${pid} is still running` }
+    }
+
+    return {
+      ok: false,
+      error:
+        'Could not stop the external VPN app automatically. Disconnect it in Tunnelblick / WireGuard, then retry.'
+    }
+  }
+
+  /** Kill one tunnel by pid — never killall (would drop unrelated OpenVPN sessions). */
+  private async disconnectSession(profileId: string): Promise<{ ok: boolean; error?: string }> {
+    const session = this.sessions.get(profileId)
+    const tools = await this.detectTools()
+
+    if (!session) {
+      const leftover = await this.teardownOrphanedTunnels(profileId)
+      return leftover
+    }
+
+    let ok = true
+    let error: string | undefined
+
+    try {
+      if (session.method === 'external') {
+        const result = await this.disconnectExternal(session)
+        ok = result.ok
+        error = result.error
+      } else if (session.provider === 'wireguard' || session.interfaceName?.startsWith('ml-')) {
         if (tools.wgQuickPath && session.configPath) {
           await this.runElevated(`"${tools.wgQuickPath}" down "${session.configPath}"`)
+        } else {
+          ok = false
+          error = 'WireGuard tools not found — cannot bring the tunnel down'
         }
       } else if (session.process) {
         try {
@@ -1565,24 +1758,55 @@ fi
         } catch {
           // ignore
         }
-      } else if (tools.openvpnPath) {
-        const pidPath = join(this.vpnDir(), `${session.profileId}.pid`)
-        if (existsSync(pidPath)) {
+        await this.sleep(300)
+        if (session.process.exitCode === null && !session.process.killed) {
           try {
-            const pid = Number(readFileSync(pidPath, 'utf8').trim())
-            if (pid) await this.runElevated(`kill ${pid}`)
+            session.process.kill('SIGKILL')
           } catch {
-            // ignore — do not killall
+            // ignore
+          }
+        }
+        const pid = this.readPidFile(profileId) ?? session.process.pid
+        if (pid && this.isProcessAlive(pid)) {
+          ok = await this.killPidElevated(pid)
+          if (!ok) error = `OpenVPN process ${pid} is still running`
+        }
+      } else {
+        const pid = this.readPidFile(profileId)
+        if (pid) {
+          ok = await this.killPidElevated(pid)
+          if (!ok) error = `OpenVPN process ${pid} is still running`
+        } else {
+          // Pid file missing — hunt Magiclens-owned openvpn for this config path
+          const owned = await this.listOwnedOpenVpnPids()
+          for (const ownedPid of owned) {
+            const dead = await this.killPidElevated(ownedPid)
+            if (!dead) {
+              ok = false
+              error = `OpenVPN process ${ownedPid} is still running`
+            }
           }
         }
       }
-      this.clearPidFile(profileId)
+    } catch (err) {
+      ok = false
+      error = err instanceof Error ? err.message : String(err)
     }
+
+    if (!ok) {
+      // Keep session + pid so UI stays "connected" and retry can find the process.
+      this.setState('error', error || 'Disconnect failed')
+      this.broadcast()
+      return { ok: false, error }
+    }
+
+    this.clearPidFile(profileId)
     this.secureCleanupAuth(session.authPath)
     this.sessions.delete(profileId)
     if (this.focusProfileId === profileId) {
       this.focusProfileId = this.sessions.keys().next().value ?? null
     }
+    return { ok: true }
   }
 
   async revealConfig(profileId: string): Promise<{ ok: boolean; path?: string; error?: string }> {

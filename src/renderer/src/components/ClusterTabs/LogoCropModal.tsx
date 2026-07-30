@@ -6,11 +6,19 @@ import { cropImageToDataUrl } from '../../imageCrop'
 
 interface LogoCropModalProps {
   imageSrc: string | null
+  title?: string
+  okText?: string
   onCancel: () => void
   onSave: (dataUrl: string) => void
 }
 
-export function LogoCropModal({ imageSrc, onCancel, onSave }: LogoCropModalProps): React.JSX.Element {
+export function LogoCropModal({
+  imageSrc,
+  title = 'Crop logo',
+  okText = 'Save',
+  onCancel,
+  onSave
+}: LogoCropModalProps): React.JSX.Element {
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
@@ -29,11 +37,11 @@ export function LogoCropModal({ imageSrc, onCancel, onSave }: LogoCropModalProps
 
   return (
     <Modal
-      title="Crop logo"
+      title={title}
       open={!!imageSrc}
       onCancel={onCancel}
       onOk={handleSave}
-      okText="Save"
+      okText={okText}
       okButtonProps={{ loading: saving, disabled: !croppedAreaPixels }}
       destroyOnHidden
     >

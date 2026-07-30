@@ -6,7 +6,7 @@ interface HubPageHeroProps {
   icon: LucideIcon
   eyebrow: string
   title: string
-  subtitle: string
+  subtitle?: string
   actions?: ReactNode
   className?: string
 }
@@ -29,7 +29,7 @@ export function HubPageHero({
         <div>
           <p className="ml-hub-hero__eyebrow">{eyebrow}</p>
           <h1 className="ml-hub-hero__title">{title}</h1>
-          <p className="ml-hub-hero__subtitle">{subtitle}</p>
+          {subtitle ? <p className="ml-hub-hero__subtitle">{subtitle}</p> : null}
         </div>
       </div>
       {actions ? <div className="ml-hub-hero__actions">{actions}</div> : null}

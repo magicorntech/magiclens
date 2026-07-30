@@ -11,6 +11,7 @@ import {
   Layers,
   Network,
   Search,
+  Sparkles,
   Terminal,
   Waypoints
 } from 'lucide-react'
@@ -35,6 +36,7 @@ type SlideMeta = {
     | 'resources'
     | 'topology'
     | 'vpn'
+    | 'sparks'
     | 'ops'
     | 'forward'
   icon: typeof Layers
@@ -49,6 +51,7 @@ const SLIDES: SlideMeta[] = [
   { id: 'resources', icon: Box, accent: '#0ea5e9' },
   { id: 'topology', icon: Waypoints, accent: '#06b6d4' },
   { id: 'vpn', icon: Network, accent: '#22c55e' },
+  { id: 'sparks', icon: Sparkles, accent: '#a78bfa' },
   { id: 'ops', icon: Terminal, accent: '#f59e0b' },
   { id: 'forward', icon: Cable, accent: '#ec4899' }
 ]
