@@ -50,6 +50,13 @@ interface SidebarWorkspacesProps {
 
 const LOGO_ACCEPT = 'image/png,image/jpeg,image/x-icon,image/vnd.microsoft.icon,.png,.jpg,.jpeg,.ico'
 
+/** Cosine falloff like macOS Dock — smooth peak under the cursor. */
+function dockMagnifyScale(distancePx: number, influencePx = 52, maxScale = 1.58): number {
+  if (distancePx >= influencePx) return 1
+  const t = 1 - distancePx / influencePx
+  return 1 + (maxScale - 1) * (0.5 - 0.5 * Math.cos(Math.PI * t))
+}
+
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -76,6 +83,7 @@ export function SidebarWorkspaces({
   const openedTabs = useClusterStore((s) => s.openedTabs)
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
   const showWorkspaceClusterCounts = useDisplaySettingsStore((s) => s.showWorkspaceClusterCounts)
+  const workspaceDockMagnification = useDisplaySettingsStore((s) => s.workspaceDockMagnification)
   const groups = useClusterGroupsStore((s) => s.groups)
   const createGroup = useClusterGroupsStore((s) => s.createGroup)
   const renameGroup = useClusterGroupsStore((s) => s.renameGroup)
@@ -95,8 +103,35 @@ export function SidebarWorkspaces({
   const [cropSource, setCropSource] = useState<string | null>(null)
   const [listeningShortcut, setListeningShortcut] = useState(false)
   const [shortcutError, setShortcutError] = useState<string | null>(null)
+  const [dockScales, setDockScales] = useState<Record<string, number>>({})
+  const [openFlyoutId, setOpenFlyoutId] = useState<string | null>(null)
+  const dockRailRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isMac = navigator.platform.includes('Mac')
+
+  const dockVisual = collapsed && workspaceDockMagnification
+  const dockEnabled = dockVisual && !openFlyoutId
+
+  function onDockPointerMove(e: React.PointerEvent<HTMLDivElement>): void {
+    if (!dockEnabled) return
+    const root = dockRailRef.current
+    if (!root) return
+    const y = e.clientY
+    const next: Record<string, number> = {}
+    root.querySelectorAll<HTMLElement>('[data-ws-dock-id]').forEach((el) => {
+      const id = el.dataset.wsDockId
+      if (!id) return
+      const rect = el.getBoundingClientRect()
+      const centerY = rect.top + rect.height / 2
+      next[id] = dockMagnifyScale(Math.abs(y - centerY))
+    })
+    setDockScales(next)
+  }
+
+  function onDockPointerLeave(): void {
+    if (openFlyoutId) return
+    setDockScales({})
+  }
 
   const clusterOptions = useMemo(
     () =>
@@ -347,7 +382,14 @@ export function SidebarWorkspaces({
                 <Icon icon={Layers} variant="action" />
               </button>
             </Tooltip>
-            <div className="ml-sidebar-list ml-sidebar-list--compact-workspaces">
+            <div
+              ref={dockRailRef}
+              className={`ml-sidebar-list ml-sidebar-list--compact-workspaces${
+                dockVisual ? ' ml-sidebar-list--dock' : ''
+              }`}
+              onPointerMove={onDockPointerMove}
+              onPointerLeave={onDockPointerLeave}
+            >
               {groups.map((group) => {
                 const members = sortClustersByConnection(
                   group.clusterIds
@@ -360,8 +402,9 @@ export function SidebarWorkspaces({
                     c.status === 'connected' &&
                     (c.id === activeClusterId || openedTabs.includes(c.id))
                 )
+                const scale = dockEnabled ? (dockScales[group.id] ?? 1) : 1
                 const flyout = (
-                  <div className="ml-resource-nav-flyout">
+                  <div className="ml-resource-nav-flyout ml-ws-flyout">
                     <div className="ml-resource-nav-flyout-title">{group.name}</div>
                     <div className="ml-resource-nav-flyout-list" role="menu">
                       {members.length === 0 ? (
@@ -408,9 +451,15 @@ export function SidebarWorkspaces({
                     trigger={['hover']}
                     placement="rightTop"
                     arrow={false}
-                    mouseEnterDelay={0.05}
-                    mouseLeaveDelay={0.12}
-                    classNames={{ root: 'ml-resource-nav-flyout-overlay' }}
+                    mouseEnterDelay={0.18}
+                    mouseLeaveDelay={0.28}
+                    destroyOnHidden={false}
+                    align={{ offset: [10, -4] }}
+                    onOpenChange={(open) => {
+                      setOpenFlyoutId(open ? group.id : null)
+                      if (open) setDockScales({})
+                    }}
+                    classNames={{ root: 'ml-resource-nav-flyout-overlay ml-ws-flyout-overlay' }}
                     styles={{
                       container: {
                         padding: 0,
@@ -423,16 +472,29 @@ export function SidebarWorkspaces({
                         background: 'transparent'
                       }
                     }}
-                    destroyOnHidden
                   >
-                    <span className="ml-ws-rail-slot">
-                      <button
-                        type="button"
-                        className={`ml-ws-rail-item${hasActive ? ' is-active' : ''}${hasLive ? ' is-session-live' : ''}`}
-                        aria-label={group.name}
+                    <span className="ml-ws-rail-slot" data-ws-dock-id={group.id}>
+                      <span
+                        className="ml-ws-rail-slot__magnify"
+                        style={
+                          scale !== 1
+                            ? {
+                                transform: `scale(${scale})`,
+                                zIndex: Math.round(scale * 20)
+                              }
+                            : undefined
+                        }
                       >
-                        <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={28} />
-                      </button>
+                        <button
+                          type="button"
+                          className={`ml-ws-rail-item${hasActive ? ' is-active' : ''}${hasLive ? ' is-session-live' : ''}${
+                            openFlyoutId === group.id ? ' is-flyout-open' : ''
+                          }`}
+                          aria-label={group.name}
+                        >
+                          <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={28} />
+                        </button>
+                      </span>
                     </span>
                   </Popover>
                 )

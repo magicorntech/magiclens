@@ -19,6 +19,7 @@ import {
   FileText,
   FolderOpen,
   FolderPlus,
+  FileDown,
   Bell,
   BookOpen,
   Brush,
@@ -46,6 +47,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { ResourceNote, VaultFolderNode } from '@shared/types/notes'
+import { isWelcomeSparkNote } from '@shared/notes/welcomeSpark'
 import type {
   SparksPaperExtend,
   SparksPaperStyle,
@@ -65,6 +67,7 @@ import { SparksGraphView } from '../components/Notes/SparksGraphView'
 import { SparksLinksPanel } from '../components/Notes/SparksLinksPanel'
 import { SparksReminderModal } from '../components/Notes/SparksReminderModal'
 import { SparksSplitNotePane } from '../components/Notes/SparksSplitNotePane'
+import { SparksImportModal } from '../components/Notes/SparksImportModal'
 import {
   applyTemplatePlaceholders,
   BUILTIN_PLUGINS,
@@ -85,6 +88,8 @@ const SIDEBAR_MAX = 480
 const SIDEBAR_DEFAULT = 272
 const FOLDER_PHOTO_ACCEPT =
   'image/png,image/jpeg,image/webp,image/gif,image/bmp,.png,.jpg,.jpeg,.webp,.gif,.bmp'
+
+const NOTE_DND_MIME = 'application/x-magilens-note-id'
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -162,6 +167,7 @@ function VaultBrowserTree({
   selectedNoteId,
   splitPickId,
   collapsed,
+  dropTarget,
   onToggle,
   onSelectFolder,
   onOpenNote,
@@ -169,6 +175,11 @@ function VaultBrowserTree({
   onNewChild,
   onDeleteFolder,
   noteMenuItems,
+  onNoteDragStart,
+  onNoteDragEnd,
+  onFolderDragOver,
+  onFolderDragLeave,
+  onFolderDrop,
   depth = 0
 }: {
   nodes: VaultFolderNode[]
@@ -177,6 +188,7 @@ function VaultBrowserTree({
   selectedNoteId: string | null
   splitPickId: string | null
   collapsed: Set<string>
+  dropTarget: string | null
   onToggle: (path: string) => void
   onSelectFolder: (path: string | null) => void
   onOpenNote: (id: string) => void
@@ -193,6 +205,11 @@ function VaultBrowserTree({
       }
     | { type: 'divider' }
   >
+  onNoteDragStart: (noteId: string, e: React.DragEvent) => void
+  onNoteDragEnd: () => void
+  onFolderDragOver: (folder: string, e: React.DragEvent) => void
+  onFolderDragLeave: (folder: string, e: React.DragEvent) => void
+  onFolderDrop: (folder: string, e: React.DragEvent) => void
   depth?: number
 }): React.JSX.Element {
   const { t } = useTranslation()
@@ -202,9 +219,15 @@ function VaultBrowserTree({
         const expanded = !collapsed.has(node.path)
         const directNotes = notesByFolder.get(node.path) ?? []
         const hasChildren = node.children.length > 0 || directNotes.length > 0
+        const isDrop = dropTarget === node.path
         return (
           <li key={node.path}>
-            <div className={`ml-vault-tree__row${selectedFolder === node.path ? ' is-active' : ''}`}>
+            <div
+              className={`ml-vault-tree__row${selectedFolder === node.path ? ' is-active' : ''}${isDrop ? ' is-drop-target' : ''}`}
+              onDragOver={(e) => onFolderDragOver(node.path, e)}
+              onDragLeave={(e) => onFolderDragLeave(node.path, e)}
+              onDrop={(e) => onFolderDrop(node.path, e)}
+            >
               <button
                 type="button"
                 className="ml-vault-tree__twist"
@@ -273,6 +296,9 @@ function VaultBrowserTree({
                     key={note.id}
                     className={`ml-vault-tree-note${selectedNoteId === note.id ? ' is-active' : ''}${splitPickId === note.id ? ' is-split-pick' : ''}`}
                     style={{ marginInlineStart: 12 }}
+                    draggable={!isWelcomeSparkNote(note)}
+                    onDragStart={(e) => onNoteDragStart(note.id, e)}
+                    onDragEnd={onNoteDragEnd}
                   >
                     <button
                       type="button"
@@ -314,6 +340,7 @@ function VaultBrowserTree({
                     selectedNoteId={selectedNoteId}
                     splitPickId={splitPickId}
                     collapsed={collapsed}
+                    dropTarget={dropTarget}
                     onToggle={onToggle}
                     onSelectFolder={onSelectFolder}
                     onOpenNote={onOpenNote}
@@ -321,6 +348,11 @@ function VaultBrowserTree({
                     onNewChild={onNewChild}
                     onDeleteFolder={onDeleteFolder}
                     noteMenuItems={noteMenuItems}
+                    onNoteDragStart={onNoteDragStart}
+                    onNoteDragEnd={onNoteDragEnd}
+                    onFolderDragOver={onFolderDragOver}
+                    onFolderDragLeave={onFolderDragLeave}
+                    onFolderDrop={onFolderDrop}
                     depth={depth + 1}
                   />
                 ) : null}
@@ -385,12 +417,14 @@ export function NotesPage(): React.JSX.Element {
   const setFolderIcon = useNotesStore((s) => s.setFolderIcon)
   const saveFolderIconDataUrl = useNotesStore((s) => s.saveFolderIconDataUrl)
   const chooseVault = useNotesStore((s) => s.chooseVault)
+  const importScan = useNotesStore((s) => s.importScan)
   const revealVault = useNotesStore((s) => s.revealVault)
 
   const selected = useMemo(
     () => notes.find((n) => n.id === selectedId) ?? null,
     [notes, selectedId]
   )
+  const welcomeReadOnly = Boolean(selected && isWelcomeSparkNote(selected))
   const secondary = useMemo(
     () => notes.find((n) => n.id === secondaryId) ?? null,
     [notes, secondaryId]
@@ -434,6 +468,11 @@ export function NotesPage(): React.JSX.Element {
   const [splitPickId, setSplitPickId] = useState<string | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState(readSidebarWidth)
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(() => new Set())
+  const [importOpen, setImportOpen] = useState(false)
+  const [importScanResult, setImportScanResult] = useState<import('@shared/types/notes').VaultImportScanResult | null>(
+    null
+  )
+  const [noteDropTarget, setNoteDropTarget] = useState<string | null>(null)
   const sidebarResizeRef = useRef<{ startX: number; startW: number } | null>(null)
 
   useEffect(() => {
@@ -480,13 +519,70 @@ export function NotesPage(): React.JSX.Element {
 
   async function moveNoteToFolder(noteId: string, folder: string): Promise<void> {
     const note = notes.find((n) => n.id === noteId)
-    if (!note) return
+    if (!note || isWelcomeSparkNote(note)) return
     if ((note.folder || '') === (folder || '')) return
     await updateNote(noteId, { folder })
     message.success(t('notes.movedToFolder'))
   }
 
+  async function startImportFromFolder(): Promise<void> {
+    const res = await importScan()
+    if (!res.ok || res.canceled) return
+    setImportScanResult(res)
+    setImportOpen(true)
+  }
+
+  async function rescanImportFolder(): Promise<import('@shared/types/notes').VaultImportScanResult | null> {
+    const res = await importScan()
+    if (!res.ok || res.canceled) return null
+    setImportScanResult(res)
+    return res
+  }
+
+  function handleNoteDragStart(noteId: string, e: React.DragEvent): void {
+    const note = notes.find((n) => n.id === noteId)
+    if (!note || isWelcomeSparkNote(note)) {
+      e.preventDefault()
+      return
+    }
+    e.dataTransfer.setData(NOTE_DND_MIME, noteId)
+    e.dataTransfer.setData('text/plain', noteId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  function handleNoteDragEnd(): void {
+    setNoteDropTarget(null)
+  }
+
+  function handleFolderDragOver(folder: string, e: React.DragEvent): void {
+    const types = Array.from(e.dataTransfer.types)
+    if (!types.includes(NOTE_DND_MIME) && !types.includes('text/plain')) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setNoteDropTarget(folder)
+  }
+
+  function handleFolderDragLeave(folder: string, e: React.DragEvent): void {
+    const related = e.relatedTarget as Node | null
+    if (related && e.currentTarget.contains(related)) return
+    setNoteDropTarget((cur) => (cur === folder ? null : cur))
+  }
+
+  function handleFolderDrop(folder: string, e: React.DragEvent): void {
+    e.preventDefault()
+    e.stopPropagation()
+    setNoteDropTarget(null)
+    const noteId = e.dataTransfer.getData(NOTE_DND_MIME) || e.dataTransfer.getData('text/plain')
+    if (!noteId) return
+    void moveNoteToFolder(noteId, folder)
+  }
+
   function confirmDeleteNote(id: string): void {
+    const note = notes.find((n) => n.id === id)
+    if (note && isWelcomeSparkNote(note)) {
+      message.info(t('notes.welcomeReadOnlyHint'))
+      return
+    }
     Modal.confirm({
       title: t('notes.delete'),
       content: t('notes.deleteConfirm'),
@@ -503,6 +599,7 @@ export function NotesPage(): React.JSX.Element {
 
   function noteMenuItems(noteId: string) {
     const note = notes.find((n) => n.id === noteId)
+    const welcomeLocked = Boolean(note && isWelcomeSparkNote(note))
     const currentFolder = note?.folder ?? ''
     const items: Array<
       | {
@@ -513,32 +610,41 @@ export function NotesPage(): React.JSX.Element {
           children?: Array<{ key: string; label: string; disabled?: boolean; onClick?: () => void }>
         }
       | { type: 'divider' }
-    > = [
-      {
-        key: 'move',
-        label: t('notes.moveToFolder'),
-        children: [
+    > = welcomeLocked
+      ? [
           {
-            key: 'move-root',
-            label: t('notes.vaultRoot'),
-            disabled: currentFolder === '',
-            onClick: () => void moveNoteToFolder(noteId, '')
-          },
-          ...folderOptions.map((opt) => ({
-            key: `move-${opt.path}`,
-            label: opt.label,
-            disabled: currentFolder === opt.path,
-            onClick: () => void moveNoteToFolder(noteId, opt.path)
-          }))
+            key: 'select-split',
+            label:
+              splitPickId === noteId ? t('notes.split.clearPick') : t('notes.split.selectForSplit'),
+            onClick: () => setSplitPickId(splitPickId === noteId ? null : noteId)
+          }
         ]
-      },
-      {
-        key: 'select-split',
-        label:
-          splitPickId === noteId ? t('notes.split.clearPick') : t('notes.split.selectForSplit'),
-        onClick: () => setSplitPickId(splitPickId === noteId ? null : noteId)
-      }
-    ]
+      : [
+          {
+            key: 'move',
+            label: t('notes.moveToFolder'),
+            children: [
+              {
+                key: 'move-root',
+                label: t('notes.vaultRoot'),
+                disabled: currentFolder === '',
+                onClick: () => void moveNoteToFolder(noteId, '')
+              },
+              ...folderOptions.map((opt) => ({
+                key: `move-${opt.path}`,
+                label: opt.label,
+                disabled: currentFolder === opt.path,
+                onClick: () => void moveNoteToFolder(noteId, opt.path)
+              }))
+            ]
+          },
+          {
+            key: 'select-split',
+            label:
+              splitPickId === noteId ? t('notes.split.clearPick') : t('notes.split.selectForSplit'),
+            onClick: () => setSplitPickId(splitPickId === noteId ? null : noteId)
+          }
+        ]
     if (splitPickId && splitPickId !== noteId) {
       const leftTitle = splitPickNote?.title ?? t('notes.untitled')
       items.push({
@@ -561,13 +667,15 @@ export function NotesPage(): React.JSX.Element {
         }
       })
     }
-    items.push({ type: 'divider' })
-    items.push({
-      key: 'delete',
-      label: t('notes.delete'),
-      danger: true,
-      onClick: () => confirmDeleteNote(noteId)
-    })
+    if (!welcomeLocked) {
+      items.push({ type: 'divider' })
+      items.push({
+        key: 'delete',
+        label: t('notes.delete'),
+        danger: true,
+        onClick: () => confirmDeleteNote(noteId)
+      })
+    }
     return items
   }
 
@@ -579,10 +687,14 @@ export function NotesPage(): React.JSX.Element {
     }
     setDraftTitle(selected.title)
     setDraftBody(selected.body)
-  }, [selected?.id, selected?.updatedAt])
+    if (isWelcomeSparkNote(selected)) {
+      setEditorMode('preview')
+      setSurfaceMode('write')
+    }
+  }, [selected?.id, selected?.updatedAt, setEditorMode, setSurfaceMode])
 
   function scheduleSave(next: { title?: string; body?: string }): void {
-    if (!selected) return
+    if (!selected || isWelcomeSparkNote(selected)) return
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
       void updateNote(selected.id, next)
@@ -855,8 +967,14 @@ export function NotesPage(): React.JSX.Element {
       <header className="ml-vault__toolbar">
         <div className="ml-vault__toolbar-meta">
           <span className="ml-vault__path">{selected.path}</span>
+          {welcomeReadOnly ? (
+            <span className="ml-vault__readonly-badge" title={t('notes.welcomeReadOnlyHint')}>
+              {t('notes.welcomeReadOnly')}
+            </span>
+          ) : null}
         </div>
         <div className="ml-vault__toolbar-actions">
+          {!welcomeReadOnly ? (
           <div className="ml-vault-modegroup" role="toolbar" aria-label={t('notes.surface.write')}>
             {(
               [
@@ -911,6 +1029,15 @@ export function NotesPage(): React.JSX.Element {
               </Tooltip>
             ))}
           </div>
+          ) : (
+            <div className="ml-vault-modegroup" role="toolbar" aria-label={t('notes.mode.previewHint')}>
+              <Tooltip title={t('notes.welcomeReadOnlyHint')}>
+                <button type="button" className="ml-vault-modegroup__btn is-active" aria-label={t('notes.mode.previewHint')}>
+                  <Icon icon={Eye} variant="action" />
+                </button>
+              </Tooltip>
+            </div>
+          )}
           <div className="ml-vault__chrome-group ml-vault__chrome-group--compact">
             <Dropdown
               menu={{
@@ -1028,6 +1155,7 @@ export function NotesPage(): React.JSX.Element {
                 type="button"
                 className={`ml-vault-chip ml-vault-chip--icon${selected.remindAt ? ' is-active' : ''}`}
                 onClick={() => setReminderOpen(true)}
+                disabled={welcomeReadOnly}
               >
                 <Icon icon={Bell} variant="action" />
               </button>
@@ -1041,11 +1169,13 @@ export function NotesPage(): React.JSX.Element {
                 <Icon icon={Pin} variant="action" />
               </button>
             </Tooltip>
-            <Popconfirm title={t('notes.deleteConfirm')} onConfirm={() => void removeNote(selected.id)}>
-              <button type="button" className="ml-vault-chip ml-vault-chip--icon ml-vault-chip--danger">
-                <Icon icon={Trash2} variant="action" />
-              </button>
-            </Popconfirm>
+            {!welcomeReadOnly ? (
+              <Popconfirm title={t('notes.deleteConfirm')} onConfirm={() => void removeNote(selected.id)}>
+                <button type="button" className="ml-vault-chip ml-vault-chip--icon ml-vault-chip--danger">
+                  <Icon icon={Trash2} variant="action" />
+                </button>
+              </Popconfirm>
+            ) : null}
           </div>
         </div>
       </header>
@@ -1061,20 +1191,23 @@ export function NotesPage(): React.JSX.Element {
           noteId={selected.id}
           title={draftTitle}
           body={draftBody}
-          mode={editorMode}
+          mode={welcomeReadOnly ? 'preview' : editorMode}
           notes={notes}
           themeId={themeId}
           paperStyle={paperStyle}
           paperWidth={paperWidth}
           paperZoom={paperZoom}
           paperExtend={paperExtend}
-          surfaceMode={surfaceMode}
+          surfaceMode={welcomeReadOnly ? 'write' : surfaceMode}
           vaultPath={vault?.vaultPath}
+          readOnly={welcomeReadOnly}
           onTitleChange={(title) => {
+            if (welcomeReadOnly) return
             setDraftTitle(title)
             scheduleSave({ title })
           }}
           onBodyChange={(body) => {
+            if (welcomeReadOnly) return
             setDraftBody(body)
             scheduleSave({ body })
           }}
@@ -1151,6 +1284,15 @@ export function NotesPage(): React.JSX.Element {
                   <Icon icon={FolderPlus} variant="micro" />
                 </button>
               </Tooltip>
+              <Tooltip title={t('notes.import.action')}>
+                <button
+                  type="button"
+                  className="ml-vault-icon-btn"
+                  onClick={() => void startImportFromFolder()}
+                >
+                  <Icon icon={FileDown} variant="micro" />
+                </button>
+              </Tooltip>
               <Tooltip title={t('notes.chooseVault')}>
                 <button type="button" className="ml-vault-icon-btn" onClick={() => void chooseVault()}>
                   <Icon icon={FolderOpen} variant="micro" />
@@ -1169,11 +1311,15 @@ export function NotesPage(): React.JSX.Element {
           <div className="ml-vault-browser">
             <button
               type="button"
-              className={`ml-vault-tree__row ml-vault-tree__all${selectedFolder === null ? ' is-active' : ''}`}
+              className={`ml-vault-tree__row ml-vault-tree__all${selectedFolder === null ? ' is-active' : ''}${noteDropTarget === '' ? ' is-drop-target' : ''}`}
+              title={t('notes.dropToRootHint')}
               onClick={() => {
                 setSelectedFolder(null)
                 setSelectedTag(null)
               }}
+              onDragOver={(e) => handleFolderDragOver('', e)}
+              onDragLeave={(e) => handleFolderDragLeave('', e)}
+              onDrop={(e) => handleFolderDrop('', e)}
             >
               <span className="ml-vault-tree__item is-active">
                 <span className="ml-vault-tree__name">{t('notes.allNotes')}</span>
@@ -1187,6 +1333,9 @@ export function NotesPage(): React.JSX.Element {
                   <div
                     key={note.id}
                     className={`ml-vault-tree-note${selectedId === note.id ? ' is-active' : ''}${splitPickId === note.id ? ' is-split-pick' : ''}`}
+                    draggable={!isWelcomeSparkNote(note)}
+                    onDragStart={(e) => handleNoteDragStart(note.id, e)}
+                    onDragEnd={handleNoteDragEnd}
                   >
                     <button
                       type="button"
@@ -1231,6 +1380,7 @@ export function NotesPage(): React.JSX.Element {
                 selectedNoteId={selectedId}
                 splitPickId={splitPickId}
                 collapsed={collapsedFolders}
+                dropTarget={noteDropTarget}
                 onToggle={toggleFolderCollapsed}
                 onSelectFolder={(path) => {
                   setSelectedFolder(path)
@@ -1244,6 +1394,11 @@ export function NotesPage(): React.JSX.Element {
                 onNewChild={(parent) => openNewFolderModal(parent)}
                 onDeleteFolder={confirmDeleteFolder}
                 noteMenuItems={noteMenuItems}
+                onNoteDragStart={handleNoteDragStart}
+                onNoteDragEnd={handleNoteDragEnd}
+                onFolderDragOver={handleFolderDragOver}
+                onFolderDragLeave={handleFolderDragLeave}
+                onFolderDrop={handleFolderDrop}
               />
             )}
           </div>
@@ -1568,6 +1723,16 @@ export function NotesPage(): React.JSX.Element {
           />
         </div>
       </Modal>
+
+      <SparksImportModal
+        open={importOpen}
+        scan={importScanResult}
+        onClose={() => {
+          setImportOpen(false)
+          setImportScanResult(null)
+        }}
+        onRescan={rescanImportFolder}
+      />
 
       <Modal
         title={t('notes.editFolder')}

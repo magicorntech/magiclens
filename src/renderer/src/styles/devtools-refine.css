@@ -45,7 +45,7 @@
 
 .ml-sidebar-brand-text {
   font-size: 14px !important;
-  font-weight: 650 !important;
+  font-weight: 550 !important;
 }
 
 .ml-sidebar-actions {
@@ -120,7 +120,7 @@
 
 .ml-sidebar-section-chrome--rich .ml-sidebar-section-chrome__label {
   font-size: 11px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   letter-spacing: 0.02em !important;
   text-transform: uppercase !important;
   color: var(--ml-sidebar-muted) !important;
@@ -159,7 +159,7 @@
 
 .ml-nav-item__title {
   font-size: 13px !important;
-  font-weight: 500 !important;
+  font-weight: 450 !important;
 }
 
 .ml-ws-group {
@@ -178,7 +178,7 @@
 
 .ml-ws-group__name {
   font-size: 12px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   letter-spacing: 0.01em !important;
   text-transform: none !important;
   color: var(--ml-sidebar-text) !important;
@@ -273,32 +273,42 @@
 .ml-ws-group {
   background: transparent !important;
   border: none !important;
-  border-radius: 0 !important;
-  padding: 2px 0 4px !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
   margin: 0 !important;
   transition: none !important;
+  overflow: hidden !important;
 }
 
 .ml-ws-group + .ml-ws-group {
-  margin-top: 2px !important;
-  border-top: 1px solid color-mix(in srgb, var(--ml-sidebar-divider) 75%, transparent) !important;
-  padding-top: 6px !important;
+  margin-top: 8px !important;
+  border-top: none !important;
+  padding-top: 0 !important;
 }
 
 .ml-ws-group.is-expanded {
-  background: transparent !important;
-  padding: 2px 0 6px !important;
-  border-radius: 0 !important;
+  /* Soft inset panel — avoid hard dark-mode border lines on sidebar. */
+  background: color-mix(in srgb, var(--ml-sidebar-text) 4.5%, var(--ml-sidebar-bg)) !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  border: 1px solid color-mix(in srgb, var(--ml-sidebar-text) 7%, transparent) !important;
+  box-shadow: none !important;
 }
 
 .ml-ws-group.is-expanded + .ml-ws-group,
 .ml-ws-group + .ml-ws-group.is-expanded {
-  border-top-color: color-mix(in srgb, var(--ml-sidebar-divider) 75%, transparent) !important;
+  border-top-color: transparent !important;
 }
 
 .ml-ws-group__head {
   gap: 2px !important;
   min-width: 0;
+}
+
+.ml-ws-group.is-expanded .ml-ws-group__head {
+  padding: 4px 4px 4px 6px !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent) !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 2.5%, transparent) !important;
 }
 
 .ml-ws-group__toggle {
@@ -344,10 +354,18 @@
 
 .ml-ws-group__name {
   font-size: 12.5px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   letter-spacing: -0.01em !important;
   text-transform: none !important;
   color: var(--ml-sidebar-text) !important;
+}
+
+.ml-ws-group.is-expanded .ml-ws-group__name {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--ml-text-tertiary) !important;
 }
 
 .ml-ws-group__count {
@@ -356,9 +374,9 @@
   padding: 0 6px !important;
   border-radius: 999px !important;
   font-size: 10px !important;
-  font-weight: 600 !important;
-  color: var(--ml-sidebar-muted) !important;
-  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent) !important;
+  font-weight: 500 !important;
+  color: var(--ml-text-tertiary) !important;
+  background: color-mix(in srgb, var(--ml-text) 8%, transparent) !important;
 }
 
 .ml-ws-group__shortcut {
@@ -371,38 +389,118 @@
   width: 26px !important;
   height: 26px !important;
   border-radius: 6px !important;
-  opacity: 0;
-}
-
-.ml-ws-group__head:hover .ml-ws-group__menu,
-.ml-ws-group__head:focus-within .ml-ws-group__menu {
   opacity: 1;
+  color: var(--ml-text-tertiary) !important;
 }
 
 .ml-ws-group__list {
-  margin: 4px 0 0 10px !important;
-  padding: 2px 0 2px 10px !important;
+  margin: 0 !important;
+  padding: 4px !important;
   gap: 1px !important;
-  border-left: 1px solid color-mix(in srgb, var(--ml-sidebar-text) 10%, transparent) !important;
-  animation: none;
+  border-left: none !important;
+  border-radius: 0;
+  background: transparent !important;
+  animation: ml-ws-list-in 0.18s ease-out;
 }
 
-/* No hover fill on workspace nested cluster rows */
+@keyframes ml-ws-list-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Match hover flyout cluster rows */
+.ml-ws-group__list .ml-nav-item {
+  min-height: 32px !important;
+  padding: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: var(--ml-text) !important;
+}
+
+.ml-ws-group__list .ml-nav-item__open {
+  min-height: 32px !important;
+  gap: 10px !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+}
+
+.ml-ws-group__list .ml-nav-item__title {
+  font-size: 13px !important;
+  font-weight: 450 !important;
+  color: var(--ml-text) !important;
+}
+
+.ml-ws-group__list .ml-nav-item__meta {
+  display: none !important;
+}
+
+.ml-ws-group__list .ml-nav-item__menu {
+  opacity: 1 !important;
+  width: 26px !important;
+  height: 26px !important;
+  margin-right: 4px !important;
+  color: var(--ml-text-tertiary) !important;
+}
+
 .ml-ws-group__list .ml-nav-item--nested:not(.is-active):has(.ml-nav-item__open:hover),
 .ml-ws-group__list .ml-nav-item--nested:not(.is-active):hover {
-  background: transparent !important;
+  background: var(--ml-bg-spotlight) !important;
+}
+
+.ml-ws-group__list .ml-nav-item.is-active {
+  background: color-mix(in srgb, var(--ml-primary) 12%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.ml-ws-group__list .ml-nav-item.is-active .ml-nav-item__open {
+  box-shadow: none !important;
+}
+
+.ml-ws-group__list .ml-nav-item.is-active .ml-nav-item__title {
+  color: var(--ml-primary) !important;
+  font-weight: 500 !important;
+}
+
+.ml-ws-group__list .ml-nav-item.is-session-live .ml-nav-item__title,
+.ml-ws-group__list .ml-nav-item.is-fav-connected .ml-nav-item__title {
+  color: var(--ml-text) !important;
+  font-weight: 450 !important;
+}
+
+.ml-ws-group__list .ml-nav-item.is-active.is-session-live .ml-nav-item__title {
+  color: var(--ml-primary) !important;
+  font-weight: 500 !important;
+}
+
+.ml-ws-group__list .ml-nav-item.is-session-live:not(.is-active) {
+  background: color-mix(in srgb, var(--ml-success, #22c55e) 7%, transparent) !important;
 }
 
 .ml-ws-group__empty {
-  padding: 8px 6px !important;
-  font-size: 11.5px !important;
-  line-height: 1.35;
+  padding: 10px 12px !important;
+  font-size: 12px !important;
+  line-height: 1.4;
+  color: var(--ml-text-tertiary) !important;
 }
 
 .ml-sidebar-section--compact .ml-ws-rail-item {
   width: 34px;
   height: 34px;
   border-radius: 8px;
+}
+
+.ml-sidebar-section--compact .ml-sidebar-list--dock {
+  overflow: visible !important;
+}
+
+.ml-sidebar-section--compact.ml-sidebar-section--workspaces {
+  overflow: visible !important;
 }
 
 .ml-sidebar-section--compact .ml-ws-rail-item:hover {
@@ -466,15 +564,28 @@
   align-items: flex-end !important;
   flex: 1 1 auto !important;
   min-width: 0 !important;
-  gap: 6px !important;
-  padding: 6px 8px 0 !important;
+  gap: 5px !important;
+  padding: 6px 8px 0 0 !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
 }
 
+/* Match expanded resource menu width — do not shrink when sider collapses. */
+.ml-browser-tabs__list > *,
+.ml-browser-tabs__list .ml-browser-tab {
+  flex: 0 0 var(--ml-cluster-tab-width, 220px) !important;
+  width: var(--ml-cluster-tab-width, 220px) !important;
+  min-width: var(--ml-cluster-tab-width, 220px) !important;
+  max-width: var(--ml-cluster-tab-width, 220px) !important;
+  box-sizing: border-box !important;
+}
+
+.ml-browser-tabs__list > * {
+  display: flex !important;
+}
+
 .ml-browser-tab {
-  min-width: 128px !important;
-  max-width: 200px !important;
+  box-sizing: border-box !important;
   height: 40px !important;
   gap: 8px !important;
   padding: 0 10px 0 12px !important;
@@ -483,10 +594,8 @@
   border-radius: 10px 10px 0 0 !important;
   box-shadow: none !important;
   background: transparent !important;
-  font-size: 14px !important;
-  font-weight: 650 !important;
-  flex: 1 1 0 !important;
-  width: 0 !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
   overflow: hidden !important;
 }
 
@@ -508,7 +617,7 @@
   background: var(--ml-bg-container) !important;
   border-color: var(--ml-border-secondary) !important;
   color: var(--ml-text) !important;
-  font-weight: 700 !important;
+  font-weight: 550 !important;
   box-shadow: none !important;
   z-index: 2 !important;
   margin-bottom: -1px !important;
@@ -537,7 +646,7 @@
 
 .ml-browser-tab__label {
   font-weight: inherit !important;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.005em;
   flex: 1 1 auto !important;
   min-width: 0 !important;
   overflow: hidden !important;
@@ -547,16 +656,18 @@
 
 .ml-browser-tabs__actions {
   position: relative;
-  z-index: 6;
+  z-index: 10;
   height: 52px !important;
   align-self: stretch !important;
   flex: 0 0 auto !important;
   flex-shrink: 0 !important;
-  padding: 0 10px 0 8px !important;
+  padding: 0 12px 0 10px !important;
   margin-left: 0 !important;
   border-left: 1px solid var(--ml-border-secondary) !important;
   background: var(--ml-bg-elevated) !important;
   overflow: visible !important;
+  /* Keep chrome icons above scrolling tabs */
+  box-shadow: -8px 0 12px -8px color-mix(in srgb, var(--ml-bg-elevated) 90%, transparent);
 }
 
 .ml-chrome-actions,
@@ -726,6 +837,11 @@
 }
 
 /* —— Resource toolbar: single row —— */
+/* Content flush to the window edges — no left/right gutters. */
+.resource-kind-tabs-root {
+  --ml-resource-inline-pad: 0px;
+}
+
 .ml-resource-page {
   padding: 0 var(--ml-resource-inline-pad, 16px) !important;
 }
@@ -750,11 +866,11 @@
   padding: 0 !important;
   box-sizing: border-box !important;
   background: var(--ml-bg-elevated) !important;
-  border-radius: 8px 8px 0 0 !important;
+  border-radius: 0 !important;
 }
 
 .ml-resource-tab-bar--pane {
-  --ml-resource-inline-pad: 8px !important;
+  --ml-resource-inline-pad: 0px !important;
 }
 
 .ml-resource-toolbar {
@@ -764,7 +880,8 @@
   gap: 12px !important;
   min-height: var(--ml-control-h) !important;
   height: auto !important;
-  padding: 8px 0 !important;
+  /* Page gutters are gone — keep a small inset so controls don't touch the edges. */
+  padding: 8px 8px !important;
   margin: 0 !important;
   background: var(--ml-bg-container) !important;
   box-shadow: inset 0 -1px 0 var(--ml-border-secondary) !important;
@@ -1036,14 +1153,19 @@
   }
 }
 
-/* —— Cluster tabs: flush with sidebar edge (= content column start) —— */
+/* —— Cluster tabs: clear left rail + macOS traffic lights —— */
 .ml-cluster-tab-strip--browser,
 .ml-cluster-tab-strip--browser.ml-cluster-tab-strip--traffic {
-  padding-left: var(--ml-left-sidebar-width, 236px) !important;
+  /* When left sidebar collapses, still clear close/minimize/maximize. */
+  padding-left: max(var(--ml-left-sidebar-width, 236px), 88px) !important;
+}
+
+.ml-cluster-tab-strip--browser .ml-browser-tabs {
+  padding: 0 !important;
 }
 
 .ml-cluster-tab-strip--browser .ml-browser-tabs__list {
-  padding-left: 0 !important;
+  padding: 6px 8px 0 0 !important;
 }
 
 /* —— Theme toggle: same footprint as other chrome icons —— */
@@ -1137,8 +1259,8 @@
 
 .ml-sidebar-brand-text {
   font-size: 14px !important;
-  font-weight: 650 !important;
-  letter-spacing: -0.025em !important;
+  font-weight: 550 !important;
+  letter-spacing: -0.02em !important;
   opacity: 0.95;
 }
 
@@ -1204,7 +1326,7 @@
 
 .ml-sidebar-hub .ml-sidebar-hub-btn-title {
   font-size: 12px !important;
-  font-weight: 550 !important;
+  font-weight: 450 !important;
 }
 
 .ml-sidebar-hub .ml-sidebar-hub-btn--vpn-connected {
@@ -1231,11 +1353,18 @@
 
 .ml-resource-nav-search {
   height: 30px !important;
-  margin: 0 8px 8px !important;
+  margin: 0 10px 10px !important;
   padding: 0 8px !important;
-  border-radius: 6px !important;
+  border-radius: 7px !important;
   background: color-mix(in srgb, var(--ml-text) 4%, transparent) !important;
   border: 1px solid var(--ml-border-secondary);
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ml-resource-nav-search:focus-within {
+  border-color: color-mix(in srgb, var(--ml-primary) 45%, var(--ml-border-secondary));
+  background: var(--ml-bg-container) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ml-primary) 8%, transparent);
 }
 
 .ml-resource-nav-search-icon {
@@ -1253,7 +1382,7 @@
 
 .ml-resource-nav-group,
 .ml-resource-nav-standalone {
-  margin-bottom: 10px !important;
+  margin-bottom: 6px !important;
 }
 
 .ml-resource-nav-group-head {
@@ -1262,9 +1391,13 @@
   gap: 8px !important;
   border-radius: 6px !important;
   font-size: 12px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   letter-spacing: 0.01em;
-  color: var(--ml-text-secondary) !important;
+  color: var(--ml-text) !important;
+}
+
+.ml-resource-nav-group-head:hover:not(.is-active) {
+  color: var(--ml-text) !important;
 }
 
 .ml-resource-nav-group-head.is-active {
@@ -1280,24 +1413,32 @@
 
 .ml-resource-nav-group-title {
   font-size: 12px !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
+}
+
+/* Children indented under the group icon with a subtle tree rail. */
+.ml-resource-nav-group-children-inner {
+  gap: 1px !important;
+  margin-left: 15px !important;
+  padding: 3px 0 5px 7px !important;
+  border-left: 1px solid color-mix(in srgb, var(--ml-border-secondary) 80%, transparent);
 }
 
 .ml-resource-nav-item {
   min-height: 28px !important;
-  padding: 3px 8px 3px 16px !important;
+  padding: 3px 8px 3px 8px !important;
   gap: 8px !important;
   border-radius: 6px !important;
   font-size: 12.5px !important;
-  font-weight: 450 !important;
-  color: var(--ml-text-secondary) !important;
+  font-weight: 400 !important;
+  color: var(--ml-text) !important;
 }
 
 .ml-resource-nav-item--parent {
   padding-left: 8px !important;
   min-height: 30px !important;
   font-size: 12.5px !important;
-  font-weight: 500 !important;
+  font-weight: 450 !important;
   color: var(--ml-text) !important;
 }
 
@@ -1329,14 +1470,29 @@
 
 .ml-resource-nav-item.is-active.ml-resource-nav-item--child {
   color: var(--ml-primary) !important;
-  font-weight: 500 !important;
-  background: color-mix(in srgb, var(--ml-primary) 6%, transparent) !important;
+  font-weight: 450 !important;
+  background: color-mix(in srgb, var(--ml-primary) 9%, transparent) !important;
+}
+
+.ml-resource-nav-item--child:hover:not(.is-active) {
+  background: color-mix(in srgb, var(--ml-text) 5%, transparent) !important;
+  color: var(--ml-text) !important;
 }
 
 .ml-resource-nav-chevron {
-  opacity: 0.45;
+  opacity: 0.3;
   width: 14px !important;
   height: 14px !important;
+}
+
+.ml-resource-nav-group-head:hover .ml-resource-nav-chevron,
+.ml-resource-nav-group-head.is-open .ml-resource-nav-chevron {
+  opacity: 0.6;
+}
+
+.ml-resource-nav-favorites-empty {
+  padding: 4px 8px !important;
+  font-size: 11.5px !important;
 }
 
 .ml-resource-nav--collapsed .ml-resource-nav-item,

@@ -20,6 +20,8 @@ import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
 import { useResourceWatchDisplayStore } from '../../stores/resourceWatchDisplayStore'
 
 const TERMINAL_LABEL_MIN_WIDTH = 720
+const RESOURCE_SIDER_WIDTH = 220
+const RESOURCE_SIDER_COLLAPSED_WIDTH = 56
 
 function useCompactToolbar(ref: RefObject<HTMLElement | null>): boolean {
   const [compact, setCompact] = useState(true)
@@ -78,6 +80,23 @@ function AppShellInner({
   const allowSidePanel = canUseSplitLayouts(layoutMode)
   const resourceMenuCollapsed = useClusterStore((s) => s.resourceMenuCollapsed)
   const setResourceMenuCollapsed = useClusterStore((s) => s.setResourceMenuCollapsed)
+
+  // Cluster tabs always match expanded resource menu width (not the collapsed rail).
+  useEffect(() => {
+    document.documentElement.style.setProperty('--ml-cluster-tab-width', `${RESOURCE_SIDER_WIDTH}px`)
+    const siderPx = `${
+      overlayResourceNav
+        ? RESOURCE_SIDER_WIDTH
+        : resourceMenuCollapsed
+          ? RESOURCE_SIDER_COLLAPSED_WIDTH
+          : RESOURCE_SIDER_WIDTH
+    }px`
+    document.documentElement.style.setProperty('--ml-resource-sider-width', siderPx)
+    return () => {
+      document.documentElement.style.removeProperty('--ml-cluster-tab-width')
+      document.documentElement.style.removeProperty('--ml-resource-sider-width')
+    }
+  }, [overlayResourceNav, resourceMenuCollapsed])
   const splitView = useClusterStore((s) => s.splitView)
   const utilityPanelPlacement = useDisplaySettingsStore((s) => s.utilityPanelPlacement)
   const headerInnerRef = useRef<HTMLDivElement>(null)
@@ -250,11 +269,11 @@ function AppShellInner({
       <Layout className="ml-workspace-body">
         {!overlayResourceNav && (
           <Sider
-            width={220}
+            width={RESOURCE_SIDER_WIDTH}
             collapsible
             collapsed={resourceMenuCollapsed}
             onCollapse={setResourceMenuCollapsed}
-            collapsedWidth={56}
+            collapsedWidth={RESOURCE_SIDER_COLLAPSED_WIDTH}
             className="ml-resource-sider"
             theme="light"
           >

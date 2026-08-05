@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Alert, Button, Segmented, Spin, Splitter, Tooltip, Typography, message } from 'antd'
-import { AppWindow, RefreshCw, Waypoints } from 'lucide-react'
+import { AppWindow, ChevronLeft, ChevronRight, RefreshCw, Waypoints } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { isAllNamespaces, isNoNamespaceSelection } from '@shared/namespaceSelection'
 import type { TopologyApplication, TopologyNode } from '@shared/types/topology'
 import { Icon } from '../ui/Icon'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
@@ -22,6 +23,18 @@ import './topology.css'
 
 type Mode = 'graph' | 'apps' | 'resources'
 
+const INSIGHTS_OPEN_KEY = 'ml-topology-insights-open'
+
+function loadInsightsOpen(): boolean {
+  try {
+    const raw = localStorage.getItem(INSIGHTS_OPEN_KEY)
+    if (raw === null) return true
+    return raw === '1'
+  } catch {
+    return true
+  }
+}
+
 interface TopologyPageProps {
   clusterId: string
   namespace: string
@@ -36,11 +49,29 @@ export function TopologyPage({
   popout = false
 }: TopologyPageProps): React.JSX.Element {
   const { t } = useTranslation()
-  const needsNamespace = !namespace
-  const { data, loading, error, watchStatus, refresh } = useTopologyGraph(clusterId, namespace)
+  // Topology is scoped to concrete namespace(s) only — All namespaces is too heavy.
+  const needsNamespace = isNoNamespaceSelection(namespace) || isAllNamespaces(namespace)
+  const topologyNamespace = needsNamespace ? '' : namespace
+  const { data, loading, error, watchStatus, refresh } = useTopologyGraph(
+    clusterId,
+    topologyNamespace
+  )
   const [mode, setMode] = useState<Mode>('graph')
   const [selected, setSelected] = useState<TopologyNode | null>(null)
   const [focusNodeIds, setFocusNodeIds] = useState<string[] | undefined>()
+  const [insightsOpen, setInsightsOpen] = useState(loadInsightsOpen)
+
+  function toggleInsights(): void {
+    setInsightsOpen((open) => {
+      const next = !open
+      try {
+        localStorage.setItem(INSIGHTS_OPEN_KEY, next ? '1' : '0')
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }
   const bottomPanel = useBottomPanelOptional()
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
   const layoutMode = useLayoutMode()
@@ -80,8 +111,9 @@ export function TopologyPage({
   }
 
   function handleOpenWindow(): void {
+    if (!topologyNamespace) return
     void window.api.topology
-      .openWindow({ clusterId, namespace })
+      .openWindow({ clusterId, namespace: topologyNamespace })
       .then((res) => {
         if ('error' in res) message.error(res.error)
       })
@@ -120,28 +152,57 @@ export function TopologyPage({
       </div>
 
       {mode === 'graph' && !needsNamespace && !showSidebarDetail ? (
-        <aside className="ml-topo-page__insights">
-          <Typography.Text strong>{t('topology.insights')}</Typography.Text>
-          {insights.length === 0 ? (
-            <Typography.Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>
-              {t('topology.noInsights')}
-            </Typography.Paragraph>
-          ) : (
-            insights.map((insight) => (
-              <div
-                key={insight.id}
-                className={`ml-topo-insight ml-topo-insight--${insight.severity}`}
-                onClick={() => {
-                  setFocusNodeIds(insight.nodeIds)
-                  const n = data?.nodes.find((x) => insight.nodeIds?.includes(x.id))
-                  if (n) selectNode(n)
-                }}
+        <aside
+          className={`ml-topo-page__insights${insightsOpen ? ' is-open' : ' is-collapsed'}`}
+          aria-label={t('topology.insights')}
+        >
+          <div className="ml-topo-page__insights-head">
+            {insightsOpen ? (
+              <Typography.Text strong className="ml-topo-page__insights-title">
+                {t('topology.insights')}
+                {insights.length > 0 ? (
+                  <span className="ml-topo-page__insights-count">{insights.length}</span>
+                ) : null}
+              </Typography.Text>
+            ) : (
+              <span className="ml-topo-page__insights-rail-label">{t('topology.insights')}</span>
+            )}
+            <Tooltip title={insightsOpen ? t('topology.hideInsights') : t('topology.showInsights')}>
+              <button
+                type="button"
+                className="ml-topo-page__insights-toggle"
+                aria-expanded={insightsOpen}
+                aria-label={insightsOpen ? t('topology.hideInsights') : t('topology.showInsights')}
+                onClick={toggleInsights}
               >
-                <span className="ml-topo-insight__title">{insight.title}</span>
-                <span className="ml-topo-insight__detail">{insight.detail}</span>
-              </div>
-            ))
-          )}
+                <Icon icon={insightsOpen ? ChevronRight : ChevronLeft} variant="toolbar" />
+              </button>
+            </Tooltip>
+          </div>
+          {insightsOpen ? (
+            <div className="ml-topo-page__insights-body">
+              {insights.length === 0 ? (
+                <Typography.Paragraph type="secondary" className="ml-topo-page__insights-empty">
+                  {t('topology.noInsights')}
+                </Typography.Paragraph>
+              ) : (
+                insights.map((insight) => (
+                  <div
+                    key={insight.id}
+                    className={`ml-topo-insight ml-topo-insight--${insight.severity}`}
+                    onClick={() => {
+                      setFocusNodeIds(insight.nodeIds)
+                      const n = data?.nodes.find((x) => insight.nodeIds?.includes(x.id))
+                      if (n) selectNode(n)
+                    }}
+                  >
+                    <span className="ml-topo-insight__title">{insight.title}</span>
+                    <span className="ml-topo-insight__detail">{insight.detail}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : null}
         </aside>
       ) : null}
     </div>
@@ -193,8 +254,9 @@ export function TopologyPage({
                 <div className="ml-topo-page__ns">
                   <NamespaceSelector
                     clusterId={clusterId}
-                    value={namespace}
+                    value={needsNamespace ? '' : namespace}
                     onChange={onNamespaceChange}
+                    allowAllNamespaces={false}
                   />
                 </div>
               ) : null}

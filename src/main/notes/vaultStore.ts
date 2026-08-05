@@ -23,9 +23,12 @@ import type {
   NoteScope,
   ResourceNote,
   VaultFolderNode,
+  VaultImportCandidate,
+  VaultImportFileResult,
   VaultStatus
 } from '@shared/types/notes'
 import { isReminderDue, isReminderUpcoming, normalizeReminderSchedule } from '@shared/reminderSchedule'
+import { isWelcomeSparkNote } from '@shared/notes/welcomeSpark'
 import { parseNoteFile, serializeNoteFile, slugifyTitle } from './frontmatter'
 import { sparksMediaUrl } from './mediaProtocol'
 
@@ -690,16 +693,26 @@ function applyPatch(prev: ResourceNote, patch: NotePatch): ResourceNote {
 export function updateNote(id: string, patch: NotePatch): ResourceNote | undefined {
   const prev = getNote(id)
   if (!prev) return undefined
-  const next = applyPatch(prev, patch)
+
+  // Welcome spark is a seeded guide — only pin toggles are allowed.
+  let effectivePatch = patch
+  if (isWelcomeSparkNote(prev)) {
+    if (patch.pinned === undefined) return prev
+    effectivePatch = { pinned: patch.pinned }
+  }
+
+  const next = applyPatch(prev, effectivePatch)
   const root = ensureVault()
   const oldAbs = join(root, ...prev.path.split('/'))
 
-  const folderChanged = normalizeFolder(patch.folder) !== prev.folder && patch.folder !== undefined
-  const titleChanged = patch.title !== undefined && patch.title.trim() !== prev.title
+  const folderChanged =
+    normalizeFolder(effectivePatch.folder) !== prev.folder && effectivePatch.folder !== undefined
+  const titleChanged =
+    effectivePatch.title !== undefined && effectivePatch.title.trim() !== prev.title
   let nextPath = prev.path
 
   if (folderChanged || titleChanged) {
-    const folder = folderChanged ? normalizeFolder(patch.folder) : prev.folder
+    const folder = folderChanged ? normalizeFolder(effectivePatch.folder) : prev.folder
     const abs = uniqueFilePath(root, folder, next.title, prev.id)
     nextPath = toPosix(relative(root, abs))
     next.path = nextPath
@@ -724,6 +737,7 @@ export function updateNoteAnywhere(id: string, patch: NotePatch): ResourceNote |
 export function removeNote(id: string): boolean {
   const note = getNote(id)
   if (!note) return false
+  if (isWelcomeSparkNote(note)) return false
   const root = ensureVault()
   const abs = join(root, ...note.path.split('/'))
   if (!existsSync(abs)) {
@@ -1111,4 +1125,86 @@ export function moveVaultRoot(nextPath: string): void {
     }
   }
   setVaultPath(next)
+}
+
+function isPathUnder(absPath: string, root: string): boolean {
+  const rel = relative(resolve(root), resolve(absPath))
+  return rel === '' || (!rel.startsWith('..') && !rel.includes(`..${sep}`))
+}
+
+export function scanMarkdownForImport(sourceRoot: string): VaultImportCandidate[] {
+  const root = resolve(sourceRoot)
+  if (!existsSync(root) || !statSync(root).isDirectory()) return []
+  const files: string[] = []
+  walkMarkdownFiles(root, root, files)
+  const out: VaultImportCandidate[] = []
+  for (const abs of files) {
+    const rel = toPosix(relative(root, abs))
+    if (!rel || rel.startsWith('..')) continue
+    let title = basename(abs, '.md')
+    try {
+      const raw = readFileSync(abs, 'utf8')
+      const { meta } = parseNoteFile(raw)
+      if (typeof meta.title === 'string' && meta.title.trim()) title = meta.title.trim()
+    } catch {
+      /* keep filename title */
+    }
+    out.push({
+      relativePath: rel,
+      title,
+      folder: normalizeFolder(dirname(rel).replace(/^\.$/, ''))
+    })
+  }
+  return out.sort((a, b) => a.relativePath.localeCompare(b.relativePath))
+}
+
+export function importMarkdownIntoVault(
+  sourceRoot: string,
+  relativePath: string
+): VaultImportFileResult {
+  const vaultRoot = ensureVault()
+  const sourceResolved = resolve(sourceRoot)
+  const relPosix = toPosix(relativePath).replace(/^\/+/, '').replace(/\.\./g, '')
+  if (!relPosix || !relPosix.toLowerCase().endsWith('.md')) {
+    return { ok: false, relativePath, error: 'invalid_path' }
+  }
+  const sourceAbs = resolve(join(sourceResolved, ...relPosix.split('/')))
+  if (!isPathUnder(sourceAbs, sourceResolved) || sourceAbs === sourceResolved) {
+    return { ok: false, relativePath: relPosix, error: 'invalid_path' }
+  }
+  if (!existsSync(sourceAbs) || !statSync(sourceAbs).isFile()) {
+    return { ok: false, relativePath: relPosix, error: 'missing' }
+  }
+  if (isPathUnder(sourceAbs, vaultRoot)) {
+    return { ok: false, relativePath: relPosix, error: 'already_in_vault' }
+  }
+
+  try {
+    const raw = readFileSync(sourceAbs, 'utf8')
+    const { meta, body } = parseNoteFile(raw)
+    const titleFromFile = basename(sourceAbs, '.md')
+    const title =
+      typeof meta.title === 'string' && meta.title.trim() ? meta.title.trim() : titleFromFile
+    const folder = normalizeFolder(dirname(relPosix).replace(/^\.$/, ''))
+    const note = createNote({
+      title,
+      body,
+      folder: folder || undefined,
+      tags: Array.isArray(meta.tags) ? meta.tags.map(String).filter(Boolean) : [],
+      scope: meta.scope ?? 'global',
+      clusterId: typeof meta.clusterId === 'string' ? meta.clusterId : undefined,
+      workspaceId: typeof meta.workspaceId === 'string' ? meta.workspaceId : undefined,
+      resourceKind: typeof meta.resourceKind === 'string' ? meta.resourceKind : undefined,
+      namespace: typeof meta.namespace === 'string' ? meta.namespace : undefined,
+      resourceName: typeof meta.resourceName === 'string' ? meta.resourceName : undefined,
+      pinned: Boolean(meta.pinned)
+    })
+    return { ok: true, relativePath: relPosix, note }
+  } catch (err) {
+    return {
+      ok: false,
+      relativePath: relPosix,
+      error: err instanceof Error ? err.message : 'import_failed'
+    }
+  }
 }

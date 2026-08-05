@@ -353,28 +353,68 @@ export async function getPodMetrics(
   return { metricsAvailable: false, containers: [], totalCpuUsageCores: 0, totalMemoryUsageBytes: 0 }
 }
 
-export async function getNamespacePodMetrics(
-  clients: ClusterClients,
-  clusterId: string,
-  namespace: string
-): Promise<NamespacePodMetricsResponse> {
-  try {
-    const podMetrics = await clients.metrics.getPodMetrics(namespace)
-    const pods = podMetrics.items.map((item) => {
+type PodMetricsListItems = Awaited<ReturnType<ClusterClients['metrics']['getPodMetrics']>>['items']
+
+function toNamespacePodMetricItems(
+  items: PodMetricsListItems,
+  fallbackNamespace: string
+): NamespacePodMetricsResponse['pods'] {
+  return items
+    .map((item) => {
       const containers = item.containers.map((c) => ({
-        name: c.name,
         cpuUsageCores: parseCpuQuantity(c.usage.cpu),
         memoryUsageBytes: parseMemoryQuantity(c.usage.memory)
       }))
       return {
         podName: item.metadata?.name ?? '',
+        namespace: item.metadata?.namespace ?? fallbackNamespace,
         cpuUsageCores: containers.reduce((sum, c) => sum + c.cpuUsageCores, 0),
         memoryUsageBytes: containers.reduce((sum, c) => sum + c.memoryUsageBytes, 0)
       }
     })
-    return { metricsAvailable: true, pods: pods.filter((p) => p.podName) }
+    .filter((p) => p.podName)
+}
+
+/** Per-pod usage for one namespace, or the whole cluster in a single call when namespace is 'ALL'. */
+export async function getNamespacePodMetrics(
+  clients: ClusterClients,
+  clusterId: string,
+  namespace: string
+): Promise<NamespacePodMetricsResponse> {
+  const allNamespaces = namespace === 'ALL'
+  try {
+    const podMetrics = allNamespaces
+      ? await clients.metrics.getPodMetrics()
+      : await clients.metrics.getPodMetrics(namespace)
+    return {
+      metricsAvailable: true,
+      pods: toNamespacePodMetricItems(podMetrics.items, allNamespaces ? '' : namespace)
+    }
   } catch {
-    // fall through to Prometheus
+    // fall through
+  }
+
+  if (allNamespaces) {
+    // Cluster-scope pod metrics can be forbidden by RBAC even when per-namespace
+    // reads are allowed — aggregate namespace by namespace as a fallback.
+    try {
+      const nsList = await clients.core.listNamespace()
+      const names = nsList.items
+        .map((ns) => ns.metadata?.name)
+        .filter((name): name is string => !!name)
+      const results = await Promise.allSettled(names.map((ns) => clients.metrics.getPodMetrics(ns)))
+      const pods: NamespacePodMetricsResponse['pods'] = []
+      let anySucceeded = false
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i]
+        if (result?.status !== 'fulfilled') continue
+        anySucceeded = true
+        pods.push(...toNamespacePodMetricItems(result.value.items, names[i] ?? ''))
+      }
+      if (anySucceeded) return { metricsAvailable: true, pods }
+    } catch {
+      // fall through to Prometheus
+    }
   }
 
   const fromProm = await namespacePodUsageFromPrometheus(clusterId, namespace)

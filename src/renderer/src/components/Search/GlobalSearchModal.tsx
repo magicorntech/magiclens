@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Empty, Input, Modal, Spin, Tag, Typography } from 'antd'
 import type { InputRef } from 'antd'
-import { Bell, Box, Cloud, FileText, HardDrive, Layers, Lock, Rocket, Search, Share2 } from 'lucide-react'
+import { Bell, Box, Cloud, FileText, HardDrive, Layers, Lock, Rocket, Search, Share2, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '../ui/Icon'
 import type { ResourceKind } from '@shared/resourceKinds'
@@ -17,15 +17,31 @@ import { matchesSearch } from '../../clusterFilter'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useGlobalSearchStore } from '../../stores/globalSearchStore'
+import { useNotesStore } from '../../stores/notesStore'
 import { shortcutParts } from '@shared/types/keyboardShortcuts'
 import { kindIcons } from '../../resourceConfig/kinds.renderer'
 
 const FLAT_ITEM_ATTR = 'data-global-search-index'
+const LOCAL_SEARCH_TYPES = new Set<GlobalSearchType>(['clusters', 'sparks'])
+
+function sparkSnippet(body: string, query: string): string | undefined {
+  const plain = body.replace(/\s+/g, ' ').trim()
+  if (!plain) return undefined
+  const needle = query.trim().toLowerCase()
+  if (!needle) return plain.slice(0, 100)
+  const idx = plain.toLowerCase().indexOf(needle)
+  if (idx < 0) return plain.slice(0, 100)
+  const start = Math.max(0, idx - 24)
+  const end = Math.min(plain.length, idx + needle.length + 56)
+  return `${start > 0 ? '…' : ''}${plain.slice(start, end)}${end < plain.length ? '…' : ''}`
+}
 
 function resultKey(result: GlobalSearchResult): string {
   switch (result.type) {
     case 'cluster':
       return `cluster:${result.clusterId}`
+    case 'spark':
+      return `spark:${result.noteId}`
     case 'builtin':
       return `builtin:${result.clusterId}:${result.kind}:${result.namespace}:${result.name}`
     case 'helm-release':
@@ -43,6 +59,8 @@ function groupIcon(type: GlobalSearchType): React.ReactNode {
   switch (type) {
     case 'clusters':
       return <Icon icon={Cloud} variant="detail" />
+    case 'sparks':
+      return <Icon icon={Sparkles} variant="detail" />
     case 'namespaces':
       return <Icon icon={Layers} variant="detail" />
     case 'pods':
@@ -90,11 +108,15 @@ export function GlobalSearchModal(): React.JSX.Element {
   const clusters = useClusterStore((s) => s.clusters)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
+  const setActiveView = useClusterStore((s) => s.setActiveView)
   const navigateToResource = useClusterStore((s) => s.navigateToResource)
   const navigateToHelmRelease = useClusterStore((s) => s.navigateToHelmRelease)
   const navigateToDynamicResource = useClusterStore((s) => s.navigateToDynamicResource)
   const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const openResourceKind = useClusterStore((s) => s.openResourceKind)
+  const notes = useNotesStore((s) => s.notes)
+  const selectNote = useNotesStore((s) => s.selectNote)
+  const setWorkspacePanel = useNotesStore((s) => s.setWorkspacePanel)
 
   const [apiGroups, setApiGroups] = useState<GlobalSearchGroup[]>([])
   const [loading, setLoading] = useState(false)
@@ -106,12 +128,15 @@ export function GlobalSearchModal(): React.JSX.Element {
   const parsed = useMemo(() => parseGlobalSearchQuery(query, typeFilter), [query, typeFilter])
 
   const searchTypes = useMemo(() => {
-    if (parsed.types) return parsed.types.filter((t) => t !== 'clusters')
-    if (typeFilter) return [typeFilter].filter((t) => t !== 'clusters')
-    return GLOBAL_SEARCH_TYPES.filter((t) => t !== 'clusters')
+    const source = parsed.types ?? (typeFilter ? [typeFilter] : GLOBAL_SEARCH_TYPES)
+    return source.filter((t) => !LOCAL_SEARCH_TYPES.has(t))
   }, [parsed.types, typeFilter])
 
-  const includeClusters = !typeFilter || typeFilter === 'clusters' || parsed.types?.includes('clusters') || !parsed.types
+  const includeClusters =
+    !typeFilter || typeFilter === 'clusters' || parsed.types?.includes('clusters') || !parsed.types
+
+  const includeSparks =
+    !typeFilter || typeFilter === 'sparks' || parsed.types?.includes('sparks') || !parsed.types
 
   const clusterGroups = useMemo((): GlobalSearchGroup[] => {
     if (!includeClusters || (parsed.types && !parsed.types.includes('clusters'))) return []
@@ -130,6 +155,29 @@ export function GlobalSearchModal(): React.JSX.Element {
       ? [{ type: 'clusters' as const, label: GLOBAL_SEARCH_TYPE_LABELS.clusters, results }]
       : []
   }, [clusters, includeClusters, parsed.text, parsed.types])
+
+  const sparkGroups = useMemo((): GlobalSearchGroup[] => {
+    if (!includeSparks || (parsed.types && !parsed.types.includes('sparks'))) return []
+    const text = parsed.text.trim()
+    if (!text && typeFilter !== 'sparks' && !parsed.types?.includes('sparks')) return []
+    const results: GlobalSearchResult[] = []
+    for (const note of notes) {
+      const hay = `${note.title}\n${note.body}\n${note.folder}\n${note.path}\n${note.tags.join(' ')}`
+      if (!matchesSearchText(hay, text)) continue
+      results.push({
+        type: 'spark',
+        noteId: note.id,
+        title: note.title,
+        folder: note.folder,
+        path: note.path,
+        snippet: sparkSnippet(note.body, text)
+      })
+      if (results.length >= 15) break
+    }
+    return results.length > 0
+      ? [{ type: 'sparks' as const, label: GLOBAL_SEARCH_TYPE_LABELS.sparks, results }]
+      : []
+  }, [includeSparks, notes, parsed.text, parsed.types, typeFilter])
 
   const targetCluster = useMemo(() => {
     const connected = clusters.filter((c) => c.status === 'connected')
@@ -195,9 +243,12 @@ export function GlobalSearchModal(): React.JSX.Element {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [open, targetCluster, parsed.text, searchTypes])
+  }, [open, targetCluster, parsed.text, searchTypes, typeFilter])
 
-  const allGroups = useMemo(() => [...clusterGroups, ...apiGroups], [clusterGroups, apiGroups])
+  const allGroups = useMemo(
+    () => [...clusterGroups, ...sparkGroups, ...apiGroups],
+    [clusterGroups, sparkGroups, apiGroups]
+  )
 
   const flatResults = useMemo(() => allGroups.flatMap((g) => g.results), [allGroups])
 
@@ -211,6 +262,11 @@ export function GlobalSearchModal(): React.JSX.Element {
       switch (result.type) {
         case 'cluster':
           openClusterTab(result.clusterId)
+          break
+        case 'spark':
+          setActiveView('notes')
+          setWorkspacePanel('editor')
+          selectNote(result.noteId)
           break
         case 'builtin':
           if (result.kind === 'Namespaces') {
@@ -258,7 +314,10 @@ export function GlobalSearchModal(): React.JSX.Element {
       navigateToResource,
       openClusterTab,
       openResourceKind,
-      setSelectedNamespace
+      selectNote,
+      setActiveView,
+      setSelectedNamespace,
+      setWorkspacePanel
     ]
   )
 
@@ -427,6 +486,27 @@ function ResultRow({
             <HighlightText text={result.clusterName} query={query} />
             <span className="global-search-item-sub">
               {result.contextName} · {result.status}
+            </span>
+          </span>
+        </>
+      )
+    case 'spark':
+      return (
+        <>
+          <span className="global-search-item-icon">{icon}</span>
+          <span className="global-search-item-main">
+            <HighlightText text={result.title} query={query} />
+            <span className="global-search-item-sub">
+              {result.folder ? `${result.folder} · ` : ''}
+              {result.snippet ? (
+                matchesSearchText(result.snippet, query) ? (
+                  <HighlightText text={result.snippet} query={query} />
+                ) : (
+                  result.snippet
+                )
+              ) : (
+                result.path
+              )}
             </span>
           </span>
         </>

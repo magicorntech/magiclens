@@ -6,8 +6,11 @@ import {
   type UtilityFabOffset,
   type UtilityFabSide,
   type UtilityPanelPlacement,
-  normalizeUtilityFabSide
+  normalizeUtilityFabSide,
+  normalizeUiTypography,
+  type UiTypographyPrefs
 } from '@shared/types/app'
+import { applyUiTypography } from '../theme/applyUiTypography'
 import {
   normalizeKeyboardShortcuts,
   type KeyboardShortcuts,
@@ -37,7 +40,9 @@ interface DisplaySettingsState extends DisplaySettings {
   setShowFavoritesSection: (value: boolean) => Promise<void>
   setShowWorkspacesSection: (value: boolean) => Promise<void>
   setShowWorkspaceClusterCounts: (value: boolean) => Promise<void>
+  setWorkspaceDockMagnification: (value: boolean) => Promise<void>
   setShowClusterNamespace: (value: boolean) => Promise<void>
+  setUiTypography: (value: Partial<UiTypographyPrefs>) => Promise<void>
   setResourceDetailPlacement: (value: ResourceDetailPlacement) => Promise<void>
   setResourceDetailMaskBlur: (value: boolean) => Promise<void>
   setUtilityPanelPlacement: (value: UtilityPanelPlacement) => Promise<void>
@@ -58,15 +63,18 @@ interface DisplaySettingsState extends DisplaySettings {
 }
 
 function applyDisplay(next: DisplaySettings): DisplaySettings {
-  return {
+  const applied = {
     ...defaultDisplaySettings,
     ...next,
     utilityFabSide: normalizeUtilityFabSide(next.utilityFabSide),
+    uiTypography: normalizeUiTypography(next.uiTypography),
     nodesDashboard: normalizeNodesDashboardPrefs(next.nodesDashboard),
     chromeToolbar: normalizeChromeToolbarPrefs(next.chromeToolbar),
     keyboardShortcuts: normalizeKeyboardShortcuts(next.keyboardShortcuts),
     locale: normalizeAppLocale(next.locale)
   }
+  applyUiTypography(applied.uiTypography)
+  return applied
 }
 
 async function syncLocale(locale: AppLocale): Promise<void> {
@@ -105,8 +113,19 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
     const next = await window.api.app.setDisplaySettings({ showWorkspaceClusterCounts: value })
     set(applyDisplay(next))
   },
+  setWorkspaceDockMagnification: async (value) => {
+    const next = await window.api.app.setDisplaySettings({ workspaceDockMagnification: value })
+    set(applyDisplay(next))
+  },
   setShowClusterNamespace: async (value) => {
     const next = await window.api.app.setDisplaySettings({ showClusterNamespace: value })
+    set(applyDisplay(next))
+  },
+  setUiTypography: async (value) => {
+    const current = normalizeUiTypography(get().uiTypography)
+    const next = await window.api.app.setDisplaySettings({
+      uiTypography: normalizeUiTypography({ ...current, ...value })
+    })
     set(applyDisplay(next))
   },
   setResourceDetailPlacement: async (value) => {

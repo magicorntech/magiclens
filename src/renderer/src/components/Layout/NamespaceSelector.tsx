@@ -27,6 +27,8 @@ interface NamespaceSelectorProps {
   clusterId: string
   value: string
   onChange: (namespace: string) => void
+  /** When false, hides the "All namespaces" quick action (e.g. Topology). Default true. */
+  allowAllNamespaces?: boolean
 }
 
 type NsFilter = 'all' | 'pinned' | 'system' | 'app'
@@ -44,7 +46,8 @@ function isSystemNamespace(name: string): boolean {
 export function NamespaceSelector({
   clusterId,
   value,
-  onChange
+  onChange,
+  allowAllNamespaces = true
 }: NamespaceSelectorProps): React.JSX.Element {
   const { t } = useTranslation()
   const { data, isLoading, refetch, isFetching } = useNamespaces(clusterId)
@@ -110,6 +113,7 @@ export function NamespaceSelector({
   }
 
   function selectAll(): void {
+    if (!allowAllNamespaces) return
     commit([ALL_NAMESPACES])
   }
 
@@ -167,15 +171,17 @@ export function NamespaceSelector({
       </div>
 
       <div className="ml-ns-panel__quick">
-        <button
-          type="button"
-          className={`ml-ns-panel__quick-btn${allSelected ? ' is-active' : ''}`}
-          onClick={selectAll}
-        >
-          <Icon icon={Layers} variant="micro" />
-          {t('common.allNamespaces')}
-          {allSelected ? <Icon icon={Check} variant="micro" /> : null}
-        </button>
+        {allowAllNamespaces ? (
+          <button
+            type="button"
+            className={`ml-ns-panel__quick-btn${allSelected ? ' is-active' : ''}`}
+            onClick={selectAll}
+          >
+            <Icon icon={Layers} variant="micro" />
+            {t('common.allNamespaces')}
+            {allSelected ? <Icon icon={Check} variant="micro" /> : null}
+          </button>
+        ) : null}
         <button
           type="button"
           className="ml-ns-panel__quick-btn"

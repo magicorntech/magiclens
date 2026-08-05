@@ -140,6 +140,12 @@ export function ClusterHeaderTabs(): React.JSX.Element | null {
                 }${inRight ? ' is-split-right' : ''}${
                   draggingId === cluster.id ? ' is-dragging' : ''
                 }`}
+                style={{
+                  width: 'var(--ml-cluster-tab-width, 220px)',
+                  minWidth: 'var(--ml-cluster-tab-width, 220px)',
+                  maxWidth: 'var(--ml-cluster-tab-width, 220px)',
+                  flex: '0 0 var(--ml-cluster-tab-width, 220px)'
+                }}
                 onClick={() => onTabClick(cluster.id)}
                 onAuxClick={(e) => handleAuxClick(e, cluster.id)}
                 onPointerDown={(e) => onTabPointerDown(e, cluster.id)}

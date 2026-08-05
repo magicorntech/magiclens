@@ -166,6 +166,9 @@ export const en = {
       showWorkspaceClusterCounts: 'Show workspace cluster counts',
       showWorkspaceClusterCountsHint:
         'When enabled, each workspace header shows how many clusters it contains.',
+      workspaceDockMagnification: 'Dock magnification for workspaces',
+      workspaceDockMagnificationHint:
+        'When the left sidebar is collapsed, workspace icons magnify under the cursor like the macOS Dock.',
       showClusterNamespace: 'Show connected namespace',
       showClusterNamespaceHint:
         'When enabled, the selected namespace is shown as a chip on connected clusters in the left sidebar.',
@@ -245,7 +248,23 @@ export const en = {
       groupWorlds: 'Worlds — anime & heroes',
       customAccent: 'Custom accent',
       customAccentHint: 'Applies to sidebars, buttons, highlights, and chart accents.',
-      customSwatch: 'Your own accent color'
+      customSwatch: 'Your own accent color',
+      typographyTitle: 'Text & font',
+      typographyHint:
+        'Small adjustments to readability. Color themes stay the same — only typeface, weight, and contrast change.',
+      font: 'Font',
+      fontDefault: 'Default (Inter)',
+      fontSystem: 'System UI',
+      fontInter: 'Inter',
+      fontNoto: 'Noto Sans',
+      weight: 'Weight',
+      weightRegular: 'Regular',
+      weightMedium: 'Medium',
+      weightSemibold: 'Semibold',
+      contrast: 'Brightness',
+      contrastSoft: 'Softer',
+      contrastNormal: 'Normal',
+      contrastBright: 'Brighter'
     },
     sparks: {
       themesTitle: 'Sparks vault themes',
@@ -804,6 +823,8 @@ export const en = {
     sortKind: 'Kind',
     sortHealth: 'Health',
     insights: 'Insights',
+    showInsights: 'Show insights',
+    hideInsights: 'Hide insights',
     noInsights: 'No issues detected.',
     health: {
       healthy: 'Healthy',
@@ -1170,12 +1191,12 @@ export const en = {
     syncFailedToast: 'Signed in, but sync failed: {{error}}'
   },
   search: {
-    placeholder: 'Search clusters, pods…',
+    placeholder: 'Search clusters, Sparks, pods…',
     searching: 'Searching…',
     noResults: 'No results',
     connectHint: 'Connect a cluster to search resources across namespaces.',
     typeHint:
-      'Type to search. Use keywords like pod:nginx, @deploy api, or click a type filter above.',
+      'Type to search. Use keywords like spark:todo, pod:nginx, @deploy api, or click a type filter above.',
     searchingIn: 'Searching resources in: {{cluster}}',
     recent: 'Recent',
     clusters: 'Clusters',
@@ -1261,6 +1282,8 @@ export const en = {
     deleteConfirm: 'Delete this note? The Markdown file will be removed from your vault.',
     empty: 'Your vault is empty — write the first note.',
     emptyFiltered: 'Nothing matches these filters',
+    welcomeReadOnly: 'Welcome guide',
+    welcomeReadOnlyHint: 'This starter note is read-only. Create a new note to write your own.',
     count: '{{count}} notes',
     searchPlaceholder: 'Search notes, tags, paths…',
     reminderToast: 'Spark reminder: {{title}}',
@@ -1332,8 +1355,32 @@ export const en = {
     deleteFolderWithNotesDone: 'Folder and {{count}} note(s) deleted',
     folderCreated: 'Folder created',
     folderCreateFailed: 'Could not create folder',
-    chooseVault: 'Choose vault folder',
+    chooseVault: 'Change vault location (uses this folder as Sparks root)',
     openVaultFolder: 'Open vault on disk',
+    dropToRootHint: 'Drop here to move note to vault root',
+    import: {
+      action: 'Import notes from folder…',
+      title: 'Import Markdown notes',
+      hint: 'Choose a folder to list nested Markdown files, then pick which ones to add to your Sparks vault.',
+      chooseFolder: 'Choose folder',
+      changeFolder: 'Choose another folder',
+      scanning: 'Scanning folder…',
+      from: 'From: {{path}}',
+      noneFound: 'No Markdown (.md) files found in this folder.',
+      selectAll: 'Select all ({{count}})',
+      pickHint: 'Tick the notes you want to add, then press Add selected.',
+      addSelected: 'Add selected ({{count}})',
+      completed: 'Completed',
+      summary: '{{ok}} added · {{fail}} failed',
+      completedList: 'Added',
+      failedList: 'Not added',
+      errors: {
+        invalid_path: 'Invalid file path',
+        missing: 'File not found',
+        already_in_vault: 'Already inside the current vault',
+        import_failed: 'Could not import'
+      }
+    },
     privacyBanner: 'Stored locally as Markdown · offline · no tracking',
     localMarkdown: 'Local Markdown file',
     templates: 'Templates',

@@ -3,16 +3,19 @@ import type { TopologyGraphResponse } from '@shared/types/topology'
 import type { ResourceWatchStatus } from '@shared/types/resourceWatch'
 import { useLiveRefreshStore } from '../../stores/liveRefreshStore'
 
-const DEFAULT_POLL_MS = 5_000
-const MIN_POLL_MS = 3_000
+const DEFAULT_POLL_MS = 15_000
+const MIN_POLL_MS = 10_000
 
 /**
  * Topology used to open 7 simultaneous Kubernetes informers (Pods, Deployments, …)
  * just to detect changes, then re-fetch the full graph. That duplicated large object
  * caches in the main process and ballooned RAM on Apple Silicon. A single polled
  * topology:getGraph call is enough for this view.
+ *
+ * Polling is intentionally slower than resource tables (10–15s): the graph layout +
+ * React Flow render is expensive, and All-namespaces is blocked in the UI.
  */
-/** `namespace` accepts a single name, a comma-joined multi-selection, or 'ALL'. */
+/** `namespace` accepts a single name or a comma-joined multi-selection (not 'ALL'). */
 export function useTopologyGraph(clusterId: string, namespace: string): {
   data: TopologyGraphResponse | null
   loading: boolean

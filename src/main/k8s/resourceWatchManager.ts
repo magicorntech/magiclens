@@ -19,7 +19,7 @@ import { listDynamicResourcesRaw, toDynamicItem } from './dynamicResourceService
 
 type WatchItem = ResourceListItem | DynamicResourceItem
 
-const FLUSH_INTERVAL_MS = 400
+const FLUSH_INTERVAL_MS = 30
 const MAX_RETRIES = 5
 const MAX_PENDING_OPS = 2_000
 const NO_RETRY_STATUS_CODES = new Set([401, 403, 404])

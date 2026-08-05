@@ -236,36 +236,54 @@ export async function podUsageFromPrometheus(
   return { containers }
 }
 
-/** Instant per-pod usage in a namespace via Prometheus. */
+/** Instant per-pod usage via Prometheus, for one namespace or the whole cluster ('ALL'). */
 export async function namespacePodUsageFromPrometheus(
   clusterId: string,
   namespace: string
-): Promise<{ podName: string; cpuUsageCores: number; memoryUsageBytes: number }[] | null> {
+): Promise<{ podName: string; namespace: string; cpuUsageCores: number; memoryUsageBytes: number }[] | null> {
   const status = await ensurePrometheusDiscovered(clusterId)
   if (!status.available) return null
 
   const ns = namespace.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-  const base = `{namespace="${ns}",container!="",container!="POD"}`
+  const nsMatcher = namespace === 'ALL' ? '' : `namespace="${ns}",`
+  const base = `{${nsMatcher}container!="",container!="POD"}`
 
   const [cpuRes, memRes] = await Promise.all([
     prometheusQuery({
       clusterId,
-      query: `sum by (pod) (rate(container_cpu_usage_seconds_total${base}[2m]))`
+      query: `sum by (namespace, pod) (rate(container_cpu_usage_seconds_total${base}[2m]))`
     }),
     prometheusQuery({
       clusterId,
-      query: `sum by (pod) (container_memory_working_set_bytes${base})`
+      query: `sum by (namespace, pod) (container_memory_working_set_bytes${base})`
     })
   ])
 
-  const cpuByPod = mapFromVector(cpuRes.data, 'pod')
-  const memByPod = mapFromVector(memRes.data, 'pod')
-  if (cpuByPod.size === 0 && memByPod.size === 0) return null
+  const acc = new Map<
+    string,
+    { podName: string; namespace: string; cpuUsageCores: number; memoryUsageBytes: number }
+  >()
+  const ingest = (
+    data: PrometheusQueryData | undefined,
+    field: 'cpuUsageCores' | 'memoryUsageBytes'
+  ): void => {
+    if (!data || data.resultType !== 'vector') return
+    for (const series of data.result) {
+      const podName = series.metric.pod
+      const podNs = series.metric.namespace ?? (namespace === 'ALL' ? '' : namespace)
+      const sample = series.value
+      if (!podName || !sample) continue
+      const n = Number.parseFloat(sample[1])
+      if (!Number.isFinite(n)) continue
+      const key = `${podNs}/${podName}`
+      const entry = acc.get(key) ?? { podName, namespace: podNs, cpuUsageCores: 0, memoryUsageBytes: 0 }
+      entry[field] = n
+      acc.set(key, entry)
+    }
+  }
+  ingest(cpuRes.data, 'cpuUsageCores')
+  ingest(memRes.data, 'memoryUsageBytes')
 
-  const names = new Set([...cpuByPod.keys(), ...memByPod.keys()])
-  return [...names].map((podName) => ({
-    podName,
-    cpuUsageCores: cpuByPod.get(podName) ?? 0,
-    memoryUsageBytes: memByPod.get(podName) ?? 0
-  }))
+  if (acc.size === 0) return null
+  return [...acc.values()]
 }

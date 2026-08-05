@@ -306,6 +306,12 @@ const api = {
     chooseVault: (): Promise<import('@shared/types/notes').ChooseVaultResult> =>
       ipcRenderer.invoke(IPC.NOTES_VAULT_CHOOSE),
     revealVault: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.NOTES_VAULT_REVEAL),
+    importScan: (): Promise<import('@shared/types/notes').VaultImportScanResult> =>
+      ipcRenderer.invoke(IPC.NOTES_IMPORT_SCAN),
+    importFile: (
+      req: import('@shared/types/notes').VaultImportFileRequest
+    ): Promise<import('@shared/types/notes').VaultImportFileResult> =>
+      ipcRenderer.invoke(IPC.NOTES_IMPORT_FILE, req),
     folderTree: (): Promise<import('@shared/types/notes').VaultFolderNode[]> =>
       ipcRenderer.invoke(IPC.NOTES_FOLDER_TREE),
     tags: (): Promise<{ tag: string; count: number }[]> => ipcRenderer.invoke(IPC.NOTES_TAGS),

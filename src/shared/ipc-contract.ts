@@ -57,6 +57,8 @@ export const IPC = {
   NOTES_VAULT_STATUS: 'notes:vaultStatus',
   NOTES_VAULT_CHOOSE: 'notes:vaultChoose',
   NOTES_VAULT_REVEAL: 'notes:vaultReveal',
+  NOTES_IMPORT_SCAN: 'notes:importScan',
+  NOTES_IMPORT_FILE: 'notes:importFile',
   NOTES_FOLDER_TREE: 'notes:folderTree',
   NOTES_TAGS: 'notes:tags',
   NOTES_CREATE_FOLDER: 'notes:createFolder',

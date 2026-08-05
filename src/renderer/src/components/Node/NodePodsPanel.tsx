@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useQueries } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { ResourceListItem } from '@shared/types/resource'
 import { useResourceList } from '../../queries/useResourceList'
@@ -39,36 +39,31 @@ export function NodePodsPanel({
     return podsData.items.filter((p) => p.columns.node === nodeName)
   }, [podsData, nodeName])
 
-  const namespaces = useMemo(
-    () => [...new Set(nodePods.map((p) => p.namespace).filter(Boolean))],
-    [nodePods]
-  )
-
-  const metricsQueries = useQueries({
-    queries: namespaces.map((ns) => ({
-      queryKey: ['namespace-pod-metrics', clusterId, ns],
-      queryFn: () => window.api.pod.getNamespaceMetrics({ clusterId, namespace: ns }),
-      enabled: isActive && !!ns,
-      refetchInterval
-    }))
+  // Single cluster-wide request so all rows get usage at once, not per namespace.
+  const metricsQuery = useQuery({
+    queryKey: ['namespace-pod-metrics', clusterId, 'ALL'],
+    queryFn: () => window.api.pod.getNamespaceMetrics({ clusterId, namespace: 'ALL' }),
+    enabled: isActive,
+    refetchInterval,
+    placeholderData: keepPreviousData
   })
 
   const metricsByPod = useMemo(() => {
     const map = new Map<string, { cpu: number; memory: number }>()
-    for (const query of metricsQueries) {
-      const data = query.data
-      if (!data?.metricsAvailable) continue
-      for (const pod of data.pods) {
-        map.set(pod.podName, { cpu: pod.cpuUsageCores, memory: pod.memoryUsageBytes })
-      }
+    const data = metricsQuery.data
+    if (!data?.metricsAvailable) return map
+    for (const pod of data.pods) {
+      const key = pod.namespace ? `${pod.namespace}/${pod.podName}` : pod.podName
+      map.set(key, { cpu: pod.cpuUsageCores, memory: pod.memoryUsageBytes })
     }
     return map
-  }, [metricsQueries])
+  }, [metricsQuery.data])
 
   const rows: NodePodRow[] = useMemo(
     () =>
       nodePods.map((pod) => {
-        const metrics = metricsByPod.get(pod.name)
+        const metrics =
+          metricsByPod.get(`${pod.namespace}/${pod.name}`) ?? metricsByPod.get(pod.name)
         return {
           ...pod,
           cpuUsageCores: metrics?.cpu,

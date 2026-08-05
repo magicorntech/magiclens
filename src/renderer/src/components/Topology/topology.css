@@ -151,13 +151,108 @@
 }
 
 .ml-topo-page__insights {
-  width: 260px;
   flex-shrink: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border: 1px solid var(--ml-border-secondary);
   border-radius: 8px;
   background: var(--ml-bg-elevated);
-  padding: 10px 12px;
+  transition: width 0.18s ease;
+}
+
+.ml-topo-page__insights.is-open {
+  width: 260px;
+  padding: 8px 10px 10px;
+}
+
+.ml-topo-page__insights.is-collapsed {
+  width: 36px;
+  padding: 6px 4px;
+  align-items: center;
+}
+
+.ml-topo-page__insights-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 28px;
+}
+
+.ml-topo-page__insights.is-open .ml-topo-page__insights-head {
+  justify-content: space-between;
+}
+
+.ml-topo-page__insights.is-collapsed .ml-topo-page__insights-head {
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.ml-topo-page__insights-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12.5px !important;
+  font-weight: 550 !important;
+}
+
+.ml-topo-page__insights-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 550;
+  color: var(--ml-text-secondary);
+  background: color-mix(in srgb, var(--ml-text) 8%, transparent);
+}
+
+.ml-topo-page__insights-rail-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ml-text-secondary);
+  user-select: none;
+}
+
+.ml-topo-page__insights-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ml-text-tertiary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ml-topo-page__insights-toggle:hover {
+  background: color-mix(in srgb, var(--ml-text) 6%, transparent);
+  color: var(--ml-text);
+}
+
+.ml-topo-page__insights-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin-top: 4px;
+}
+
+.ml-topo-page__insights-empty {
+  margin: 8px 0 0 !important;
+  font-size: 12px !important;
 }
 
 .ml-topo-insight {

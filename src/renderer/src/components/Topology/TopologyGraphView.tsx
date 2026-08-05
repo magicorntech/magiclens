@@ -81,7 +81,8 @@ function layoutGraph(
         source: e.source,
         target: e.target,
         label: labelParts.join(' · '),
-        animated: e.relation === 'selects' || e.relation === 'routes',
+        // Keep edges static — animated edges burn CPU continuously in React Flow.
+        animated: false,
         markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
         style: { strokeWidth: 1.5 },
         labelStyle: { fontSize: 10, fill: 'var(--ml-text-secondary)' },
@@ -233,20 +234,23 @@ function TopologyGraphCanvas({
       >
         <Background gap={18} size={1} color="var(--ml-border-secondary)" />
         <FitOnLoad structure={key} />
-        <MiniMap
-          pannable
-          zoomable
-          className="nopan nodrag nowheel ml-topo-minimap"
-          bgColor="transparent"
-          maskColor="rgba(0, 0, 0, 0.18)"
-          nodeColor={(n) => {
-            const s = (n.data as TopologyFlowNodeData | undefined)?.topology?.status
-            if (s === 'healthy') return 'var(--ml-status-success-fg, #3f9c6c)'
-            if (s === 'error') return 'var(--ml-status-error-fg, #d94c4c)'
-            if (s === 'degraded') return 'var(--ml-status-warning-fg, #d4a017)'
-            return 'var(--ml-text-secondary)'
-          }}
-        />
+        {/* MiniMap only for mid-size graphs — large maps re-render every frame. */}
+        {graph.nodes.length > 0 && graph.nodes.length <= 80 ? (
+          <MiniMap
+            pannable
+            zoomable
+            className="nopan nodrag nowheel ml-topo-minimap"
+            bgColor="transparent"
+            maskColor="rgba(0, 0, 0, 0.18)"
+            nodeColor={(n) => {
+              const s = (n.data as TopologyFlowNodeData | undefined)?.topology?.status
+              if (s === 'healthy') return 'var(--ml-status-success-fg, #3f9c6c)'
+              if (s === 'error') return 'var(--ml-status-error-fg, #d94c4c)'
+              if (s === 'degraded') return 'var(--ml-status-warning-fg, #d4a017)'
+              return 'var(--ml-text-secondary)'
+            }}
+          />
+        ) : null}
       </ReactFlow>
       {graph.nodes.length === 0 && (
         <div className="ml-topo-empty-overlay">{t('topology.empty')}</div>

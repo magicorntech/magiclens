@@ -417,17 +417,16 @@ export function ResourceMenu({
         aria-expanded={isOpen}
       >
         <span className="ml-resource-nav-item-icon">
-          <Icon icon={section.icon} variant="default" color={hasActiveChild ? '#fff' : undefined} />
+          <Icon
+            icon={section.icon}
+            variant="default"
+            color={hasActiveChild ? 'var(--ml-primary)' : undefined}
+          />
         </span>
         <span className="ml-resource-nav-group-title">
           <HighlightText text={title} query={search} />
         </span>
-        <Icon
-          icon={ChevronDown}
-          variant="toolbar"
-          className="ml-resource-nav-chevron"
-          color={hasActiveChild ? '#fff' : undefined}
-        />
+        <Icon icon={ChevronDown} variant="toolbar" className="ml-resource-nav-chevron" />
       </button>
     )
 
@@ -472,7 +471,7 @@ export function ResourceMenu({
           aria-expanded={isOpen}
         >
           <span className="ml-resource-nav-item-icon">
-            <Icon icon={favoritesSectionIcon} variant="default" color={hasActiveFavorite ? '#fff' : 'var(--ml-primary)'} />
+            <Icon icon={favoritesSectionIcon} variant="default" color="var(--ml-primary)" />
           </span>
           <span className="ml-resource-nav-group-title">{t('resourceNav.favorites')}</span>
           <Icon icon={ChevronDown} variant="toolbar" className="ml-resource-nav-chevron" />

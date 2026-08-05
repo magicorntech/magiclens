@@ -28,7 +28,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { normalizeUtilityFabSide } from '@shared/types/app'
+import { normalizeUtilityFabSide, type UiFontId, type UiFontWeightId, type UiTextContrastId } from '@shared/types/app'
 import { Icon } from '../ui/Icon'
 import logo from '../../assets/logo.png'
 import { refreshIntervalOptions, useLiveRefreshStore } from '../../stores/liveRefreshStore'
@@ -50,6 +50,7 @@ import { ThemeToggle } from './ThemeToggle'
 import {
   SettingsSection,
   SettingsToggleRow,
+  SettingsSelectRow,
   ThemeSchemeCard
 } from './SettingsPrimitives'
 import { type SettingsSection as SettingsSectionId, useSettingsUiStore } from '../../stores/settingsUiStore'
@@ -118,6 +119,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const setShowWorkspacesSection = useDisplaySettingsStore((s) => s.setShowWorkspacesSection)
   const showWorkspaceClusterCounts = useDisplaySettingsStore((s) => s.showWorkspaceClusterCounts)
   const setShowWorkspaceClusterCounts = useDisplaySettingsStore((s) => s.setShowWorkspaceClusterCounts)
+  const workspaceDockMagnification = useDisplaySettingsStore((s) => s.workspaceDockMagnification)
+  const setWorkspaceDockMagnification = useDisplaySettingsStore((s) => s.setWorkspaceDockMagnification)
   const setShowClusterNamespace = useDisplaySettingsStore((s) => s.setShowClusterNamespace)
   const setResourceDetailPlacement = useDisplaySettingsStore((s) => s.setResourceDetailPlacement)
   const setResourceDetailMaskBlur = useDisplaySettingsStore((s) => s.setResourceDetailMaskBlur)
@@ -126,6 +129,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const setShowUtilityFab = useDisplaySettingsStore((s) => s.setShowUtilityFab)
   const setLocale = useDisplaySettingsStore((s) => s.setLocale)
   const setKubeconfigScanPath = useDisplaySettingsStore((s) => s.setKubeconfigScanPath)
+  const uiTypography = useDisplaySettingsStore((s) => s.uiTypography)
+  const setUiTypography = useDisplaySettingsStore((s) => s.setUiTypography)
   const [kubePathDraft, setKubePathDraft] = useState(kubeconfigScanPath)
   const [deduping, setDeduping] = useState(false)
 
@@ -492,6 +497,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 onChange={(checked) => void setShowWorkspaceClusterCounts(checked)}
               />
               <SettingsToggleRow
+                title={t('settings.display.workspaceDockMagnification')}
+                description={t('settings.display.workspaceDockMagnificationHint')}
+                checked={workspaceDockMagnification}
+                onChange={(checked) => void setWorkspaceDockMagnification(checked)}
+              />
+              <SettingsToggleRow
                 title={t('settings.display.showClusterNamespace')}
                 description={t('settings.display.showClusterNamespaceHint')}
                 checked={showClusterNamespace}
@@ -544,6 +555,43 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
               <div className="ml-settings-theme-mode">
                 <ThemeToggle />
               </div>
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.appearance.typographyTitle')}
+              description={t('settings.appearance.typographyHint')}
+            >
+              <SettingsSelectRow
+                title={t('settings.appearance.font')}
+                value={uiTypography.font}
+                onChange={(value: UiFontId) => void setUiTypography({ font: value })}
+                options={[
+                  { value: 'default', label: t('settings.appearance.fontDefault') },
+                  { value: 'system', label: t('settings.appearance.fontSystem') },
+                  { value: 'inter', label: t('settings.appearance.fontInter') },
+                  { value: 'noto', label: t('settings.appearance.fontNoto') }
+                ]}
+              />
+              <SettingsSelectRow
+                title={t('settings.appearance.weight')}
+                value={uiTypography.weight}
+                onChange={(value: UiFontWeightId) => void setUiTypography({ weight: value })}
+                options={[
+                  { value: 'regular', label: t('settings.appearance.weightRegular') },
+                  { value: 'medium', label: t('settings.appearance.weightMedium') },
+                  { value: 'semibold', label: t('settings.appearance.weightSemibold') }
+                ]}
+              />
+              <SettingsSelectRow
+                title={t('settings.appearance.contrast')}
+                value={uiTypography.contrast}
+                onChange={(value: UiTextContrastId) => void setUiTypography({ contrast: value })}
+                options={[
+                  { value: 'soft', label: t('settings.appearance.contrastSoft') },
+                  { value: 'normal', label: t('settings.appearance.contrastNormal') },
+                  { value: 'bright', label: t('settings.appearance.contrastBright') }
+                ]}
+              />
             </SettingsSection>
 
             <SettingsSection

@@ -187,6 +187,8 @@ export interface NamespacePodMetricsRequest {
 
 export interface NamespacePodMetricItem {
   podName: string
+  /** Pod namespace; always set so 'ALL' requests can be mapped back per pod. */
+  namespace?: string
   cpuUsageCores: number
   memoryUsageBytes: number
 }

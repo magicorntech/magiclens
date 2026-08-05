@@ -140,6 +140,18 @@ export {
   defaultAppLocale,
   normalizeAppLocale
 } from './locale'
+import {
+  defaultUiTypography,
+  type UiTypographyPrefs
+} from './uiTypography'
+export {
+  defaultUiTypography,
+  normalizeUiTypography,
+  type UiTypographyPrefs,
+  type UiFontId,
+  type UiFontWeightId,
+  type UiTextContrastId
+} from './uiTypography'
 
 export interface DisplaySettings {
   showClusterTabLogos: boolean
@@ -150,8 +162,15 @@ export interface DisplaySettings {
   showWorkspacesSection: boolean
   /** Show per-workspace cluster counts in the sidebar (default on). */
   showWorkspaceClusterCounts: boolean
+  /**
+   * macOS Dock-style magnification on workspace icons when the left sidebar is collapsed
+   * (default on).
+   */
+  workspaceDockMagnification: boolean
   /** Show the connected namespace chip on sidebar cluster items (default on). */
   showClusterNamespace: boolean
+  /** Soft UI font / weight / contrast tweaks (does not replace color themes). */
+  uiTypography: UiTypographyPrefs
   resourceDetailPlacement: ResourceDetailPlacement
   /** Blur the resource list behind the detail drawer (default off). */
   resourceDetailMaskBlur: boolean
@@ -182,7 +201,9 @@ export const defaultDisplaySettings: DisplaySettings = {
   showFavoritesSection: true,
   showWorkspacesSection: true,
   showWorkspaceClusterCounts: true,
+  workspaceDockMagnification: true,
   showClusterNamespace: true,
+  uiTypography: defaultUiTypography,
   resourceDetailPlacement: 'drawer',
   resourceDetailMaskBlur: false,
   utilityPanelPlacement: 'bottom',

@@ -221,6 +221,9 @@ export const tr: TranslationOverrides = {
       showWorkspaceClusterCounts: 'Workspace küme sayılarını göster',
       showWorkspaceClusterCountsHint:
         'Açıkken her workspace başlığında kaç küme olduğu gösterilir.',
+      workspaceDockMagnification: 'Workspace Dock büyütme efekti',
+      workspaceDockMagnificationHint:
+        'Sol kenar çubuğu daraltıldığında, workspace ikonları imleç altında macOS Dock gibi büyür.',
       showClusterNamespace: 'Bağlı namespace’i göster',
       showClusterNamespaceHint:
         'Açıkken, sol kenar çubuğundaki bağlı kümelerde seçili namespace bir etiket olarak gösterilir.',
@@ -301,7 +304,23 @@ export const tr: TranslationOverrides = {
       groupWorlds: 'Dünyalar — anime & kahramanlar',
       customAccent: 'Özel vurgu',
       customAccentHint: 'Kenar çubukları, düğmeler, vurgular ve grafik tonlarına uygulanır.',
-      customSwatch: 'Kendi vurgu rengin'
+      customSwatch: 'Kendi vurgu rengin',
+      typographyTitle: 'Yazı ve font',
+      typographyHint:
+        'Okunabilirlik için hafif ayarlar. Renk teması aynı kalır — sadece font, kalınlık ve parlaklık değişir.',
+      font: 'Font',
+      fontDefault: 'Varsayılan (Inter)',
+      fontSystem: 'Sistem UI',
+      fontInter: 'Inter',
+      fontNoto: 'Noto Sans',
+      weight: 'Kalınlık',
+      weightRegular: 'Normal',
+      weightMedium: 'Orta',
+      weightSemibold: 'Yarı kalın',
+      contrast: 'Parlaklık',
+      contrastSoft: 'Daha soft',
+      contrastNormal: 'Normal',
+      contrastBright: 'Daha parlak'
     },
     sparks: {
       themesTitle: 'Sparks vault temaları',
@@ -870,6 +889,8 @@ export const tr: TranslationOverrides = {
     sortKind: 'Tür',
     sortHealth: 'Sağlık',
     insights: 'İçgörüler',
+    showInsights: 'İçgörüleri göster',
+    hideInsights: 'İçgörüleri gizle',
     noInsights: 'Sorun tespit edilmedi.',
     health: {
       healthy: 'Sağlıklı',
@@ -1355,12 +1376,12 @@ export const tr: TranslationOverrides = {
     syncFailedToast: 'Giriş yapıldı ancak senkron başarısız: {{error}}'
   },
   search: {
-    placeholder: 'Küme, pod ara…',
+    placeholder: 'Küme, Sparks, pod ara…',
     searching: 'Aranıyor…',
     noResults: 'Sonuç yok',
     connectHint: 'Namespace’ler arasında kaynak aramak için bir kümeye bağlanın.',
     typeHint:
-      'Aramak için yazın. pod:nginx, @deploy api gibi anahtar kelimeler kullanın veya yukarıdaki tür filtresine tıklayın.',
+      'Aramak için yazın. spark:todo, pod:nginx, @deploy api gibi anahtar kelimeler kullanın veya yukarıdaki tür filtresine tıklayın.',
     searchingIn: 'Kaynaklar aranıyor: {{cluster}}',
     recent: 'Son',
     clusters: 'Kümeler',
@@ -1446,6 +1467,8 @@ export const tr: TranslationOverrides = {
     deleteConfirm: 'Bu not silinsin mi? Markdown dosyası vault’tan kaldırılır.',
     empty: 'Vault boş — ilk notunu yaz.',
     emptyFiltered: 'Filtrelere uyan not yok',
+    welcomeReadOnly: 'Karşılama rehberi',
+    welcomeReadOnlyHint: 'Bu başlangıç notu salt okunur. Kendi notun için yeni bir not oluştur.',
     count: '{{count}} not',
     searchPlaceholder: 'Not, etiket, yol ara…',
     reminderToast: 'Spark hatırlatıcı: {{title}}',
@@ -1517,8 +1540,32 @@ export const tr: TranslationOverrides = {
     deleteFolderWithNotesDone: 'Klasör ve {{count}} not silindi',
     folderCreated: 'Klasör oluşturuldu',
     folderCreateFailed: 'Klasör oluşturulamadı',
-    chooseVault: 'Vault klasörü seç',
+    chooseVault: 'Vault konumunu değiştir (bu klasör Sparks kökü olur)',
     openVaultFolder: 'Vault’u diskte aç',
+    dropToRootHint: 'Notu vault köküne taşımak için buraya bırak',
+    import: {
+      action: 'Klasörden not içe aktar…',
+      title: 'Markdown notlarını içe aktar',
+      hint: 'İç içe klasörlerdeki Markdown dosyalarını listelemek için bir klasör seçin; hangilerini vault’a eklemek istediğinizi işaretleyin.',
+      chooseFolder: 'Klasör seç',
+      changeFolder: 'Başka klasör seç',
+      scanning: 'Klasör taranıyor…',
+      from: 'Kaynak: {{path}}',
+      noneFound: 'Bu klasörde Markdown (.md) dosyası bulunamadı.',
+      selectAll: 'Tümünü seç ({{count}})',
+      pickHint: 'Eklemek istediklerini işaretle, sonra Seçilenleri ekle’ye bas.',
+      addSelected: 'Seçilenleri ekle ({{count}})',
+      completed: 'Tamamlandı',
+      summary: '{{ok}} eklendi · {{fail}} eklenemedi',
+      completedList: 'Eklenenler',
+      failedList: 'Eklenemeyenler',
+      errors: {
+        invalid_path: 'Geçersiz dosya yolu',
+        missing: 'Dosya bulunamadı',
+        already_in_vault: 'Zaten mevcut vault içinde',
+        import_failed: 'İçe aktarılamadı'
+      }
+    },
     privacyBanner: 'Yerel Markdown · çevrimdışı · izleme yok',
     localMarkdown: 'Yerel Markdown dosyası',
     templates: 'Şablonlar',

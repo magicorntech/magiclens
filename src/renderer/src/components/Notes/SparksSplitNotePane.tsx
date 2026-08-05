@@ -20,6 +20,7 @@ import {
 import { Dropdown } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ResourceNote } from '@shared/types/notes'
+import { isWelcomeSparkNote } from '@shared/notes/welcomeSpark'
 import type {
   SparksPaperExtend,
   SparksPaperStyle,
@@ -71,13 +72,19 @@ export function SparksSplitNotePane({
   const [linksOpen, setLinksOpen] = useState(false)
   const [reminderOpen, setReminderOpen] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const welcomeReadOnly = isWelcomeSparkNote(note)
 
   useEffect(() => {
     setDraftTitle(note.title)
     setDraftBody(note.body)
-  }, [note.id, note.updatedAt])
+    if (isWelcomeSparkNote(note)) {
+      setEditorMode('preview')
+      setSurfaceMode('write')
+    }
+  }, [note.id, note.updatedAt, note.path])
 
   function scheduleSave(next: { title?: string; body?: string }): void {
+    if (isWelcomeSparkNote(note)) return
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
       void updateNote(note.id, next)
@@ -103,8 +110,14 @@ export function SparksSplitNotePane({
       <header className="ml-vault__toolbar">
         <div className="ml-vault__toolbar-meta">
           <span className="ml-vault__path">{note.path}</span>
+          {welcomeReadOnly ? (
+            <span className="ml-vault__readonly-badge" title={t('notes.welcomeReadOnlyHint')}>
+              {t('notes.welcomeReadOnly')}
+            </span>
+          ) : null}
         </div>
         <div className="ml-vault__toolbar-actions">
+          {!welcomeReadOnly ? (
           <div className="ml-vault-modegroup" role="toolbar">
             {(
               [
@@ -140,6 +153,15 @@ export function SparksSplitNotePane({
               </Tooltip>
             ))}
           </div>
+          ) : (
+            <div className="ml-vault-modegroup" role="toolbar">
+              <Tooltip title={t('notes.welcomeReadOnlyHint')}>
+                <button type="button" className="ml-vault-modegroup__btn is-active" aria-label={t('notes.mode.previewHint')}>
+                  <Icon icon={Eye} variant="action" />
+                </button>
+              </Tooltip>
+            </div>
+          )}
           <div className="ml-vault__chrome-group ml-vault__chrome-group--compact">
             <Dropdown
               menu={{
@@ -260,6 +282,7 @@ export function SparksSplitNotePane({
                 type="button"
                 className={`ml-vault-chip ml-vault-chip--icon${note.remindAt ? ' is-active' : ''}`}
                 onClick={() => setReminderOpen(true)}
+                disabled={welcomeReadOnly}
               >
                 <Icon icon={Bell} variant="action" />
               </button>
@@ -273,11 +296,13 @@ export function SparksSplitNotePane({
                 <Icon icon={Pin} variant="action" />
               </button>
             </Tooltip>
-            <Popconfirm title={t('notes.deleteConfirm')} onConfirm={() => void removeNote(note.id)}>
-              <button type="button" className="ml-vault-chip ml-vault-chip--icon ml-vault-chip--danger">
-                <Icon icon={Trash2} variant="action" />
-              </button>
-            </Popconfirm>
+            {!welcomeReadOnly ? (
+              <Popconfirm title={t('notes.deleteConfirm')} onConfirm={() => void removeNote(note.id)}>
+                <button type="button" className="ml-vault-chip ml-vault-chip--icon ml-vault-chip--danger">
+                  <Icon icon={Trash2} variant="action" />
+                </button>
+              </Popconfirm>
+            ) : null}
           </div>
         </div>
       </header>
@@ -286,20 +311,23 @@ export function SparksSplitNotePane({
           noteId={note.id}
           title={draftTitle}
           body={draftBody}
-          mode={editorMode}
+          mode={welcomeReadOnly ? 'preview' : editorMode}
           notes={notes}
           themeId={themeId}
           paperStyle={paperStyle}
           paperWidth={paperWidth}
           paperZoom={paperZoom}
           paperExtend={paperExtend}
-          surfaceMode={surfaceMode}
+          surfaceMode={welcomeReadOnly ? 'write' : surfaceMode}
           vaultPath={vault?.vaultPath}
+          readOnly={welcomeReadOnly}
           onTitleChange={(title) => {
+            if (welcomeReadOnly) return
             setDraftTitle(title)
             scheduleSave({ title })
           }}
           onBodyChange={(body) => {
+            if (welcomeReadOnly) return
             setDraftBody(body)
             scheduleSave({ body })
           }}

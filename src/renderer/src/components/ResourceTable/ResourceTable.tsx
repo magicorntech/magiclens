@@ -11,6 +11,7 @@ import { isNoNamespaceSelection, showsNamespaceColumn } from '@shared/namespaceS
 import type { ResourceListItem } from '@shared/types/resource'
 import { useResourceList } from '../../queries/useResourceList'
 import { useNodeMetrics } from '../../queries/useNodeMetrics'
+import { podMetricsKey, usePodTableMetrics } from '../../queries/usePodTableMetrics'
 import { kindColumnDefs } from '../../resourceConfig/kinds.renderer'
 import { buildCreateTemplate } from '../../resourceConfig/manifestTemplates'
 import { formatBytes, formatCores } from '../../format'
@@ -92,6 +93,7 @@ export function ResourceTable({
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
   const layoutMode = useLayoutMode()
   const isNodesKind = kind === 'Nodes'
+  const isPodsKind = kind === 'Pods'
   const detailInSidebar = resourceDetailPlacement === 'right' && canUseSplitLayouts(layoutMode)
   const detailInDrawer =
     resourceDetailPlacement === 'drawer' ||
@@ -106,6 +108,11 @@ export function ResourceTable({
   )
   const tableLoading = isLoading
   const { data: nodeMetrics } = useNodeMetrics(isNodesKind ? clusterId : null, isActive)
+  const podMetricsByKey = usePodTableMetrics(
+    isPodsKind ? clusterId : null,
+    namespace,
+    isActive && isPodsKind
+  )
 
   function applyNamespaceChange(ns: string): void {
     if (onNamespaceChange) {
@@ -185,6 +192,48 @@ export function ResourceTable({
           sortState
         )
       )
+      if (isPodsKind && col.key === 'containers') {
+        cols.push(
+          applySortOrder(
+            {
+              title: 'CPU',
+              key: 'cpu-metric',
+              width: 100,
+              sorter: (a, b) => {
+                const ca = podMetricsByKey.get(podMetricsKey(a.namespace, a.name))?.cpu ?? -1
+                const cb = podMetricsByKey.get(podMetricsKey(b.namespace, b.name))?.cpu ?? -1
+                return ca - cb
+              },
+              ellipsis: false,
+              render: (_, item) => {
+                const m = podMetricsByKey.get(podMetricsKey(item.namespace, item.name))
+                return m ? m.cpu.toFixed(2) : '—'
+              }
+            },
+            sortState
+          )
+        )
+        cols.push(
+          applySortOrder(
+            {
+              title: 'Memory',
+              key: 'memory-metric',
+              width: 110,
+              sorter: (a, b) => {
+                const ma = podMetricsByKey.get(podMetricsKey(a.namespace, a.name))?.memory ?? -1
+                const mb = podMetricsByKey.get(podMetricsKey(b.namespace, b.name))?.memory ?? -1
+                return ma - mb
+              },
+              ellipsis: false,
+              render: (_, item) => {
+                const m = podMetricsByKey.get(podMetricsKey(item.namespace, item.name))
+                return m ? formatBytes(m.memory) : '—'
+              }
+            },
+            sortState
+          )
+        )
+      }
     }
     if (isNodesKind) {
       cols.push({
@@ -286,7 +335,20 @@ export function ResourceTable({
         )
     })
     return cols
-  }, [kind, namespace, isNodesKind, nodeMetrics, clusterId, listQueryKey, sortState, isActive, onNamespaceChange, navigateToResource])
+  }, [
+    kind,
+    namespace,
+    isNodesKind,
+    isPodsKind,
+    nodeMetrics,
+    podMetricsByKey,
+    clusterId,
+    listQueryKey,
+    sortState,
+    isActive,
+    onNamespaceChange,
+    navigateToResource
+  ])
 
   const allColumnKeys = useMemo(
     () => columns.map((c) => String(c.key ?? '')).filter(Boolean),

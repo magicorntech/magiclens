@@ -32,6 +32,8 @@ interface MarkdownNoteEditorProps {
   paperExtend?: SparksPaperExtend
   surfaceMode?: SparksSurfaceMode
   vaultPath?: string | null
+  /** Seeded Welcome note — preview only, no title/body edits. */
+  readOnly?: boolean
   onTitleChange: (title: string) => void
   onBodyChange: (body: string) => void
   onOpenNote: (id: string) => void
@@ -249,6 +251,7 @@ export function MarkdownNoteEditor({
   paperExtend = 'normal',
   surfaceMode = 'write',
   vaultPath,
+  readOnly = false,
   onTitleChange,
   onBodyChange,
   onOpenNote,
@@ -267,7 +270,6 @@ export function MarkdownNoteEditor({
 
   const themeKey = resolveThemeKey(themeId, isDark)
   const monacoTheme = `sparks-${themeKey}`
-  const sketchOpen = surfaceMode === 'draw'
 
   useEffect(() => {
     const map = { normal: 520, tall: 1100, long: 1800 } as const
@@ -307,12 +309,14 @@ export function MarkdownNoteEditor({
     monacoRef.current.editor.setTheme(monacoTheme)
   }, [monacoTheme])
 
-  const showEditor = mode === 'edit' || mode === 'live'
-  const showPreview = mode === 'preview' || mode === 'live'
+  const showEditor = !readOnly && (mode === 'edit' || mode === 'live')
+  const showPreview = readOnly || mode === 'preview' || mode === 'live'
+  const sketchOpen = !readOnly && surfaceMode === 'draw'
 
   const editorOptions = useMemo(
     () =>
       ({
+        readOnly: false,
         fontSize: 15,
         lineHeight: 26,
         fontFamily:
@@ -479,6 +483,8 @@ export function MarkdownNoteEditor({
               onChange={(e) => onTitleChange(e.target.value)}
               placeholder="Untitled"
               spellCheck
+              readOnly={readOnly}
+              disabled={readOnly}
             />
             <div className="ml-md-editor__rule" aria-hidden />
           </header>

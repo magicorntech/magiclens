@@ -1,6 +1,6 @@
 import Store from 'electron-store'
 import type { UpdateSettings } from '@shared/types/update'
-import { defaultDisplaySettings, type DisplaySettings, normalizeUtilityFabSide } from '@shared/types/app'
+import { defaultDisplaySettings, type DisplaySettings, normalizeUtilityFabSide, normalizeUiTypography } from '@shared/types/app'
 import { normalizeKeyboardShortcuts } from '@shared/types/keyboardShortcuts'
 import { normalizeAppLocale } from '@shared/types/locale'
 import { normalizeNodesDashboardPrefs } from '@shared/types/nodesDashboard'
@@ -88,6 +88,7 @@ export function getDisplaySettings(): DisplaySettings {
     ...stored,
     utilityFabSide: normalizeUtilityFabSide(stored?.utilityFabSide),
     utilityFabOffset,
+    uiTypography: normalizeUiTypography(stored?.uiTypography),
     nodesDashboard: normalizeNodesDashboardPrefs(stored?.nodesDashboard),
     chromeToolbar: normalizeChromeToolbarPrefs(stored?.chromeToolbar),
     keyboardShortcuts: normalizeKeyboardShortcuts(stored?.keyboardShortcuts),
@@ -102,6 +103,7 @@ export function setDisplaySettings(patch: Partial<DisplaySettings>): DisplaySett
     ...current,
     ...patch,
     utilityFabSide: normalizeUtilityFabSide(patch.utilityFabSide ?? current.utilityFabSide),
+    uiTypography: normalizeUiTypography(patch.uiTypography ?? current.uiTypography),
     nodesDashboard: patch.nodesDashboard
       ? normalizeNodesDashboardPrefs({ ...current.nodesDashboard, ...patch.nodesDashboard })
       : current.nodesDashboard,

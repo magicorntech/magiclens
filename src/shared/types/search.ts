@@ -2,6 +2,7 @@ import type { ResourceKind } from '../resourceKinds'
 
 export const GLOBAL_SEARCH_TYPES = [
   'clusters',
+  'sparks',
   'namespaces',
   'pods',
   'deployments',
@@ -30,6 +31,14 @@ export type GlobalSearchResult =
       clusterName: string
       contextName: string
       status: string
+    }
+  | {
+      type: 'spark'
+      noteId: string
+      title: string
+      folder: string
+      path: string
+      snippet?: string
     }
   | {
       type: 'builtin'

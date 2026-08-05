@@ -17,7 +17,7 @@ import { EditClusterModal } from '../ClusterTabs/EditClusterModal'
 import { SidebarWorkspaces } from './SidebarWorkspaces'
 import { Icon } from '../ui/Icon'
 
-const COLLAPSED_WIDTH = 72
+const COLLAPSED_WIDTH = 88
 const EXPANDED_WIDTH = 236
 const DEFAULT_FAVORITES_HEIGHT = 184
 const MIN_FAVORITES_HEIGHT = 96
@@ -412,7 +412,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
           <Tooltip title={t('common.settings')} placement="right" arrow={false}>
             <button
               type="button"
-              className="ml-sidebar-btn ml-sidebar-btn--ghost"
+              className="ml-sidebar-btn ml-sidebar-btn--ghost ml-sidebar-btn--settings"
               aria-label={t('common.settings')}
               onClick={() => {
                 openSettings()

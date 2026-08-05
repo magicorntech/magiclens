@@ -2,6 +2,7 @@ import type { GlobalSearchType } from './types/search'
 
 export const GLOBAL_SEARCH_TYPE_LABELS: Record<GlobalSearchType, string> = {
   clusters: 'Clusters',
+  sparks: 'Sparks',
   namespaces: 'Namespaces',
   pods: 'Pods',
   deployments: 'Deployments',
@@ -24,6 +25,7 @@ export const GLOBAL_SEARCH_TYPE_LABELS: Record<GlobalSearchType, string> = {
 /** Keywords / aliases for filtering by resource type in the search box (e.g. `pod:nginx`, `@deploy api`). */
 export const GLOBAL_SEARCH_TYPE_KEYWORDS: Record<GlobalSearchType, string[]> = {
   clusters: ['cluster', 'clusters', 'cls'],
+  sparks: ['spark', 'sparks', 'note', 'notes', 'md'],
   namespaces: ['ns', 'namespace', 'namespaces'],
   pods: ['pod', 'pods'],
   deployments: ['deploy', 'deployment', 'deployments', 'dep'],

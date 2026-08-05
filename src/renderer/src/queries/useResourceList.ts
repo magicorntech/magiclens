@@ -9,7 +9,7 @@ import {
   isNoNamespaceSelection,
   listNamespaceParam
 } from '@shared/namespaceSelection'
-import { useLiveRefetchInterval } from '../stores/useLiveRefetchInterval'
+import { useWatchFallbackPollInterval } from '../stores/useLiveRefetchInterval'
 import { useClusterConnected } from './useClusterConnected'
 import { useBuiltinResourceWatch } from './useResourceWatch'
 
@@ -35,8 +35,8 @@ export function useResourceList(
   )
 
   const wantsPolling = POLLING_FALLBACK_STATUSES.includes(watchStatus) || watchStatus === 'reconnecting'
-  const liveRefetchInterval = useLiveRefetchInterval(isActiveTab)
-  const refetchInterval = wantsPolling ? liveRefetchInterval : false
+  const fallbackPollInterval = useWatchFallbackPollInterval(isActiveTab)
+  const refetchInterval = wantsPolling ? fallbackPollInterval : false
 
   const query = useQuery({
     queryKey: ['resource-list', clusterId, namespaceSelection, kind],

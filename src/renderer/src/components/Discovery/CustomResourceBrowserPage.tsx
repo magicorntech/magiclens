@@ -118,7 +118,10 @@ export function CustomResourceBrowserPage({
     !!selectedKind
   )
   const needsPollingFallback =
-    watchStatus === 'fallback-polling' || watchStatus === 'error' || watchStatus === 'disconnected'
+    watchStatus === 'fallback-polling' ||
+    watchStatus === 'error' ||
+    watchStatus === 'disconnected' ||
+    watchStatus === 'reconnecting'
   const { data: instancesData, isLoading: instancesLoading } = useDynamicResourceList(
     clusterId,
     selectedKind?.apiVersion ?? null,

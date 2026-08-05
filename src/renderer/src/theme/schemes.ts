@@ -108,7 +108,8 @@ function buildPalette(colors: SchemeColors, isDark: boolean): AppPalette {
     sidebarActive: withAlpha(accent, 0.12),
     sidebarControlBg: colors.spotlightLight,
     sidebarControlBorder: mixHex(accent, '#ffffff', 0.12),
-    resourceSiderBg: colors.resourceSiderLight,
+    // Light mode must use a light surface here — the nav text/hover colors are dark.
+    resourceSiderBg: sidebarSurface,
     panelBg: lighten(layout, 0.5),
     terminalBg: '#1a1625',
     terminalFg: '#e2e0ea',

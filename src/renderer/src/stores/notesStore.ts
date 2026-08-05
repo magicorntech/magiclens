@@ -131,6 +131,10 @@ interface NotesStoreState {
   ) => Promise<{ ok: boolean; path?: string; src?: string; error?: string }>
   chooseVault: () => Promise<boolean>
   revealVault: () => Promise<void>
+  importScan: () => Promise<import('@shared/types/notes').VaultImportScanResult>
+  importFile: (
+    req: import('@shared/types/notes').VaultImportFileRequest
+  ) => Promise<import('@shared/types/notes').VaultImportFileResult>
   selectNote: (id: string | null) => void
   openNoteTab: (id: string) => void
   closeNoteTab: (id: string) => void
@@ -441,6 +445,18 @@ export const useNotesStore = create<NotesStoreState>()((set, get) => ({
 
   revealVault: async () => {
     await window.api.notes.revealVault()
+  },
+
+  importScan: async () => {
+    if (!hasNotesApi()) return { ok: false as const, error: 'Notes API unavailable' }
+    return window.api.notes.importScan()
+  },
+
+  importFile: async (req) => {
+    if (!hasNotesApi()) {
+      return { ok: false as const, relativePath: req.relativePath, error: 'Notes API unavailable' }
+    }
+    return window.api.notes.importFile(req)
   },
 
   selectNote: (id) => {

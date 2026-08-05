@@ -16,6 +16,9 @@ import type {
   SetFolderIconRequest,
   UpdateNoteRequest,
   VaultFolderNode,
+  VaultImportFileRequest,
+  VaultImportFileResult,
+  VaultImportScanResult,
   VaultStatus
 } from '@shared/types/notes'
 import type { SparksCanvasDoc, SparksMediaImportResult, SparksSketchDoc } from '@shared/types/sparks'
@@ -33,12 +36,14 @@ import {
   getVaultPath,
   getVaultStatus,
   importFolderIcon,
+  importMarkdownIntoVault,
   listNotes,
   listTags,
   moveVaultRoot,
   removeNote,
   renameFolder,
   saveFolderIconDataUrl,
+  scanMarkdownForImport,
   setFolderIcon,
   updateNote,
   vaultPathWritable
@@ -160,6 +165,37 @@ export function registerNotesHandlers(): void {
     moveVaultRoot(next)
     return { ok: true, vaultPath: getVaultPath() }
   })
+
+  ipcMain.handle(IPC.NOTES_IMPORT_SCAN, async (e): Promise<VaultImportScanResult> => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+    const opts = {
+      title: 'Import Markdown notes from folder',
+      properties: ['openDirectory'] as Array<'openDirectory'>,
+      defaultPath: getVaultPath()
+    }
+    const result = win
+      ? await dialog.showOpenDialog(win, opts)
+      : await dialog.showOpenDialog(opts)
+    if (result.canceled || !result.filePaths[0]) {
+      return { ok: false, canceled: true }
+    }
+    const sourcePath = result.filePaths[0]
+    try {
+      const files = scanMarkdownForImport(sourcePath)
+      return { ok: true, sourcePath, files }
+    } catch (err) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : 'Failed to scan folder'
+      }
+    }
+  })
+
+  ipcMain.handle(
+    IPC.NOTES_IMPORT_FILE,
+    async (_e, req: VaultImportFileRequest): Promise<VaultImportFileResult> =>
+      importMarkdownIntoVault(req.sourceRoot, req.relativePath)
+  )
 
   ipcMain.handle(IPC.NOTES_CANVAS_GET, async (): Promise<SparksCanvasDoc> => loadCanvas())
 

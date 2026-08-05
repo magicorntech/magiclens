@@ -98,7 +98,14 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
         message.success(`Saved ${res.ref.kind}/${res.ref.name}`)
         namespaceListChanged = res.ref.kind === 'Namespace'
       }
-      await queryClient.invalidateQueries({ queryKey: tab.listQueryKey })
+      // The manifest may contain any kind (and e.g. a Deployment also spawns Pods/ReplicaSets),
+      // so refresh every resource list of this cluster, not just the tab that opened the editor.
+      await queryClient.invalidateQueries({
+        predicate: (q) => {
+          const [root, cluster] = q.queryKey
+          return (root === 'resource-list' || root === 'dynamic-resource-list') && cluster === tab.clusterId
+        }
+      })
       if (namespaceListChanged) {
         await refreshNamespaces(queryClient, tab.clusterId)
       }

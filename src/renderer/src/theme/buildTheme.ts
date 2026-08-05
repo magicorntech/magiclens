@@ -184,6 +184,7 @@ export function syncDocumentTheme(
     '--ml-toolbar-spacing': '8px',
     '--ml-component-spacing': '8px',
     '--ml-resource-sider-width': '220px',
+    '--ml-cluster-tab-width': '220px',
     '--ml-glass-bg': withAlpha(p.sidebarBg, isDark ? 0.88 : 0.92),
     '--ml-glass-border': p.sidebarDivider,
     '--ml-status-success-bg': isDark ? 'rgba(52,211,153,0.12)' : 'rgba(5,150,105,0.1)',

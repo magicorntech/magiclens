@@ -17,9 +17,8 @@ import type {
   TopologyNodeKind
 } from '@shared/types/topology'
 import { isAllNamespaces, parseNamespaceSelection } from '@shared/namespaceSelection'
-import { clusterManager } from './clusterManager'
+import { clusterManager, type ClusterClients } from './clusterManager'
 import { derivePodStatus } from './podStatus'
-import { getPrometheusStatus, prometheusQuery } from './prometheusService'
 
 function nodeId(kind: TopologyNodeKind, namespace: string, name: string): string {
   return `${kind}:${namespace}/${name}`
@@ -119,55 +118,66 @@ function stsHealth(sts: V1StatefulSet): { status: TopologyHealth; detail?: strin
   return { status: 'degraded', detail: `${ready}/${desired} ready` }
 }
 
+async function listNamespaceScopedResources(
+  clients: ClusterClients,
+  namespaces: string[]
+): Promise<{
+  pods: V1Pod[]
+  deployments: V1Deployment[]
+  statefulSets: V1StatefulSet[]
+  replicaSets: V1ReplicaSet[]
+  services: V1Service[]
+  ingresses: V1Ingress[]
+  configMaps: V1ConfigMap[]
+}> {
+  // Always namespaced lists — never cluster-wide. Multi-select fans out in parallel.
+  const buckets = await Promise.all(
+    namespaces.map(async (namespace) => {
+      const [podsRes, depsRes, stsRes, rsRes, svcRes, ingRes, cmRes] = await Promise.all([
+        clients.core.listNamespacedPod({ namespace }),
+        clients.apps.listNamespacedDeployment({ namespace }),
+        clients.apps.listNamespacedStatefulSet({ namespace }),
+        clients.apps.listNamespacedReplicaSet({ namespace }),
+        clients.core.listNamespacedService({ namespace }),
+        clients.networking.listNamespacedIngress({ namespace }),
+        clients.core.listNamespacedConfigMap({ namespace })
+      ])
+      return {
+        pods: (podsRes.items ?? []) as V1Pod[],
+        deployments: (depsRes.items ?? []) as V1Deployment[],
+        statefulSets: (stsRes.items ?? []) as V1StatefulSet[],
+        replicaSets: (rsRes.items ?? []) as V1ReplicaSet[],
+        services: (svcRes.items ?? []) as V1Service[],
+        ingresses: (ingRes.items ?? []) as V1Ingress[],
+        configMaps: (cmRes.items ?? []) as V1ConfigMap[]
+      }
+    })
+  )
+
+  return {
+    pods: buckets.flatMap((b) => b.pods),
+    deployments: buckets.flatMap((b) => b.deployments),
+    statefulSets: buckets.flatMap((b) => b.statefulSets),
+    replicaSets: buckets.flatMap((b) => b.replicaSets),
+    services: buckets.flatMap((b) => b.services),
+    ingresses: buckets.flatMap((b) => b.ingresses),
+    configMaps: buckets.flatMap((b) => b.configMaps)
+  }
+}
+
 export async function buildTopologyGraph(req: TopologyGraphRequest): Promise<TopologyGraphResponse> {
   const clients = clusterManager.require(req.clusterId)
   const selection = parseNamespaceSelection(req.namespace)
 
-  if (selection.length === 0) {
+  if (selection.length === 0 || isAllNamespaces(selection)) {
+    // All-namespaces topology is intentionally unsupported (too heavy for UI/API).
     return { nodes: [], edges: [], applications: [] }
   }
 
-  const all = isAllNamespaces(selection)
-  const multi = !all && selection.length > 1
-  // Single concrete namespace can use the cheaper namespaced list; ALL and multi
-  // fetch cluster-wide, then multi filters down to the selected set.
-  const single = !all && !multi ? selection[0] : null
-
-  const [podsRes, depsRes, stsRes, rsRes, svcRes, ingRes, cmRes] = await Promise.all([
-    single
-      ? clients.core.listNamespacedPod({ namespace: single })
-      : clients.core.listPodForAllNamespaces(),
-    single
-      ? clients.apps.listNamespacedDeployment({ namespace: single })
-      : clients.apps.listDeploymentForAllNamespaces(),
-    single
-      ? clients.apps.listNamespacedStatefulSet({ namespace: single })
-      : clients.apps.listStatefulSetForAllNamespaces(),
-    single
-      ? clients.apps.listNamespacedReplicaSet({ namespace: single })
-      : clients.apps.listReplicaSetForAllNamespaces(),
-    single
-      ? clients.core.listNamespacedService({ namespace: single })
-      : clients.core.listServiceForAllNamespaces(),
-    single
-      ? clients.networking.listNamespacedIngress({ namespace: single })
-      : clients.networking.listIngressForAllNamespaces(),
-    single
-      ? clients.core.listNamespacedConfigMap({ namespace: single })
-      : clients.core.listConfigMapForAllNamespaces()
-  ])
-
-  const nsSet = multi ? new Set(selection) : null
-  const inSelection = <T extends { metadata?: { namespace?: string } }>(items: T[]): T[] =>
-    nsSet ? items.filter((i) => !!i.metadata?.namespace && nsSet.has(i.metadata.namespace)) : items
-
-  const pods = inSelection((podsRes.items ?? []) as V1Pod[])
-  const deployments = inSelection((depsRes.items ?? []) as V1Deployment[])
-  const statefulSets = inSelection((stsRes.items ?? []) as V1StatefulSet[])
-  const replicaSets = inSelection((rsRes.items ?? []) as V1ReplicaSet[])
-  const services = inSelection((svcRes.items ?? []) as V1Service[])
-  const ingresses = inSelection((ingRes.items ?? []) as V1Ingress[])
-  const configMaps = inSelection((cmRes.items ?? []) as V1ConfigMap[])
+  // Cap multi-select fan-out so a large selection cannot spike CPU/API load.
+  const namespaces = selection.slice(0, 8)
+  const { pods, deployments, statefulSets, replicaSets, services, ingresses, configMaps } =
+    await listNamespaceScopedResources(clients, namespaces)
 
   const nodes: TopologyNode[] = []
   const edges: TopologyEdge[] = []
@@ -470,35 +480,7 @@ export async function buildTopologyGraph(req: TopologyGraphRequest): Promise<Top
     }
   }
 
-  // Optional Prometheus RPS on Service→Pod edges (best-effort, never blocks graph).
-  try {
-    if (getPrometheusStatus(req.clusterId).available) {
-      const res = await prometheusQuery({
-        clusterId: req.clusterId,
-        query: 'sum by (service) (rate(http_requests_total[5m]))'
-      })
-      const byService = new Map<string, number>()
-      const result = res.data?.result ?? []
-      if (Array.isArray(result)) {
-        for (const series of result) {
-          const svc = series.metric?.service || series.metric?.kubernetes_service
-          const value = Array.isArray(series.value) ? Number(series.value[1]) : NaN
-          if (svc && Number.isFinite(value)) byService.set(String(svc), value)
-        }
-      }
-      if (byService.size > 0) {
-        for (const edge of edges) {
-          if (edge.relation !== 'selects') continue
-          const svcName = edge.source.split('/')[1]
-          if (!svcName) continue
-          const rate = byService.get(svcName)
-          if (rate !== undefined) edge.rateRps = Math.round(rate * 100) / 100
-        }
-      }
-    }
-  } catch {
-    // ignore prometheus failures
-  }
+  // Skip Prometheus RPS enrichment — it adds latency on every poll and is rarely present.
 
   // Hide ReplicaSets with no edges to reduce noise
   const connected = new Set<string>()

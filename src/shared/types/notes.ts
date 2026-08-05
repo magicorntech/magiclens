@@ -192,3 +192,31 @@ export interface ChooseVaultResult {
   canceled?: boolean
   error?: string
 }
+
+/** Markdown file discovered under an import source folder. */
+export interface VaultImportCandidate {
+  /** Posix path relative to the chosen source folder. */
+  relativePath: string
+  title: string
+  folder: string
+}
+
+export interface VaultImportScanResult {
+  ok: boolean
+  canceled?: boolean
+  error?: string
+  sourcePath?: string
+  files?: VaultImportCandidate[]
+}
+
+export interface VaultImportFileRequest {
+  sourceRoot: string
+  relativePath: string
+}
+
+export interface VaultImportFileResult {
+  ok: boolean
+  relativePath: string
+  note?: ResourceNote
+  error?: string
+}
