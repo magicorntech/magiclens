@@ -5,6 +5,7 @@ import { normalizeKeyboardShortcuts } from '@shared/types/keyboardShortcuts'
 import { normalizeAppLocale } from '@shared/types/locale'
 import { normalizeNodesDashboardPrefs } from '@shared/types/nodesDashboard'
 import { normalizeChromeToolbarPrefs } from '@shared/types/chromeToolbar'
+import { normalizeMenuBarWidgetPrefs } from '@shared/types/menuBarWidget'
 
 interface AppSettings {
   hasSeenWelcome: boolean
@@ -90,6 +91,7 @@ export function getDisplaySettings(): DisplaySettings {
     utilityFabOffset,
     uiTypography: normalizeUiTypography(stored?.uiTypography),
     nodesDashboard: normalizeNodesDashboardPrefs(stored?.nodesDashboard),
+    menuBarWidget: normalizeMenuBarWidgetPrefs(stored?.menuBarWidget),
     chromeToolbar: normalizeChromeToolbarPrefs(stored?.chromeToolbar),
     keyboardShortcuts: normalizeKeyboardShortcuts(stored?.keyboardShortcuts),
     locale: normalizeAppLocale(stored?.locale),
@@ -107,6 +109,9 @@ export function setDisplaySettings(patch: Partial<DisplaySettings>): DisplaySett
     nodesDashboard: patch.nodesDashboard
       ? normalizeNodesDashboardPrefs({ ...current.nodesDashboard, ...patch.nodesDashboard })
       : current.nodesDashboard,
+    menuBarWidget: patch.menuBarWidget
+      ? normalizeMenuBarWidgetPrefs({ ...current.menuBarWidget, ...patch.menuBarWidget })
+      : current.menuBarWidget,
     chromeToolbar: patch.chromeToolbar
       ? normalizeChromeToolbarPrefs({ ...current.chromeToolbar, ...patch.chromeToolbar })
       : current.chromeToolbar,

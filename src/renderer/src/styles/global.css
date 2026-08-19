@@ -31,6 +31,33 @@ html[data-ui-contrast='bright'] #root {
   box-sizing: border-box;
 }
 
+/*
+ * Universal keyboard-focus ring. Only 4 elements in this file had their own
+ * :focus-visible treatment before this rule (tab bar item, top-bar search,
+ * browser tab x2) — everything else (buttons, links, custom list rows, overview
+ * stat tiles, menu items) had no visible focus indicator at all when navigated
+ * by keyboard. This low-specificity rule covers every focusable element by
+ * default; the handful of existing higher-specificity rules still win where
+ * a tighter/inset treatment already fits the component (e.g. compact tabs).
+ */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ml-primary) 55%, transparent);
+  outline-offset: 2px;
+  border-radius: var(--ml-radius-xs, 4px);
+}
+
+/* Respect the OS-level reduced-motion preference across every animation/transition in the app. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 ::selection {
   background: var(--ml-selection-bg);
 }
@@ -647,8 +674,12 @@ html[data-ui-contrast='bright'] #root {
 .ml-resource-tab-label-actions {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0;
   flex-shrink: 0;
+  /* Reserve room for all 3 possible action buttons (favorite, pin, close) so pinned tabs
+     (which omit the close button) don't render narrower than unpinned tabs next to them. */
+  min-width: 48px;
   margin-left: 1px;
   height: 16px;
 }
@@ -711,7 +742,7 @@ html[data-ui-contrast='bright'] #root {
 }
 
 .resource-kind-tabs-root {
-  --ml-resource-inline-pad: 16px;
+  --ml-resource-inline-pad: 20px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -761,7 +792,7 @@ html[data-ui-contrast='bright'] #root {
 }
 
 .ml-resource-tab-bar--pane {
-  --ml-resource-inline-pad: 8px;
+  --ml-resource-inline-pad: 14px;
   min-height: 34px;
   height: 34px;
 }
@@ -812,7 +843,7 @@ html[data-ui-contrast='bright'] #root {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  margin: 3px 2px 0;
+  margin: 3px 4px 0;
   padding: 0;
   border: none;
   border-radius: 6px 6px 0 0;
@@ -876,6 +907,12 @@ html[data-ui-contrast='bright'] #root {
   cursor: grab;
   opacity: 0.3;
   flex-shrink: 0;
+  /*
+   * The handle sits inside `.ml-resource-tab-bar__scroll` (overflow-x: auto), so without
+   * this the browser can claim the gesture for horizontal panning and fire `pointercancel`,
+   * killing the framer-motion drag before it starts. The tab item itself already sets it.
+   */
+  touch-action: none;
   transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 
@@ -4076,27 +4113,18 @@ body.ml-browser-tab-dragging {
 
 .ml-sidebar-btn--settings {
   color: var(--ml-sidebar-text) !important;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.01em;
 }
 
 .ml-sidebar-btn--settings svg {
   color: var(--ml-sidebar-text);
   opacity: 1;
-  stroke-width: 2.15px;
-}
-
-.ml-sidebar-btn--settings:hover {
-  color: var(--ml-sidebar-text) !important;
-  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent);
+  stroke-width: 1.8px;
 }
 
 .ml-sidebar-footer .ml-sidebar-btn:hover {
   background: transparent;
-}
-
-.ml-sidebar-footer .ml-sidebar-btn--settings:hover {
-  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent);
 }
 
 .ml-sidebar-section {
@@ -5336,7 +5364,7 @@ button.ml-sidebar-section-chrome:hover {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  padding: var(--ml-spacing-lg, 16px) 0;
+  padding: var(--ml-spacing-md, 16px) 0;
   font-family: var(--ml-font-sans, 'Inter Variable', sans-serif);
 }
 
@@ -5413,7 +5441,7 @@ button.ml-sidebar-section-chrome:hover {
 
 .ml-resource-nav-group,
 .ml-resource-nav-standalone {
-  margin-bottom: var(--ml-spacing-lg, 16px);
+  margin-bottom: var(--ml-spacing-md, 16px);
 }
 
 .ml-resource-nav-group:last-child,
@@ -6202,7 +6230,7 @@ button.ml-sidebar-section-chrome:hover {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 0 var(--ml-resource-inline-pad, 16px);
+  padding: 12px var(--ml-resource-inline-pad, 20px) 16px;
   width: 100%;
   max-width: none;
   box-sizing: border-box;
@@ -7376,15 +7404,28 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 /* Cleaner Nodes page layout */
-.ml-nodes-page {
+/*
+ * The Nodes page is now built from the same OverviewPage/DetailOverview/DetailSection
+ * components the Cluster/Workloads/Config overview pages use (NodesOverviewPage.tsx), so
+ * its page shell, section cards, and headers come from those shared styles rather than a
+ * bespoke set. What remains here is the handful of Nodes-specific bits: the two-up row for
+ * `half`-width sections, and internals of the resizable hotspots/table panels.
+ */
+.ml-nodes-overview-row {
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  gap: 10px;
-  padding: 12px 14px 10px;
-  box-sizing: border-box;
-  overflow: auto;
+  align-items: stretch;
+  gap: var(--ml-spacing-sm, 12px);
+}
+
+.ml-nodes-overview-row__cell {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .ml-nodes-overview-row {
+    flex-direction: column;
+  }
 }
 
 .ml-nodes-page__hero {
@@ -7398,45 +7439,12 @@ button.ml-sidebar-section-chrome:hover {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.ml-nodes-page__hotspots {
-  flex-shrink: 0;
-  border: 1px solid var(--ml-border-secondary);
-  border-radius: var(--ml-radius-md, 10px);
-  background: var(--ml-bg-container);
-  overflow: hidden;
-}
-
-.ml-nodes-page__hotspots-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-right: 8px;
-  background: var(--ml-bg-spotlight);
-}
-
 .ml-nodes-page__hotspots-meta {
-  flex: 1;
+  font-size: 12px;
   font-weight: 500;
   color: var(--ml-text-secondary);
 }
 
-.ml-nodes-page__hotspots-toggle {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
-  color: var(--ml-text);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: left;
-}
-
-.ml-nodes-page__hotspots-controls,
 .ml-nodes-page__panel-controls {
   display: inline-flex;
   align-items: center;
@@ -7444,7 +7452,6 @@ button.ml-sidebar-section-chrome:hover {
   flex-shrink: 0;
 }
 
-.ml-nodes-page__hotspots-size-btn,
 .ml-nodes-page__panel-size-btn {
   display: inline-flex;
   align-items: center;
@@ -7456,43 +7463,32 @@ button.ml-sidebar-section-chrome:hover {
   border-radius: var(--ml-radius-xs);
   background: var(--ml-bg-container);
   color: var(--ml-text-secondary);
-  font-size: 14px;
-  line-height: 1;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.ml-nodes-page__hotspots-size-btn:hover,
 .ml-nodes-page__panel-size-btn:hover {
   background: var(--ml-bg-layout);
   color: var(--ml-text);
   border-color: var(--ml-border);
 }
 
-.ml-nodes-page__hotspots-chevron {
-  flex-shrink: 0;
-  color: var(--ml-text-tertiary);
-  font-size: 11px;
-}
-
 .ml-nodes-page__hotspots-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-top: 1px solid var(--ml-border-secondary);
 }
 
 .ml-nodes-page__hotspots-body {
   flex: 1;
   min-height: 0;
-  padding: 10px 12px 6px;
+  padding: 0 0 6px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   overflow: auto;
 }
 
-.ml-nodes-page__hotspots-resize,
 .ml-nodes-page__panel-resize {
   flex-shrink: 0;
   display: flex;
@@ -7506,12 +7502,10 @@ button.ml-sidebar-section-chrome:hover {
   transition: background 0.15s ease;
 }
 
-.ml-nodes-page__hotspots-resize:hover,
 .ml-nodes-page__panel-resize:hover {
   background: var(--ml-bg-layout);
 }
 
-.ml-nodes-page__hotspots-resize-grip,
 .ml-nodes-page__panel-resize-grip {
   width: 44px;
   height: 4px;
@@ -7520,43 +7514,9 @@ button.ml-sidebar-section-chrome:hover {
   transition: background 0.15s ease, width 0.15s ease;
 }
 
-.ml-nodes-page__hotspots-resize:hover .ml-nodes-page__hotspots-resize-grip,
 .ml-nodes-page__panel-resize:hover .ml-nodes-page__panel-resize-grip {
   width: 56px;
   background: color-mix(in srgb, var(--ml-primary) 45%, var(--ml-border));
-}
-
-.ml-nodes-page__table {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--ml-border-secondary);
-  border-radius: var(--ml-radius-md, 10px);
-  background: var(--ml-bg-container);
-  overflow: hidden;
-}
-
-.ml-nodes-page__table--fluid {
-  flex: 0 0 auto;
-  min-height: 0;
-}
-
-.ml-nodes-page__table-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px 8px;
-  border-bottom: 1px solid var(--ml-border-secondary);
-  flex-shrink: 0;
-}
-
-.ml-nodes-page__table-actions {
-  margin-left: auto;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .ml-nodes-page__table-panel {
@@ -7569,13 +7529,6 @@ button.ml-sidebar-section-chrome:hover {
   flex: 0 0 auto;
   height: auto;
   min-height: 0;
-}
-
-.ml-nodes-page__title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ml-text);
 }
 
 .ml-nodes-page__count {
@@ -7870,11 +7823,137 @@ button.ml-sidebar-section-chrome:hover {
   background: var(--ml-status-danger-bg);
 }
 
+/* ── Nodes fleet widgets (version skew / roles / capacity) ── */
+/* Card shell mirrors .ml-detail-section (overview pages) — border/radius/background on the
+   card, a spotlight header strip, and the body padded separately. */
+.ml-nodes-fleet-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--ml-border-secondary);
+  border-radius: var(--ml-radius-md, 10px);
+  background: var(--ml-bg-container);
+  overflow: hidden;
+}
+
+.ml-nodes-fleet-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--ml-bg-spotlight);
+  border-bottom: 1px solid var(--ml-border-secondary);
+  flex-shrink: 0;
+}
+
+.ml-nodes-fleet-card__head .ml-nodes-section-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ml-nodes-fleet-card > .ml-detail-empty {
+  padding: 12px;
+}
+
+.ml-nodes-fleet-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.ml-nodes-fleet-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px 32px;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px;
+  border: none;
+  border-radius: var(--ml-radius-xs, 4px);
+  background: transparent;
+  color: var(--ml-text-secondary);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.ml-nodes-fleet-row:hover {
+  background: var(--ml-bg-spotlight);
+  color: var(--ml-text);
+}
+
+.ml-nodes-fleet-row__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--ml-font-mono);
+}
+
+.ml-nodes-fleet-row__track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ml-bg-spotlight);
+  overflow: hidden;
+}
+
+.ml-nodes-fleet-row__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ml-primary);
+}
+
+.ml-nodes-fleet-row__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ml-text);
+  font-weight: 600;
+}
+
+.ml-nodes-capacity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.ml-nodes-capacity-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: var(--ml-radius-sm, 6px);
+  background: var(--ml-bg-spotlight);
+}
+
+.ml-nodes-capacity-cell__label {
+  font-size: 11px;
+  color: var(--ml-text-tertiary);
+}
+
+.ml-nodes-capacity-cell__value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ml-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ml-nodes-capacity-cell__hint {
+  font-size: 11px;
+  color: var(--ml-text-secondary);
+}
+
 /* Resource usage grid */
 .ml-nodes-resource-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ml-component-spacing, 8px);
+  gap: var(--ml-spacing-sm, 12px);
   align-items: stretch;
 }
 
@@ -8479,7 +8558,7 @@ button.ml-sidebar-section-chrome:hover {
 
 .ml-nodes-dashboard-settings-item {
   display: grid;
-  grid-template-columns: 16px 1fr auto;
+  grid-template-columns: 16px 1fr auto auto;
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
@@ -8499,6 +8578,27 @@ button.ml-sidebar-section-chrome:hover {
 .ml-nodes-dashboard-settings-label {
   font-size: 12px;
   color: var(--ml-text);
+}
+
+.ml-nodes-dashboard-settings-width {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--ml-border-secondary);
+  border-radius: var(--ml-radius-xs, 4px);
+  background: transparent;
+  color: var(--ml-text-tertiary);
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.ml-nodes-dashboard-settings-width:hover {
+  color: var(--ml-primary);
+  border-color: var(--ml-primary);
+  background: var(--ml-bg-container);
 }
 
 .ml-nodes-dashboard-settings-item--locked {
@@ -9009,7 +9109,9 @@ button.ml-sidebar-section-chrome:hover {
   display: inline-flex;
   transform-origin: center center;
   will-change: transform;
-  transition: transform 0.1s ease-out;
+  /* Soft deceleration (ease-out-quint-ish) instead of the previous snappy linear-feeling
+     ease-out — reads as a gentle settle rather than a twitchy jump between icons. */
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ml-sidebar-list--dock .ml-ws-rail-slot {
@@ -9876,12 +9978,13 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 .ml-overview-page {
+  --ml-resource-inline-pad: 20px;
   height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 16px var(--ml-resource-inline-pad, 16px);
+  padding: 16px var(--ml-resource-inline-pad, 20px);
   box-sizing: border-box;
 }
 
@@ -9978,9 +10081,9 @@ button.ml-sidebar-section-chrome:hover {
   color: var(--ml-text-secondary);
 }
 
-.ml-overview-stat--ok .ml-overview-stat__value { color: #16a34a; }
-.ml-overview-stat--warn .ml-overview-stat__value { color: #d97706; }
-.ml-overview-stat--error .ml-overview-stat__value { color: #dc2626; }
+.ml-overview-stat--ok .ml-overview-stat__value { color: var(--ml-success); }
+.ml-overview-stat--warn .ml-overview-stat__value { color: var(--ml-warning); }
+.ml-overview-stat--error .ml-overview-stat__value { color: var(--ml-error); }
 
 .ml-overview-health {
   display: flex;
@@ -10226,30 +10329,6 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 /* ── Helm Charts ── */
-.ml-helm-page-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  flex-shrink: 0;
-  padding: 12px 0 4px;
-}
-
-.ml-helm-page-header__copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ml-helm-page-header__title {
-  margin: 0 !important;
-}
-
-.ml-helm-page-header__hint {
-  font-size: 12px;
-  line-height: 1.4;
-}
-
 .ml-helm-chart-name {
   display: inline-flex;
   align-items: center;
@@ -14020,4 +14099,238 @@ body.ml-vault--resizing .ml-vault__sidebar-resize::after {
 .ml-vault-import__none {
   color: var(--ml-text-secondary);
   font-size: 13px;
+}
+
+/* ── macOS menu-bar (Tray) widget popup ── */
+.ml-mbw {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 8px 10px 10px;
+  gap: 8px;
+  background: var(--ml-bg-container);
+  color: var(--ml-text);
+  font-size: 12px;
+  overflow: hidden;
+}
+
+.ml-mbw__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  /* Frameless window — let the strip drag the panel like a native title bar would. */
+  -webkit-app-region: drag;
+}
+
+.ml-mbw__title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ml-text-tertiary);
+}
+
+.ml-mbw__head-btn {
+  -webkit-app-region: no-drag;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--ml-radius-xs, 4px);
+  background: transparent;
+  color: var(--ml-text-tertiary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ml-mbw__head-btn:hover {
+  background: var(--ml-bg-spotlight);
+  color: var(--ml-text);
+}
+
+.ml-mbw__empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 12px;
+  color: var(--ml-text-secondary);
+  line-height: 1.5;
+}
+
+.ml-mbw__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ml-mbw-card {
+  border: 1px solid var(--ml-border-secondary);
+  border-radius: var(--ml-radius-sm, 6px);
+  background: var(--ml-bg-spotlight);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ml-mbw-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ml-mbw-card__name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-mbw-card__nodes {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--ml-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ml-mbw-card__offline {
+  font-size: 11px;
+  color: var(--ml-text-tertiary);
+  font-style: italic;
+}
+
+.ml-mbw-card__metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ml-mbw-metric {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ml-mbw--compact .ml-mbw-metric {
+  grid-template-columns: 52px auto;
+  justify-content: space-between;
+}
+
+.ml-mbw-metric__label {
+  font-size: 11px;
+  color: var(--ml-text-tertiary);
+}
+
+.ml-mbw-metric__track {
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ml-text) 10%, transparent);
+  overflow: hidden;
+}
+
+.ml-mbw-metric__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.ml-mbw-metric__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--ml-text);
+  white-space: nowrap;
+}
+
+.ml-mbw-metric__pct {
+  margin-left: 5px;
+  font-style: normal;
+  color: var(--ml-text-tertiary);
+}
+
+.ml-mbw-metric--warn .ml-mbw-metric__value,
+.ml-mbw-metric--warn .ml-mbw-metric__pct {
+  color: var(--ml-warning);
+}
+
+.ml-mbw-metric--bad .ml-mbw-metric__value,
+.ml-mbw-metric--bad .ml-mbw-metric__pct {
+  color: var(--ml-error);
+}
+
+.ml-widget-accent-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ml-widget-accent-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ml-text) 15%, transparent);
+}
+
+.ml-mbw-metric--count {
+  grid-template-columns: 1fr auto;
+}
+
+.ml-mbw__pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.ml-mbw__pager-btn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--ml-border-secondary);
+  border-radius: var(--ml-radius-xs, 4px);
+  background: transparent;
+  color: var(--ml-text-secondary);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ml-mbw__pager-btn:hover:not(:disabled) {
+  background: var(--ml-bg-spotlight);
+  color: var(--ml-text);
+}
+
+.ml-mbw__pager-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ml-mbw__pager-label {
+  font-size: 11px;
+  color: var(--ml-text-tertiary);
+  font-variant-numeric: tabular-nums;
 }

@@ -21,6 +21,7 @@ import { getPodDetail, getPodMetrics, getNamespacePodMetrics, getPodNetwork } fr
 import { podLogManager } from '../k8s/podLogManager'
 import { downloadPodLogs } from '../k8s/podLogDownload'
 import { podExecManager } from '../k8s/podExecManager'
+import { onSenderDestroyed } from './senderCleanup'
 
 export function registerPodHandlers(): void {
   ipcMain.handle(IPC.POD_GET_DETAIL, async (_e, req: PodResourceRequest): Promise<PodDetailResponse> => {
@@ -53,8 +54,8 @@ export function registerPodHandlers(): void {
   ipcMain.handle(IPC.POD_LOGS_START, async (event, req: PodLogsStartRequest) => {
     const clients = clusterManager.require(req.clusterId)
     const sender = event.sender
-    sender.once('destroyed', () => podLogManager.stopAllForSender(sender.id))
-    await podLogManager.start(req.sessionId, clients, req.namespace, req.podName, req.containerName, sender, {
+    onSenderDestroyed(sender, 'podLogManager', () => podLogManager.stopAllForSender(sender.id))
+    await podLogManager.start(req.sessionId, req.clusterId, clients, req.namespace, req.podName, req.containerName, sender, {
       tailLines: req.tailLines,
       timestamps: req.timestamps,
       sinceTime: req.sinceTime,
@@ -78,9 +79,10 @@ export function registerPodHandlers(): void {
   ipcMain.handle(IPC.POD_EXEC_START, async (event, req: PodExecStartRequest) => {
     const clients = clusterManager.require(req.clusterId)
     const sender = event.sender
-    sender.once('destroyed', () => podExecManager.stopAllForSender(sender.id))
+    onSenderDestroyed(sender, 'podExecManager', () => podExecManager.stopAllForSender(sender.id))
     await podExecManager.start(
       req.sessionId,
+      req.clusterId,
       clients,
       req.namespace,
       req.podName,

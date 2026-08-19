@@ -3,6 +3,13 @@ import type { ResourceKind } from '@shared/resourceKinds'
 export interface ResourceTabPreferences {
   pinned: ResourceKind[]
   favorites: ResourceKind[]
+  /**
+   * Display order across BOTH resource-kind tabs and virtual-page tabs, as `kind:X` /
+   * `virtual:X` ids. Needed because the two live in separate store arrays with no
+   * interleaving information, which previously pinned every virtual page to the far left.
+   * Empty on first run — see `mergeTabOrder` for the fallback.
+   */
+  tabOrder: string[]
   splitView: boolean
   splitLeftKind: ResourceKind | null
   splitRightKind: ResourceKind | null
@@ -17,6 +24,7 @@ const STORAGE_PREFIX = 'ml-resource-tabs:'
 export const defaultResourceTabPreferences = (): ResourceTabPreferences => ({
   pinned: [],
   favorites: [],
+  tabOrder: [],
   splitView: false,
   splitLeftKind: null,
   splitRightKind: null,
@@ -43,6 +51,28 @@ export function saveResourceTabPreferences(clusterId: string, prefs: ResourceTab
   } catch {
     // ignore quota errors
   }
+}
+
+/** Stable id for a tab in the merged (kinds + virtual pages) ordering. */
+export function kindTabId(kind: string): string {
+  return `kind:${kind}`
+}
+
+export function virtualTabId(page: string): string {
+  return `virtual:${page}`
+}
+
+/**
+ * Applies the saved cross-type order to the currently-open tabs. Ids missing from
+ * `savedOrder` (newly opened tabs, or every tab before this preference existed) keep their
+ * incoming relative order and land at the end, so nothing disappears and the first run
+ * degrades to the previous behaviour instead of shuffling.
+ */
+export function mergeTabOrder(openIds: string[], savedOrder: string[]): string[] {
+  const open = new Set(openIds)
+  const ordered = savedOrder.filter((id) => open.has(id))
+  const seen = new Set(ordered)
+  return [...ordered, ...openIds.filter((id) => !seen.has(id))]
 }
 
 /** Pinned tabs first, then the rest — preserves relative order within each group. */

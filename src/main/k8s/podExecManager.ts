@@ -40,6 +40,7 @@ interface ExecSession {
   stdin: ExecStdin
   stdout: ExecStdout
   senderId: number
+  clusterId: string
   ws?: { close: () => void }
   /** Bumps when a shell candidate is abandoned so late close/status events are ignored. */
   attempt: number
@@ -80,6 +81,7 @@ class PodExecManager {
 
   async start(
     sessionId: string,
+    clusterId: string,
     clients: ClusterClients,
     namespace: string,
     podName: string,
@@ -113,7 +115,7 @@ class PodExecManager {
     stderr.on('error', () => {})
     stdin.on('error', () => {})
 
-    const session: ExecSession = { stdin, stdout, senderId: sender.id, attempt: 0, onEnd }
+    const session: ExecSession = { stdin, stdout, senderId: sender.id, clusterId, attempt: 0, onEnd }
     this.sessions.set(sessionId, session)
 
     const candidates = command ? [command] : DEFAULT_SHELL_CANDIDATES
@@ -223,6 +225,17 @@ class PodExecManager {
   stopAllForSender(senderId: number): void {
     for (const [sessionId, session] of this.sessions) {
       if (session.senderId === senderId) {
+        session.attempt += 1
+        session.ws?.close()
+        this.sessions.delete(sessionId)
+        this.runOnEnd(session)
+      }
+    }
+  }
+
+  stopAllForCluster(clusterId: string): void {
+    for (const [sessionId, session] of this.sessions) {
+      if (session.clusterId === clusterId) {
         session.attempt += 1
         session.ws?.close()
         this.sessions.delete(sessionId)

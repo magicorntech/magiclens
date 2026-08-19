@@ -4,6 +4,7 @@ export type SettingsSection =
   | 'general'
   | 'updates'
   | 'display'
+  | 'widget'
   | 'keyboard'
   | 'appearance'
   | 'sparks'

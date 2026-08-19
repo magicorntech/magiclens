@@ -166,7 +166,9 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const width = isDrawer ? '100%' : collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH
   const favoritesBodyOpen = favoritesExpanded
   const showFavoritesInRail = showFavoritesSection && (!collapsed || favoritesExpanded)
-  const showWorkspacesInRail = showWorkspacesSection && (!collapsed || workspacesExpanded)
+  // Collapsed rail always shows the workspaces dock — `workspacesExpanded` only means
+  // "list open" in the full sidebar's collapsible section, not "hide entirely" here.
+  const showWorkspacesInRail = showWorkspacesSection
 
   useEffect(() => {
     if (isDrawer) return

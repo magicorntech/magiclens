@@ -26,6 +26,14 @@ export interface NavStandaloneItem {
   label?: string
 }
 
+/** A virtual page promoted to a top-level nav item (no section, no resource-kind context menu). */
+export interface NavStandaloneVirtualItem {
+  type: 'standalone-virtual'
+  key: VirtualPageKey
+  icon: LucideIcon
+  label: string
+}
+
 export interface NavCollapsibleSection {
   type: 'section'
   id: string
@@ -34,7 +42,11 @@ export interface NavCollapsibleSection {
   entries: NavEntry[]
 }
 
-export type NavLayoutItem = 'favorites' | NavStandaloneItem | NavCollapsibleSection
+export type NavLayoutItem =
+  | 'favorites'
+  | NavStandaloneItem
+  | NavStandaloneVirtualItem
+  | NavCollapsibleSection
 
 export const FAVORITES_SECTION_ID = 'favorites'
 
@@ -42,16 +54,7 @@ export const FAVORITES_SECTION_ID = 'favorites'
 export const resourceNavLayout: NavLayoutItem[] = [
   'favorites',
   { type: 'standalone', kind: 'Nodes', icon: Server },
-  {
-    type: 'section',
-    id: 'overview',
-    title: 'Overview',
-    icon: LayoutDashboard,
-    entries: [
-      { type: 'virtual', key: 'clusterOverview', label: 'Cluster' },
-      { type: 'virtual', key: 'topology', label: 'Topology' }
-    ]
-  },
+  { type: 'standalone-virtual', key: 'topology', icon: LayoutDashboard, label: 'Topology' },
   {
     type: 'section',
     id: 'workloads',
@@ -97,6 +100,7 @@ export const resourceNavLayout: NavLayoutItem[] = [
     title: 'Network',
     icon: Globe,
     entries: [
+      { type: 'virtual', key: 'networkOverview', label: 'Overview' },
       { type: 'kind', kind: 'Services' },
       { type: 'kind', kind: 'EndpointSlices' },
       { type: 'kind', kind: 'Endpoints' },
@@ -112,6 +116,7 @@ export const resourceNavLayout: NavLayoutItem[] = [
     title: 'Storage',
     icon: HardDrive,
     entries: [
+      { type: 'virtual', key: 'storageOverview', label: 'Overview' },
       { type: 'kind', kind: 'PersistentVolumeClaims' },
       { type: 'kind', kind: 'PersistentVolumes' },
       { type: 'kind', kind: 'StorageClasses' }
@@ -171,7 +176,7 @@ export function findSectionForSelection(
   virtualPage: VirtualPageKey | null
 ): string | null {
   for (const item of resourceNavLayout) {
-    if (item === 'favorites' || item.type === 'standalone') continue
+    if (item === 'favorites' || item.type === 'standalone' || item.type === 'standalone-virtual') continue
     for (const entry of item.entries) {
       if (entry.type === 'kind' && entry.kind === kind) return item.id
       if (entry.type === 'virtual' && entry.key === virtualPage) return item.id
@@ -183,7 +188,7 @@ export function findSectionForSelection(
 export function flattenNavEntries(): NavEntry[] {
   const entries: NavEntry[] = []
   for (const item of resourceNavLayout) {
-    if (item === 'favorites' || item.type === 'standalone') continue
+    if (item === 'favorites' || item.type === 'standalone' || item.type === 'standalone-virtual') continue
     entries.push(...item.entries)
   }
   return entries
@@ -193,6 +198,10 @@ export function allVirtualPageKeys(): Set<VirtualPageKey> {
   const keys = new Set<VirtualPageKey>()
   for (const item of resourceNavLayout) {
     if (item === 'favorites' || item.type === 'standalone') continue
+    if (item.type === 'standalone-virtual') {
+      keys.add(item.key)
+      continue
+    }
     for (const entry of item.entries) {
       if (entry.type === 'virtual') keys.add(entry.key)
     }

@@ -11,6 +11,7 @@ import type {
 import { clusterManager } from '../k8s/clusterManager'
 import { portForwardManager } from '../k8s/portForwardManager'
 import { resolveServiceBackingPod } from '../k8s/serviceService'
+import { onSenderDestroyed } from './senderCleanup'
 
 export function registerPortForwardHandlers(): void {
   ipcMain.handle(
@@ -19,7 +20,7 @@ export function registerPortForwardHandlers(): void {
       try {
         const clients = clusterManager.require(req.clusterId)
         const sender = event.sender
-        sender.once('destroyed', () => portForwardManager.stopAllForSender(sender.id))
+        onSenderDestroyed(sender, 'portForwardManager', () => portForwardManager.stopAllForSender(sender.id))
         return await portForwardManager.start({
           clusterId: req.clusterId,
           clients,
@@ -46,7 +47,7 @@ export function registerPortForwardHandlers(): void {
         const clients = clusterManager.require(req.clusterId)
         const { podName, targetPort } = await resolveServiceBackingPod(clients, req.namespace, req.serviceName, req.port)
         const sender = event.sender
-        sender.once('destroyed', () => portForwardManager.stopAllForSender(sender.id))
+        onSenderDestroyed(sender, 'portForwardManager', () => portForwardManager.stopAllForSender(sender.id))
         return await portForwardManager.start({
           clusterId: req.clusterId,
           clients,

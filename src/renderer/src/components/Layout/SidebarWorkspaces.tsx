@@ -50,8 +50,12 @@ interface SidebarWorkspacesProps {
 
 const LOGO_ACCEPT = 'image/png,image/jpeg,image/x-icon,image/vnd.microsoft.icon,.png,.jpg,.jpeg,.ico'
 
-/** Cosine falloff like macOS Dock — smooth peak under the cursor. */
-function dockMagnifyScale(distancePx: number, influencePx = 52, maxScale = 1.58): number {
+/**
+ * Cosine falloff like macOS Dock — smooth peak under the cursor. Kept deliberately
+ * subtle (1.22x, not the Dock's ~1.6x) since this sits in a dense sidebar rail, not
+ * a full-screen dock — a big scale jump there reads as jumpy rather than playful.
+ */
+function dockMagnifyScale(distancePx: number, influencePx = 56, maxScale = 1.22): number {
   if (distancePx >= influencePx) return 1
   const t = 1 - distancePx / influencePx
   return 1 + (maxScale - 1) * (0.5 - 0.5 * Math.cos(Math.PI * t))
@@ -106,26 +110,40 @@ export function SidebarWorkspaces({
   const [dockScales, setDockScales] = useState<Record<string, number>>({})
   const [openFlyoutId, setOpenFlyoutId] = useState<string | null>(null)
   const dockRailRef = useRef<HTMLDivElement>(null)
+  const dockRafRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isMac = navigator.platform.includes('Mac')
 
   const dockVisual = collapsed && workspaceDockMagnification
   const dockEnabled = dockVisual && !openFlyoutId
 
+  useEffect(() => {
+    return () => {
+      if (dockRafRef.current !== null) cancelAnimationFrame(dockRafRef.current)
+    }
+  }, [])
+
   function onDockPointerMove(e: React.PointerEvent<HTMLDivElement>): void {
     if (!dockEnabled) return
-    const root = dockRailRef.current
-    if (!root) return
+    // Recompute at most once per animation frame — pointermove can fire far faster than
+    // the screen refreshes, and a React state update on every one of those events was
+    // the main source of the jank, no matter how the CSS transition itself was tuned.
+    if (dockRafRef.current !== null) return
     const y = e.clientY
-    const next: Record<string, number> = {}
-    root.querySelectorAll<HTMLElement>('[data-ws-dock-id]').forEach((el) => {
-      const id = el.dataset.wsDockId
-      if (!id) return
-      const rect = el.getBoundingClientRect()
-      const centerY = rect.top + rect.height / 2
-      next[id] = dockMagnifyScale(Math.abs(y - centerY))
+    dockRafRef.current = requestAnimationFrame(() => {
+      dockRafRef.current = null
+      const root = dockRailRef.current
+      if (!root) return
+      const next: Record<string, number> = {}
+      root.querySelectorAll<HTMLElement>('[data-ws-dock-id]').forEach((el) => {
+        const id = el.dataset.wsDockId
+        if (!id) return
+        const rect = el.getBoundingClientRect()
+        const centerY = rect.top + rect.height / 2
+        next[id] = dockMagnifyScale(Math.abs(y - centerY))
+      })
+      setDockScales(next)
     })
-    setDockScales(next)
   }
 
   function onDockPointerLeave(): void {
@@ -364,25 +382,22 @@ export function SidebarWorkspaces({
   )
 
   if (collapsed) {
+    // The collapsed rail is already maximally compact (icons only) — there's nothing
+    // further to collapse it into, so unlike the full sidebar's section header, this
+    // mark is a static label, not a toggle. It used to call onToggleSection, which
+    // flipped the same `sectionExpanded` state the full sidebar uses to show/hide the
+    // workspaces list — clicking it here made the whole dock disappear with no way back.
     return (
-      <div
-        className={`ml-sidebar-section ml-sidebar-section--workspaces ml-sidebar-section--compact${
-          sectionExpanded ? '' : ' ml-sidebar-section--workspaces-collapsed'
-        }`}
-      >
-        {sectionExpanded ? (
-          <>
-            <Tooltip title={t('workspaces.compactTooltip')} placement="right" arrow={false}>
-              <button
-                type="button"
-                className="ml-sidebar-compact-mark"
-                aria-label={t('workspaces.compactTooltip')}
-                onClick={onToggleSection}
-              >
-                <Icon icon={Layers} variant="action" />
-              </button>
-            </Tooltip>
-            <div
+      <div className="ml-sidebar-section ml-sidebar-section--workspaces ml-sidebar-section--compact">
+        <Tooltip title={t('workspaces.compactTooltip')} placement="right" arrow={false}>
+          <span
+            className="ml-sidebar-compact-mark"
+            aria-label={t('workspaces.compactTooltip')}
+          >
+            <Icon icon={Layers} variant="action" />
+          </span>
+        </Tooltip>
+        <div
               ref={dockRailRef}
               className={`ml-sidebar-list ml-sidebar-list--compact-workspaces${
                 dockVisual ? ' ml-sidebar-list--dock' : ''
@@ -451,8 +466,15 @@ export function SidebarWorkspaces({
                     trigger={['hover']}
                     placement="rightTop"
                     arrow={false}
-                    mouseEnterDelay={0.18}
-                    mouseLeaveDelay={0.28}
+                    // Each icon has its own independent Popover, so a longer leave-delay than
+                    // enter-delay meant moving quickly between icons opened the next flyout
+                    // before the previous one's close timer fired — two shown at once, looking
+                    // like they overlapped. Once any flyout in the dock is already open, treat
+                    // hovering a sibling as an instant switch (no delay) instead of a fresh
+                    // "first hover"; the leave delay only needs to survive the gap while the
+                    // cursor travels from the icon to the flyout's own content.
+                    mouseEnterDelay={openFlyoutId !== null ? 0 : 0.15}
+                    mouseLeaveDelay={0.12}
                     destroyOnHidden={false}
                     align={{ offset: [10, -4] }}
                     onOpenChange={(open) => {
@@ -510,8 +532,6 @@ export function SidebarWorkspaces({
                 <Icon icon={FolderPlus} variant="action" />
               </button>
             </Tooltip>
-          </>
-        ) : null}
         {editorModal}
       </div>
     )

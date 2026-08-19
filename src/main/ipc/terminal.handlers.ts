@@ -15,6 +15,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { parse, stringify } from 'yaml'
+import { onSenderDestroyed } from './senderCleanup'
 
 /**
  * Points the shell at a kubeconfig whose `current-context` is the cluster the terminal
@@ -47,7 +48,7 @@ function kubeconfigEnvForCluster(
 export function registerTerminalHandlers(): void {
   ipcMain.handle(IPC.TERMINAL_START, (event, req: TerminalStartRequest): TerminalStartResponse => {
     const sender = event.sender
-    sender.once('destroyed', () => localTerminalManager.stopAllForSender(sender.id))
+    onSenderDestroyed(sender, 'localTerminalManager', () => localTerminalManager.stopAllForSender(sender.id))
     let env = req.env
     let tempPaths: string[] | undefined
 

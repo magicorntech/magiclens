@@ -40,6 +40,7 @@ export function ResourceDetailDrawer({
   return (
     <Drawer
       title={null}
+      closable={false}
       placement="right"
       open={open && !!item}
       onClose={onClose}

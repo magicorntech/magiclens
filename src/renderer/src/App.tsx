@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { MotionConfig } from 'framer-motion'
 import { useClusterStore } from './stores/clusterStore'
 import { useAuthStore } from './stores/authStore'
 import { useUpdateStore } from './stores/updateStore'
@@ -93,16 +94,20 @@ export function App(): React.JSX.Element {
   if (!ready || !authHydrated) return <LoadingScreen />
 
   if (showTour && !tourDismissed) {
-    return <FeatureTourScreen onFinish={handleFinishTour} />
+    return (
+      <MotionConfig reducedMotion="user">
+        <FeatureTourScreen onFinish={handleFinishTour} />
+      </MotionConfig>
+    )
   }
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <AppLayout />
       <UpdateNotificationBanner />
       <UpdateCenterModal />
       <GlobalSearchModal />
       <VpnSessionPromptModal />
-    </>
+    </MotionConfig>
   )
 }

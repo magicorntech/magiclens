@@ -13,6 +13,7 @@ import {
   parseTopologyPopoutRoute,
   TopologyPopoutApp
 } from './components/Topology/TopologyPopoutApp'
+import { MenuBarWidgetApp, isMenuBarWidgetRoute } from './components/MenuBarWidget/MenuBarWidgetApp'
 import './i18n'
 import '@fontsource-variable/inter'
 import '@fontsource/jetbrains-mono/400.css'
@@ -31,6 +32,7 @@ function Root(): React.JSX.Element {
   )
   const antdLocale = useMemo(() => getAntdLocale(i18n.language), [i18n.language])
   const topologyPopout = useMemo(() => parseTopologyPopoutRoute(), [])
+  const menuBarWidget = useMemo(() => isMenuBarWidgetRoute(), [])
 
   useEffect(() => {
     syncDocumentTheme(isDark, colorScheme, customAccentColor)
@@ -38,7 +40,9 @@ function Root(): React.JSX.Element {
 
   return (
     <ConfigProvider theme={antdTheme} locale={antdLocale}>
-      {topologyPopout ? (
+      {menuBarWidget ? (
+        <MenuBarWidgetApp />
+      ) : topologyPopout ? (
         <TopologyPopoutApp
           clusterId={topologyPopout.clusterId}
           namespace={topologyPopout.namespace}

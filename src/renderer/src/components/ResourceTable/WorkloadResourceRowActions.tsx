@@ -208,7 +208,7 @@ export function WorkloadResourceRowActions({
         </Space>
       ) : null}
       <Dropdown menu={{ items: menuItems, onClick: handleMenuClick }} trigger={['click']} placement="bottomRight">
-        <Button size="small" icon={<Icon icon={MoreHorizontal} variant="detail" />} />
+        <Button size="small" aria-label="More actions" icon={<Icon icon={MoreHorizontal} variant="detail" />} />
       </Dropdown>
       <WorkloadActionModals clusterId={clusterId} kind={kind} namespace={namespace} name={name} workload={workload} />
     </>

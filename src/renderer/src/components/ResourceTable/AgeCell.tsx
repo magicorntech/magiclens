@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import { useSharedClockTick } from '@renderer/hooks/useSharedClockTick'
 
 dayjs.extend(relativeTime)
 
@@ -9,12 +9,7 @@ interface AgeCellProps {
 }
 
 export function AgeCell({ timestamp }: AgeCellProps): React.JSX.Element {
-  const [, forceTick] = useState(0)
-
-  useEffect(() => {
-    const interval = setInterval(() => forceTick((n) => n + 1), 30_000)
-    return () => clearInterval(interval)
-  }, [])
+  useSharedClockTick()
 
   if (!timestamp) return <span>-</span>
   return <span>{dayjs(timestamp).fromNow(true)}</span>

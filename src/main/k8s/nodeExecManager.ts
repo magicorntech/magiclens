@@ -29,6 +29,7 @@ class NodeExecManager {
     this.sessions.set(sessionId, { clients, podName })
     await podExecManager.start(
       sessionId,
+      clusterId,
       clients,
       namespace,
       podName,
@@ -65,6 +66,10 @@ class NodeExecManager {
 
   stopAllForSender(senderId: number): void {
     podExecManager.stopAllForSender(senderId)
+  }
+
+  stopAllForCluster(clusterId: string): void {
+    podExecManager.stopAllForCluster(clusterId)
   }
 }
 

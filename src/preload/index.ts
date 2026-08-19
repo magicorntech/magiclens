@@ -448,6 +448,15 @@ const api = {
     getDisplaySettings: (): Promise<DisplaySettings> => ipcRenderer.invoke(IPC.APP_GET_DISPLAY_SETTINGS),
     setDisplaySettings: (patch: Partial<DisplaySettings>): Promise<DisplaySettings> =>
       ipcRenderer.invoke(IPC.APP_SET_DISPLAY_SETTINGS, patch),
+    setMenuBarTrayTitle: (title: string): Promise<{ ok: true }> =>
+      ipcRenderer.invoke(IPC.MENU_BAR_WIDGET_SET_TRAY_TITLE, { title }),
+    closeMenuBarPopup: (): Promise<{ ok: true }> =>
+      ipcRenderer.invoke(IPC.MENU_BAR_WIDGET_CLOSE_POPUP),
+    onMenuBarRefresh: (cb: () => void): (() => void) => {
+      const handler = (): void => cb()
+      ipcRenderer.on(IPC.MENU_BAR_WIDGET_REFRESH, handler)
+      return () => ipcRenderer.removeListener(IPC.MENU_BAR_WIDGET_REFRESH, handler)
+    },
     getFullscreen: (): Promise<{ fullscreen: boolean }> => ipcRenderer.invoke(IPC.APP_GET_FULLSCREEN),
     toggleFullscreen: (): Promise<{ fullscreen: boolean }> =>
       ipcRenderer.invoke(IPC.APP_TOGGLE_FULLSCREEN),

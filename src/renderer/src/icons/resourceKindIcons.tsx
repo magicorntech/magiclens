@@ -18,7 +18,6 @@ import {
   HardDrive,
   Key,
   Layers,
-  LayoutDashboard,
   Link2,
   Lock,
   Network,
@@ -94,10 +93,11 @@ export const kindIcons: Record<ResourceKind, React.ComponentType> = {
 }
 
 export const virtualPageIcons: Record<VirtualPageKey, LucideIcon> = {
-  clusterOverview: LayoutDashboard,
   applications: AppWindow,
   workloadsOverview: Activity,
   configOverview: SlidersHorizontal,
+  networkOverview: Globe,
+  storageOverview: HardDrive,
   topology: Network,
   portForwarding: ArrowLeftRight,
   dynamicCustomResources: Boxes,
@@ -165,10 +165,11 @@ export const kindIconLucide: Record<ResourceKind, LucideIcon> = {
 }
 
 export const virtualPageIconComponents: Record<VirtualPageKey, React.ComponentType> = {
-  clusterOverview: virtualIcon('clusterOverview'),
   applications: virtualIcon('applications'),
   workloadsOverview: virtualIcon('workloadsOverview'),
   configOverview: virtualIcon('configOverview'),
+  networkOverview: virtualIcon('networkOverview'),
+  storageOverview: virtualIcon('storageOverview'),
   topology: virtualIcon('topology'),
   portForwarding: virtualIcon('portForwarding'),
   dynamicCustomResources: virtualIcon('dynamicCustomResources'),

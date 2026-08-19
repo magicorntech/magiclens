@@ -17,6 +17,7 @@ import {
   CloudDownload,
   Code2,
   FolderOpen,
+  Gauge,
   Info,
   Keyboard,
   LayoutDashboard,
@@ -41,6 +42,7 @@ import { APP_LOCALES, APP_LOCALE_LABELS, type AppLocale } from '@shared/types/lo
 import { useLayoutMode } from '../../hooks/useLayoutMode'
 import { applyDedupeResult } from '../../clusterDedupe'
 import { NodesDashboardSettings } from '../Nodes/NodesDashboardSettings'
+import { MenuBarWidgetSettings } from './MenuBarWidgetSettings'
 import { ChromeToolbarSettings } from './ChromeToolbarSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { VpnExtensionsSettings } from './VpnExtensionsSettings'
@@ -71,6 +73,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'appearance', icon: Palette, group: 'preferences' },
   { key: 'sparks', icon: Sparkles, group: 'preferences' },
   { key: 'display', icon: LayoutDashboard, group: 'preferences' },
+  { key: 'widget', icon: Gauge, group: 'preferences' },
   { key: 'keyboard', icon: Keyboard, group: 'preferences' },
   { key: 'updates', icon: CloudDownload, group: 'system' },
   { key: 'vpnExtensions', icon: Network, group: 'system' },
@@ -541,6 +544,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             </SettingsSection>
           </>
         )
+
+      case 'widget':
+        return <MenuBarWidgetSettings />
 
       case 'keyboard':
         return <KeyboardShortcutsSettings />

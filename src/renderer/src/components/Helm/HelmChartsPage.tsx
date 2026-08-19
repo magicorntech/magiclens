@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react'
 import { Icon } from '../ui/Icon'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmChartSummary } from '@shared/types/helm'
+import { isAllNamespaces, isNoNamespaceSelection, parseNamespaceSelection } from '@shared/namespaceSelection'
 import { useHelmCharts, useHelmUninstallChart } from '../../queries/useHelm'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
@@ -31,13 +32,20 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
   const error = data && 'error' in data ? data.error : null
 
   const filteredCharts = useMemo(() => {
+    const nsSelection = parseNamespaceSelection(selectedNamespace)
+    const inScope = isNoNamespaceSelection(nsSelection)
+      ? []
+      : isAllNamespaces(nsSelection)
+        ? charts
+        : charts.filter((c) => c.namespaces.some((ns) => nsSelection.includes(ns)))
+
     const q = search.trim().toLowerCase()
-    if (!q) return charts
-    return charts.filter((c) => {
+    if (!q) return inScope
+    return inScope.filter((c) => {
       const haystack = [c.chartName, c.chartVersion, c.appVersion, ...c.namespaces].join(' ').toLowerCase()
       return haystack.includes(q)
     })
-  }, [charts, search])
+  }, [charts, search, selectedNamespace])
 
   function confirmUninstall(chart: HelmChartSummary): void {
     const releaseList = chart.releases.map((r) => `${r.namespace}/${r.name}`).join(', ')
@@ -122,64 +130,63 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
   ]
 
   return (
-    <div className="ml-resource-page">
-      <div className="ml-helm-page-header">
-        <HelmLogo size={22} color="var(--ml-primary)" />
-        <div className="ml-helm-page-header__copy">
-          <Typography.Title level={4} className="ml-helm-page-header__title">
-            Helm Charts
-          </Typography.Title>
-          <Typography.Text type="secondary" className="ml-helm-page-header__hint">
-            Installed charts derived from live releases — uninstall removes matching releases and resources.
-          </Typography.Text>
-        </div>
+    <div style={{ height: '100%', padding: 16, boxSizing: 'border-box' }}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <Typography.Title level={4} style={{ marginTop: 0, flexShrink: 0 }}>
+          Helm Charts
+        </Typography.Title>
+        <Typography.Paragraph type="secondary" style={{ flexShrink: 0 }}>
+          Installed charts derived from live releases — uninstall removes matching releases and resources.
+        </Typography.Paragraph>
+        {error ? (
+          <Empty description={error} />
+        ) : (
+          <>
+            <ResourceTableToolbar
+              leading={
+                <NamespaceSelector
+                  clusterId={clusterId}
+                  value={selectedNamespace}
+                  onChange={(ns) => setSelectedNamespace(clusterId, ns)}
+                />
+              }
+              search={
+                <Input.Search
+                  className="ml-resource-search"
+                  placeholder="Search charts…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  allowClear
+                />
+              }
+            />
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              {!isLoading && filteredCharts.length === 0 ? (
+                <Empty
+                  description={
+                    charts.length === 0
+                      ? 'No Helm charts found in this cluster'
+                      : search.trim()
+                        ? 'No charts match your search'
+                        : 'No Helm charts in this namespace'
+                  }
+                />
+              ) : (
+                <ResizableTable
+                  tableKey="helm-charts"
+                  rowKey="id"
+                  columns={columns}
+                  dataSource={filteredCharts}
+                  loading={isLoading}
+                  pagination={paginationProps(filteredCharts.length)}
+                  onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
+                  size="middle"
+                />
+              )}
+            </div>
+          </>
+        )}
       </div>
-      {error ? (
-        <Empty description={error} />
-      ) : (
-        <>
-          <ResourceTableToolbar
-            leading={
-              <NamespaceSelector
-                clusterId={clusterId}
-                value={selectedNamespace}
-                onChange={(ns) => setSelectedNamespace(clusterId, ns)}
-              />
-            }
-            search={
-              <Input.Search
-                className="ml-resource-search"
-                placeholder="Search charts…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                allowClear
-              />
-            }
-          />
-          <div className="ml-resource-page-body">
-            {!isLoading && filteredCharts.length === 0 ? (
-              <Empty
-                description={
-                  charts.length === 0
-                    ? 'No Helm charts found in this cluster'
-                    : 'No charts match your search'
-                }
-              />
-            ) : (
-              <ResizableTable
-                tableKey="helm-charts"
-                rowKey="id"
-                columns={columns}
-                dataSource={filteredCharts}
-                loading={isLoading}
-                pagination={paginationProps(filteredCharts.length)}
-                onChange={(paginationConfig) => setPagination(readPaginationChange(paginationConfig))}
-                size="middle"
-              />
-            )}
-          </div>
-        </>
-      )}
     </div>
   )
 }

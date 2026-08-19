@@ -103,6 +103,8 @@ export function ResourceMenu({
         if (item.type === 'standalone') {
           return hiddenKinds.has(item.kind) ? null : item
         }
+        // Virtual pages aren't part of the RBAC hidden-resource-kind system.
+        if (item.type === 'standalone-virtual') return item
         const entries = item.entries.filter((entry) => {
           if (entry.type === 'kind') return !hiddenKinds.has(entry.kind)
           return true
@@ -234,6 +236,9 @@ export function ResourceMenu({
           const label = item.label ?? item.kind
           return matchesSearch(label, q) ? item : null
         }
+        if (item.type === 'standalone-virtual') {
+          return matchesSearch(item.label, q) ? item : null
+        }
         const sectionMatches = matchesSearch(resolveSectionTitle(item.id, t), q)
         const matchingEntries = item.entries.filter((entry) =>
           matchesSearch(resolveNavEntryLabel(entry, t), q)
@@ -255,6 +260,10 @@ export function ResourceMenu({
       }
       if (item.type === 'standalone') {
         keys.push(item.kind)
+        continue
+      }
+      if (item.type === 'standalone-virtual') {
+        keys.push(item.key)
         continue
       }
       if (expanded.has(item.id) || search.trim()) {
@@ -393,6 +402,37 @@ export function ResourceMenu({
         >
           <div className="ml-resource-nav-item-wrap">{button}</div>
         </Dropdown>
+      </div>
+    )
+  }
+
+  /** Same shell as renderStandalone, minus the resource-kind context menu (create/favorite/pin
+      don't apply to a virtual page). */
+  function renderStandaloneVirtual(
+    item: Extract<NavLayoutItem, { type: 'standalone-virtual' }>
+  ): React.ReactNode {
+    const active = isVirtualActive(item.key)
+    const focused = focusIndex >= 0 && focusableKeys[focusIndex] === item.key
+
+    return (
+      <div key={item.key} className="ml-resource-nav-standalone">
+        <div className="ml-resource-nav-item-wrap">
+          <button
+            type="button"
+            role="menuitem"
+            className={`ml-resource-nav-item ml-resource-nav-item--parent${active ? ' is-active' : ''}${focused ? ' is-focused' : ''}`}
+            onClick={() => handleSelectVirtual(item.key)}
+            onFocus={() => setFocusIndex(focusableKeys.indexOf(item.key))}
+            tabIndex={focused ? 0 : -1}
+          >
+            <span className="ml-resource-nav-item-icon">
+              <Icon icon={item.icon} variant="default" />
+            </span>
+            <span className="ml-resource-nav-item-label">
+              <HighlightText text={item.label} query={search} />
+            </span>
+          </button>
+        </div>
       </div>
     )
   }
@@ -623,6 +663,15 @@ export function ResourceMenu({
               () => handleSelectKind(item.kind)
             )
           }
+          if (item.type === 'standalone-virtual') {
+            return renderCollapsedIcon(
+              item.key,
+              item.label,
+              item.icon,
+              isVirtualActive(item.key),
+              () => handleSelectVirtual(item.key)
+            )
+          }
           const hasActive = item.entries.some((e) => isEntryActive(e))
           return renderCollapsedFlyout(
             item.id,
@@ -665,6 +714,7 @@ export function ResourceMenu({
         {filteredLayout.map((item) => {
           if (item === 'favorites') return <div key={FAVORITES_SECTION_ID}>{renderFavorites()}</div>
           if (item.type === 'standalone') return renderStandalone(item)
+          if (item.type === 'standalone-virtual') return renderStandaloneVirtual(item)
           return renderSection(item)
         })}
       </div>

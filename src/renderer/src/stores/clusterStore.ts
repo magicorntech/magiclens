@@ -101,6 +101,7 @@ interface ClusterStoreState {
   closeAllResourceKinds: (id: string) => void
   openVirtualPage: (id: string, page: VirtualPageKey) => void
   closeVirtualPage: (id: string, page: VirtualPageKey) => void
+  reorderVirtualPages: (id: string, pages: VirtualPageKey[]) => void
   setSelectedVirtualPage: (id: string, page: VirtualPageKey | null) => void
   navigateToResource: (id: string, focus: ResourceFocus) => void
   navigateToHelmRelease: (id: string, namespace: string, name: string) => void
@@ -388,6 +389,15 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
           selectedVirtualPage: page
         })
       }
+    }),
+
+  reorderVirtualPages: (id, pages) =>
+    set((state) => {
+      const cluster = state.clusters.find((c) => c.id === id)
+      if (!cluster) return {}
+      const valid = pages.filter((p) => cluster.openVirtualPages.includes(p))
+      if (valid.length !== cluster.openVirtualPages.length) return {}
+      return { clusters: updateCluster(state.clusters, id, { openVirtualPages: valid }) }
     }),
 
   closeVirtualPage: (id, page) =>

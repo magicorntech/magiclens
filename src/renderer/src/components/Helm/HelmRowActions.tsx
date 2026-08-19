@@ -11,7 +11,7 @@ export function HelmRowActions({ items }: HelmRowActionsProps): React.JSX.Elemen
   return (
     <div onClick={(e) => e.stopPropagation()}>
       <Dropdown menu={{ items }} trigger={['click']} placement="bottomRight">
-        <Button size="small" icon={<Icon icon={MoreHorizontal} variant="detail" />} />
+        <Button size="small" aria-label="More actions" icon={<Icon icon={MoreHorizontal} variant="detail" />} />
       </Dropdown>
     </div>
   )

@@ -30,6 +30,7 @@ import {
 } from '../k8s/resourceMutationService'
 import { resourceWatchManager } from '../k8s/resourceWatchManager'
 import { listEventsForObject, listRecentClusterEvents } from '../k8s/eventsService'
+import { onSenderDestroyed } from './senderCleanup'
 
 function resolveTarget(target: ResourceMutationTarget): { apiVersion: string; kind: string } {
   if (target.type === 'builtin') {
@@ -38,8 +39,6 @@ function resolveTarget(target: ResourceMutationTarget): { apiVersion: string; ki
   }
   return { apiVersion: target.apiVersion, kind: target.kind }
 }
-
-const watchCleanupRegistered = new WeakSet<Electron.WebContents>()
 
 export function registerResourceHandlers(): void {
   ipcMain.handle(IPC.RESOURCE_LIST, async (_e, req: ResourceListRequest): Promise<ResourceListResponse> => {
@@ -60,10 +59,7 @@ export function registerResourceHandlers(): void {
     IPC.RESOURCE_WATCH_START,
     async (event, req: ResourceWatchStartRequest): Promise<ResourceWatchStartResponse> => {
       const sender = event.sender
-      if (!watchCleanupRegistered.has(sender)) {
-        watchCleanupRegistered.add(sender)
-        sender.once('destroyed', () => resourceWatchManager.stopAllForSender(sender.id))
-      }
+      onSenderDestroyed(sender, 'resourceWatchManager', () => resourceWatchManager.stopAllForSender(sender.id))
       return resourceWatchManager.start(req, sender)
     }
   )

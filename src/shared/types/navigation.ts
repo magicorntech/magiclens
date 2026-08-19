@@ -1,10 +1,11 @@
 import type { ResourceKind } from '@shared/resourceKinds'
 
 export type VirtualPageKey =
-  | 'clusterOverview'
   | 'applications'
   | 'workloadsOverview'
   | 'configOverview'
+  | 'networkOverview'
+  | 'storageOverview'
   | 'topology'
   | 'portForwarding'
   | 'dynamicCustomResources'

@@ -117,6 +117,8 @@ import type { NodesDashboardPrefs } from './nodesDashboard'
 import { defaultNodesDashboardPrefs } from './nodesDashboard'
 import type { ChromeToolbarPrefs } from './chromeToolbar'
 import { defaultChromeToolbarPrefs } from './chromeToolbar'
+import type { MenuBarWidgetPrefs } from './menuBarWidget'
+import { defaultMenuBarWidgetPrefs } from './menuBarWidget'
 import type { KeyboardShortcuts } from './keyboardShortcuts'
 import { defaultKeyboardShortcuts, normalizeKeyboardShortcuts } from './keyboardShortcuts'
 import type { AppLocale } from './locale'
@@ -184,6 +186,8 @@ export interface DisplaySettings {
   showUtilityFab: boolean
   showNodesPageEvents: boolean
   nodesDashboard: NodesDashboardPrefs
+  /** macOS menu-bar (Tray) cluster-metrics widget. */
+  menuBarWidget: MenuBarWidgetPrefs
   /** Top chrome icon visibility + order (Settings stays fixed). */
   chromeToolbar: ChromeToolbarPrefs
   keyboardShortcuts: KeyboardShortcuts
@@ -212,6 +216,7 @@ export const defaultDisplaySettings: DisplaySettings = {
   showUtilityFab: true,
   showNodesPageEvents: true,
   nodesDashboard: defaultNodesDashboardPrefs,
+  menuBarWidget: defaultMenuBarWidgetPrefs,
   chromeToolbar: defaultChromeToolbarPrefs,
   keyboardShortcuts: defaultKeyboardShortcuts,
   locale: defaultAppLocale,

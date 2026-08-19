@@ -371,6 +371,26 @@ function invalidateCache(): void {
   cachedVaultPath = null
 }
 
+/**
+ * Patches a single note into the in-memory cache instead of invalidating it wholesale.
+ * A full invalidate forces the next read to synchronously re-walk and re-parse every
+ * note file in the vault (see loadAllNotes/walkMarkdownFiles) — on a large vault that
+ * blocks the main process event loop long enough to freeze the whole app, and it was
+ * happening on every single note edit because the reminder scheduler re-reads notes
+ * every 5s. Single-note writes only ever touch one file, so patch just that entry.
+ */
+function upsertCachedNote(note: ResourceNote): void {
+  if (!cachedNotes) return
+  const idx = cachedNotes.findIndex((n) => n.id === note.id)
+  if (idx >= 0) cachedNotes[idx] = note
+  else cachedNotes.push(note)
+}
+
+function removeCachedNote(id: string): void {
+  if (!cachedNotes) return
+  cachedNotes = cachedNotes.filter((n) => n.id !== id)
+}
+
 function isInsideVault(absPath: string, root: string): boolean {
   const rel = relative(root, absPath)
   return Boolean(rel) && !rel.startsWith('..') && !rel.includes(`..${sep}`)
@@ -567,7 +587,6 @@ function writeNoteFile(note: ResourceNote): void {
   }
   mkdirSync(dirname(abs), { recursive: true })
   writeFileSync(abs, serializeNoteFile(note), 'utf8')
-  invalidateCache()
 }
 
 function migrateLegacyIfNeeded(): void {
@@ -662,6 +681,7 @@ export function createNote(req: CreateNoteRequest): ResourceNote {
     updatedAt: stamp
   })
   writeNoteFile(note)
+  upsertCachedNote(note)
   return note
 }
 
@@ -725,7 +745,7 @@ export function updateNote(id: string, patch: NotePatch): ResourceNote | undefin
     writeNoteFile(next)
   }
 
-  invalidateCache()
+  upsertCachedNote(next)
   return getNote(next.id) ?? next
 }
 
@@ -741,11 +761,11 @@ export function removeNote(id: string): boolean {
   const root = ensureVault()
   const abs = join(root, ...note.path.split('/'))
   if (!existsSync(abs)) {
-    invalidateCache()
+    removeCachedNote(id)
     return false
   }
   rmSync(abs)
-  invalidateCache()
+  removeCachedNote(id)
   return true
 }
 

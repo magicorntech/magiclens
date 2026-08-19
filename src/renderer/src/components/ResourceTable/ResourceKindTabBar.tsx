@@ -3,6 +3,7 @@ import { Dropdown, type MenuProps } from 'antd'
 import { Reorder, useDragControls } from 'framer-motion'
 import {
   Columns2,
+  GripVertical,
   PanelLeft,
   PanelRight,
   Pin,
@@ -16,6 +17,7 @@ import { motion as motionTokens } from '../../design-system/tokens'
 import { virtualPageIcons } from '../../icons/resourceKindIcons'
 import { VIRTUAL_PAGE_LABELS } from '../../resourceConfig/virtualPageLabels'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
+import { kindTabId, mergeTabOrder, virtualTabId } from '../../utils/resourceTabPreferences'
 import { Icon } from '../ui/Icon'
 import { ResourceTabLabel } from './ResourceTabLabel'
 
@@ -49,8 +51,10 @@ interface ResourceKindTabBarProps {
   onSelectKind: (kind: ResourceKind) => void
   onSelectVirtualPage?: (page: VirtualPageKey) => void
   onCloseVirtualPage?: (page: VirtualPageKey) => void
+  /** Saved cross-type display order (`kind:X` / `virtual:X` ids). */
+  tabOrder?: string[]
+  onReorderMergedTabs: (ids: string[]) => void
   onReorderPinned: (kinds: ResourceKind[]) => void
-  onReorderUnpinned: (kinds: ResourceKind[]) => void
   onTogglePin: (kind: ResourceKind) => void
   onToggleFavorite: (kind: ResourceKind) => void
   onClose: (kind: ResourceKind) => void
@@ -60,6 +64,8 @@ interface ResourceKindTabBarProps {
 }
 
 interface TabBarItemProps {
+  /** Reorder value — the merged-order id, not the kind, so both tab types share one group. */
+  id: string
   kind: ResourceKind
   active: boolean
   pinned: boolean
@@ -198,6 +204,7 @@ function buildBarContextMenu(actions: ResourceTabContextActions): MenuProps['ite
 }
 
 function TabBarItem({
+  id,
   kind,
   active,
   pinned,
@@ -219,11 +226,10 @@ function TabBarItem({
       destroyOnHidden
     >
       <Reorder.Item
-        value={kind}
+        value={id}
         dragListener={false}
         dragControls={dragControls}
         layout="position"
-        layoutScroll
         transition={{ layout: { duration: motionTokens.normal, ease: 'easeOut' } }}
         className={`ml-resource-tab-bar__item${active ? ' ml-resource-tab-bar__item--active' : ''}`}
         whileDrag={{
@@ -239,6 +245,12 @@ function TabBarItem({
             onSelect()
           }
         }}
+        // This tab already has its own context menu (the Dropdown wrapping this item).
+        // Without stopping propagation, a right-click here also reaches the tab BAR's own
+        // Dropdown (wrapping the whole bar, for right-clicking empty space), so both menus'
+        // items rendered at once — every entry they share, like "Split view" and "Close
+        // all", visibly duplicated.
+        onContextMenu={(e) => e.stopPropagation()}
         role="tab"
         aria-selected={active}
         tabIndex={active ? 0 : -1}
@@ -262,113 +274,201 @@ function TabBarItem({
   )
 }
 
-function ReorderableTabGroup({
-  kinds,
+function tabContextMenuHandler(
+  kind: ResourceKind,
+  contextActions: ResourceTabContextActions
+): NonNullable<MenuProps['onClick']> {
+  return ({ key }) => {
+    switch (key) {
+      case 'close':
+        contextActions.onClose(kind)
+        break
+      case 'close-others':
+        contextActions.onCloseOthers(kind)
+        break
+      case 'close-to-right':
+        contextActions.onCloseToRight(kind)
+        break
+      case 'close-all':
+        contextActions.onCloseAll()
+        break
+      case 'close-split-tabs':
+        contextActions.onCloseSplitTabs?.()
+        break
+      case 'toggle-split':
+        contextActions.onToggleSplit()
+        break
+      case 'open-left':
+        contextActions.onOpenInLeftPane?.(kind)
+        break
+      case 'open-right':
+        contextActions.onOpenInRightPane?.(kind)
+        break
+      case 'pin':
+        contextActions.onTogglePin(kind)
+        break
+      case 'favorite':
+        contextActions.onToggleFavorite(kind)
+        break
+      default:
+        break
+    }
+  }
+}
+
+interface TabGroupProps {
+  /** `kind:X` / `virtual:X` ids — see resourceTabPreferences. */
+  ids: string[]
+  activeKind: ResourceKind | null
+  activeVirtualPage: VirtualPageKey | null
+  pinnedKinds: ResourceKind[]
+  favoriteKinds: ResourceKind[]
+  onSelectKind: (kind: ResourceKind) => void
+  onSelectVirtualPage?: (page: VirtualPageKey) => void
+  onCloseVirtualPage?: (page: VirtualPageKey) => void
+  onReorder: (ids: string[]) => void
+  onTogglePin: (kind: ResourceKind) => void
+  onToggleFavorite: (kind: ResourceKind) => void
+  onClose: (kind: ResourceKind) => void
+  contextActions: ResourceTabContextActions
+}
+
+/**
+ * One Reorder.Group covering both resource-kind and virtual-page tabs, so an overview tab
+ * can be dragged in among the resource tabs instead of being locked to its own leading group.
+ */
+function TabReorderGroup({
+  ids,
   activeKind,
+  activeVirtualPage,
   pinnedKinds,
   favoriteKinds,
   onSelectKind,
+  onSelectVirtualPage,
+  onCloseVirtualPage,
   onReorder,
   onTogglePin,
   onToggleFavorite,
   onClose,
   contextActions
-}: {
-  kinds: ResourceKind[]
-  activeKind: ResourceKind | null
-  pinnedKinds: ResourceKind[]
-  favoriteKinds: ResourceKind[]
-  onSelectKind: (kind: ResourceKind) => void
-  onReorder: (kinds: ResourceKind[]) => void
-  onTogglePin: (kind: ResourceKind) => void
-  onToggleFavorite: (kind: ResourceKind) => void
-  onClose: (kind: ResourceKind) => void
-  contextActions: ResourceTabContextActions
-}): React.JSX.Element {
+}: TabGroupProps): React.JSX.Element {
   return (
     <Reorder.Group
       axis="x"
-      values={kinds}
-      onReorder={onReorder}
+      values={ids}
+      onReorder={(next) => onReorder(next as string[])}
       className="ml-resource-tab-bar__group"
       layoutScroll
     >
-      {kinds.map((kind) => (
-        <TabBarItem
-          key={kind}
-          kind={kind}
-          active={kind === activeKind}
-          pinned={pinnedKinds.includes(kind)}
-          favorite={favoriteKinds.includes(kind)}
-          closable={!pinnedKinds.includes(kind)}
-          onSelect={() => onSelectKind(kind)}
-          onTogglePin={onTogglePin}
-          onToggleFavorite={onToggleFavorite}
-          onClose={onClose}
-          contextMenuItems={buildTabContextMenu(kind, contextActions)}
-          onContextMenuClick={({ key }) => {
-            switch (key) {
-              case 'close':
-                contextActions.onClose(kind)
-                break
-              case 'close-others':
-                contextActions.onCloseOthers(kind)
-                break
-              case 'close-to-right':
-                contextActions.onCloseToRight(kind)
-                break
-              case 'close-all':
-                contextActions.onCloseAll()
-                break
-              case 'close-split-tabs':
-                contextActions.onCloseSplitTabs?.()
-                break
-              case 'toggle-split':
-                contextActions.onToggleSplit()
-                break
-              case 'open-left':
-                contextActions.onOpenInLeftPane?.(kind)
-                break
-              case 'open-right':
-                contextActions.onOpenInRightPane?.(kind)
-                break
-              case 'pin':
-                contextActions.onTogglePin(kind)
-                break
-              case 'favorite':
-                contextActions.onToggleFavorite(kind)
-                break
-              default:
-                break
-            }
-          }}
-        />
-      ))}
+      {ids.map((id) => {
+        if (id.startsWith('virtual:')) {
+          const page = id.slice('virtual:'.length) as VirtualPageKey
+          return (
+            <VirtualTabItem
+              key={id}
+              id={id}
+              page={page}
+              active={activeVirtualPage === page}
+              onSelect={() => onSelectVirtualPage?.(page)}
+              onClose={() => onCloseVirtualPage?.(page)}
+            />
+          )
+        }
+        const kind = id.slice('kind:'.length) as ResourceKind
+        return (
+          <TabBarItem
+            key={id}
+            id={id}
+            kind={kind}
+            active={kind === activeKind}
+            pinned={pinnedKinds.includes(kind)}
+            favorite={favoriteKinds.includes(kind)}
+            closable={!pinnedKinds.includes(kind)}
+            onSelect={() => onSelectKind(kind)}
+            onTogglePin={onTogglePin}
+            onToggleFavorite={onToggleFavorite}
+            onClose={onClose}
+            contextMenuItems={buildTabContextMenu(kind, contextActions)}
+            onContextMenuClick={tabContextMenuHandler(kind, contextActions)}
+          />
+        )
+      })}
     </Reorder.Group>
   )
 }
 
+/**
+ * Roving-tabindex ARIA `tab` pattern needs arrow keys to move focus between tabs
+ * (Enter/Space then activates the focused one) — queried live off the DOM rather than
+ * tracked in state so it keeps working across drag-reordering and virtual/pinned/unpinned
+ * group boundaries without separate plumbing for each.
+ */
+function handleTabListKeyDown(e: React.KeyboardEvent<HTMLDivElement>): void {
+  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+  const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[role="tab"]'))
+  if (tabs.length < 2) return
+  const currentIndex = tabs.indexOf(document.activeElement as HTMLElement)
+  if (currentIndex === -1) return
+  e.preventDefault()
+  const delta = e.key === 'ArrowRight' ? 1 : -1
+  const next = tabs[(currentIndex + delta + tabs.length) % tabs.length]
+  next.focus()
+}
+
 function VirtualTabItem({
+  id,
   page,
   active,
   onSelect,
   onClose
 }: {
+  /** Reorder value — the merged-order id, not the page key. */
+  id: string
   page: VirtualPageKey
   active: boolean
   onSelect: () => void
   onClose: () => void
 }): React.JSX.Element {
   const showIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
+  const dragControls = useDragControls()
   return (
-    <button
-      type="button"
+    <Reorder.Item
+      value={id}
+      dragListener={false}
+      dragControls={dragControls}
+      layout="position"
+      transition={{ layout: { duration: motionTokens.normal, ease: 'easeOut' } }}
       role="tab"
       aria-selected={active}
+      tabIndex={active ? 0 : -1}
       className={`ml-resource-tab-bar__item${active ? ' ml-resource-tab-bar__item--active' : ''}`}
+      whileDrag={{
+        scale: 1.05,
+        zIndex: 20,
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.18)',
+        cursor: 'grabbing'
+      }}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect()
+        }
+      }}
     >
       <span className="ml-resource-tab-label">
+        <button
+          type="button"
+          className="ml-resource-tab-drag-handle"
+          aria-label="Drag to reorder tab"
+          onPointerDown={(e) => {
+            e.stopPropagation()
+            dragControls.start(e)
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon icon={GripVertical} variant="micro" />
+        </button>
         {showIcons ? (
           <span className="ml-resource-tab-label-icon">
             <Icon icon={virtualPageIcons[page]} variant="micro" />
@@ -399,7 +499,7 @@ function VirtualTabItem({
           </span>
         </span>
       </span>
-    </button>
+    </Reorder.Item>
   )
 }
 
@@ -413,8 +513,9 @@ export function ResourceKindTabBar({
   onSelectKind,
   onSelectVirtualPage,
   onCloseVirtualPage,
+  tabOrder = [],
+  onReorderMergedTabs,
   onReorderPinned,
-  onReorderUnpinned,
   onTogglePin,
   onToggleFavorite,
   onClose,
@@ -422,14 +523,18 @@ export function ResourceKindTabBar({
   extra,
   className
 }: ResourceKindTabBarProps): React.JSX.Element {
-  const pinnedOpen = useMemo(
-    () => orderedKinds.filter((k) => pinnedKinds.includes(k)),
+  const pinnedIds = useMemo(
+    () => orderedKinds.filter((k) => pinnedKinds.includes(k)).map(kindTabId),
     [orderedKinds, pinnedKinds]
   )
-  const unpinnedOpen = useMemo(
-    () => orderedKinds.filter((k) => !pinnedKinds.includes(k)),
-    [orderedKinds, pinnedKinds]
-  )
+  // Unpinned resource tabs and virtual-page tabs share one order so they can interleave.
+  const mergedIds = useMemo(() => {
+    const openIds = [
+      ...openVirtualPages.map(virtualTabId),
+      ...orderedKinds.filter((k) => !pinnedKinds.includes(k)).map(kindTabId)
+    ]
+    return mergeTabOrder(openIds, tabOrder)
+  }, [openVirtualPages, orderedKinds, pinnedKinds, tabOrder])
   const kindActive = activeVirtualPage == null ? activeKind : null
 
   return (
@@ -448,50 +553,41 @@ export function ResourceKindTabBar({
       <div
         className={`ml-resource-tab-bar${className ? ` ${className}` : ''}`}
         role="tablist"
+        onKeyDown={handleTabListKeyDown}
       >
         <div className="ml-resource-tab-bar__inner">
           <div className="ml-resource-tab-bar__scroll">
-            {openVirtualPages.length > 0 ? (
+            {pinnedIds.length > 0 ? (
               <>
-                <div className="ml-resource-tab-bar__group">
-                  {openVirtualPages.map((page) => (
-                    <VirtualTabItem
-                      key={page}
-                      page={page}
-                      active={activeVirtualPage === page}
-                      onSelect={() => onSelectVirtualPage?.(page)}
-                      onClose={() => onCloseVirtualPage?.(page)}
-                    />
-                  ))}
-                </div>
-                {orderedKinds.length > 0 ? <div className="ml-resource-tab-bar__sep" aria-hidden /> : null}
-              </>
-            ) : null}
-            {pinnedOpen.length > 0 ? (
-              <>
-                <ReorderableTabGroup
-                  kinds={pinnedOpen}
+                <TabReorderGroup
+                  ids={pinnedIds}
                   activeKind={kindActive}
+                  activeVirtualPage={activeVirtualPage}
                   pinnedKinds={pinnedKinds}
                   favoriteKinds={favoriteKinds}
                   onSelectKind={onSelectKind}
-                  onReorder={onReorderPinned}
+                  onReorder={(ids) =>
+                    onReorderPinned(ids.map((id) => id.slice('kind:'.length) as ResourceKind))
+                  }
                   onTogglePin={onTogglePin}
                   onToggleFavorite={onToggleFavorite}
                   onClose={onClose}
                   contextActions={contextActions}
                 />
-                {unpinnedOpen.length > 0 ? <div className="ml-resource-tab-bar__sep" aria-hidden /> : null}
+                {mergedIds.length > 0 ? <div className="ml-resource-tab-bar__sep" aria-hidden /> : null}
               </>
             ) : null}
-            {unpinnedOpen.length > 0 ? (
-              <ReorderableTabGroup
-                kinds={unpinnedOpen}
+            {mergedIds.length > 0 ? (
+              <TabReorderGroup
+                ids={mergedIds}
                 activeKind={kindActive}
+                activeVirtualPage={activeVirtualPage}
                 pinnedKinds={pinnedKinds}
                 favoriteKinds={favoriteKinds}
                 onSelectKind={onSelectKind}
-                onReorder={onReorderUnpinned}
+                onSelectVirtualPage={onSelectVirtualPage}
+                onCloseVirtualPage={onCloseVirtualPage}
+                onReorder={onReorderMergedTabs}
                 onTogglePin={onTogglePin}
                 onToggleFavorite={onToggleFavorite}
                 onClose={onClose}

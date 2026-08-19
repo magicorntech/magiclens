@@ -37,6 +37,7 @@ export function ResourceKindTabs({
   const closeAllResourceKinds = useClusterStore((s) => s.closeAllResourceKinds)
   const openVirtualPage = useClusterStore((s) => s.openVirtualPage)
   const closeVirtualPage = useClusterStore((s) => s.closeVirtualPage)
+  const reorderVirtualPages = useClusterStore((s) => s.reorderVirtualPages)
   const reorderResourceKinds = useClusterStore((s) => s.reorderResourceKinds)
   const getResourceTabPrefs = useClusterStore((s) => s.getResourceTabPrefs)
   const updateResourceTabPrefs = useClusterStore((s) => s.updateResourceTabPrefs)
@@ -112,12 +113,35 @@ export function ResourceKindTabs({
 
   function handleReorderPinned(nextPinned: ResourceKind[]): void {
     const unpinned = orderedKinds.filter((k) => !prefs.pinned.includes(k))
+    // `orderedKinds` derives pinned order from `prefs.pinned` (see sortResourceKinds), not from
+    // openResourceKinds — so persisting only the tab order would be discarded on the next render.
+    // `nextPinned` covers just the open pinned tabs; keep pinned-but-closed kinds so they stay pinned.
+    const closedPinned = prefs.pinned.filter((k) => !nextPinned.includes(k))
+    updateResourceTabPrefs(clusterId, { pinned: [...nextPinned, ...closedPinned] })
     reorderResourceKinds(clusterId, [...nextPinned, ...unpinned])
+    refreshPrefs()
   }
 
-  function handleReorderUnpinned(nextUnpinned: ResourceKind[]): void {
+  /**
+   * Unpinned resource tabs and virtual-page tabs live in one draggable group, so a reorder
+   * yields a mixed id list. Persist it as the cross-type display order, then push each type's
+   * relative order back into its own store array so the rest of the app stays consistent.
+   */
+  function handleReorderMergedTabs(nextIds: string[]): void {
+    updateResourceTabPrefs(clusterId, { tabOrder: nextIds })
+
     const pinned = orderedKinds.filter((k) => prefs.pinned.includes(k))
+    const nextUnpinned = nextIds
+      .filter((id) => id.startsWith('kind:'))
+      .map((id) => id.slice('kind:'.length) as ResourceKind)
     reorderResourceKinds(clusterId, [...pinned, ...nextUnpinned])
+
+    const nextVirtual = nextIds
+      .filter((id) => id.startsWith('virtual:'))
+      .map((id) => id.slice('virtual:'.length) as VirtualPageKey)
+    reorderVirtualPages(clusterId, nextVirtual)
+
+    refreshPrefs()
   }
 
   function handleTabSelect(kind: ResourceKind): void {
@@ -376,8 +400,9 @@ export function ResourceKindTabs({
     orderedKinds,
     pinnedKinds: prefs.pinned,
     favoriteKinds: prefs.favorites,
+    tabOrder: prefs.tabOrder,
     onReorderPinned: handleReorderPinned,
-    onReorderUnpinned: handleReorderUnpinned,
+    onReorderMergedTabs: handleReorderMergedTabs,
     onTogglePin: togglePin,
     onToggleFavorite: toggleFavorite,
     onClose: handleCloseTab,

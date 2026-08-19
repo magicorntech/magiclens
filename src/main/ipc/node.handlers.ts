@@ -8,12 +8,13 @@ import type {
 } from '@shared/types/node'
 import { clusterManager } from '../k8s/clusterManager'
 import { nodeExecManager } from '../k8s/nodeExecManager'
+import { onSenderDestroyed } from './senderCleanup'
 
 export function registerNodeHandlers(): void {
   ipcMain.handle(IPC.NODE_EXEC_START, async (event, req: NodeExecStartRequest) => {
     const clients = clusterManager.require(req.clusterId)
     const sender = event.sender
-    sender.once('destroyed', () => nodeExecManager.stopAllForSender(sender.id))
+    onSenderDestroyed(sender, 'nodeExecManager', () => nodeExecManager.stopAllForSender(sender.id))
     await nodeExecManager.start(
       req.sessionId,
       clients,

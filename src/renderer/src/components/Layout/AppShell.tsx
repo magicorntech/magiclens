@@ -110,9 +110,10 @@ function AppShellInner({
   const showHeaderNamespace =
     !!selectedVirtualPage &&
     selectedVirtualPage !== 'topology' &&
-    selectedVirtualPage !== 'clusterOverview' &&
     selectedVirtualPage !== 'workloadsOverview' &&
     selectedVirtualPage !== 'configOverview' &&
+    selectedVirtualPage !== 'networkOverview' &&
+    selectedVirtualPage !== 'storageOverview' &&
     selectedVirtualPage !== 'helmCharts' &&
     selectedVirtualPage !== 'helmReleases' &&
     selectedVirtualPage !== 'dynamicCustomResources' &&

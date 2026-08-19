@@ -7,6 +7,7 @@ import type { ClusterClients } from './clusterManager'
 interface LogSession {
   abort: AbortController
   senderId: number
+  clusterId: string
 }
 
 export interface PodLogStreamOptions {
@@ -22,6 +23,7 @@ class PodLogManager {
 
   async start(
     sessionId: string,
+    clusterId: string,
     clients: ClusterClients,
     namespace: string,
     podName: string,
@@ -57,7 +59,7 @@ class PodLogManager {
       return
     }
 
-    this.sessions.set(sessionId, { abort, senderId: sender.id })
+    this.sessions.set(sessionId, { abort, senderId: sender.id, clusterId })
 
     const finish = (error?: string): void => {
       if (this.sessions.get(sessionId)?.abort === abort) {
@@ -82,6 +84,15 @@ class PodLogManager {
   stopAllForSender(senderId: number): void {
     for (const [sessionId, session] of this.sessions) {
       if (session.senderId === senderId) {
+        session.abort.abort()
+        this.sessions.delete(sessionId)
+      }
+    }
+  }
+
+  stopAllForCluster(clusterId: string): void {
+    for (const [sessionId, session] of this.sessions) {
+      if (session.clusterId === clusterId) {
         session.abort.abort()
         this.sessions.delete(sessionId)
       }

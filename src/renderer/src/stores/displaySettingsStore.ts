@@ -29,6 +29,10 @@ import {
   type ChromeToolbarActionId,
   type ChromeToolbarPrefs
 } from '@shared/types/chromeToolbar'
+import {
+  normalizeMenuBarWidgetPrefs,
+  type MenuBarWidgetPrefs
+} from '@shared/types/menuBarWidget'
 import i18n from '../i18n'
 import { applyDayjsLocale } from '../i18n/antdLocales'
 
@@ -53,6 +57,8 @@ interface DisplaySettingsState extends DisplaySettings {
   setNodesDashboardPrefs: (prefs: NodesDashboardPrefs) => Promise<void>
   toggleNodesDashboardSection: (id: NodesDashboardSectionId) => Promise<void>
   reorderNodesDashboardSections: (fromId: NodesDashboardSectionId, toId: NodesDashboardSectionId) => Promise<void>
+  cycleNodesDashboardSectionWidth: (id: NodesDashboardSectionId) => Promise<void>
+  setMenuBarWidgetPrefs: (patch: Partial<MenuBarWidgetPrefs>) => Promise<void>
   setChromeToolbarPrefs: (prefs: ChromeToolbarPrefs) => Promise<void>
   toggleChromeToolbarAction: (id: ChromeToolbarActionId) => Promise<void>
   reorderChromeToolbarActions: (fromId: ChromeToolbarActionId, toId: ChromeToolbarActionId) => Promise<void>
@@ -69,6 +75,7 @@ function applyDisplay(next: DisplaySettings): DisplaySettings {
     utilityFabSide: normalizeUtilityFabSide(next.utilityFabSide),
     uiTypography: normalizeUiTypography(next.uiTypography),
     nodesDashboard: normalizeNodesDashboardPrefs(next.nodesDashboard),
+    menuBarWidget: normalizeMenuBarWidgetPrefs(next.menuBarWidget),
     chromeToolbar: normalizeChromeToolbarPrefs(next.chromeToolbar),
     keyboardShortcuts: normalizeKeyboardShortcuts(next.keyboardShortcuts),
     locale: normalizeAppLocale(next.locale)
@@ -169,6 +176,11 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
     const visible = { ...current.visible, [id]: !current.visible[id] }
     await get().setNodesDashboardPrefs({ ...current, visible })
   },
+  cycleNodesDashboardSectionWidth: async (id) => {
+    const current = normalizeNodesDashboardPrefs(get().nodesDashboard)
+    const width = { ...current.width, [id]: current.width[id] === 'half' ? 'full' : 'half' } as typeof current.width
+    await get().setNodesDashboardPrefs({ ...current, width })
+  },
   reorderNodesDashboardSections: async (fromId, toId) => {
     const current = normalizeNodesDashboardPrefs(get().nodesDashboard)
     const order = [...current.order]
@@ -178,6 +190,11 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
     order.splice(from, 1)
     order.splice(to, 0, fromId)
     await get().setNodesDashboardPrefs({ ...current, order })
+  },
+  setMenuBarWidgetPrefs: async (patch) => {
+    const normalized = normalizeMenuBarWidgetPrefs({ ...get().menuBarWidget, ...patch })
+    const next = await window.api.app.setDisplaySettings({ menuBarWidget: normalized })
+    set(applyDisplay(next))
   },
   setChromeToolbarPrefs: async (prefs) => {
     const normalized = normalizeChromeToolbarPrefs(prefs)

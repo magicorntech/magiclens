@@ -15,10 +15,11 @@ import { CustomResourceBrowserPage } from '../components/Discovery/CustomResourc
 import { HelmChartsPage } from '../components/Helm/HelmChartsPage'
 import { HelmReleasesPage } from '../components/Helm/HelmReleasesPage'
 import { TopologyPage } from '../components/Topology/TopologyPage'
-import { ClusterOverviewPage } from '../components/Overview/ClusterOverviewPage'
 import { WorkloadsOverviewPage } from '../components/Overview/WorkloadsOverviewPage'
 import { ApplicationsOverviewPage } from '../components/Overview/ApplicationsOverviewPage'
 import { ConfigOverviewPage } from '../components/Overview/ConfigOverviewPage'
+import { NetworkOverviewPage } from '../components/Overview/NetworkOverviewPage'
+import { StorageOverviewPage } from '../components/Overview/StorageOverviewPage'
 import { OverviewDetailShell } from '../components/Overview/OverviewDetailShell'
 import type { VirtualPageKey } from '../resourceConfig/kinds.renderer'
 
@@ -168,22 +169,6 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
 
   function renderVirtualPage(page: VirtualPageKey): React.JSX.Element {
     switch (page) {
-      case 'clusterOverview':
-        return (
-          <OverviewDetailShell
-            clusterId={clusterId}
-            isActive
-            onOpenResourceKind={handleOpenResourceKind}
-          >
-            {(handlers) => (
-              <ClusterOverviewPage
-                clusterId={clusterId}
-                isActive
-                {...handlers}
-              />
-            )}
-          </OverviewDetailShell>
-        )
       case 'applications':
         return (
           <OverviewDetailShell
@@ -225,6 +210,38 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
           >
             {(handlers) => (
               <ConfigOverviewPage
+                clusterId={clusterId}
+                isActive
+                {...handlers}
+              />
+            )}
+          </OverviewDetailShell>
+        )
+      case 'networkOverview':
+        return (
+          <OverviewDetailShell
+            clusterId={clusterId}
+            isActive
+            onOpenResourceKind={handleOpenResourceKind}
+          >
+            {(handlers) => (
+              <NetworkOverviewPage
+                clusterId={clusterId}
+                isActive
+                {...handlers}
+              />
+            )}
+          </OverviewDetailShell>
+        )
+      case 'storageOverview':
+        return (
+          <OverviewDetailShell
+            clusterId={clusterId}
+            isActive
+            onOpenResourceKind={handleOpenResourceKind}
+          >
+            {(handlers) => (
+              <StorageOverviewPage
                 clusterId={clusterId}
                 isActive
                 {...handlers}

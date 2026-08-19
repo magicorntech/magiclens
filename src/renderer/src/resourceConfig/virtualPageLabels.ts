@@ -2,10 +2,11 @@ import type { VirtualPageKey } from '@shared/types/navigation'
 
 /** Short labels for workspace tabs / menus. */
 export const VIRTUAL_PAGE_LABELS: Record<VirtualPageKey, string> = {
-  clusterOverview: 'Cluster',
   applications: 'Applications',
   workloadsOverview: 'Workloads',
   configOverview: 'Config',
+  networkOverview: 'Network',
+  storageOverview: 'Storage',
   topology: 'Topology',
   portForwarding: 'Port Forwarding',
   dynamicCustomResources: 'Custom Resources',

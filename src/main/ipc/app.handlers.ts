@@ -17,6 +17,11 @@ import {
   setHasSeenWelcome,
   setLastSeenSplashVersion
 } from '../persistence/appSettings'
+import {
+  hideMenuBarWidgetPopup,
+  setMenuBarWidgetTrayTitle,
+  syncMenuBarWidget
+} from '../menuBarWidget'
 import packageJson from '../../../package.json'
 
 function windowFromEvent(event: Electron.IpcMainInvokeEvent): BrowserWindow | null {
@@ -146,8 +151,23 @@ export function registerAppHandlers(): void {
 
   ipcMain.handle(
     IPC.APP_SET_DISPLAY_SETTINGS,
-    async (_e, patch: Partial<DisplaySettings>): Promise<DisplaySettings> => setDisplaySettings(patch)
+    async (_e, patch: Partial<DisplaySettings>): Promise<DisplaySettings> => {
+      const next = setDisplaySettings(patch)
+      // Create/tear down the tray as soon as the preference flips, without a restart.
+      if (patch.menuBarWidget) syncMenuBarWidget()
+      return next
+    }
   )
+
+  ipcMain.handle(IPC.MENU_BAR_WIDGET_SET_TRAY_TITLE, (_e, req: { title: string }) => {
+    setMenuBarWidgetTrayTitle(req?.title ?? '')
+    return { ok: true as const }
+  })
+
+  ipcMain.handle(IPC.MENU_BAR_WIDGET_CLOSE_POPUP, () => {
+    hideMenuBarWidgetPopup()
+    return { ok: true as const }
+  })
 
   ipcMain.handle(IPC.APP_GET_FULLSCREEN, (event): { fullscreen: boolean } => {
     const win = windowFromEvent(event)

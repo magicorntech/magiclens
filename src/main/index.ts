@@ -8,6 +8,7 @@ import { installApplicationMenu, installReloadConfirm } from './reloadConfirm'
 import { initAutoUpdater } from './update/autoUpdateService'
 import { fixShellPath } from './util/fixShellPath'
 import { createMainWindow } from './window'
+import { syncMenuBarWidget } from './menuBarWidget'
 import { vpnManager } from './vpn/vpnManager'
 
 // Must run before ready — Chromium ignores most switches after initialization.
@@ -30,6 +31,7 @@ app.whenReady().then(() => {
   installReloadConfirm(window)
   initAutoUpdater(window)
   startNotesReminderScheduler()
+  syncMenuBarWidget()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
