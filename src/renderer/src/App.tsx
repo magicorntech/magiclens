@@ -14,6 +14,7 @@ import { UpdateCenterModal } from './components/Update/UpdateCenterModal'
 import { GlobalSearchModal } from './components/Search/GlobalSearchModal'
 import { VpnSessionPromptModal } from './components/Vpn/VpnSessionPromptModal'
 import { useAppShortcuts } from './hooks/useAppShortcuts'
+import { useSettingsUiStore, type SettingsSection } from './stores/settingsUiStore'
 
 export function App(): React.JSX.Element {
   const initUpdates = useUpdateStore((s) => s.init)
@@ -28,6 +29,13 @@ export function App(): React.JSX.Element {
 
   useEffect(() => {
     initUpdates()
+  }, [])
+
+  // The menu-bar widget's gear button asks the main process to focus a Settings section here.
+  useEffect(() => {
+    return window.api.app.onOpenSettingsSection((section) => {
+      useSettingsUiStore.getState().openSettings(section as SettingsSection)
+    })
   }, [])
 
   useEffect(() => {

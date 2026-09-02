@@ -144,6 +144,19 @@ import type {
   HelmUninstallReleaseRequest,
   HelmUninstallReleaseResponse
 } from '@shared/types/helm'
+import type {
+  ArgoActionResponse,
+  ArgoApplicationDetailResponse,
+  ArgoApplicationRequest,
+  ArgoApplicationSetsResponse,
+  ArgoApplicationsResponse,
+  ArgoBulkActionRequest,
+  ArgoBulkActionResponse,
+  ArgoClustersResponse,
+  ArgoOverviewResponse,
+  ArgoRepositoriesResponse,
+  ArgoProjectsResponse
+} from '@shared/types/argocd'
 import type { SkipVersionRequest, UpdateSettings, UpdateState } from '@shared/types/update'
 import type { GlobalSearchRequest, GlobalSearchResponse } from '@shared/types/search'
 
@@ -452,6 +465,15 @@ const api = {
       ipcRenderer.invoke(IPC.MENU_BAR_WIDGET_SET_TRAY_TITLE, { title }),
     closeMenuBarPopup: (): Promise<{ ok: true }> =>
       ipcRenderer.invoke(IPC.MENU_BAR_WIDGET_CLOSE_POPUP),
+    openMenuBarWidgetSettings: (): Promise<{ ok: true }> =>
+      ipcRenderer.invoke(IPC.MENU_BAR_WIDGET_OPEN_SETTINGS),
+    growMenuBarWidget: (overflow: number): Promise<{ ok: true }> =>
+      ipcRenderer.invoke(IPC.MENU_BAR_WIDGET_GROW, { overflow }),
+    onOpenSettingsSection: (cb: (section: string) => void): (() => void) => {
+      const handler = (_e: unknown, payload: { section: string }): void => cb(payload.section)
+      ipcRenderer.on(IPC.APP_OPEN_SETTINGS_SECTION, handler)
+      return () => ipcRenderer.removeListener(IPC.APP_OPEN_SETTINGS_SECTION, handler)
+    },
     onMenuBarRefresh: (cb: () => void): (() => void) => {
       const handler = (): void => cb()
       ipcRenderer.on(IPC.MENU_BAR_WIDGET_REFRESH, handler)
@@ -581,6 +603,28 @@ const api = {
       ipcRenderer.invoke(IPC.HELM_UNINSTALL_CHART, req),
     uninstallRelease: (req: HelmUninstallReleaseRequest): Promise<HelmUninstallReleaseResponse> =>
       ipcRenderer.invoke(IPC.HELM_UNINSTALL_RELEASE, req)
+  },
+  argocd: {
+    getOverview: (req: ClusterIdRequest): Promise<ArgoOverviewResponse> =>
+      ipcRenderer.invoke(IPC.ARGOCD_GET_OVERVIEW, req),
+    listApplications: (req: ClusterIdRequest): Promise<ArgoApplicationsResponse> =>
+      ipcRenderer.invoke(IPC.ARGOCD_LIST_APPLICATIONS, req),
+    listApplicationSets: (req: ClusterIdRequest): Promise<ArgoApplicationSetsResponse> =>
+      ipcRenderer.invoke(IPC.ARGOCD_LIST_APPLICATION_SETS, req),
+    listProjects: (req: ClusterIdRequest): Promise<ArgoProjectsResponse> =>
+      ipcRenderer.invoke(IPC.ARGOCD_LIST_PROJECTS, req),
+    listRepositories: (req: ClusterIdRequest): Promise<ArgoRepositoriesResponse> =>
+      ipcRenderer.invoke(IPC.ARGOCD_LIST_REPOSITORIES, req),
+    listClusters: (req: ClusterIdRequest): Promise<ArgoClustersResponse> =>
+      ipcRenderer.invoke(IPC.ARGOCD_LIST_CLUSTERS, req),
+    getApplicationDetail: (req: ArgoApplicationRequest): Promise<ArgoApplicationDetailResponse> =>
+      ipcRenderer.invoke(IPC.ARGOCD_GET_APPLICATION_DETAIL, req),
+    syncApplication: (req: ArgoApplicationRequest): Promise<ArgoActionResponse> =>
+      ipcRenderer.invoke(IPC.ARGOCD_SYNC_APPLICATION, req),
+    refreshApplication: (req: ArgoApplicationRequest): Promise<ArgoActionResponse> =>
+      ipcRenderer.invoke(IPC.ARGOCD_REFRESH_APPLICATION, req),
+    syncMany: (req: ArgoBulkActionRequest): Promise<ArgoBulkActionResponse> =>
+      ipcRenderer.invoke(IPC.ARGOCD_SYNC_MANY, req)
   },
   update: {
     check: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.UPDATE_CHECK),

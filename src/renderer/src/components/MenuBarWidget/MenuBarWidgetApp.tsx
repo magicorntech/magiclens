@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CLUSTER_NOT_CONNECTED } from '@shared/types/cluster'
 import type { ClusterMetricsSummary } from '@shared/types/metrics'
 import type { PersistedClusterEntry } from '@shared/types/cluster'
 import {
   MENU_BAR_ACCENTS,
-  MENU_BAR_CLUSTERS_PER_PAGE,
   defaultMenuBarWidgetPrefs,
+  menuBarClustersPerPage,
   type MenuBarWidgetPrefs
 } from '@shared/types/menuBarWidget'
+import { Settings } from 'lucide-react'
 import { formatBytes, formatCores, percentOf } from '../../format'
+import { Icon } from '../ui/Icon'
 
 /**
  * Renderer for the menu-bar Tray popup (loaded with `?mlWidget=1` in its own frameless
@@ -103,6 +105,9 @@ export function MenuBarWidgetApp(): React.JSX.Element {
   const [cards, setCards] = useState<ClusterCard[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
 
   const load = useCallback(async (): Promise<void> => {
     const settings = await window.api.app.getDisplaySettings()
@@ -207,28 +212,106 @@ export function MenuBarWidgetApp(): React.JSX.Element {
     void window.api.app.setMenuBarTrayTitle(label)
   }, [cards, prefs.trayLabel])
 
-  const accent = useMemo(() => MENU_BAR_ACCENTS[prefs.accent], [prefs.accent])
+  /**
+   * The main process sizes the window from constants that only approximate the rendered rows,
+   * so when it comes up a few px short the last card ends up behind a scrollbar. Measure the
+   * real overflow and ask for exactly that much more height (plus a small bottom breather),
+   * which self-corrects for any metric combination, font or locale.
+   */
+  useEffect(() => {
+    const list = listRef.current
+    if (!list) return
+    let raf = 0
+    const measure = (): void => {
+      cancelAnimationFrame(raf)
+      // One frame later so layout has settled after the render that triggered this.
+      raf = requestAnimationFrame(() => {
+        const el = listRef.current
+        if (!el) return
+        const overflow = el.scrollHeight - el.clientHeight
+        if (overflow > 0) void window.api.app.growMenuBarWidget(overflow + 8)
+      })
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(list)
+    return () => {
+      cancelAnimationFrame(raf)
+      observer.disconnect()
+    }
+  }, [cards, page, prefs.layout, prefs.metrics, prefs.compact, prefs.showClusterName])
 
-  const pageCount = Math.max(1, Math.ceil(cards.length / MENU_BAR_CLUSTERS_PER_PAGE))
+  const accentFor = useCallback(
+    (clusterId: string): string =>
+      MENU_BAR_ACCENTS[prefs.clusterAccents[clusterId] ?? prefs.accent],
+    [prefs.clusterAccents, prefs.accent]
+  )
+
+  /**
+   * Moves `draggedId` to sit where `targetId` currently is, within the full clusterIds order
+   * (not just the visible page) so dragging onto the last card of a page still lands correctly.
+   * Reorders local state first so the card follows the cursor without waiting on the round trip.
+   */
+  const reorderClusters = useCallback(
+    async (draggedId: string, targetId: string): Promise<void> => {
+      if (draggedId === targetId) return
+      const order = [...prefs.clusterIds]
+      const from = order.indexOf(draggedId)
+      const to = order.indexOf(targetId)
+      if (from < 0 || to < 0) return
+      order.splice(from, 1)
+      order.splice(to, 0, draggedId)
+
+      setPrefs((p) => ({ ...p, clusterIds: order }))
+      setCards((prev) => {
+        const byId = new Map(prev.map((c) => [c.id, c]))
+        return order.map((id) => byId.get(id)).filter((c): c is ClusterCard => !!c)
+      })
+
+      await window.api.app.setDisplaySettings({
+        menuBarWidget: { ...prefs, clusterIds: order }
+      })
+    },
+    [prefs]
+  )
+
+  function handleDrop(targetId: string): void {
+    const dragged = dragId
+    setDragId(null)
+    setDropTargetId(null)
+    if (dragged) void reorderClusters(dragged, targetId)
+  }
+
+  const perPage = menuBarClustersPerPage(prefs.layout)
+  const pageCount = Math.max(1, Math.ceil(cards.length / perPage))
   // Clamp rather than reset: removing a cluster while on the last page shouldn't jump to page 1.
   const safePage = Math.min(page, pageCount - 1)
-  const visibleCards = cards.slice(
-    safePage * MENU_BAR_CLUSTERS_PER_PAGE,
-    safePage * MENU_BAR_CLUSTERS_PER_PAGE + MENU_BAR_CLUSTERS_PER_PAGE
-  )
+  const visibleCards = cards.slice(safePage * perPage, safePage * perPage + perPage)
 
   return (
     <div className={`ml-mbw${prefs.compact ? ' ml-mbw--compact' : ''}`}>
       <header className="ml-mbw__head">
-        <span className="ml-mbw__title">MagicLens</span>
-        <button
-          type="button"
-          className="ml-mbw__head-btn"
-          onClick={() => void load()}
-          aria-label="Refresh"
-        >
-          ⟳
-        </button>
+        <span className="ml-mbw__title">MagicLens Widget</span>
+        <span className="ml-mbw__head-actions">
+          <button
+            type="button"
+            className="ml-mbw__head-btn"
+            onClick={() => void load()}
+            aria-label={t('common.refresh')}
+            title={t('common.refresh')}
+          >
+            ⟳
+          </button>
+          <button
+            type="button"
+            className="ml-mbw__head-btn"
+            onClick={() => void window.api.app.openMenuBarWidgetSettings()}
+            aria-label={t('settings.widget.openSettings')}
+            title={t('settings.widget.openSettings')}
+          >
+            <Icon icon={Settings} variant="micro" />
+          </button>
+        </span>
       </header>
 
       {prefs.clusterIds.length === 0 ? (
@@ -236,14 +319,47 @@ export function MenuBarWidgetApp(): React.JSX.Element {
       ) : loading && cards.length === 0 ? (
         <div className="ml-mbw__empty">{t('common.loading')}</div>
       ) : (
-        <div className="ml-mbw__list">
+        <div ref={listRef} className={`ml-mbw__list ml-mbw__list--${prefs.layout}`}>
           {visibleCards.map((card) => {
             const m = card.metrics
             const totalPods = m ? m.runningPods + m.pendingPods + m.failedPods : 0
+            const cardAccent = accentFor(card.id)
             return (
-              <section key={card.id} className="ml-mbw-card">
+              <section
+                key={card.id}
+                className={`ml-mbw-card${dragId === card.id ? ' is-dragging' : ''}${
+                  dropTargetId === card.id && dragId !== card.id ? ' is-drop-target' : ''
+                }`}
+                draggable
+                onDragStart={(e) => {
+                  setDragId(card.id)
+                  // Required for the drop to be allowed at all in Chromium.
+                  e.dataTransfer.effectAllowed = 'move'
+                  e.dataTransfer.setData('text/plain', card.id)
+                }}
+                onDragEnter={() => setDropTargetId(card.id)}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = 'move'
+                }}
+                onDragEnd={() => {
+                  setDragId(null)
+                  setDropTargetId(null)
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  handleDrop(card.id)
+                }}
+              >
                 {prefs.showClusterName ? (
                   <div className="ml-mbw-card__head">
+                    {/* Colour dot so each cluster stays identifiable even when the metric
+                        bars are hidden in compact mode. */}
+                    <span
+                      className="ml-mbw-card__dot"
+                      style={{ background: cardAccent }}
+                      aria-hidden
+                    />
                     <span className="ml-mbw-card__name" title={card.name}>
                       {card.name}
                     </span>
@@ -284,7 +400,7 @@ export function MenuBarWidgetApp(): React.JSX.Element {
                           m.cpuUsageCores !== undefined ? formatCores(m.cpuUsageCores) : '—'
                         }
                         pct={percentOf(m.cpuUsageCores, m.cpuAllocatableCores)}
-                        accent={accent}
+                        accent={cardAccent}
                         compact={prefs.compact}
                         colorByUsage={prefs.colorByUsage}
                       />
@@ -296,7 +412,7 @@ export function MenuBarWidgetApp(): React.JSX.Element {
                           m.memoryUsageBytes !== undefined ? formatBytes(m.memoryUsageBytes) : '—'
                         }
                         pct={percentOf(m.memoryUsageBytes, m.memoryAllocatableBytes)}
-                        accent={accent}
+                        accent={cardAccent}
                         compact={prefs.compact}
                         colorByUsage={prefs.colorByUsage}
                       />
@@ -306,7 +422,7 @@ export function MenuBarWidgetApp(): React.JSX.Element {
                         label="Pods"
                         value={`${totalPods} / ${m.podCapacity}`}
                         pct={percentOf(totalPods, m.podCapacity)}
-                        accent={accent}
+                        accent={cardAccent}
                         compact={prefs.compact}
                         colorByUsage={prefs.colorByUsage}
                       />
@@ -330,7 +446,7 @@ export function MenuBarWidgetApp(): React.JSX.Element {
                         label={t('settings.widget.metricNodes')}
                         value={`${m.readyNodes} / ${m.totalNodes}`}
                         pct={percentOf(m.readyNodes, m.totalNodes)}
-                        accent={accent}
+                        accent={cardAccent}
                         compact={prefs.compact}
                         colorByUsage={prefs.colorByUsage}
                       />
@@ -340,34 +456,35 @@ export function MenuBarWidgetApp(): React.JSX.Element {
               </section>
             )
           })}
-
-          {pageCount > 1 ? (
-            <nav className="ml-mbw__pager">
-              <button
-                type="button"
-                className="ml-mbw__pager-btn"
-                disabled={safePage === 0}
-                onClick={() => setPage(safePage - 1)}
-                aria-label={t('settings.widget.prevPage')}
-              >
-                ‹
-              </button>
-              <span className="ml-mbw__pager-label">
-                {safePage + 1} / {pageCount}
-              </span>
-              <button
-                type="button"
-                className="ml-mbw__pager-btn"
-                disabled={safePage >= pageCount - 1}
-                onClick={() => setPage(safePage + 1)}
-                aria-label={t('settings.widget.nextPage')}
-              >
-                ›
-              </button>
-            </nav>
-          ) : null}
         </div>
       )}
+
+      {/* Sits outside the scrollable card list so it can't be scrolled out of view. */}
+      {pageCount > 1 ? (
+        <nav className="ml-mbw__pager">
+          <button
+            type="button"
+            className="ml-mbw__pager-btn"
+            disabled={safePage === 0}
+            onClick={() => setPage(safePage - 1)}
+            aria-label={t('settings.widget.prevPage')}
+          >
+            ‹
+          </button>
+          <span className="ml-mbw__pager-label">
+            {safePage + 1} / {pageCount}
+          </span>
+          <button
+            type="button"
+            className="ml-mbw__pager-btn"
+            disabled={safePage >= pageCount - 1}
+            onClick={() => setPage(safePage + 1)}
+            aria-label={t('settings.widget.nextPage')}
+          >
+            ›
+          </button>
+        </nav>
+      ) : null}
     </div>
   )
 }

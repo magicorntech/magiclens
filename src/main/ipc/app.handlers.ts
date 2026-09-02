@@ -18,7 +18,9 @@ import {
   setLastSeenSplashVersion
 } from '../persistence/appSettings'
 import {
+  growMenuBarWidgetPopup,
   hideMenuBarWidgetPopup,
+  openMenuBarWidgetSettings,
   setMenuBarWidgetTrayTitle,
   syncMenuBarWidget
 } from '../menuBarWidget'
@@ -166,6 +168,16 @@ export function registerAppHandlers(): void {
 
   ipcMain.handle(IPC.MENU_BAR_WIDGET_CLOSE_POPUP, () => {
     hideMenuBarWidgetPopup()
+    return { ok: true as const }
+  })
+
+  ipcMain.handle(IPC.MENU_BAR_WIDGET_OPEN_SETTINGS, () => {
+    openMenuBarWidgetSettings()
+    return { ok: true as const }
+  })
+
+  ipcMain.handle(IPC.MENU_BAR_WIDGET_GROW, (_e, req: { overflow: number }) => {
+    growMenuBarWidgetPopup(Number(req?.overflow) || 0)
     return { ok: true as const }
   })
 

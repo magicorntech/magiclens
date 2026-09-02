@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next'
 import type { PersistedClusterEntry } from '@shared/types/cluster'
 import {
   MENU_BAR_ACCENTS,
-  MENU_BAR_CLUSTERS_PER_PAGE,
+  MENU_BAR_ACCENT_IDS,
   MENU_BAR_METRIC_IDS,
+  menuBarClustersPerPage,
   type MenuBarAccentId,
+  type MenuBarLayoutId,
   type MenuBarMetricId,
   type MenuBarTrayLabelId
 } from '@shared/types/menuBarWidget'
@@ -21,6 +23,15 @@ const METRIC_LABEL_KEYS: Record<MenuBarMetricId, string> = {
   pendingPods: 'settings.widget.metricPendingPods',
   failedPods: 'settings.widget.metricFailedPods',
   nodes: 'settings.widget.metricNodes'
+}
+
+function accentLabel(id: MenuBarAccentId, text: string): React.ReactNode {
+  return (
+    <span className="ml-widget-accent-option">
+      <span className="ml-widget-accent-swatch" style={{ background: MENU_BAR_ACCENTS[id] }} />
+      {text}
+    </span>
+  )
 }
 
 export function MenuBarWidgetSettings(): React.JSX.Element {
@@ -57,7 +68,9 @@ export function MenuBarWidgetSettings(): React.JSX.Element {
         />
         <SettingsRow
           title={t('settings.widget.clusters')}
-          description={t('settings.widget.clustersHint', { perPage: MENU_BAR_CLUSTERS_PER_PAGE })}
+          description={t('settings.widget.clustersHint', {
+            perPage: menuBarClustersPerPage(prefs.layout)
+          })}
           stacked
           control={
             <Select
@@ -123,27 +136,70 @@ export function MenuBarWidgetSettings(): React.JSX.Element {
         description={t('settings.widget.designHint')}
       >
         <SettingsRow
+          title={t('settings.widget.layout')}
+          description={t('settings.widget.layoutHint')}
+          control={
+            <Select
+              style={{ minWidth: 160 }}
+              value={prefs.layout}
+              onChange={(v: MenuBarLayoutId) => void update({ layout: v })}
+              options={[
+                { value: 'stacked', label: t('settings.widget.layoutStacked') },
+                { value: 'grid', label: t('settings.widget.layoutGrid') }
+              ]}
+            />
+          }
+        />
+        <SettingsRow
           title={t('settings.widget.accent')}
+          description={t('settings.widget.accentHint')}
           control={
             <Select
               style={{ minWidth: 160 }}
               value={prefs.accent}
               onChange={(v: MenuBarAccentId) => void update({ accent: v })}
-              options={(Object.keys(MENU_BAR_ACCENTS) as MenuBarAccentId[]).map((id) => ({
+              options={MENU_BAR_ACCENT_IDS.map((id) => ({
                 value: id,
-                label: (
-                  <span className="ml-widget-accent-option">
-                    <span
-                      className="ml-widget-accent-swatch"
-                      style={{ background: MENU_BAR_ACCENTS[id] }}
-                    />
-                    {t(`settings.widget.accent_${id}`)}
-                  </span>
-                )
+                label: accentLabel(id, t(`settings.widget.accent_${id}`))
               }))}
             />
           }
         />
+        {prefs.clusterIds.length > 0 ? (
+          <SettingsRow
+            title={t('settings.widget.perClusterAccent')}
+            description={t('settings.widget.perClusterAccentHint')}
+            stacked
+            control={
+              <div className="ml-widget-cluster-accents">
+                {prefs.clusterIds.map((id) => {
+                  const entry = clusters.find((c) => c.id === id)
+                  const label = entry?.customName || entry?.contextName || id
+                  return (
+                    <div key={id} className="ml-widget-cluster-accent-row">
+                      <span className="ml-widget-cluster-accent-name" title={label}>
+                        {label}
+                      </span>
+                      <Select
+                        size="small"
+                        style={{ minWidth: 150 }}
+                        // Falls back to the shared accent until this cluster is given its own.
+                        value={prefs.clusterAccents[id] ?? prefs.accent}
+                        onChange={(v: MenuBarAccentId) =>
+                          void update({ clusterAccents: { ...prefs.clusterAccents, [id]: v } })
+                        }
+                        options={MENU_BAR_ACCENT_IDS.map((accentId) => ({
+                          value: accentId,
+                          label: accentLabel(accentId, t(`settings.widget.accent_${accentId}`))
+                        }))}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            }
+          />
+        ) : null}
         <SettingsRow
           title={t('settings.widget.compact')}
           description={t('settings.widget.compactHint')}

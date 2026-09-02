@@ -9,6 +9,12 @@ directories:
 files:
   - out/**/*
   - package.json
+  # The main process loads resources/icon.png at runtime via `join(__dirname, '../../resources')`
+  # — the tray icon, the dock icon, both window icons and notification icons all resolve there.
+  # Left out of the package that path simply doesn't exist, and the menu-bar tray in particular
+  # fails silently: an unreadable path yields an empty NativeImage, which macOS renders as an
+  # invisible status item, so the widget looks like it never launched.
+  - resources/**
   - '!**/*.map'
   - '!**/*.ts'
 

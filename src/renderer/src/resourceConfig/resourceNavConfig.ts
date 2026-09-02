@@ -14,6 +14,7 @@ import {
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { VirtualPageKey } from '@shared/types/navigation'
 import { HelmLogo } from '../icons/HelmLogo'
+import { ArgoLogo } from '../icons/ArgoLogo'
 
 export type NavEntry =
   | { type: 'kind'; kind: ResourceKind; label?: string }
@@ -132,6 +133,20 @@ export const resourceNavLayout: NavLayoutItem[] = [
     entries: [
       { type: 'virtual', key: 'helmCharts', label: 'Charts' },
       { type: 'virtual', key: 'helmReleases', label: 'Releases' }
+    ]
+  },
+  {
+    type: 'section',
+    id: 'argocd',
+    title: 'Argo CD',
+    icon: ArgoLogo as LucideIcon,
+    entries: [
+      { type: 'virtual', key: 'argoDashboard', label: 'Dashboard' },
+      { type: 'virtual', key: 'argoApplications', label: 'Applications' },
+      { type: 'virtual', key: 'argoApplicationSets', label: 'Application Sets' },
+      { type: 'virtual', key: 'argoProjects', label: 'Projects' },
+      { type: 'virtual', key: 'argoRepositories', label: 'Repositories' },
+      { type: 'virtual', key: 'argoClusters', label: 'Clusters' }
     ]
   },
   {

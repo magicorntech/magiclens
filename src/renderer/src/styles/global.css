@@ -658,6 +658,7 @@ html[data-ui-contrast='bright'] #root {
   height: 12px;
   flex-shrink: 0;
   line-height: 0;
+  transition: opacity 0.15s ease;
 }
 
 .ml-resource-tab-label-text {
@@ -832,21 +833,35 @@ html[data-ui-contrast='bright'] #root {
 }
 
 .ml-resource-tab-bar__item .ml-resource-tab-label {
-  padding: 0 8px 0 4px;
-  min-height: 28px;
-  height: 28px;
+  /* The tab now carries a 1px border of its own, so 6px of padding reproduces the namespace
+     selector's inner offset one row below (its own 1px border + 6px padding) and the two stay
+     on the same vertical line. */
+  padding: 0 8px 0 6px;
+  height: 100%;
   box-sizing: border-box;
   gap: 6px;
 }
 
+/*
+ * Styled as real tabs rather than bare labels, matching `.ml-browser-tab` in the cluster strip
+ * above — same top-rounded shape, same open bottom edge, same "active tab is the page colour
+ * and bridges the strip's bottom border" idiom. Previously every tab was fully transparent, so
+ * the row read as a line of plain text and only revealed itself on hover.
+ *
+ * Height is 30px against the bar's 34px with a 4px top margin, so the tab reaches the bar's
+ * bottom edge and the -1px on the active one can cover the divider.
+ */
 .ml-resource-tab-bar__item {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  margin: 3px 4px 0;
+  margin: 4px 3px 0;
   padding: 0;
-  border: none;
-  border-radius: 6px 6px 0 0;
+  height: 30px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 7px 7px 0 0;
   background: transparent;
   color: var(--ml-text-tertiary);
   font-size: 13px;
@@ -857,23 +872,41 @@ html[data-ui-contrast='bright'] #root {
   transition:
     background 0.15s ease,
     color 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color 0.15s ease;
+}
+
+/* Idle tabs sit back into the strip but keep a full outline, so each is a discrete tab at rest. */
+.ml-resource-tab-bar__item:not(.ml-resource-tab-bar__item--active) {
+  background: color-mix(in srgb, var(--ml-bg-layout) 45%, transparent);
+  border-color: color-mix(in srgb, var(--ml-border-secondary) 80%, transparent);
+  color: var(--ml-text-secondary);
 }
 
 .ml-resource-tab-bar__group > .ml-resource-tab-bar__item:first-child {
   margin-left: 0;
 }
 
-.ml-resource-tab-bar__item:hover {
-  background: color-mix(in srgb, var(--ml-bg-container) 70%, transparent);
-  color: var(--ml-text-secondary);
+.ml-resource-tab-bar__item:not(.ml-resource-tab-bar__item--active):hover {
+  background: color-mix(in srgb, var(--ml-bg-layout) 75%, transparent);
+  border-color: var(--ml-border-secondary);
+  color: var(--ml-text);
 }
 
+/*
+ * The active tab takes the page's own colour (`--ml-bg-layout`, what
+ * `.resource-kind-tabs-content` paints) and covers the bar's bottom border, so it reads as
+ * attached to the content while the container-coloured strip keeps it visibly raised. The
+ * accent sits on top because the bottom edge has to stay open for that join.
+ */
 .ml-resource-tab-bar__item--active {
-  background: var(--ml-bg-container);
+  background: var(--ml-bg-layout);
+  border-color: var(--ml-border-secondary);
   color: var(--ml-text);
   font-weight: 600;
-  box-shadow: inset 0 -2px 0 var(--ml-primary);
+  box-shadow: inset 0 2px 0 var(--ml-primary);
+  margin-bottom: -1px;
+  padding-bottom: 1px;
+  z-index: 2;
 }
 
 .ml-resource-tab-bar__item:focus-visible {
@@ -892,20 +925,37 @@ html[data-ui-contrast='bright'] #root {
   border-left: 1px solid color-mix(in srgb, var(--ml-border) 70%, transparent);
 }
 
+/*
+ * Taken out of the label's flow (absolute, over the tab's left edge) so it stops permanently
+ * indenting every tab title. That indent pushed the first tab's text ~15px right of the
+ * namespace selector below it; now the title starts right after the tab bar's own padding and
+ * the two line up. The handle fades in on hover/active, and still starts the drag.
+ *
+ * `left` matches the label's own padding-left so the handle lands exactly on the leading icon
+ * slot. It must not go negative: this sits inside `.ml-resource-tab-bar__scroll`
+ * (overflow-x: auto), which clips anything left of its content box — a negative offset made
+ * the FIRST tab's handle invisible and unclickable, so that tab couldn't be dragged at all.
+ */
 .ml-resource-tab-drag-handle {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 12px;
   height: 18px;
-  margin: 0 -1px 0 0;
+  margin: 0;
   padding: 0;
   border: none;
   border-radius: var(--ml-radius-xs);
   background: transparent;
   color: var(--ml-text-tertiary);
   cursor: grab;
-  opacity: 0.3;
+  opacity: 0;
+  pointer-events: none;
   flex-shrink: 0;
   /*
    * The handle sits inside `.ml-resource-tab-bar__scroll` (overflow-x: auto), so without
@@ -916,9 +966,18 @@ html[data-ui-contrast='bright'] #root {
   transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 
-.ml-resource-tab-bar__item:hover .ml-resource-tab-drag-handle,
-.ml-resource-tab-bar__item--active .ml-resource-tab-drag-handle {
+/* Hover-only (not `--active` too): the grip takes over the icon's slot, so revealing it on the
+   active tab would leave that tab permanently without its kind icon. */
+.ml-resource-tab-bar__item:hover .ml-resource-tab-drag-handle {
   opacity: 0.75;
+  pointer-events: auto;
+}
+
+/* The grip occupies the icon's slot while it's showing, so the two don't stack on each other.
+   Hiding the icon rather than moving it keeps the tab's width and title position fixed — a
+   tab that resized on hover would make the whole strip jitter. */
+.ml-resource-tab-bar__item:hover .ml-resource-tab-label-icon {
+  opacity: 0;
 }
 
 .ml-resource-tab-drag-handle:hover {
@@ -3733,7 +3792,9 @@ body.ml-browser-tab-dragging {
   margin-left: auto;
   padding: 0 12px 0 10px;
   border-left: 1px solid var(--ml-border-secondary);
-  background: var(--ml-bg-elevated);
+  /* Keep in step with `.ml-cluster-tab-strip`'s background — see the note in
+     devtools-refine.css, which is the layer that actually wins here. */
+  background: var(--ml-bg-layout);
   position: relative;
   z-index: 10;
 }
@@ -9988,6 +10049,21 @@ button.ml-sidebar-section-chrome:hover {
   box-sizing: border-box;
 }
 
+/*
+ * On the Nodes page the overview shell is nested inside `.ml-resource-page` (which already
+ * supplies the 20px gutter for the toolbar's namespace selector), so its own inline padding
+ * was stacking on top and indenting the whole page ~20px further than the selector above it.
+ * Virtual overview pages render `.ml-overview-page` at the top level and keep their gutter.
+ *
+ * NOTE: devtools-refine.css loads after this file and zeroes `.ml-resource-page`'s gutter,
+ * then re-derives all three insets from `--ml-resource-gutter` with `!important`. That file,
+ * not this rule, decides where the tabs / namespace button / page content actually land.
+ */
+.ml-resource-page-body > .ml-overview-page {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .ml-overview-page__header {
   display: flex;
   align-items: flex-start;
@@ -14333,4 +14409,411 @@ body.ml-vault--resizing .ml-vault__sidebar-resize::after {
   font-size: 11px;
   color: var(--ml-text-tertiary);
   font-variant-numeric: tabular-nums;
+}
+
+.ml-mbw-card__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.ml-widget-cluster-accents {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.ml-widget-cluster-accent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ml-widget-cluster-accent-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ml-text-secondary);
+}
+
+/* Side-by-side cluster cards. The pager spans the full row so it stays centred. */
+.ml-mbw__list--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+}
+
+.ml-mbw__list--grid > .ml-mbw__pager {
+  grid-column: 1 / -1;
+}
+
+/* Cards are draggable to reorder clusters; grab cursor advertises it. */
+.ml-mbw-card {
+  cursor: grab;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+/*
+ * The held card goes solid white and lifts, so which one you're dragging is unmistakable in
+ * either theme. Text/label colours are pinned to dark values here because the card no longer
+ * sits on the themed background — inheriting --ml-text would make them invisible in dark mode.
+ */
+.ml-mbw-card.is-dragging {
+  background: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  transform: scale(1.02);
+  cursor: grabbing;
+}
+
+.ml-mbw-card.is-dragging .ml-mbw-card__name,
+.ml-mbw-card.is-dragging .ml-mbw-metric__value {
+  color: #14101c;
+}
+
+.ml-mbw-card.is-dragging .ml-mbw-card__nodes,
+.ml-mbw-card.is-dragging .ml-mbw-metric__label,
+.ml-mbw-card.is-dragging .ml-mbw-metric__pct,
+.ml-mbw-card.is-dragging .ml-mbw-card__offline {
+  color: #6b5f7a;
+}
+
+.ml-mbw-card.is-dragging .ml-mbw-metric__track {
+  background: rgba(20, 16, 28, 0.12);
+}
+
+.ml-mbw-card.is-drop-target {
+  border-color: var(--ml-primary);
+  box-shadow: inset 0 0 0 1px var(--ml-primary);
+}
+
+.ml-mbw__head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+/* —— Argo CD —— */
+
+/*
+ * Virtual pages render straight into `.resource-kind-tabs-content`, which carries no padding of
+ * its own, so each page supplies its own gutter. This matches `.ml-overview-page` (the other
+ * standalone virtual pages) rather than the tighter `--ml-resource-gutter` used by resource
+ * table rows — there's no namespace selector here to line up with.
+ */
+.ml-argo-page {
+  /*
+   * Declared here, not inherited. `.resource-kind-tabs-root` — this page's ancestor — sets
+   * `--ml-resource-inline-pad: 0px`, so relying on the token's fallback silently produced a
+   * zero gutter and the content sat flush against the window edges. `.ml-overview-page`
+   * re-declares it for the same reason.
+   */
+  --ml-argo-gutter: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 14px;
+  padding: 18px var(--ml-argo-gutter);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .ml-argo-page {
+    --ml-argo-gutter: 14px;
+  }
+}
+
+/* Header — mirrors .ml-overview-page__header so Argo reads as part of the same app. */
+.ml-argo-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.ml-argo-header__text {
+  min-width: 0;
+}
+
+.ml-argo-header__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ml-text);
+}
+
+.ml-argo-header__subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ml-text-secondary);
+}
+
+.ml-argo-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/*
+ * The seven fleet counts. A single bordered band rather than loose inline text, so the numbers
+ * group as one readout; it wraps to a second line instead of scrolling on narrow windows.
+ */
+.ml-argo-statband {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
+  flex-shrink: 0;
+  padding: 4px 0;
+  border: 1px solid var(--ml-border-secondary);
+  border-radius: var(--ml-radius-lg, 10px);
+  background: var(--ml-bg-elevated);
+}
+
+.ml-argo-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 96px;
+  min-width: 96px;
+  padding: 8px 14px;
+  border-left: 1px solid var(--ml-border-secondary);
+}
+
+/* No rule before the first cell, nor after a wrap. */
+.ml-argo-stat:first-child {
+  border-left: none;
+}
+
+.ml-argo-stat__value {
+  font-size: 20px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.ml-argo-stat__label {
+  font-size: 11.5px;
+  color: var(--ml-text-secondary);
+  white-space: nowrap;
+}
+
+.ml-argo-cards {
+  display: grid;
+  /* Applications carries the breakdown and the actions, so it gets the wider column. */
+  grid-template-columns: 1.7fr 1fr 1fr;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1000px) {
+  .ml-argo-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ml-argo-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--ml-border-secondary);
+  border-radius: var(--ml-radius-lg, 10px);
+  background: var(--ml-bg-elevated);
+  min-width: 0;
+  text-align: left;
+}
+
+/* The two count tiles are buttons that navigate; they need to look pressable. */
+.ml-argo-card--action {
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.ml-argo-card--action:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ml-primary) 45%, var(--ml-border-secondary));
+  background: color-mix(in srgb, var(--ml-primary) 5%, var(--ml-bg-elevated));
+}
+
+.ml-argo-card--action:disabled {
+  cursor: default;
+}
+
+.ml-argo-card--action:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ml-primary) 55%, transparent);
+  outline-offset: -2px;
+}
+
+.ml-argo-card__chevron {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  color: var(--ml-text-tertiary);
+}
+
+.ml-argo-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ml-text);
+}
+
+.ml-argo-card__value {
+  font-size: 24px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--ml-text);
+  line-height: 1.1;
+}
+
+.ml-argo-card__unit {
+  margin-left: 4px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ml-text-secondary);
+}
+
+.ml-argo-card__hint {
+  font-size: 12px;
+  color: var(--ml-text-tertiary);
+}
+
+.ml-argo-card__meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.ml-argo-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/*
+ * Sections don't scroll as a whole — their tables carry a fixed scroll viewport — so they must
+ * not shrink below their content or the table header collapses onto the rows.
+ */
+.ml-argo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--ml-border-secondary);
+  border-radius: var(--ml-radius-lg, 10px);
+  background: var(--ml-bg-elevated);
+}
+
+.ml-argo-section__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ml-argo-section__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ml-text);
+}
+
+/* Count pill next to a section title. */
+.ml-argo-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 19px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--ml-bg-spotlight, color-mix(in srgb, var(--ml-text) 8%, transparent));
+  color: var(--ml-text-secondary);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ml-argo-filter {
+  max-width: 300px;
+  margin-left: auto;
+}
+
+.ml-argo-muted {
+  color: var(--ml-text-secondary);
+}
+
+/* Argo application detail drawer */
+
+.ml-argo-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ml-argo-drawer__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ml-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-argo-drawer__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ml-argo-drawer__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Multi-value facts (images, finalizers, URLs) stack instead of running together on one line. */
+.ml-argo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  word-break: break-all;
+}
+
+.ml-argo-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+/* Rows that open the detail drawer must look like they do something. */
+.ml-argo-row--clickable {
+  cursor: pointer;
 }

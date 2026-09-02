@@ -14,5 +14,11 @@ export const VIRTUAL_PAGE_LABELS: Record<VirtualPageKey, string> = {
   discoveredApiGroups: 'API Groups',
   discoveredApiVersions: 'API Versions',
   helmCharts: 'Helm Charts',
-  helmReleases: 'Helm Releases'
+  helmReleases: 'Helm Releases',
+  argoDashboard: 'Argo CD Dashboard',
+  argoApplications: 'Argo Applications',
+  argoApplicationSets: 'Argo Application Sets',
+  argoProjects: 'Argo Projects',
+  argoRepositories: 'Argo Repositories',
+  argoClusters: 'Argo Clusters'
 }

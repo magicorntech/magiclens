@@ -19,6 +19,29 @@ import { Icon } from '../ui/Icon'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
 import { useResourceWatchDisplayStore } from '../../stores/resourceWatchDisplayStore'
 
+/**
+ * Virtual pages that show data across the whole cluster and do their own filtering. The header's
+ * namespace selector is hidden for these — leaving it visible offers a control that changes
+ * nothing on the page under it.
+ */
+const CLUSTER_SCOPED_VIRTUAL_PAGES = new Set<VirtualPageKey>([
+  'topology',
+  'workloadsOverview',
+  'configOverview',
+  'networkOverview',
+  'storageOverview',
+  'helmCharts',
+  'helmReleases',
+  'dynamicCustomResources',
+  'operatorResources',
+  'argoDashboard',
+  'argoApplications',
+  'argoApplicationSets',
+  'argoProjects',
+  'argoRepositories',
+  'argoClusters'
+])
+
 const TERMINAL_LABEL_MIN_WIDTH = 720
 const RESOURCE_SIDER_WIDTH = 220
 const RESOURCE_SIDER_COLLAPSED_WIDTH = 56
@@ -108,16 +131,7 @@ function AppShellInner({
   const hasTerminalTab = tabs.some((tab) => tab.kind === 'terminal')
   const panelPlacement = resolvePanelPlacement(utilityPanelPlacement, allowSidePanel)
   const showHeaderNamespace =
-    !!selectedVirtualPage &&
-    selectedVirtualPage !== 'topology' &&
-    selectedVirtualPage !== 'workloadsOverview' &&
-    selectedVirtualPage !== 'configOverview' &&
-    selectedVirtualPage !== 'networkOverview' &&
-    selectedVirtualPage !== 'storageOverview' &&
-    selectedVirtualPage !== 'helmCharts' &&
-    selectedVirtualPage !== 'helmReleases' &&
-    selectedVirtualPage !== 'dynamicCustomResources' &&
-    selectedVirtualPage !== 'operatorResources'
+    !!selectedVirtualPage && !CLUSTER_SCOPED_VIRTUAL_PAGES.has(selectedVirtualPage)
 
   const isTopologyPage = selectedVirtualPage === 'topology'
   const showClusterName = !splitView && !isTopologyPage

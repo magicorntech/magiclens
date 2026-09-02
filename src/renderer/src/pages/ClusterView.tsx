@@ -13,6 +13,11 @@ import { DiscoveredApiGroupsPage } from '../components/Discovery/DiscoveredApiGr
 import { DiscoveredApiVersionsPage } from '../components/Discovery/DiscoveredApiVersionsPage'
 import { CustomResourceBrowserPage } from '../components/Discovery/CustomResourceBrowserPage'
 import { HelmChartsPage } from '../components/Helm/HelmChartsPage'
+import { ArgoDashboardPage } from '../components/ArgoCD/ArgoDashboardPage'
+import { ArgoApplicationsPage } from '../components/ArgoCD/ArgoApplicationsPage'
+import { ArgoApplicationSetsPage } from '../components/ArgoCD/ArgoApplicationSetsPage'
+import { ArgoProjectsPage } from '../components/ArgoCD/ArgoProjectsPage'
+import { ArgoClustersPage, ArgoRepositoriesPage } from '../components/ArgoCD/ArgoSettingsPages'
 import { HelmReleasesPage } from '../components/Helm/HelmReleasesPage'
 import { TopologyPage } from '../components/Topology/TopologyPage'
 import { WorkloadsOverviewPage } from '../components/Overview/WorkloadsOverviewPage'
@@ -283,6 +288,23 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
             onFocusConsumed={() => setDynamicResourceFocus(null)}
           />
         )
+      case 'argoDashboard':
+        return (
+          <ArgoDashboardPage
+            clusterId={clusterId}
+            onOpenPage={handleSelectVirtualPage}
+          />
+        )
+      case 'argoApplications':
+        return <ArgoApplicationsPage clusterId={clusterId} />
+      case 'argoApplicationSets':
+        return <ArgoApplicationSetsPage clusterId={clusterId} />
+      case 'argoProjects':
+        return <ArgoProjectsPage clusterId={clusterId} />
+      case 'argoRepositories':
+        return <ArgoRepositoriesPage clusterId={clusterId} />
+      case 'argoClusters':
+        return <ArgoClustersPage clusterId={clusterId} />
       case 'helmCharts':
         return <HelmChartsPage clusterId={clusterId} />
       case 'helmReleases':

@@ -538,11 +538,23 @@
 }
 
 /* —— Cluster tab strip: Chrome connected tabs —— */
+/*
+ * The strip is deliberately painted with `--ml-bg-layout`, not `--ml-bg-elevated`.
+ *
+ * This is a browser-style tab bar: the active tab is filled with `--ml-bg-container` so it
+ * merges into the page beneath it, and the strip behind must therefore be a *different*
+ * colour for any of it to read as tabs. `--ml-bg-elevated` doesn't guarantee that — in the
+ * light palette both it and `--ml-bg-container` are `#ffffff`, and some schemes define
+ * `bgElevated: container` outright. In those cases the strip, the active tab and the content
+ * below all rendered the same colour and the tabs disappeared into one flat band.
+ * `--ml-bg-layout` is distinct from `--ml-bg-container` in every scheme, so the contrast holds.
+ */
 .ml-cluster-tab-strip,
 .ml-cluster-tab-strip--browser {
   height: 52px !important;
   min-height: 52px !important;
-  background: var(--ml-bg-elevated) !important;
+  background: var(--ml-bg-layout) !important;
+  border-bottom: 1px solid var(--ml-border-secondary) !important;
   overflow: hidden !important;
 }
 
@@ -599,23 +611,29 @@
   overflow: hidden !important;
 }
 
+/* Inactive tabs sit back into the strip but keep a full outline, so each one still reads as a
+   discrete tab rather than a run of text. */
 .ml-browser-tab:not(.is-active) {
-  background: color-mix(in srgb, var(--ml-bg-container) 42%, transparent) !important;
-  color: var(--ml-text-secondary) !important;
-  border-color: color-mix(in srgb, var(--ml-border-secondary) 50%, transparent) !important;
-}
-
-.ml-browser-tab:hover {
   background: color-mix(in srgb, var(--ml-bg-container) 55%, transparent) !important;
+  color: var(--ml-text-secondary) !important;
+  border-color: var(--ml-border-secondary) !important;
+  border-bottom: none !important;
 }
 
 .ml-browser-tab:not(.is-active):hover {
-  background: color-mix(in srgb, var(--ml-bg-container) 58%, transparent) !important;
+  background: color-mix(in srgb, var(--ml-bg-container) 80%, transparent) !important;
+  color: var(--ml-text) !important;
 }
 
+/*
+ * The active tab is the page's colour and bridges the strip's bottom border (the -1px margin
+ * plus matching padding), which is what makes it look attached to the content below while the
+ * strip's own `--ml-bg-layout` keeps it visibly raised.
+ */
 .ml-browser-tab.is-active {
   background: var(--ml-bg-container) !important;
   border-color: var(--ml-border-secondary) !important;
+  border-bottom: none !important;
   color: var(--ml-text) !important;
   font-weight: 550 !important;
   box-shadow: none !important;
@@ -664,10 +682,13 @@
   padding: 0 12px 0 10px !important;
   margin-left: 0 !important;
   border-left: 1px solid var(--ml-border-secondary) !important;
-  background: var(--ml-bg-elevated) !important;
+  /* Must track `.ml-cluster-tab-strip`'s own background — this box is an opaque panel sitting
+     inside that strip (it has to be, so tabs scroll underneath it), so any other colour shows
+     up as a lighter rectangle in the strip's top-right corner. */
+  background: var(--ml-bg-layout) !important;
   overflow: visible !important;
   /* Keep chrome icons above scrolling tabs */
-  box-shadow: -8px 0 12px -8px color-mix(in srgb, var(--ml-bg-elevated) 90%, transparent);
+  box-shadow: -8px 0 12px -8px color-mix(in srgb, var(--ml-bg-layout) 90%, transparent);
 }
 
 .ml-chrome-actions,
@@ -757,7 +778,9 @@
   border-radius: var(--ml-radius-control) !important;
   overflow: hidden;
   flex-shrink: 0;
-  background: var(--ml-bg-layout) !important;
+  /* The panel behind this is `--ml-bg-layout`; the field has to be the other surface colour or
+     it vanishes into it. `--ml-bg-container` differs from layout in every scheme. */
+  background: var(--ml-bg-container) !important;
   border-color: var(--ml-border-secondary) !important;
 }
 
@@ -840,6 +863,14 @@
 /* Content flush to the window edges — no left/right gutters. */
 .resource-kind-tabs-root {
   --ml-resource-inline-pad: 0px;
+  /*
+   * The one inset every row of the resource view shares: the tab strip, the toolbar holding
+   * the namespace selector, and any overview page nested under the toolbar. It exists because
+   * the toolbar's controls shouldn't touch the window edge; the others follow it so the tabs,
+   * the namespace button and the page content below all start on the same vertical line.
+   * Change it here and all three move together.
+   */
+  --ml-resource-gutter: 8px;
 }
 
 .ml-resource-page {
@@ -851,12 +882,18 @@
   width: 100% !important;
   min-height: 34px !important;
   height: 34px !important;
-  padding: 0 var(--ml-resource-inline-pad, 16px) !important;
+  padding: 0 var(--ml-resource-gutter, 8px) !important;
   margin: 0 !important;
   background: transparent !important;
   border-bottom: 1px solid var(--ml-border-secondary) !important;
 }
 
+/*
+ * Painted with `--ml-bg-container`, continuing the surface of the active cluster tab directly
+ * above it, so the two strips read as one nested hierarchy instead of two unrelated bands.
+ * Not `--ml-bg-elevated`: in the light palette that is `#ffffff`, identical to the container
+ * the active tab below would sit on, which flattened the whole row into plain text.
+ */
 .ml-resource-tab-bar__inner {
   display: flex !important;
   align-items: stretch !important;
@@ -865,7 +902,7 @@
   min-width: 0 !important;
   padding: 0 !important;
   box-sizing: border-box !important;
-  background: var(--ml-bg-elevated) !important;
+  background: var(--ml-bg-container) !important;
   border-radius: 0 !important;
 }
 
@@ -881,7 +918,7 @@
   min-height: var(--ml-control-h) !important;
   height: auto !important;
   /* Page gutters are gone — keep a small inset so controls don't touch the edges. */
-  padding: 8px 8px !important;
+  padding: 8px var(--ml-resource-gutter, 8px) !important;
   margin: 0 !important;
   background: var(--ml-bg-container) !important;
   box-shadow: inset 0 -1px 0 var(--ml-border-secondary) !important;
@@ -1102,6 +1139,17 @@
 
 .ml-resource-page-body {
   padding: 0 !important;
+}
+
+/*
+ * The Nodes page renders the overview shell inside the resource page body, directly under the
+ * toolbar. `.ml-resource-page` is flush here (padding 0 above), so the overview has to carry
+ * the shared gutter itself — otherwise its cards start 8px left of the namespace button they
+ * sit beneath. Standalone overview pages aren't nested like this and keep their own padding.
+ */
+.ml-resource-page-body > .ml-overview-page {
+  padding-left: var(--ml-resource-gutter, 8px) !important;
+  padding-right: var(--ml-resource-gutter, 8px) !important;
 }
 
 /* Soften SaaS glass on wallpaper mode */

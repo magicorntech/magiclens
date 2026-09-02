@@ -2,8 +2,12 @@ import { forwardRef } from 'react'
 import type { LucideProps } from 'lucide-react'
 
 /**
- * Official Helm ship's-wheel mark, Lucide-compatible so it can drop into
- * existing `Icon` / nav slots via `currentColor`.
+ * Official Helm ship's-wheel mark, Lucide-compatible so it can drop into existing `Icon` /
+ * nav slots via `currentColor`.
+ *
+ * The upstream asset is a fixed navy fill; this keeps `currentColor` as the default so the
+ * mark inherits `--ml-text` and flips with the light/dark theme instead of staying dark
+ * against a dark background. Pass `color` only where a fixed brand colour is genuinely wanted.
  */
 export const HelmLogo = forwardRef<SVGSVGElement, LucideProps>(function HelmLogo(
   {

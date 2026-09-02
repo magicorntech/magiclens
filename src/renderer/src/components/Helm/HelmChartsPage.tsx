@@ -87,7 +87,10 @@ export function HelmChartsPage({ clusterId }: HelmChartsPageProps): React.JSX.El
       ellipsis: true,
       render: (v: string) => (
         <span className="ml-helm-chart-name">
-          <HelmLogo size={16} color="var(--ml-primary)" />
+          {/* No explicit color: inheriting currentColor makes the mark follow --ml-text, so it
+              renders near-black in light mode and near-white in dark mode. A fixed brand color
+              here stayed dark against the dark theme. */}
+          <HelmLogo size={16} />
           <Typography.Text strong>{v}</Typography.Text>
         </span>
       )

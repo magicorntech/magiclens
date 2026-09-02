@@ -119,6 +119,11 @@ export const IPC = {
   MENU_BAR_WIDGET_SET_TRAY_TITLE: 'menuBarWidget:setTrayTitle',
   MENU_BAR_WIDGET_CLOSE_POPUP: 'menuBarWidget:closePopup',
   MENU_BAR_WIDGET_REFRESH: 'menuBarWidget:refresh',
+  MENU_BAR_WIDGET_OPEN_SETTINGS: 'menuBarWidget:openSettings',
+  /** Renderer -> main: grow the popup by the number of px its content is overflowing by. */
+  MENU_BAR_WIDGET_GROW: 'menuBarWidget:grow',
+  /** Main -> main window: focus a Settings section (used by the widget's gear button). */
+  APP_OPEN_SETTINGS_SECTION: 'app:openSettingsSection',
   APP_GET_FULLSCREEN: 'app:getFullscreen',
   APP_TOGGLE_FULLSCREEN: 'app:toggleFullscreen',
   APP_FULLSCREEN_CHANGED: 'app:fullscreenChanged',
@@ -175,6 +180,17 @@ export const IPC = {
   HELM_ROLLBACK: 'helm:rollback',
   HELM_UNINSTALL_CHART: 'helm:uninstallChart',
   HELM_UNINSTALL_RELEASE: 'helm:uninstallRelease',
+
+  ARGOCD_GET_OVERVIEW: 'argocd:getOverview',
+  ARGOCD_LIST_APPLICATIONS: 'argocd:listApplications',
+  ARGOCD_LIST_APPLICATION_SETS: 'argocd:listApplicationSets',
+  ARGOCD_LIST_PROJECTS: 'argocd:listProjects',
+  ARGOCD_SYNC_APPLICATION: 'argocd:syncApplication',
+  ARGOCD_REFRESH_APPLICATION: 'argocd:refreshApplication',
+  ARGOCD_SYNC_MANY: 'argocd:syncMany',
+  ARGOCD_GET_APPLICATION_DETAIL: 'argocd:getApplicationDetail',
+  ARGOCD_LIST_REPOSITORIES: 'argocd:listRepositories',
+  ARGOCD_LIST_CLUSTERS: 'argocd:listClusters',
 
   UPDATE_CHECK: 'update:check',
   UPDATE_DOWNLOAD: 'update:download',

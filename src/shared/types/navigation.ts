@@ -14,6 +14,12 @@ export type VirtualPageKey =
   | 'discoveredApiVersions'
   | 'helmCharts'
   | 'helmReleases'
+  | 'argoDashboard'
+  | 'argoApplications'
+  | 'argoApplicationSets'
+  | 'argoProjects'
+  | 'argoRepositories'
+  | 'argoClusters'
 
 export interface ResourceFocus {
   kind: ResourceKind

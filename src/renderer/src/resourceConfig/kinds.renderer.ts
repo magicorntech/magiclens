@@ -69,6 +69,26 @@ export const kindGroups: KindGroup[] = [
     ]
   },
   {
+    title: 'Argo CD',
+    kinds: [],
+    virtualEntries: [
+      { key: 'argoDashboard', label: 'Dashboard', icon: virtualPageIconComponents.argoDashboard },
+      { key: 'argoApplications', label: 'Applications', icon: virtualPageIconComponents.argoApplications },
+      {
+        key: 'argoApplicationSets',
+        label: 'Application Sets',
+        icon: virtualPageIconComponents.argoApplicationSets
+      },
+      { key: 'argoProjects', label: 'Projects', icon: virtualPageIconComponents.argoProjects },
+      {
+        key: 'argoRepositories',
+        label: 'Repositories',
+        icon: virtualPageIconComponents.argoRepositories
+      },
+      { key: 'argoClusters', label: 'Clusters', icon: virtualPageIconComponents.argoClusters }
+    ]
+  },
+  {
     title: 'Access Control',
     kinds: ['ServiceAccounts', 'ClusterRoles', 'Roles', 'ClusterRoleBindings', 'RoleBindings']
   },

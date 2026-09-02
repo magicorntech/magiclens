@@ -39,6 +39,7 @@ import type { ResourceKind } from '@shared/resourceKinds'
 import type { VirtualPageKey } from '@shared/types/navigation'
 import { Icon } from '../components/ui/Icon'
 import { HelmLogo } from './HelmLogo'
+import { ArgoLogo } from './ArgoLogo'
 
 function kindIcon(icon: LucideIcon): React.ComponentType {
   return function ResourceKindIcon(): React.JSX.Element {
@@ -105,7 +106,13 @@ export const virtualPageIcons: Record<VirtualPageKey, LucideIcon> = {
   discoveredApiGroups: Compass,
   discoveredApiVersions: GitBranch,
   helmCharts: HelmLogo as LucideIcon,
-  helmReleases: HelmLogo as LucideIcon
+  helmReleases: HelmLogo as LucideIcon,
+  argoDashboard: ArgoLogo as LucideIcon,
+  argoApplications: ArgoLogo as LucideIcon,
+  argoApplicationSets: ArgoLogo as LucideIcon,
+  argoProjects: ArgoLogo as LucideIcon,
+  argoRepositories: GitBranch,
+  argoClusters: Server
 }
 
 export const favoriteIcon = Star
@@ -177,5 +184,11 @@ export const virtualPageIconComponents: Record<VirtualPageKey, React.ComponentTy
   discoveredApiGroups: virtualIcon('discoveredApiGroups'),
   discoveredApiVersions: virtualIcon('discoveredApiVersions'),
   helmCharts: virtualIcon('helmCharts'),
-  helmReleases: virtualIcon('helmReleases')
+  helmReleases: virtualIcon('helmReleases'),
+  argoDashboard: virtualIcon('argoDashboard'),
+  argoApplications: virtualIcon('argoApplications'),
+  argoApplicationSets: virtualIcon('argoApplicationSets'),
+  argoProjects: virtualIcon('argoProjects'),
+  argoRepositories: virtualIcon('argoRepositories'),
+  argoClusters: virtualIcon('argoClusters')
 }
