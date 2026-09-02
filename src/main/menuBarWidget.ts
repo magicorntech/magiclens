@@ -63,10 +63,26 @@ let popup: BrowserWindow | null = null
  */
 let trayIconMissing = false
 
+/**
+ * The menu-bar icon.
+ *
+ * macOS gets `trayTemplate.png` — a monochrome template image (see scripts/build-tray-icon.mjs).
+ * AppKit tints template images itself, so the mark follows the menu bar: black under a light
+ * appearance, white under a dark one, and it inverts correctly when the bar is highlighted. A
+ * colour raster can do none of that, and at 18px the app icon's gradients and terminal badge
+ * turn to mush anyway. `createFromPath` picks up the neighbouring `@2x` file for Retina.
+ *
+ * Windows and Linux trays have no template concept and sit on varied backgrounds, so they keep
+ * the full-colour icon.
+ */
 function trayImage(): Electron.NativeImage {
-  // The app icon is a full-colour raster; scaled down it reads fine in the menu bar. A true
-  // template image would need a monochrome asset, which this repo doesn't ship.
-  const source = nativeImage.createFromPath(join(__dirname, '../../resources/icon.png'))
+  const isMac = process.platform === 'darwin'
+  const iconPath = join(
+    __dirname,
+    isMac ? '../../resources/trayTemplate.png' : '../../resources/icon.png'
+  )
+
+  const source = nativeImage.createFromPath(iconPath)
   if (source.isEmpty()) {
     // createFromPath doesn't throw on a missing/unreadable file — it hands back an empty image,
     // and macOS renders an empty tray image as a zero-width status item. The widget then looks
@@ -74,9 +90,16 @@ function trayImage(): Electron.NativeImage {
     // is still reachable.
     console.error(
       '[menu-bar-widget] tray icon missing at',
-      join(__dirname, '../../resources/icon.png'),
+      iconPath,
       '— check that resources/** is included in electron-builder.yml `files`.'
     )
+    return source
+  }
+
+  if (isMac) {
+    // The filename suffix alone usually flags this, but setting it explicitly means a rename
+    // can't silently turn the icon back into an untinted black square.
+    source.setTemplateImage(true)
     return source
   }
   return source.resize({ width: 18, height: 18 })
