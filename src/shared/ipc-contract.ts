@@ -161,6 +161,9 @@ export const IPC = {
   PORT_FORWARD_START_SERVICE: 'portForward:startService',
   PORT_FORWARD_STOP: 'portForward:stop',
   PORT_FORWARD_LIST: 'portForward:list',
+  PORT_FORWARD_LIST_ALL: 'portForward:listAll',
+  PORT_FORWARD_GET_SETTINGS: 'portForward:getSettings',
+  PORT_FORWARD_SET_SETTINGS: 'portForward:setSettings',
 
   TERMINAL_START: 'terminal:start',
   TERMINAL_INPUT: 'terminal:input',

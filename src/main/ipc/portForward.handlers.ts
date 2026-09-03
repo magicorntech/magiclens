@@ -1,13 +1,16 @@
 import { ipcMain } from 'electron'
 import { IPC } from '@shared/ipc-contract'
 import type {
+  PortForwardListAllResponse,
   PortForwardListRequest,
   PortForwardListResponse,
+  PortForwardSettings,
   PortForwardStartPodRequest,
   PortForwardStartResponse,
   PortForwardStartServiceRequest,
   PortForwardStopRequest
 } from '@shared/types/portForward'
+import { getPortForwardSettings, setPortForwardSettings } from '../persistence/appSettings'
 import { clusterManager } from '../k8s/clusterManager'
 import { portForwardManager } from '../k8s/portForwardManager'
 import { resolveServiceBackingPod } from '../k8s/serviceService'
@@ -75,4 +78,15 @@ export function registerPortForwardHandlers(): void {
   ipcMain.handle(IPC.PORT_FORWARD_LIST, async (_e, req: PortForwardListRequest): Promise<PortForwardListResponse> => {
     return { sessions: portForwardManager.list(req.clusterId) }
   })
+
+  ipcMain.handle(IPC.PORT_FORWARD_LIST_ALL, async (): Promise<PortForwardListAllResponse> => {
+    return { sessions: portForwardManager.listAll() }
+  })
+
+  ipcMain.handle(IPC.PORT_FORWARD_GET_SETTINGS, async (): Promise<PortForwardSettings> => getPortForwardSettings())
+
+  ipcMain.handle(
+    IPC.PORT_FORWARD_SET_SETTINGS,
+    async (_e, patch: Partial<PortForwardSettings>): Promise<PortForwardSettings> => setPortForwardSettings(patch)
+  )
 }

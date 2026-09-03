@@ -47,6 +47,7 @@ export const zh: TranslationOverrides = {
       updates: '更新',
       display: '显示',
       vpnExtensions: 'VPN 扩展',
+      portForwarding: '端口转发',
       keyboard: '键盘',
       appearance: '外观',
       sparks: 'Sparks',
@@ -84,6 +85,22 @@ export const zh: TranslationOverrides = {
       askBeforeInstall: '安装前询问',
       checkNow: '立即检查更新',
       openCenter: '打开更新中心'
+    },
+    portForwarding: {
+      title: '空闲超时',
+      hint: '本地连接断开超过此时长的端口转发将自动关闭。',
+      idleTimeout: '自动关闭空闲的端口转发',
+      idleTimeoutHint: '适用于所有集群上的每个端口转发。',
+      timeoutNever: '从不',
+      timeout15: '15 分钟',
+      timeout30: '30 分钟',
+      timeout60: '1 小时',
+      timeout120: '2 小时',
+      timeout240: '4 小时',
+      activeTitle: '打开的端口转发',
+      activeHint: '所有集群中当前打开的每个端口转发。',
+      empty: '没有活动的端口转发。',
+      stop: '停止'
     },
     display: {
       detailsTitle: '资源详情',
@@ -254,6 +271,7 @@ export const zh: TranslationOverrides = {
       updates: '控制 MagicLens 检查和安装更新的方式。',
       display: '详细信息打开的位置、终端/YAML 停靠的位置以及侧边栏显示的内容。',
       vpnExtensions: '安装或修复 VPN 配置文件使用的 OpenVPN 和 WireGuard 帮助程序。',
+      portForwarding: '查看所有集群中已打开的端口转发，并设置空闲转发的自动关闭时长。',
       keyboard: '自定义全局快捷方式。冲突的绑定会自动交换。',
       appearance: '整个应用程序的浅色/深色模式和颜色主题。',
       sparks: 'Sparks vault themes and modules.',

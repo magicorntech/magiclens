@@ -47,6 +47,7 @@ export const fr: TranslationOverrides = {
       updates: 'Mises à jour',
       display: 'Affichage',
       vpnExtensions: 'Extensions VPN',
+      portForwarding: 'Redirection de ports',
       keyboard: 'Clavier',
       appearance: 'Apparence',
       sparks: 'Sparks',
@@ -90,6 +91,22 @@ export const fr: TranslationOverrides = {
       askBeforeInstall: 'Demander avant d’installer',
       checkNow: 'Rechercher les mises à jour maintenant',
       openCenter: 'Ouvrir le centre de mises à jour'
+    },
+    portForwarding: {
+      title: 'Délai d’inactivité',
+      hint: 'Les redirections de ports sans connexion locale ouverte au-delà de ce délai sont fermées automatiquement.',
+      idleTimeout: 'Fermer automatiquement les redirections inactives',
+      idleTimeoutHint: 'S’applique à chaque redirection de port, sur chaque cluster.',
+      timeoutNever: 'Jamais',
+      timeout15: '15 minutes',
+      timeout30: '30 minutes',
+      timeout60: '1 heure',
+      timeout120: '2 heures',
+      timeout240: '4 heures',
+      activeTitle: 'Redirections de ports ouvertes',
+      activeHint: 'Chaque redirection de port actuellement ouverte, tous clusters confondus.',
+      empty: 'Aucune redirection de port active.',
+      stop: 'Arrêter'
     },
     display: {
       detailsTitle: 'Détails des ressources',
@@ -279,6 +296,8 @@ export const fr: TranslationOverrides = {
       updates: 'Contrôlez la manière dont MagicLens recherche et installe les mises à jour.',
       display: 'Où les détails s\'ouvrent, où Terminal/YAML s\'ancre et ce que montre la barre latérale.',
       vpnExtensions: 'Installez ou réparez les assistants OpenVPN et WireGuard utilisés par les profils VPN.',
+      portForwarding:
+        'Voyez toutes les redirections de ports ouvertes sur tous les clusters et réglez le délai avant fermeture d’une redirection inactive.',
       keyboard: 'Personnalisez les raccourcis globaux. Les liaisons en conflit s’échangent automatiquement.',
       appearance: 'Mode clair/sombre et thèmes de couleurs pour toute l\'application.',
       sparks: 'Thèmes et modules du carnet Sparks.',

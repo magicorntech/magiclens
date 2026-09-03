@@ -68,6 +68,7 @@ export const en = {
       display: 'Display',
       widget: 'Widget',
       vpnExtensions: 'VPN Extensions',
+      portForwarding: 'Port Forwarding',
       keyboard: 'Keyboard',
       appearance: 'Appearance',
       sparks: 'Sparks',
@@ -80,6 +81,7 @@ export const en = {
       display: 'Where details open, where Terminal/YAML docks, and what the sidebar shows.',
       widget: 'Menu-bar cluster metrics: which clusters, what they show, and how they look.',
       vpnExtensions: 'Install or repair OpenVPN and WireGuard helpers used by VPN profiles.',
+      portForwarding: 'See every open port forward across clusters and set how long an idle one stays open.',
       keyboard: 'Customize global shortcuts. Conflicting bindings swap automatically.',
       appearance: 'Light/dark mode and color themes for the whole app.',
       sparks: 'Vault themes and built-in modules for your local Sparks notebook.',
@@ -174,6 +176,22 @@ export const en = {
       askBeforeInstall: 'Ask before install',
       checkNow: 'Check for updates now',
       openCenter: 'Open Update Center'
+    },
+    portForwarding: {
+      title: 'Idle timeout',
+      hint: 'Port forwards with no open local connection for longer than this are closed automatically.',
+      idleTimeout: 'Auto-close idle port forwards',
+      idleTimeoutHint: 'Applies to every port forward, on every cluster.',
+      timeoutNever: 'Never',
+      timeout15: '15 minutes',
+      timeout30: '30 minutes',
+      timeout60: '1 hour',
+      timeout120: '2 hours',
+      timeout240: '4 hours',
+      activeTitle: 'Open port forwards',
+      activeHint: 'Every port forward currently open, across all clusters.',
+      empty: 'No active port forwards.',
+      stop: 'Stop'
     },
     display: {
       detailsTitle: 'Resource details',

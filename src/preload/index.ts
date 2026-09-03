@@ -106,8 +106,10 @@ import type {
   VpnRuntimeStatus
 } from '@shared/types/vpn'
 import type {
+  PortForwardListAllResponse,
   PortForwardListRequest,
   PortForwardListResponse,
+  PortForwardSettings,
   PortForwardStartPodRequest,
   PortForwardStartResponse,
   PortForwardStartServiceRequest,
@@ -565,7 +567,11 @@ const api = {
       ipcRenderer.invoke(IPC.PORT_FORWARD_START_SERVICE, req),
     stop: (req: PortForwardStopRequest): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.PORT_FORWARD_STOP, req),
     list: (req: PortForwardListRequest): Promise<PortForwardListResponse> =>
-      ipcRenderer.invoke(IPC.PORT_FORWARD_LIST, req)
+      ipcRenderer.invoke(IPC.PORT_FORWARD_LIST, req),
+    listAll: (): Promise<PortForwardListAllResponse> => ipcRenderer.invoke(IPC.PORT_FORWARD_LIST_ALL),
+    getSettings: (): Promise<PortForwardSettings> => ipcRenderer.invoke(IPC.PORT_FORWARD_GET_SETTINGS),
+    setSettings: (patch: Partial<PortForwardSettings>): Promise<PortForwardSettings> =>
+      ipcRenderer.invoke(IPC.PORT_FORWARD_SET_SETTINGS, patch)
   },
   terminal: {
     start: (req: TerminalStartRequest): Promise<TerminalStartResponse> => ipcRenderer.invoke(IPC.TERMINAL_START, req),

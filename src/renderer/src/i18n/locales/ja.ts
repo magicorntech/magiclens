@@ -47,6 +47,7 @@ export const ja: TranslationOverrides = {
       updates: 'アップデート',
       display: '表示',
       vpnExtensions: 'VPN 拡張機能',
+      portForwarding: 'ポートフォワーディング',
       keyboard: 'キーボード',
       appearance: '外観',
       sparks: 'Sparks',
@@ -84,6 +85,22 @@ export const ja: TranslationOverrides = {
       askBeforeInstall: 'インストール前に確認',
       checkNow: '今すぐアップデートを確認',
       openCenter: 'アップデートセンターを開く'
+    },
+    portForwarding: {
+      title: 'アイドルタイムアウト',
+      hint: 'ローカル接続がこの時間より長く開かれていないポートフォワードは自動的に閉じられます。',
+      idleTimeout: 'アイドル状態のポートフォワードを自動的に閉じる',
+      idleTimeoutHint: 'すべてのクラスターのすべてのポートフォワードに適用されます。',
+      timeoutNever: 'しない',
+      timeout15: '15分',
+      timeout30: '30分',
+      timeout60: '1時間',
+      timeout120: '2時間',
+      timeout240: '4時間',
+      activeTitle: '開いているポートフォワード',
+      activeHint: 'すべてのクラスターで現在開いているポートフォワードです。',
+      empty: 'アクティブなポートフォワードはありません。',
+      stop: '停止'
     },
     display: {
       detailsTitle: 'リソースの詳細',
@@ -255,6 +272,7 @@ export const ja: TranslationOverrides = {
       updates: 'MagicLens がアップデートを確認してインストールする方法を制御します。',
       display: '詳細が開く場所、ターミナル/YAML がドッキングする場所、サイドバーに表示される内容。',
       vpnExtensions: 'VPN プロファイルで使用される OpenVPN および WireGuard ヘルパーをインストールまたは修復します。',
+      portForwarding: 'すべてのクラスターの開いているポートフォワードを確認し、アイドル状態のフォワードが閉じるまでの時間を設定します。',
       keyboard: 'グローバル ショートカットをカスタマイズします。競合するバインディングは自動的に交換されます。',
       appearance: 'アプリ全体のライト/ダーク モードとカラー テーマ。',
       sparks: 'Sparks vault themes and modules.',

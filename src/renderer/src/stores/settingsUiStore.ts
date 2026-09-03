@@ -9,6 +9,7 @@ export type SettingsSection =
   | 'appearance'
   | 'sparks'
   | 'vpnExtensions'
+  | 'portForwarding'
   | 'developer'
   | 'about'
 

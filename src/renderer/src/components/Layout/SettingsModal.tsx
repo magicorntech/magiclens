@@ -22,6 +22,7 @@ import {
   Keyboard,
   LayoutDashboard,
   Layers2,
+  Link,
   Network,
   Palette,
   RefreshCw,
@@ -46,6 +47,7 @@ import { MenuBarWidgetSettings } from './MenuBarWidgetSettings'
 import { ChromeToolbarSettings } from './ChromeToolbarSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { VpnExtensionsSettings } from './VpnExtensionsSettings'
+import { PortForwardingSettings } from './PortForwardingSettings'
 import { SparksSettings } from './SparksSettings'
 import { DeveloperSettings } from './DeveloperSettings'
 import { ThemeToggle } from './ThemeToggle'
@@ -77,6 +79,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'keyboard', icon: Keyboard, group: 'preferences' },
   { key: 'updates', icon: CloudDownload, group: 'system' },
   { key: 'vpnExtensions', icon: Network, group: 'system' },
+  { key: 'portForwarding', icon: Link, group: 'system' },
   { key: 'developer', icon: Code2, group: 'system' },
   { key: 'about', icon: Info, group: 'system' }
 ]
@@ -648,6 +651,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
 
       case 'vpnExtensions':
         return <VpnExtensionsSettings />
+
+      case 'portForwarding':
+        return <PortForwardingSettings />
 
       case 'developer':
         return <DeveloperSettings />

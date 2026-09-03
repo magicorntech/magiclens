@@ -47,6 +47,7 @@ export const de: TranslationOverrides = {
       updates: 'Updates',
       display: 'Anzeige',
       vpnExtensions: 'VPN-Erweiterungen',
+      portForwarding: 'Port-Weiterleitung',
       keyboard: 'Tastatur',
       appearance: 'Erscheinungsbild',
       sparks: 'Sparks',
@@ -90,6 +91,22 @@ export const de: TranslationOverrides = {
       askBeforeInstall: 'Vor der Installation fragen',
       checkNow: 'Jetzt nach Updates suchen',
       openCenter: 'Update-Center öffnen'
+    },
+    portForwarding: {
+      title: 'Inaktivitäts-Zeitlimit',
+      hint: 'Port-Weiterleitungen ohne offene lokale Verbindung werden nach dieser Zeit automatisch geschlossen.',
+      idleTimeout: 'Inaktive Port-Weiterleitungen automatisch schließen',
+      idleTimeoutHint: 'Gilt für jede Port-Weiterleitung, auf jedem Cluster.',
+      timeoutNever: 'Nie',
+      timeout15: '15 Minuten',
+      timeout30: '30 Minuten',
+      timeout60: '1 Stunde',
+      timeout120: '2 Stunden',
+      timeout240: '4 Stunden',
+      activeTitle: 'Offene Port-Weiterleitungen',
+      activeHint: 'Jede aktuell offene Port-Weiterleitung, über alle Cluster hinweg.',
+      empty: 'Keine aktiven Port-Weiterleitungen.',
+      stop: 'Stoppen'
     },
     display: {
       detailsTitle: 'Ressourcendetails',
@@ -283,6 +300,8 @@ export const de: TranslationOverrides = {
         'Wo Details geöffnet werden, wo Terminal/YAML andockt und was in der Seitenleiste angezeigt wird.',
       vpnExtensions:
         'Installieren oder reparieren Sie OpenVPN- und WireGuard-Hilfsprogramme, die von VPN-Profilen verwendet werden.',
+      portForwarding:
+        'Alle offenen Port-Weiterleitungen über Cluster hinweg anzeigen und festlegen, wie lange eine inaktive Weiterleitung offen bleibt.',
       keyboard:
         'Passen Sie globale Verknüpfungen an. Widersprüchliche Bindungen werden automatisch ausgetauscht.',
       appearance: 'Hell-/Dunkelmodus und Farbthemen für die gesamte App.',

@@ -8,3 +8,11 @@ export function usePortForwards(clusterId: string) {
     refetchInterval: 2000
   })
 }
+
+export function usePortForwardsAll() {
+  return useQuery({
+    queryKey: ['port-forwards', 'all'],
+    queryFn: () => window.api.portForward.listAll(),
+    refetchInterval: 2000
+  })
+}

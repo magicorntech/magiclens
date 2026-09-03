@@ -1,5 +1,6 @@
 import Store from 'electron-store'
 import type { UpdateSettings } from '@shared/types/update'
+import type { PortForwardSettings } from '@shared/types/portForward'
 import { defaultDisplaySettings, type DisplaySettings, normalizeUtilityFabSide, normalizeUiTypography } from '@shared/types/app'
 import { normalizeKeyboardShortcuts } from '@shared/types/keyboardShortcuts'
 import { normalizeAppLocale } from '@shared/types/locale'
@@ -10,6 +11,7 @@ import { normalizeMenuBarWidgetPrefs } from '@shared/types/menuBarWidget'
 interface AppSettings {
   hasSeenWelcome: boolean
   updateSettings: UpdateSettings
+  portForwardSettings: PortForwardSettings
   skippedVersion: string | null
   lastSeenSplashVersion: string | null
   displaySettings: DisplaySettings
@@ -25,9 +27,14 @@ const defaultUpdateSettings: UpdateSettings = {
   askBeforeInstall: true
 }
 
+const defaultPortForwardSettings: PortForwardSettings = {
+  idleTimeoutMinutes: 30
+}
+
 const defaults: AppSettings = {
   hasSeenWelcome: false,
   updateSettings: defaultUpdateSettings,
+  portForwardSettings: defaultPortForwardSettings,
   skippedVersion: null,
   lastSeenSplashVersion: null,
   displaySettings: defaultDisplaySettings
@@ -73,6 +80,16 @@ export function getUpdateSettings(): UpdateSettings {
 export function setUpdateSettings(patch: Partial<UpdateSettings>): UpdateSettings {
   const next = { ...getUpdateSettings(), ...patch }
   store.set('updateSettings', next)
+  return next
+}
+
+export function getPortForwardSettings(): PortForwardSettings {
+  return { ...defaultPortForwardSettings, ...store.get('portForwardSettings') }
+}
+
+export function setPortForwardSettings(patch: Partial<PortForwardSettings>): PortForwardSettings {
+  const next = { ...getPortForwardSettings(), ...patch }
+  store.set('portForwardSettings', next)
   return next
 }
 

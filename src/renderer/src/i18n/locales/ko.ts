@@ -47,6 +47,7 @@ export const ko: TranslationOverrides = {
       updates: '업데이트',
       display: '표시',
       vpnExtensions: 'VPN 확장',
+      portForwarding: '포트 포워딩',
       keyboard: '키보드',
       appearance: '모양',
       sparks: 'Sparks',
@@ -84,6 +85,22 @@ export const ko: TranslationOverrides = {
       askBeforeInstall: '설치 전 확인',
       checkNow: '지금 업데이트 확인',
       openCenter: '업데이트 센터 열기'
+    },
+    portForwarding: {
+      title: '유휴 시간 제한',
+      hint: '로컬 연결이 열려 있지 않은 상태로 이 시간을 초과한 포트 포워딩은 자동으로 닫힙니다.',
+      idleTimeout: '유휴 상태인 포트 포워딩 자동 종료',
+      idleTimeoutHint: '모든 클러스터의 모든 포트 포워딩에 적용됩니다.',
+      timeoutNever: '안 함',
+      timeout15: '15분',
+      timeout30: '30분',
+      timeout60: '1시간',
+      timeout120: '2시간',
+      timeout240: '4시간',
+      activeTitle: '열려 있는 포트 포워딩',
+      activeHint: '모든 클러스터에서 현재 열려 있는 포트 포워딩입니다.',
+      empty: '활성 포트 포워딩이 없습니다.',
+      stop: '중지'
     },
     display: {
       detailsTitle: '리소스 세부정보',
@@ -255,6 +272,7 @@ export const ko: TranslationOverrides = {
       updates: 'MagicLens가 업데이트를 확인하고 설치하는 방법을 제어합니다.',
       display: '세부정보가 열리는 위치, 터미널/YAML이 도킹되는 위치, 사이드바에 표시되는 내용.',
       vpnExtensions: 'VPN 프로필에서 사용되는 OpenVPN 및 WireGuard 도우미를 설치하거나 복구합니다.',
+      portForwarding: '모든 클러스터에서 열려 있는 포트 포워딩을 확인하고, 유휴 상태인 포워딩이 닫힐 때까지의 시간을 설정합니다.',
       keyboard: '전역 바로가기를 사용자 정의하세요. 충돌하는 바인딩은 자동으로 교체됩니다.',
       appearance: '전체 앱에 대한 밝은/어두운 모드 및 색상 테마.',
       sparks: 'Sparks vault themes and modules.',

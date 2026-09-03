@@ -123,6 +123,7 @@ export const tr: TranslationOverrides = {
       display: 'Görünüm',
       widget: 'Widget',
       vpnExtensions: 'VPN Eklentileri',
+      portForwarding: 'Port Yönlendirme',
       keyboard: 'Klavye',
       appearance: 'Tema',
       sparks: 'Sparks',
@@ -135,6 +136,7 @@ export const tr: TranslationOverrides = {
       display: 'Detayların nerede açılacağı, Terminal/YAML dock konumu ve kenar çubuğu.',
       widget: 'Menü çubuğu küme metrikleri: hangi kümeler, neler görünecek ve nasıl görünecek.',
       vpnExtensions: 'VPN profilleri için OpenVPN ve WireGuard yardımcılarını kurun veya onarın.',
+      portForwarding: 'Tüm kümelerdeki açık port yönlendirmelerini görün, boşta kalanların ne zaman kapanacağını ayarlayın.',
       keyboard: 'Genel kısayolları özelleştirin. Çakışan bağlar otomatik yer değiştirir.',
       appearance: 'Açık/koyu mod ve tüm uygulama için renk temaları.',
       sparks: 'Sparks not defteri temaları ve yerel eklenti modülleri.',
@@ -230,6 +232,22 @@ export const tr: TranslationOverrides = {
       askBeforeInstall: 'Kurmadan önce sor',
       checkNow: 'Şimdi güncelleme kontrol et',
       openCenter: 'Güncelleme Merkezini aç'
+    },
+    portForwarding: {
+      title: 'Boşta kalma süresi',
+      hint: 'Bu süreden uzun süre açık yerel bağlantısı olmayan port yönlendirmeleri otomatik kapanır.',
+      idleTimeout: 'Boşta kalan port yönlendirmelerini otomatik kapat',
+      idleTimeoutHint: 'Tüm kümelerdeki tüm port yönlendirmeleri için geçerlidir.',
+      timeoutNever: 'Asla',
+      timeout15: '15 dakika',
+      timeout30: '30 dakika',
+      timeout60: '1 saat',
+      timeout120: '2 saat',
+      timeout240: '4 saat',
+      activeTitle: 'Açık port yönlendirmeleri',
+      activeHint: 'Tüm kümelerde şu anda açık olan her port yönlendirmesi.',
+      empty: 'Açık port yönlendirmesi yok.',
+      stop: 'Durdur'
     },
     display: {
       detailsTitle: 'Kaynak ayrıntıları',

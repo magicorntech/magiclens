@@ -7,6 +7,7 @@ import { usePortForwards } from '../../queries/usePortForwards'
 import { useQueryClient } from '@tanstack/react-query'
 import { Icon } from '../ui/Icon'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { PortForwardStartedCell, PortForwardStatusCell } from './PortForwardStatusCell'
 
 interface PortForwardingPageProps {
   clusterId: string
@@ -47,6 +48,16 @@ export function PortForwardingPage({ clusterId }: PortForwardingPageProps): Reac
       title: 'Local address',
       key: 'local',
       render: (_, s) => <Tag color="green">localhost:{s.localPort}</Tag>
+    },
+    {
+      title: 'Started',
+      key: 'started',
+      render: (_, s) => <PortForwardStartedCell startedAt={s.startedAt} />
+    },
+    {
+      title: 'Status',
+      key: 'status',
+      render: (_, s) => <PortForwardStatusCell idleSince={s.idleSince} />
     },
     {
       title: 'Actions',
