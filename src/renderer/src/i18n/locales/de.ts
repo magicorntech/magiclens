@@ -83,14 +83,14 @@ export const de: TranslationOverrides = {
         '{{groups}} Gruppe(n) zusammengeführt, {{removed}} Duplikat(e) entfernt. {{kept}} Cluster bleiben übrig.'
     },
     updates: {
-      available: 'v{{version}} verfügbar',
       checkAutomatically: 'Automatisch nach Updates suchen',
       checkOnStartup: 'Beim Start prüfen',
       includePrerelease: 'Vorabversionen einbeziehen',
       autoDownload: 'Updates automatisch herunterladen',
       askBeforeInstall: 'Vor der Installation fragen',
       checkNow: 'Jetzt nach Updates suchen',
-      openCenter: 'Update-Center öffnen'
+      preferencesTitle: 'Einstellungen',
+      preferencesHint: 'Wie MagicLens nach Updates sucht und sie installiert.'
     },
     portForwarding: {
       title: 'Inaktivitäts-Zeitlimit',

@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  Alert,
   Button,
   ColorPicker,
+  Descriptions,
   Input,
   Modal,
+  Progress,
   Segmented,
   Select,
   Space,
@@ -14,8 +17,11 @@ import {
 import type { AggregationColor } from 'antd/es/color-picker/color'
 import type { LucideIcon } from 'lucide-react'
 import {
+  CheckCircle2,
   CloudDownload,
   Code2,
+  Download,
+  ExternalLink,
   FolderOpen,
   Gauge,
   Info,
@@ -30,6 +36,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import type { UpdatePhase } from '@shared/types/update'
 import { normalizeUtilityFabSide, type UiFontId, type UiFontWeightId, type UiTextContrastId } from '@shared/types/app'
 import { Icon } from '../ui/Icon'
 import logo from '../../assets/logo.png'
@@ -62,6 +69,26 @@ import { type SettingsSection as SettingsSectionId, useSettingsUiStore } from '.
 interface SettingsModalProps {
   open: boolean
   onClose: () => void
+}
+
+const UPDATE_PHASE_LABEL: Record<UpdatePhase, string> = {
+  idle: 'Up to date',
+  checking: 'Checking for updates…',
+  available: 'Update available',
+  'not-available': 'You are on the latest version',
+  downloading: 'Downloading…',
+  downloaded: 'Downloaded — restart required',
+  error: 'Update check failed'
+}
+
+const UPDATE_PHASE_COLOR: Record<UpdatePhase, string> = {
+  idle: 'default',
+  checking: 'processing',
+  available: 'blue',
+  'not-available': 'green',
+  downloading: 'processing',
+  downloaded: 'green',
+  error: 'red'
 }
 
 interface NavItem {
@@ -106,7 +133,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const updateState = useUpdateStore((s) => s.state)
   const saveUpdateSettings = useUpdateStore((s) => s.saveSettings)
   const check = useUpdateStore((s) => s.check)
-  const openUpdateCenter = useUpdateStore((s) => s.openCenter)
+  const download = useUpdateStore((s) => s.download)
+  const install = useUpdateStore((s) => s.install)
+  const skip = useUpdateStore((s) => s.skip)
+  const openReleasePage = useUpdateStore((s) => s.openReleasePage)
   const showClusterTabLogos = useDisplaySettingsStore((s) => s.showClusterTabLogos)
   const showResourceTabIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
   const showFavoritesSection = useDisplaySettingsStore((s) => s.showFavoritesSection)
@@ -330,32 +360,104 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
           </>
         )
 
-      case 'updates':
+      case 'updates': {
+        const updatePhase = updateState?.phase ?? 'idle'
+        const isUpdateSkipped = !!updateState?.latestVersion && updateState.latestVersion === updateState.skippedVersion
+        const isUpdateSpinning = updatePhase === 'checking' || updatePhase === 'downloading'
         return (
           <>
             <SettingsSection
               title={t('settings.sections.updates')}
               description={t('settings.sectionHints.updates')}
-              actions={
-                <Space size={8}>
-                  {updateState?.latestVersion && updateState.phase !== 'not-available' ? (
-                    <Tag color="blue">
-                      {t('settings.updates.available', { version: updateState.latestVersion })}
+            >
+              <Descriptions size="small" column={1} bordered>
+                <Descriptions.Item label="Current version">v{updateState?.currentVersion ?? '-'}</Descriptions.Item>
+                <Descriptions.Item label="Latest version">
+                  {updateState?.latestVersion ? `v${updateState.latestVersion}` : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Status">
+                  <Space size={6}>
+                    <Tag
+                      icon={isUpdateSpinning ? <Icon icon={RefreshCw} variant="micro" className="ml-icon-spin" /> : undefined}
+                      color={UPDATE_PHASE_COLOR[updatePhase]}
+                    >
+                      {UPDATE_PHASE_LABEL[updatePhase]}
                     </Tag>
-                  ) : null}
-                  <Button
-                    size="small"
-                    icon={<Icon icon={RefreshCw} variant="detail" />}
-                    loading={updateState?.phase === 'checking'}
-                    onClick={() => void check()}
+                    {isUpdateSkipped && <Tag>Skipped by you</Tag>}
+                  </Space>
+                </Descriptions.Item>
+              </Descriptions>
+
+              {updatePhase === 'downloading' && (
+                <Progress percent={Math.round(updateState?.progress?.percent ?? 0)} status="active" />
+              )}
+
+              {updatePhase === 'error' && updateState?.error && (
+                <Alert type="error" showIcon message="Update error" description={updateState.error} />
+              )}
+
+              {updatePhase === 'downloaded' && (
+                <Alert
+                  type="success"
+                  showIcon
+                  icon={<Icon icon={CheckCircle2} variant="action" />}
+                  message="Update downloaded"
+                  description="Restart MagicLens to finish installing the new version."
+                />
+              )}
+
+              {updateState?.releaseNotes && (
+                <div>
+                  <Typography.Text strong>Release notes</Typography.Text>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      maxHeight: 220,
+                      overflow: 'auto',
+                      whiteSpace: 'pre-wrap',
+                      fontSize: 13,
+                      background: 'rgba(127,127,127,0.08)',
+                      borderRadius: 6,
+                      padding: 12
+                    }}
                   >
-                    {t('settings.updates.checkNow')}
+                    {updateState.releaseNotes}
+                  </div>
+                </div>
+              )}
+
+              <Space wrap>
+                <Button
+                  icon={<Icon icon={RefreshCw} variant="detail" />}
+                  loading={updatePhase === 'checking'}
+                  onClick={() => void check()}
+                >
+                  {t('settings.updates.checkNow')}
+                </Button>
+                {updatePhase === 'available' && !isUpdateSkipped && (
+                  <Button type="primary" icon={<Icon icon={Download} variant="detail" />} onClick={() => void download()}>
+                    Download update
                   </Button>
-                  <Button size="small" type="primary" ghost onClick={() => openUpdateCenter()}>
-                    {t('settings.updates.openCenter')}
+                )}
+                {updatePhase === 'available' && !isUpdateSkipped && (
+                  <Button onClick={() => void skip()}>Skip this version</Button>
+                )}
+                {updateState?.releaseUrl && (
+                  <Button icon={<Icon icon={ExternalLink} variant="detail" />} onClick={() => void openReleasePage()}>
+                    Open release page
                   </Button>
-                </Space>
-              }
+                )}
+                {updatePhase === 'downloaded' && (
+                  <Button type="primary" icon={<Icon icon={RefreshCw} variant="detail" />} onClick={() => void install()}>
+                    Restart & install
+                  </Button>
+                )}
+              </Space>
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.updates.preferencesTitle')}
+              description={t('settings.updates.preferencesHint')}
             >
               <SettingsToggleRow
                 title={t('settings.updates.checkAutomatically')}
@@ -385,6 +487,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             </SettingsSection>
           </>
         )
+      }
 
       case 'display':
         return (

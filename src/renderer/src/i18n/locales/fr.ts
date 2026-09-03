@@ -83,14 +83,14 @@ export const fr: TranslationOverrides = {
         'Fusion de {{groups}} groupe(s), suppression de {{removed}} doublons. {{conservé}} cluster(s) restent.'
     },
     updates: {
-      available: 'v{{version}} disponible',
       checkAutomatically: 'Rechercher les mises à jour automatiquement',
       checkOnStartup: 'Vérifier au démarrage',
       includePrerelease: 'Inclure les préversions',
       autoDownload: 'Télécharger les mises à jour automatiquement',
       askBeforeInstall: 'Demander avant d’installer',
       checkNow: 'Rechercher les mises à jour maintenant',
-      openCenter: 'Ouvrir le centre de mises à jour'
+      preferencesTitle: 'Préférences',
+      preferencesHint: 'Comment MagicLens recherche et installe les mises à jour.'
     },
     portForwarding: {
       title: 'Délai d’inactivité',

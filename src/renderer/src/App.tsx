@@ -12,7 +12,6 @@ import { AppLayout } from './components/Layout/AppLayout'
 import { LoadingScreen } from './components/Layout/LoadingScreen'
 import { FeatureTourScreen } from './components/Layout/FeatureTourScreen'
 import { UpdateNotificationBanner } from './components/Update/UpdateNotificationBanner'
-import { UpdateCenterModal } from './components/Update/UpdateCenterModal'
 import { GlobalSearchModal } from './components/Search/GlobalSearchModal'
 import { VpnSessionPromptModal } from './components/Vpn/VpnSessionPromptModal'
 import { useAppShortcuts } from './hooks/useAppShortcuts'
@@ -141,7 +140,6 @@ export function App(): React.JSX.Element {
         />
       ) : null}
       <UpdateNotificationBanner />
-      <UpdateCenterModal />
       <GlobalSearchModal />
       <VpnSessionPromptModal />
     </MotionConfig>

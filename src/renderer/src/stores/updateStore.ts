@@ -5,10 +5,7 @@ interface UpdateStoreState {
   initialized: boolean
   state: UpdateState | null
   settings: UpdateSettings | null
-  centerOpen: boolean
   init: () => void
-  openCenter: () => void
-  closeCenter: () => void
   check: () => Promise<void>
   download: () => Promise<void>
   install: () => Promise<void>
@@ -22,7 +19,6 @@ export const useUpdateStore = create<UpdateStoreState>()((set, get) => ({
   initialized: false,
   state: null,
   settings: null,
-  centerOpen: false,
 
   init: () => {
     if (get().initialized) return
@@ -33,9 +29,6 @@ export const useUpdateStore = create<UpdateStoreState>()((set, get) => ({
 
     window.api.update.onStateChanged((state) => set({ state }))
   },
-
-  openCenter: () => set({ centerOpen: true }),
-  closeCenter: () => set({ centerOpen: false }),
 
   check: async () => {
     await window.api.update.check()

@@ -3,6 +3,7 @@ import { Button, Progress, Space, Typography, message } from 'antd'
 import { Download, RefreshCw, Rocket, X } from 'lucide-react'
 import { Icon } from '../ui/Icon'
 import { useUpdateStore } from '../../stores/updateStore'
+import { useSettingsUiStore } from '../../stores/settingsUiStore'
 
 export function UpdateNotificationBanner(): React.JSX.Element | null {
   const state = useUpdateStore((s) => s.state)
@@ -10,7 +11,7 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
   const install = useUpdateStore((s) => s.install)
   const skip = useUpdateStore((s) => s.skip)
   const remindLater = useUpdateStore((s) => s.remindLater)
-  const openCenter = useUpdateStore((s) => s.openCenter)
+  const openUpdateSettings = useSettingsUiStore((s) => s.openSettings)
   const lastErrorRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -78,7 +79,7 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
             <Button type="primary" size="small" icon={<Icon icon={Download} variant="detail" />} onClick={() => void download()}>
               Download
             </Button>
-            <Button size="small" onClick={() => openCenter()}>
+            <Button size="small" onClick={() => openUpdateSettings('updates')}>
               Details
             </Button>
             <Button size="small" onClick={() => void skip()}>
@@ -95,7 +96,7 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
             <Button type="primary" size="small" icon={<Icon icon={RefreshCw} variant="detail" />} onClick={() => void install()}>
               Restart & Install
             </Button>
-            <Button size="small" onClick={() => openCenter()}>
+            <Button size="small" onClick={() => openUpdateSettings('updates')}>
               Details
             </Button>
           </Space>

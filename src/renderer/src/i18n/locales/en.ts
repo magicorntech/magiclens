@@ -168,14 +168,14 @@ export const en = {
       dedupeDone: 'Merged {{groups}} group(s), removed {{removed}} duplicate(s). {{kept}} cluster(s) remain.'
     },
     updates: {
-      available: 'v{{version}} available',
       checkAutomatically: 'Check for updates automatically',
       checkOnStartup: 'Check on startup',
       includePrerelease: 'Include pre-release versions',
       autoDownload: 'Auto-download updates',
       askBeforeInstall: 'Ask before install',
       checkNow: 'Check for updates now',
-      openCenter: 'Open Update Center'
+      preferencesTitle: 'Preferences',
+      preferencesHint: 'How MagicLens checks for and installs updates.'
     },
     portForwarding: {
       title: 'Idle timeout',

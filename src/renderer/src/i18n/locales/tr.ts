@@ -224,14 +224,14 @@ export const tr: TranslationOverrides = {
       dedupeDone: '{{groups}} grup birleştirildi, {{removed}} tekrar silindi. {{kept}} küme kaldı.'
     },
     updates: {
-      available: 'v{{version}} mevcut',
       checkAutomatically: 'Güncellemeleri otomatik kontrol et',
       checkOnStartup: 'Açılışta kontrol et',
       includePrerelease: 'Ön sürümleri dahil et',
       autoDownload: 'Güncellemeleri otomatik indir',
       askBeforeInstall: 'Kurmadan önce sor',
       checkNow: 'Şimdi güncelleme kontrol et',
-      openCenter: 'Güncelleme Merkezini aç'
+      preferencesTitle: 'Tercihler',
+      preferencesHint: 'MagicLens güncellemeleri nasıl kontrol edip kuracağı.'
     },
     portForwarding: {
       title: 'Boşta kalma süresi',

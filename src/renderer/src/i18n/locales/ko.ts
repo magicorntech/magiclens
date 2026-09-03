@@ -77,14 +77,14 @@ export const ko: TranslationOverrides = {
       dedupeDone: '{{groups}} 그룹을 병합하고 {{removed}} 중복 항목을 제거했습니다. {{kept}}개의 클러스터가 남아 있습니다.'
     },
     updates: {
-      available: 'v{{version}} 사용 가능',
       checkAutomatically: '업데이트 자동 확인',
       checkOnStartup: '시작 시 확인',
       includePrerelease: '사전 출시 버전 포함',
       autoDownload: '업데이트 자동 다운로드',
       askBeforeInstall: '설치 전 확인',
       checkNow: '지금 업데이트 확인',
-      openCenter: '업데이트 센터 열기'
+      preferencesTitle: '환경설정',
+      preferencesHint: 'MagicLens가 업데이트를 확인하고 설치하는 방식입니다.'
     },
     portForwarding: {
       title: '유휴 시간 제한',

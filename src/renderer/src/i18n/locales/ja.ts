@@ -77,14 +77,14 @@ export const ja: TranslationOverrides = {
       dedupeDone: '{{groups}} 個のグループを結合し、{{removed}} 個の重複を削除しました。 {{kept}} 個のクラスターが残っています。'
     },
     updates: {
-      available: 'v{{version}} が利用可能',
       checkAutomatically: 'アップデートを自動で確認',
       checkOnStartup: '起動時に確認',
       includePrerelease: 'プレリリースを含める',
       autoDownload: 'アップデートを自動ダウンロード',
       askBeforeInstall: 'インストール前に確認',
       checkNow: '今すぐアップデートを確認',
-      openCenter: 'アップデートセンターを開く'
+      preferencesTitle: '設定',
+      preferencesHint: 'MagicLens がアップデートを確認・インストールする方法。'
     },
     portForwarding: {
       title: 'アイドルタイムアウト',

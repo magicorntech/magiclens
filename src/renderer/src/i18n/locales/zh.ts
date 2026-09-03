@@ -77,14 +77,14 @@ export const zh: TranslationOverrides = {
       dedupeDone: '合并了 {{groups}} 个组，删除了 {{removed}} 个重复项。剩余 {{kept}} 个簇。'
     },
     updates: {
-      available: 'v{{version}} 可用',
       checkAutomatically: '自动检查更新',
       checkOnStartup: '启动时检查',
       includePrerelease: '包含预发布版本',
       autoDownload: '自动下载更新',
       askBeforeInstall: '安装前询问',
       checkNow: '立即检查更新',
-      openCenter: '打开更新中心'
+      preferencesTitle: '偏好设置',
+      preferencesHint: 'MagicLens 检查和安装更新的方式。'
     },
     portForwarding: {
       title: '空闲超时',
