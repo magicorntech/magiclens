@@ -22,11 +22,20 @@ asarUnpack:
   - '**/node_modules/node-pty/**'
 
 # electron-updater reads this at runtime to know where to look for new releases.
+#
+# releaseType is "draft", not "release": the three platform builds run in parallel and macOS
+# (slower, due to notarization) finishes well after Windows/Linux. If each platform published
+# straight to a public release, there'd be a multi-minute window where the release exists with
+# some platforms' latest*.yml missing — any client checking for updates in that window gets a 404
+# on its own platform's file. Publishing as a draft keeps the release invisible to electron-updater
+# and the public API until every platform has uploaded; the "Generate changelog & finalize
+# release" job in release.yml flips it to published (`gh release edit --draft=false`) only after
+# all three builds succeed.
 publish:
   provider: github
   owner: magicorntech
   repo: magiclens
-  releaseType: release
+  releaseType: draft
 
 # Auto-update on macOS requires the app (and the downloaded update) to be code-signed.
 # Set CSC_LINK / CSC_KEY_PASSWORD env vars in CI to enable signing + notarization.
