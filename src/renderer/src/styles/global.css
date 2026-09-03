@@ -4630,16 +4630,16 @@ button.ml-sidebar-section-chrome:hover {
   background: var(--ml-sidebar-hover);
 }
 
-/* Connected + open session — quiet cue: thin green rail + faint wash (no loud fill / bold title). */
+/*
+ * Connected + open session, not selected: carried by the green status dot on the avatar alone.
+ * An earlier version also washed the whole row in green, which — with several connected
+ * clusters in one workspace, each already showing its own random logo colour — read as a row
+ * of mismatched tints rather than one flat list. "Colour marks the selected row" only holds if
+ * this is the one other place colour was leaking in.
+ */
 .ml-nav-item.is-session-live:not(.is-active),
 .ml-nav-item.is-fav-connected:not(.is-active) {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 6%, transparent);
-  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--ml-success, #22c55e) 75%, transparent);
-}
-
-.ml-nav-item--nested.is-session-live:not(.is-active):has(.ml-nav-item__open:hover),
-.ml-nav-item--nested.is-fav-connected:not(.is-active):has(.ml-nav-item__open:hover) {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 9%, transparent);
+  box-shadow: none;
 }
 
 .ml-nav-item--compact.is-session-live:not(.is-active),
@@ -9252,13 +9252,9 @@ button.ml-sidebar-section-chrome:hover {
   padding-bottom: 0;
 }
 
-.ml-ws-group.is-expanded {
-  background: color-mix(in srgb, var(--ml-sidebar-text) 4.5%, var(--ml-sidebar-bg));
-  padding: 0;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--ml-sidebar-text) 7%, transparent);
-  box-shadow: none;
-}
+/* No card: an earlier design wrapped every open workspace in a bordered, tinted panel — this
+   was that rule. The group header now stays fully flat in every state (see the workspace-list
+   block in devtools-refine.css), so nothing sets .ml-ws-group.is-expanded's appearance here. */
 
 .ml-ws-group__head {
   display: flex;
@@ -9269,12 +9265,6 @@ button.ml-sidebar-section-chrome:hover {
   top: 0;
   z-index: 1;
   background: transparent;
-}
-
-.ml-ws-group.is-expanded .ml-ws-group__head {
-  padding: 4px 4px 4px 6px;
-  border-bottom: 1px solid color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent);
-  background: color-mix(in srgb, var(--ml-sidebar-text) 2.5%, transparent);
 }
 
 .ml-ws-group__toggle {
@@ -9314,16 +9304,19 @@ button.ml-sidebar-section-chrome:hover {
   font-weight: 500;
   letter-spacing: -0.01em;
   text-transform: none;
-  color: var(--ml-sidebar-muted);
+  /* Full-brightness sidebar text, not the muted tone — matches the reference component's own
+     section title (`.ml-resource-nav-group-head { color: var(--ml-text) }`), where the label
+     reads as content, not a faded caption. */
+  color: var(--ml-sidebar-text);
 }
 
-.ml-ws-group.is-expanded .ml-ws-group__name {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ml-text-tertiary);
-}
+/*
+ * No separate expanded-state style: the name used to jump from 12px mixed-case to 10px
+ * uppercase the moment a workspace opened, which read as the title itself changing rather than
+ * just the disclosure state. The reference this list mirrors (ResourceMenu's own section
+ * titles) never changes its label between open and closed — only the chevron moves — so the
+ * name now stays exactly as set above in both states.
+ */
 
 .ml-ws-group__count {
   flex-shrink: 0;
@@ -9372,12 +9365,14 @@ button.ml-sidebar-section-chrome:hover {
   color: var(--ml-sidebar-text);
 }
 
+/* Sole layout source is devtools-refine.css now (padding/indent especially) — this used to
+   carry its own, different padding (4px all round, no !important), which is exactly the kind
+   of duplicate that made a later fix appear not to apply. Kept only for the properties nothing
+   later redefines. */
 .ml-ws-group__list {
   margin: 0;
-  padding: 4px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
   border-left: none;
   border-radius: 0;
   background: transparent;
@@ -9413,7 +9408,9 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 .ml-ws-group__list .ml-nav-item.is-active {
-  background: color-mix(in srgb, var(--ml-primary) 12%, transparent);
+  /* --ml-ws-accent, not --ml-primary: this selector outranks the generic active-row rule, so
+     leaving it hardcoded made a workspace's colour stop at its own header. */
+  background: color-mix(in srgb, var(--ml-ws-accent, var(--ml-primary)) 12%, transparent);
   box-shadow: none;
 }
 
@@ -9422,7 +9419,7 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 .ml-ws-group__list .ml-nav-item.is-active .ml-nav-item__title {
-  color: var(--ml-primary);
+  color: var(--ml-ws-accent, var(--ml-primary));
   font-weight: 500;
 }
 
@@ -14817,3 +14814,292 @@ body.ml-vault--resizing .ml-vault__sidebar-resize::after {
 .ml-argo-row--clickable {
   cursor: pointer;
 }
+
+/* —— Sidebar: Discord-style workspace rail ——
+ *
+ * Adopts the visual grammar of a chat-app server list, which readers already know how to parse:
+ * a squircle avatar carries identity, and a pill on the leading edge — not a background tint —
+ * marks what is selected. The pill is the important part: a tint has to compete with the
+ * sidebar's own surface and reads weakly on a dark theme, whereas an edge marker is unambiguous
+ * at a glance no matter how busy the row gets.
+ *
+ * Radius and pill length animate; nothing moves position. An earlier revision of this sidebar
+ * animated scale/offset and read as jittery, so motion here is limited to properties that
+ * cannot shift a neighbour.
+ */
+
+/* Squircle, not a circle — a rounded square reads as a "workspace", a circle as a person. */
+.ml-ws-group__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 34%;
+  overflow: hidden;
+  transition: border-radius 0.16s ease;
+}
+
+.ml-ws-group__avatar > * {
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+/* Squircle tightens once the group is open — a static state, not a hover reaction. */
+.ml-ws-group.is-expanded .ml-ws-group__avatar {
+  border-radius: 26%;
+}
+
+.ml-ws-group__toggle {
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+/* No hover reaction on the workspace header — it stays visually static; only the group's
+   persistent has-active/is-expanded state (above) changes how it looks. */
+
+/*
+ * Leading-edge selection pill. Drawn on the row itself rather than the label so it lines up
+ * across nested and top-level clusters.
+ *
+ * `left: 0`, never negative: `.ml-ws-group` sets `overflow: hidden` and `.ml-sidebar-list`
+ * scrolls, so anything positioned outside the row is clipped away — nested clusters would have
+ * shown no pill at all. It sits inside the row's own 2px inline padding instead.
+ */
+.ml-nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  border-radius: 0 3px 3px 0;
+  /* Set per workspace in SidebarWorkspaces; unset workspaces fall back to the theme accent. */
+  background: var(--ml-ws-accent, var(--ml-primary));
+  transform: translateY(-50%);
+  transition:
+    height 0.16s ease,
+    opacity 0.16s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ml-nav-item:hover::before {
+  height: 40%;
+  opacity: 0.55;
+}
+
+.ml-nav-item.is-active::before {
+  height: 70%;
+  opacity: 1;
+}
+
+/*
+ * With the pill carrying selection, the active row's inset bar is redundant — two markers for
+ * one state. The background tint stays, just lighter, so the row still reads as current when
+ * the pill is clipped (collapsed rail, flyouts).
+ */
+.ml-nav-item.is-active .ml-nav-item__open {
+  box-shadow: none;
+}
+
+.ml-nav-item.is-active {
+  background: color-mix(in srgb, var(--ml-ws-accent, var(--ml-primary)) 8%, var(--ml-sidebar-active));
+}
+
+/* Cluster avatars follow the same squircle language as their workspace. */
+.ml-nav-item__avatar-wrap {
+  border-radius: 32%;
+  overflow: hidden;
+  transition: border-radius 0.16s ease;
+}
+
+.ml-nav-item:hover .ml-nav-item__avatar-wrap,
+.ml-nav-item.is-active .ml-nav-item__avatar-wrap {
+  border-radius: 24%;
+}
+
+/* Groups separate by a hairline rather than spacing, so more of them fit without the list
+   turning into a scroll. */
+/* No hairline between groups: this used to draw one plus 2px of padding above every group
+   after the first, on top of devtools-refine.css's own separate 8px margin-top — the leftover
+   line and the mismatched spacing were exactly what read as "messy" between workspaces. Spacing
+   between groups is set once now, in devtools-refine.css. */
+
+
+/* —— Workspace accent colour —— */
+
+/*
+ * The workspace colour is reserved for the selected cluster row (its pill, background tint and
+ * title — see the .ml-nav-item.is-active rules above). Two earlier passes also marked the
+ * group header itself (an avatar ring, then a header bar + tinted label); both competed with
+ * the selected row for attention and were dropped so colour means one specific thing.
+ */
+
+/* Colour swatches in the workspace editor. */
+.ml-ws-accent-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.ml-ws-accent {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  /* Transparent ring reserved up front so selecting a swatch doesn't nudge its neighbours. */
+  box-shadow: 0 0 0 2px transparent;
+  transition:
+    box-shadow 0.14s ease,
+    transform 0.14s ease;
+}
+
+.ml-ws-accent:hover {
+  transform: translateY(-1px);
+}
+
+.ml-ws-accent.is-selected {
+  /* Gap ring: a halo in the swatch's own colour would vanish against it. */
+  box-shadow:
+    0 0 0 2px var(--ml-bg-elevated),
+    0 0 0 4px var(--ml-text);
+}
+
+/* "No colour" — a neutral tile with a diagonal strike, the usual "none" affordance. */
+.ml-ws-accent--none {
+  position: relative;
+  background: var(--ml-bg-spotlight, color-mix(in srgb, var(--ml-text) 10%, transparent));
+  border: 1px solid var(--ml-border-secondary);
+}
+
+.ml-ws-accent--none::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 1px),
+    var(--ml-text-tertiary) calc(50% - 1px),
+    var(--ml-text-tertiary) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+  border-radius: inherit;
+}
+
+/* —— What's new (post-update dialog) —— */
+
+.ml-whats-new__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ml-whats-new__version {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ml-primary) 14%, transparent);
+  color: var(--ml-primary);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ml-whats-new__list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ml-text);
+}
+
+.ml-whats-new__list li::marker {
+  color: var(--ml-primary);
+}
+
+/* —— Update-pending badge (sidebar brand) —— */
+
+.ml-update-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  /* Amber, not the theme accent: this is a notice, and it has to stand apart from every other
+     accent-coloured control in the sidebar (workspace colours included) to register as one. */
+  border: 1px solid color-mix(in srgb, #f59e0b 55%, transparent);
+  background: color-mix(in srgb, #f59e0b 14%, transparent);
+  color: #f59e0b;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.ml-update-badge:hover {
+  background: color-mix(in srgb, #f59e0b 24%, transparent);
+  border-color: #f59e0b;
+}
+
+.ml-update-badge:active {
+  transform: scale(0.94);
+}
+
+.ml-update-badge:focus-visible {
+  outline: 2px solid color-mix(in srgb, #f59e0b 60%, transparent);
+  outline-offset: 2px;
+}
+
+/* Downloaded: nothing left to fetch, only a restart — green reads as "go" rather than "pending". */
+.ml-update-badge.is-ready {
+  border-color: color-mix(in srgb, var(--ml-success, #22c55e) 60%, transparent);
+  background: color-mix(in srgb, var(--ml-success, #22c55e) 16%, transparent);
+  color: var(--ml-success, #22c55e);
+}
+
+.ml-update-badge.is-ready:hover {
+  background: color-mix(in srgb, var(--ml-success, #22c55e) 26%, transparent);
+  border-color: var(--ml-success, #22c55e);
+}
+
+/* A slow pulse while bytes are moving — enough to read as activity, not enough to nag. */
+.ml-update-badge.is-busy {
+  animation: ml-update-badge-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes ml-update-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ml-update-badge.is-busy {
+    animation: none;
+  }
+}
+
+/*
+ * No custom focus ring here — the resource nav's own group headers and items (the pattern this
+ * list mirrors) don't style focus specially either, they rely on the platform default. Two
+ * earlier attempts at a custom ring (workspace-accent-coloured, then a "neutral" tint) both
+ * still read as a persistent border around the whole header, because antd's Dropdown hands
+ * focus back to this button when its "…" menu closes — a normal keyboard-nav handoff, but
+ * enough to make the ring appear "stuck" after every menu interaction. Leaving it unstyled
+ * matches the rest of the sidebar and removes the problem rather than re-tuning its colour.
+ */

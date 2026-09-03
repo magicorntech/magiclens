@@ -369,24 +369,16 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 checked={updateSettings?.includePrerelease ?? false}
                 onChange={(checked) => void saveUpdateSettings({ includePrerelease: checked })}
               />
-              {updateState?.manualDownloadOnly ? (
-                <Typography.Text type="secondary" className="ml-settings-inline-hint">
-                  {t('settings.updates.macosManual')}
-                </Typography.Text>
-              ) : (
-                <>
-                  <SettingsToggleRow
-                    title={t('settings.updates.autoDownload')}
-                    checked={updateSettings?.autoDownload ?? false}
-                    onChange={(checked) => void saveUpdateSettings({ autoDownload: checked })}
-                  />
-                  <SettingsToggleRow
-                    title={t('settings.updates.askBeforeInstall')}
-                    checked={updateSettings?.askBeforeInstall ?? true}
-                    onChange={(checked) => void saveUpdateSettings({ askBeforeInstall: checked })}
-                  />
-                </>
-              )}
+              <SettingsToggleRow
+                title={t('settings.updates.autoDownload')}
+                checked={updateSettings?.autoDownload ?? true}
+                onChange={(checked) => void saveUpdateSettings({ autoDownload: checked })}
+              />
+              <SettingsToggleRow
+                title={t('settings.updates.askBeforeInstall')}
+                checked={updateSettings?.askBeforeInstall ?? true}
+                onChange={(checked) => void saveUpdateSettings({ askBeforeInstall: checked })}
+              />
             </SettingsSection>
           </>
         )

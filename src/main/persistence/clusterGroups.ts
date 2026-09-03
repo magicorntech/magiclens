@@ -1,7 +1,7 @@
 import Store from 'electron-store'
 import { randomUUID } from 'crypto'
 import type { ClusterGroup, ClusterGroupsState } from '@shared/types/clusterGroup'
-import { normalizeGroupShortcut } from '@shared/types/clusterGroup'
+import { workspaceAccentColor, normalizeGroupShortcut } from '@shared/types/clusterGroup'
 import { getSessionScope } from './sessionScope'
 
 interface StoreSchema {
@@ -32,7 +32,11 @@ function normalizeGroup(g: ClusterGroup): ClusterGroup {
     clusterIds: [...new Set(g.clusterIds)],
     collapsed: g.collapsed,
     ...(typeof g.logoUrl === 'string' && g.logoUrl.trim() ? { logoUrl: g.logoUrl.trim() } : {}),
-    ...(shortcut !== undefined ? { shortcut } : {})
+    ...(shortcut !== undefined ? { shortcut } : {}),
+    // Rebuilt field by field, so anything omitted here is dropped on save. Only ids from the
+    // palette are kept — a stale or hand-edited value would otherwise reach the UI as a colour
+    // that resolves to nothing.
+    ...(workspaceAccentColor(g.accent) ? { accent: g.accent } : {})
   }
 }
 
@@ -60,7 +64,7 @@ export function createClusterGroup(name: string): ClusterGroupsState {
 
 export function updateClusterGroup(
   id: string,
-  patch: Partial<Pick<ClusterGroup, 'name' | 'clusterIds' | 'collapsed' | 'shortcut' | 'logoUrl'>>
+  patch: Partial<Pick<ClusterGroup, 'name' | 'clusterIds' | 'collapsed' | 'shortcut' | 'logoUrl' | 'accent'>>
 ): ClusterGroupsState {
   const groups = listClusterGroups().map((g) => {
     if (g.id !== id) return g
@@ -68,6 +72,10 @@ export function updateClusterGroup(
     // Explicit null/empty clears the logo.
     if ('logoUrl' in patch && !patch.logoUrl) {
       delete next.logoUrl
+    }
+    // Same for the accent — the renderer sends '' to mean "no colour".
+    if ('accent' in patch && !patch.accent) {
+      delete next.accent
     }
     return next
   })

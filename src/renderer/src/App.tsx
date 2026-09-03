@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { whatsNewFor, type WhatsNewEntry } from '@shared/whatsNew'
+import { WhatsNewModal } from './components/Update/WhatsNewModal'
 import { MotionConfig } from 'framer-motion'
 import { useClusterStore } from './stores/clusterStore'
 import { useAuthStore } from './stores/authStore'
@@ -23,6 +25,7 @@ export function App(): React.JSX.Element {
   const authHydrated = useAuthStore((s) => s.hydrated)
   const [ready, setReady] = useState(false)
   const [showTour, setShowTour] = useState(false)
+  const [whatsNew, setWhatsNew] = useState<{ version: string; entry: WhatsNewEntry } | null>(null)
   const [tourDismissed, setTourDismissed] = useState(false)
 
   useAppShortcuts()
@@ -55,8 +58,20 @@ export function App(): React.JSX.Element {
         if (cancelled) return
 
         const welcomeStateResult = await window.api.app.getWelcomeState()
-        // First launch or first open after an update → feature card slider
-        setShowTour(welcomeStateResult.showSplash)
+        // A brand-new user gets the intro tour. Someone who already knows the app and simply
+        // took an update gets that release's highlights instead — `showSplash` covers both
+        // cases, so `previousVersion` is what tells them apart.
+        const isFirstLaunch = !welcomeStateResult.hasSeenWelcome
+        setShowTour(isFirstLaunch && welcomeStateResult.showSplash)
+        if (!isFirstLaunch && welcomeStateResult.showSplash) {
+          const entry = whatsNewFor(welcomeStateResult.currentVersion)
+          // Releases with nothing worth announcing simply mark themselves seen and move on.
+          if (entry) {
+            setWhatsNew({ version: welcomeStateResult.currentVersion, entry })
+          } else {
+            void window.api.app.setSplashSeen()
+          }
+        }
       } catch (err) {
         console.error('[magiclens] boot failed:', err)
       } finally {
@@ -93,6 +108,11 @@ export function App(): React.JSX.Element {
     return unsubscribe
   }, [ready])
 
+  function handleDismissWhatsNew(): void {
+    setWhatsNew(null)
+    void window.api.app.setSplashSeen()
+  }
+
   function handleFinishTour(): void {
     setTourDismissed(true)
     void window.api.app.setSplashSeen()
@@ -112,6 +132,14 @@ export function App(): React.JSX.Element {
   return (
     <MotionConfig reducedMotion="user">
       <AppLayout />
+      {whatsNew ? (
+        <WhatsNewModal
+          version={whatsNew.version}
+          entry={whatsNew.entry}
+          open
+          onClose={handleDismissWhatsNew}
+        />
+      ) : null}
       <UpdateNotificationBanner />
       <UpdateCenterModal />
       <GlobalSearchModal />

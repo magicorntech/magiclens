@@ -80,7 +80,6 @@ export const zh: TranslationOverrides = {
       checkAutomatically: '自动检查更新',
       checkOnStartup: '启动时检查',
       includePrerelease: '包含预发布版本',
-      macosManual: '在没有付费 Apple Developer ID 证书的情况下，macOS 无法自动下载/安装。发现更新时，MagicLens 会跳转到 GitHub 发布页以便手动下载 DMG。',
       autoDownload: '自动下载更新',
       askBeforeInstall: '安装前询问',
       checkNow: '立即检查更新',

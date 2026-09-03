@@ -86,8 +86,6 @@ export const de: TranslationOverrides = {
       checkAutomatically: 'Automatisch nach Updates suchen',
       checkOnStartup: 'Beim Start prüfen',
       includePrerelease: 'Vorabversionen einbeziehen',
-      macosManual:
-        'Automatisches Herunterladen/Installieren ist unter macOS ohne bezahltes Apple-Developer-ID-Zertifikat nicht verfügbar. Bei einem Update verweist MagicLens auf die GitHub-Release-Seite zum manuellen DMG-Download.',
       autoDownload: 'Updates automatisch herunterladen',
       askBeforeInstall: 'Vor der Installation fragen',
       checkNow: 'Jetzt nach Updates suchen',

@@ -170,8 +170,6 @@ export const en = {
       checkAutomatically: 'Check for updates automatically',
       checkOnStartup: 'Check on startup',
       includePrerelease: 'Include pre-release versions',
-      macosManual:
-        "Automatic download/install isn't available on macOS without a paid Apple Developer ID certificate. When an update is found, MagicLens links out to the GitHub release for a manual DMG download instead.",
       autoDownload: 'Auto-download updates',
       askBeforeInstall: 'Ask before install',
       checkNow: 'Check for updates now',
@@ -668,6 +666,9 @@ export const en = {
   },
 
   workspaces: {
+      accent: 'Colour',
+      accentHint: 'Tints this workspace and its clusters in the sidebar.',
+      accentNone: 'No colour',
     title: 'Workspaces',
     sectionHint: 'Grouped clusters',
     compactMark: 'W',

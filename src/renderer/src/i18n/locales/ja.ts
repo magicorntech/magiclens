@@ -80,8 +80,6 @@ export const ja: TranslationOverrides = {
       checkAutomatically: 'アップデートを自動で確認',
       checkOnStartup: '起動時に確認',
       includePrerelease: 'プレリリースを含める',
-      macosManual:
-        '有料の Apple Developer ID 証明書がない場合、macOS では自動ダウンロード／インストールは利用できません。アップデートが見つかると MagicLens は GitHub のリリースへ案内し、DMG を手動でダウンロードします。',
       autoDownload: 'アップデートを自動ダウンロード',
       askBeforeInstall: 'インストール前に確認',
       checkNow: '今すぐアップデートを確認',

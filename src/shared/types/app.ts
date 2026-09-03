@@ -68,6 +68,14 @@ export interface WelcomeStateResponse {
   /** True when the animated intro splash should be shown: either this is the very first
    * launch ever, or the app was just updated to a version the user hasn't launched yet. */
   showSplash: boolean
+  /**
+   * The version this user last launched, or null on a first ever launch. Lets the renderer tell
+   * "brand new user" (show the intro tour) apart from "existing user on a new build" (show that
+   * release's highlights) — `showSplash` alone is true for both.
+   */
+  previousVersion: string | null
+  /** The version running now, so the renderer can look up its highlights. */
+  currentVersion: string
 }
 
 export type ResourceDetailPlacement = 'drawer' | 'right' | 'bottom'

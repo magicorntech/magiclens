@@ -26,7 +26,7 @@ export function registerClusterGroupsHandlers(): void {
       _e,
       req: {
         id: string
-        patch: Partial<Pick<ClusterGroup, 'name' | 'clusterIds' | 'collapsed' | 'shortcut' | 'logoUrl'>>
+        patch: Partial<Pick<ClusterGroup, 'name' | 'clusterIds' | 'collapsed' | 'shortcut' | 'logoUrl' | 'accent'>>
       }
     ): Promise<ClusterGroupsState> => updateClusterGroup(req.id, req.patch)
   )

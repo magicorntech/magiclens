@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ClusterGroup, ClusterGroupsState } from '@shared/types/clusterGroup'
+import type { ClusterGroup, ClusterGroupsState, WorkspaceAccentId } from '@shared/types/clusterGroup'
 import type { ShortcutBinding } from '@shared/types/keyboardShortcuts'
 import { bindingsEqual } from '@shared/types/keyboardShortcuts'
 import { useClusterStore } from './clusterStore'
@@ -20,6 +20,7 @@ interface ClusterGroupsStoreState {
   setGroupClusters: (id: string, clusterIds: string[]) => Promise<void>
   setGroupShortcut: (id: string, shortcut: ShortcutBinding | null) => Promise<void>
   setGroupLogo: (id: string, logoUrl: string | null) => Promise<void>
+  setGroupAccent: (id: string, accent: WorkspaceAccentId | null) => Promise<void>
   addClusterToGroup: (groupId: string, clusterId: string) => Promise<void>
   removeClusterFromGroup: (groupId: string, clusterId: string) => Promise<void>
   /** Expand workspace and open its clusters (focus first). */
@@ -80,6 +81,13 @@ export const useClusterGroupsStore = create<ClusterGroupsStoreState>()((set, get
     // Empty string survives IPC JSON (unlike undefined) and clears the stored logo.
     const groups = await window.api.clusterGroups.update(id, {
       logoUrl: logoUrl || ''
+    })
+    set({ groups })
+  },
+  setGroupAccent: async (id, accent) => {
+    // Empty string survives IPC JSON (unlike undefined) and clears the stored accent.
+    const groups = await window.api.clusterGroups.update(id, {
+      accent: (accent ?? '') as WorkspaceAccentId
     })
     set({ groups })
   },

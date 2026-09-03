@@ -19,7 +19,9 @@ const defaultUpdateSettings: UpdateSettings = {
   checkAutomatically: true,
   checkOnStartup: true,
   includePrerelease: false,
-  autoDownload: false,
+  // Downloading in the background is the point of an auto-updater; the user still confirms the
+  // restart below, so nothing happens behind their back.
+  autoDownload: true,
   askBeforeInstall: true
 }
 
@@ -43,6 +45,26 @@ export function getHasSeenWelcome(): boolean {
 export function setHasSeenWelcome(value: boolean): void {
   store.set('hasSeenWelcome', value)
 }
+
+/**
+ * macOS builds used to hide the auto-download toggle completely: without a Developer ID
+ * certificate the app could not install its own updates, so it was pinned off and the UI only
+ * offered a link to the GitHub release. Any `autoDownload: false` stored on a Mac is therefore a
+ * leftover of that forced state, not a choice the user could have made — releases are signed and
+ * notarized now, so it is cleared once and the new default applies. Windows and Linux always
+ * showed the toggle, so their stored value is left alone.
+ */
+function migrateMacAutoDownload(): void {
+  if (process.platform !== 'darwin') return
+  if (store.get('autoDownloadUnpinned')) return
+  store.set('autoDownloadUnpinned', true)
+
+  const stored = store.get('updateSettings') as Partial<UpdateSettings> | undefined
+  if (!stored || stored.autoDownload !== false) return
+  store.set('updateSettings', { ...stored, autoDownload: defaultUpdateSettings.autoDownload })
+}
+
+migrateMacAutoDownload()
 
 export function getUpdateSettings(): UpdateSettings {
   return { ...defaultUpdateSettings, ...store.get('updateSettings') }

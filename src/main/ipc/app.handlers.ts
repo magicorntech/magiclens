@@ -135,8 +135,10 @@ export function registerAppHandlers(): void {
 
   ipcMain.handle(IPC.APP_GET_WELCOME_STATE, async (): Promise<WelcomeStateResponse> => {
     const hasSeenWelcome = getHasSeenWelcome()
-    const showSplash = !hasSeenWelcome || getLastSeenSplashVersion() !== app.getVersion()
-    return { hasSeenWelcome, showSplash }
+    const previousVersion = getLastSeenSplashVersion()
+    const currentVersion = app.getVersion()
+    const showSplash = !hasSeenWelcome || previousVersion !== currentVersion
+    return { hasSeenWelcome, showSplash, previousVersion, currentVersion }
   })
 
   ipcMain.handle(IPC.APP_SET_WELCOME_SEEN, async (): Promise<{ ok: true }> => {

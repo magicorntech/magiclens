@@ -287,7 +287,7 @@ const api = {
       patch: Partial<
         Pick<
           import('@shared/types/clusterGroup').ClusterGroup,
-          'name' | 'clusterIds' | 'collapsed' | 'shortcut' | 'logoUrl'
+          'name' | 'clusterIds' | 'collapsed' | 'shortcut' | 'logoUrl' | 'accent'
         >
       >
     ): Promise<import('@shared/types/clusterGroup').ClusterGroupsState> =>

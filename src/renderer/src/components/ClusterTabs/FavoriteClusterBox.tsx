@@ -18,6 +18,16 @@ interface FavoriteClusterBoxProps {
   compact?: boolean
   /** Nested under a workspace — slightly denser + indented. */
   nested?: boolean
+  /** The owning workspace's accent, when it has one — see ClusterAvatar. */
+  accentColor?: string
+  /**
+   * The owning workspace's own logo, used when this cluster has none of its own. Individual
+   * clusters are usually auto-discovered from a kubeconfig and never get a logo assigned
+   * directly — only the workspace does, via the editor — so without this every cluster nested
+   * under a nicely-branded workspace still fell back to a generic letter tile, even right below
+   * that workspace's own logo.
+   */
+  fallbackLogoUrl?: string
   /** Override compact-mode tooltip (defaults to cluster name). */
   tooltipTitle?: string
   onActivate?: () => void
@@ -29,10 +39,13 @@ export function FavoriteClusterBox({
   active,
   compact = false,
   nested = false,
+  accentColor,
+  fallbackLogoUrl,
   tooltipTitle,
   onActivate,
   onEdit
 }: FavoriteClusterBoxProps): React.JSX.Element {
+  const effectiveLogoUrl = cluster.logoUrl || fallbackLogoUrl
   const { t } = useTranslation()
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
   const openedTabs = useClusterStore((s) => s.openedTabs)
@@ -132,7 +145,7 @@ export function FavoriteClusterBox({
             aria-label={cluster.customName}
           >
             <span className="ml-nav-item__avatar-wrap">
-              <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={28} />
+              <ClusterAvatar logoUrl={effectiveLogoUrl} name={cluster.customName} size={28} accentColor={accentColor} />
               <span className="ml-nav-item__status-dot" aria-hidden />
             </span>
           </button>
@@ -159,7 +172,17 @@ export function FavoriteClusterBox({
         aria-label={cluster.customName}
       >
         <span className="ml-nav-item__avatar-wrap">
-          <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={nested ? 22 : 26} />
+          <ClusterAvatar
+            logoUrl={effectiveLogoUrl}
+            name={cluster.customName}
+            // Nested matches the workspace header's own avatar (also 20px) rather than its own
+            // slightly-larger size — the two sit in the same tight vertical stack, often
+            // showing the same logo repeated, so a couple of px between them read as a visible
+            // mismatch rather than an intentional hierarchy cue. The reference pattern this
+            // list mirrors (ResourceMenu) uses one icon size for a section and its children too.
+            size={nested ? 20 : 26}
+            accentColor={accentColor}
+          />
           <span className="ml-nav-item__status-dot" aria-hidden />
         </span>
         <div className="ml-nav-item__body">

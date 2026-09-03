@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Button, Progress, Space, Typography, message } from 'antd'
-import { Download, ExternalLink, RefreshCw, Rocket, X } from 'lucide-react'
+import { Download, RefreshCw, Rocket, X } from 'lucide-react'
 import { Icon } from '../ui/Icon'
 import { useUpdateStore } from '../../stores/updateStore'
 
@@ -11,7 +11,6 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
   const skip = useUpdateStore((s) => s.skip)
   const remindLater = useUpdateStore((s) => s.remindLater)
   const openCenter = useUpdateStore((s) => s.openCenter)
-  const openReleasePage = useUpdateStore((s) => s.openReleasePage)
   const lastErrorRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -37,12 +36,16 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
         right: 20,
         bottom: 20,
         width: 340,
-        background: 'var(--ant-color-bg-elevated)',
+        // `--ant-*` variables only exist when antd's cssVar theme mode is on, which this app
+        // does not enable — the banner rendered with no background at all and the text sat
+        // directly on the page. The app's own tokens are always defined.
+        background: 'var(--ml-bg-elevated)',
+        color: 'var(--ml-text)',
         borderRadius: 10,
         boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
         padding: 16,
         zIndex: 1200,
-        border: '1px solid rgba(127,127,127,0.2)'
+        border: '1px solid var(--ml-border-secondary)'
       }}
     >
       <Space orientation="vertical" style={{ width: '100%' }} size={10}>
@@ -63,9 +66,7 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
             ? `MagicLens v${state.latestVersion} has been downloaded. Restart to finish installing.`
             : showDownloading
               ? `Downloading v${state.latestVersion}…`
-              : state.manualDownloadOnly
-                ? `MagicLens v${state.latestVersion} is available (current: v${state.currentVersion}). Automatic install isn't supported on macOS - download the DMG from GitHub.`
-                : `MagicLens v${state.latestVersion} is available (current: v${state.currentVersion}).`}
+              : `MagicLens v${state.latestVersion} is available (current: v${state.currentVersion}).`}
         </Typography.Text>
 
         {showDownloading && (
@@ -74,15 +75,9 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
 
         {showAvailable && (
           <Space size={8} wrap>
-            {state.manualDownloadOnly ? (
-              <Button type="primary" size="small" icon={<Icon icon={ExternalLink} variant="detail" />} onClick={() => void openReleasePage()}>
-                Open GitHub release
-              </Button>
-            ) : (
-              <Button type="primary" size="small" icon={<Icon icon={Download} variant="detail" />} onClick={() => void download()}>
-                Download
-              </Button>
-            )}
+            <Button type="primary" size="small" icon={<Icon icon={Download} variant="detail" />} onClick={() => void download()}>
+              Download
+            </Button>
             <Button size="small" onClick={() => openCenter()}>
               Details
             </Button>

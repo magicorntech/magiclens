@@ -36,7 +36,6 @@ export function UpdateCenterModal(): React.JSX.Element {
 
   const phase = state?.phase ?? 'idle'
   const isSkipped = !!state?.latestVersion && state.latestVersion === state.skippedVersion
-  const manualDownloadOnly = state?.manualDownloadOnly ?? false
   const isSpinning = phase === 'checking' || phase === 'downloading'
 
   return (
@@ -76,15 +75,6 @@ export function UpdateCenterModal(): React.JSX.Element {
           />
         )}
 
-        {phase === 'available' && manualDownloadOnly && (
-          <Alert
-            type="info"
-            showIcon
-            message="Manual download required on macOS"
-            description="Without a paid Apple Developer ID certificate, automatic install can't be verified safely on macOS. Download the DMG from the GitHub release page and install it manually - it only takes a moment."
-          />
-        )}
-
         {state?.releaseNotes && (
           <div>
             <Typography.Text strong>Release notes</Typography.Text>
@@ -109,17 +99,17 @@ export function UpdateCenterModal(): React.JSX.Element {
           <Button icon={<Icon icon={RefreshCw} variant="detail" />} loading={phase === 'checking'} onClick={() => void check()}>
             Check for updates
           </Button>
-          {phase === 'available' && !isSkipped && manualDownloadOnly && (
-            <Button type="primary" icon={<Icon icon={ExternalLink} variant="detail" />} onClick={() => void openReleasePage()}>
-              Open GitHub release
-            </Button>
-          )}
-          {phase === 'available' && !isSkipped && !manualDownloadOnly && (
+          {phase === 'available' && !isSkipped && (
             <Button type="primary" icon={<Icon icon={Download} variant="detail" />} onClick={() => void download()}>
               Download update
             </Button>
           )}
           {phase === 'available' && !isSkipped && <Button onClick={() => void skip()}>Skip this version</Button>}
+          {state?.releaseUrl && (
+            <Button icon={<Icon icon={ExternalLink} variant="detail" />} onClick={() => void openReleasePage()}>
+              Open release page
+            </Button>
+          )}
           {phase === 'downloaded' && (
             <Button type="primary" icon={<Icon icon={RefreshCw} variant="detail" />} onClick={() => void install()}>
               Restart & install

@@ -13,6 +13,7 @@ import { resolveUserScope, favoritesExpandedKey, favoritesHeightKey, workspacesE
 import { applyClusterFilterAndSearch } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
+import { UpdateAvailableBadge } from '../Update/UpdateAvailableBadge'
 import { EditClusterModal } from '../ClusterTabs/EditClusterModal'
 import { SidebarWorkspaces } from './SidebarWorkspaces'
 import { Icon } from '../ui/Icon'
@@ -206,6 +207,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
             )}
           </AnimatePresence>
         </div>
+        <UpdateAvailableBadge />
       </div>
 
       <div className="ml-sidebar-actions titlebar-no-drag">

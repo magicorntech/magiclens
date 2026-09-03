@@ -149,7 +149,9 @@
 }
 
 .ml-nav-item.is-active .ml-nav-item__open {
-  box-shadow: inset 2px 0 0 var(--ml-primary) !important;
+  /* The leading pill on .ml-nav-item::before now marks selection; a second inset bar here would
+     double it up, and it hid the workspace accent besides. */
+  box-shadow: none !important;
 }
 
 .ml-nav-item:not(.is-active):has(.ml-nav-item__open:hover),
@@ -160,33 +162,6 @@
 .ml-nav-item__title {
   font-size: 13px !important;
   font-weight: 450 !important;
-}
-
-.ml-ws-group {
-  margin-bottom: 0 !important;
-}
-
-.ml-ws-group + .ml-ws-group {
-  margin-top: 0 !important;
-}
-
-.ml-ws-group__toggle {
-  min-height: 32px !important;
-  padding: 4px 6px !important;
-  border-radius: 6px !important;
-}
-
-.ml-ws-group__name {
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.01em !important;
-  text-transform: none !important;
-  color: var(--ml-sidebar-text) !important;
-}
-
-.ml-ws-group__list {
-  margin-top: 2px !important;
-  gap: 1px !important;
 }
 
 /* —— Workspaces list: fluid, scrollable (never collapse to zero) —— */
@@ -270,62 +245,15 @@
   overflow-y: auto !important;
 }
 
-.ml-ws-group {
-  background: transparent !important;
-  border: none !important;
-  border-radius: 8px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  transition: none !important;
-  overflow: hidden !important;
-}
-
+/*
+ * One deliberate hairline between workspaces, using the same divider token the rest of the
+ * sidebar's own section rules already use. Padding-top (not just margin) keeps the line clear
+ * of the group above it rather than sitting flush against its last cluster row.
+ */
 .ml-ws-group + .ml-ws-group {
   margin-top: 8px !important;
-  border-top: none !important;
-  padding-top: 0 !important;
-}
-
-.ml-ws-group.is-expanded {
-  /* Soft inset panel — avoid hard dark-mode border lines on sidebar. */
-  background: color-mix(in srgb, var(--ml-sidebar-text) 4.5%, var(--ml-sidebar-bg)) !important;
-  padding: 0 !important;
-  border-radius: 8px !important;
-  border: 1px solid color-mix(in srgb, var(--ml-sidebar-text) 7%, transparent) !important;
-  box-shadow: none !important;
-}
-
-.ml-ws-group.is-expanded + .ml-ws-group,
-.ml-ws-group + .ml-ws-group.is-expanded {
-  border-top-color: transparent !important;
-}
-
-.ml-ws-group__head {
-  gap: 2px !important;
-  min-width: 0;
-}
-
-.ml-ws-group.is-expanded .ml-ws-group__head {
-  padding: 4px 4px 4px 6px !important;
-  border-bottom: 1px solid color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent) !important;
-  background: color-mix(in srgb, var(--ml-sidebar-text) 2.5%, transparent) !important;
-}
-
-.ml-ws-group__toggle {
-  min-height: 30px !important;
-  padding: 2px 4px !important;
-  gap: 8px !important;
-  border-radius: 6px !important;
-  background: transparent !important;
-}
-
-.ml-ws-group__toggle:hover {
-  background: transparent !important;
-}
-
-.ml-ws-group__avatar {
-  flex-shrink: 0;
-  display: inline-flex;
+  padding-top: 8px !important;
+  border-top: 1px solid var(--ml-sidebar-divider) !important;
 }
 
 .ml-ws-group__meta {
@@ -342,30 +270,6 @@
   gap: 6px;
   flex-shrink: 0;
   margin-left: auto;
-}
-
-.ml-ws-group__chevron {
-  opacity: 0.5;
-}
-
-.ml-ws-group.is-expanded .ml-ws-group__chevron {
-  opacity: 0.7;
-}
-
-.ml-ws-group__name {
-  font-size: 12.5px !important;
-  font-weight: 500 !important;
-  letter-spacing: -0.01em !important;
-  text-transform: none !important;
-  color: var(--ml-sidebar-text) !important;
-}
-
-.ml-ws-group.is-expanded .ml-ws-group__name {
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
-  color: var(--ml-text-tertiary) !important;
 }
 
 .ml-ws-group__count {
@@ -393,93 +297,8 @@
   color: var(--ml-text-tertiary) !important;
 }
 
-.ml-ws-group__list {
-  margin: 0 !important;
-  padding: 4px !important;
-  gap: 1px !important;
-  border-left: none !important;
-  border-radius: 0;
-  background: transparent !important;
-  animation: ml-ws-list-in 0.18s ease-out;
-}
-
-@keyframes ml-ws-list-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Match hover flyout cluster rows */
-.ml-ws-group__list .ml-nav-item {
-  min-height: 32px !important;
-  padding: 0 !important;
-  border-radius: 6px !important;
-  background: transparent !important;
-  color: var(--ml-text) !important;
-}
-
-.ml-ws-group__list .ml-nav-item__open {
-  min-height: 32px !important;
-  gap: 10px !important;
-  padding: 6px 10px !important;
-  border-radius: 6px !important;
-}
-
-.ml-ws-group__list .ml-nav-item__title {
-  font-size: 13px !important;
-  font-weight: 450 !important;
-  color: var(--ml-text) !important;
-}
-
 .ml-ws-group__list .ml-nav-item__meta {
   display: none !important;
-}
-
-.ml-ws-group__list .ml-nav-item__menu {
-  opacity: 1 !important;
-  width: 26px !important;
-  height: 26px !important;
-  margin-right: 4px !important;
-  color: var(--ml-text-tertiary) !important;
-}
-
-.ml-ws-group__list .ml-nav-item--nested:not(.is-active):has(.ml-nav-item__open:hover),
-.ml-ws-group__list .ml-nav-item--nested:not(.is-active):hover {
-  background: var(--ml-bg-spotlight) !important;
-}
-
-.ml-ws-group__list .ml-nav-item.is-active {
-  background: color-mix(in srgb, var(--ml-primary) 12%, transparent) !important;
-  box-shadow: none !important;
-}
-
-.ml-ws-group__list .ml-nav-item.is-active .ml-nav-item__open {
-  box-shadow: none !important;
-}
-
-.ml-ws-group__list .ml-nav-item.is-active .ml-nav-item__title {
-  color: var(--ml-primary) !important;
-  font-weight: 500 !important;
-}
-
-.ml-ws-group__list .ml-nav-item.is-session-live .ml-nav-item__title,
-.ml-ws-group__list .ml-nav-item.is-fav-connected .ml-nav-item__title {
-  color: var(--ml-text) !important;
-  font-weight: 450 !important;
-}
-
-.ml-ws-group__list .ml-nav-item.is-active.is-session-live .ml-nav-item__title {
-  color: var(--ml-primary) !important;
-  font-weight: 500 !important;
-}
-
-.ml-ws-group__list .ml-nav-item.is-session-live:not(.is-active) {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 7%, transparent) !important;
 }
 
 .ml-ws-group__empty {
@@ -1550,3 +1369,111 @@
   min-height: 32px !important;
 }
 
+
+/* ============================================================
+   Sidebar: workspace list — matches the resource nav's section/item pattern
+   ------------------------------------------------------------
+   Three earlier passes here (tree branch lines, bordered cards, then an unstyled flat list)
+   each invented a new visual system for this one part of the sidebar. The resource menu just
+   above it (Workloads / Config / Network …) already solves "collapsible section containing a
+   list of items" with a pattern that's used throughout the app: a section row with a left
+   accent bar when it contains what's currently open, and child rows that go from plain to a
+   solid tinted pill when selected. This reuses that pattern verbatim rather than adding a
+   fourth one — same row heights, same padding, same weights, same active/hover treatment.
+   ============================================================ */
+
+/*
+ * Workspace list — final, consolidated.
+ *
+ * This selector set (.ml-ws-group*, .ml-nav-item--nested) had accumulated FOUR separate,
+ * overlapping rule generations across this file and global.css — a bordered-card version, a
+ * tree-branch version, a flat-list version, and a resource-nav-mirrored version — each added on
+ * top of the last instead of replacing it. Properties fell back to whichever generation's rule
+ * happened to load last, which is exactly how a card border from the *second* iteration was
+ * still visibly wrapping the header after two later "fixes" that never touched it. This block
+ * is now the ONLY place workspace-list decoration is defined; nothing above this point in
+ * either stylesheet should reference .ml-ws-group again.
+ *
+ * The design itself is deliberately minimal: the header is fully static — no background, no
+ * border, no colour, in any state — it only shows name, count and a chevron. Colour appears in
+ * exactly one place, the selected cluster row, as a flat background tint plus a matching title
+ * colour. Nothing else in this list changes appearance for any reason.
+ */
+
+.ml-ws-group__toggle {
+  min-height: 30px !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  font-size: 12.5px !important;
+  font-weight: 450 !important;
+  color: var(--ml-text) !important;
+}
+
+.ml-ws-group__chevron {
+  opacity: 0.3;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.ml-ws-group.is-expanded .ml-ws-group__chevron {
+  opacity: 0.6;
+}
+
+.ml-ws-group__name {
+  letter-spacing: 0.03em !important;
+}
+
+/*
+ * 20px, not a rounder number: chosen so a nested cluster's own avatar lands exactly under the
+ * workspace's avatar above it (verified by measuring both in the live DOM), rather than being
+ * indented from the row's own edge by an arbitrary amount. The two icons line up in one column
+ * top to bottom, which is what makes this read as a single list rather than a tree.
+ *
+ * Top/bottom padding matches (2px/2px) rather than the 4px-bottom it briefly had — the group
+ * boundary below is already carried by the 8px margin between groups (below), so a heavier
+ * bottom pad here just doubled up on it.
+ */
+.ml-ws-group__list {
+  padding: 2px 0 2px 20px !important;
+  gap: 1px !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested {
+  min-height: 28px !important;
+  border-radius: 6px !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested .ml-nav-item__open {
+  min-height: 26px !important;
+  gap: 8px !important;
+  padding: 0 8px !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested .ml-nav-item__title {
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.005em !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested:hover:not(.is-active) {
+  background: color-mix(in srgb, var(--ml-text) 5%, transparent) !important;
+}
+
+/* The one place colour appears in this whole list. */
+.ml-sidebar-workspaces .ml-nav-item--nested.is-active {
+  background: color-mix(in srgb, var(--ml-ws-accent, var(--ml-primary)) 9%, transparent) !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested.is-active .ml-nav-item__title {
+  color: var(--ml-ws-accent, var(--ml-primary)) !important;
+  font-weight: 450 !important;
+}
+
+.ml-ws-group__list .ml-nav-item--nested::before {
+  display: none !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item__status-dot {
+  width: 6px !important;
+  height: 6px !important;
+}

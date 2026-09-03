@@ -226,8 +226,6 @@ export const tr: TranslationOverrides = {
       checkAutomatically: 'Güncellemeleri otomatik kontrol et',
       checkOnStartup: 'Açılışta kontrol et',
       includePrerelease: 'Ön sürümleri dahil et',
-      macosManual:
-        'Ücretli Apple Developer ID sertifikası olmadan macOS’ta otomatik indirme/kurulum kullanılamaz. Güncelleme bulununca MagicLens GitHub sürüm sayfasına yönlendirir; DMG’yi elle indirmeniz gerekir.',
       autoDownload: 'Güncellemeleri otomatik indir',
       askBeforeInstall: 'Kurmadan önce sor',
       checkNow: 'Şimdi güncelleme kontrol et',
@@ -735,6 +733,9 @@ export const tr: TranslationOverrides = {
     }
   },
   workspaces: {
+      accent: 'Renk',
+      accentHint: 'Bu workspace’i ve cluster’larını kenar çubuğunda renklendirir.',
+      accentNone: 'Renk yok',
     title: 'Workspaces',
     sectionHint: 'Gruplanmış kümeler',
     compactMark: 'W',

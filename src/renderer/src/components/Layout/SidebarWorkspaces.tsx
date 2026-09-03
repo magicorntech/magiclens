@@ -37,6 +37,12 @@ import { sortClustersByConnection } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { ClusterAvatar } from '../ClusterTabs/ClusterAvatar'
 import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
+import {
+  WORKSPACE_ACCENTS,
+  WORKSPACE_ACCENT_IDS,
+  workspaceAccentColor,
+  type WorkspaceAccentId
+} from '@shared/types/clusterGroup'
 import { LogoCropModal } from '../ClusterTabs/LogoCropModal'
 import { Icon } from '../ui/Icon'
 
@@ -96,6 +102,7 @@ export function SidebarWorkspaces({
   const setGroupClusters = useClusterGroupsStore((s) => s.setGroupClusters)
   const setGroupShortcut = useClusterGroupsStore((s) => s.setGroupShortcut)
   const setGroupLogo = useClusterGroupsStore((s) => s.setGroupLogo)
+  const setGroupAccent = useClusterGroupsStore((s) => s.setGroupAccent)
 
   const [query, setQuery] = useState('')
   const [editorOpen, setEditorOpen] = useState(false)
@@ -104,6 +111,7 @@ export function SidebarWorkspaces({
   const [draftClusterIds, setDraftClusterIds] = useState<string[]>([])
   const [draftShortcut, setDraftShortcut] = useState<ShortcutBinding | null>(null)
   const [draftLogoUrl, setDraftLogoUrl] = useState<string | undefined>(undefined)
+  const [draftAccent, setDraftAccent] = useState<WorkspaceAccentId | null>(null)
   const [cropSource, setCropSource] = useState<string | null>(null)
   const [listeningShortcut, setListeningShortcut] = useState(false)
   const [shortcutError, setShortcutError] = useState<string | null>(null)
@@ -221,6 +229,7 @@ export function SidebarWorkspaces({
     setDraftClusterIds([])
     setDraftShortcut(null)
     setDraftLogoUrl(undefined)
+    setDraftAccent(null)
     setCropSource(null)
     setListeningShortcut(false)
     setShortcutError(null)
@@ -235,6 +244,7 @@ export function SidebarWorkspaces({
     setDraftClusterIds([...g.clusterIds])
     setDraftShortcut(g.shortcut ?? null)
     setDraftLogoUrl(g.logoUrl)
+    setDraftAccent(g.accent ?? null)
     setCropSource(null)
     setListeningShortcut(false)
     setShortcutError(null)
@@ -255,6 +265,7 @@ export function SidebarWorkspaces({
       await setGroupClusters(editingId, draftClusterIds)
       await setGroupShortcut(editingId, draftShortcut)
       await setGroupLogo(editingId, draftLogoUrl ?? null)
+      await setGroupAccent(editingId, draftAccent)
       message.success(t('workspaces.updated'))
     } else {
       await createGroup(name, draftClusterIds, draftShortcut, draftLogoUrl ?? null)
@@ -305,6 +316,32 @@ export function SidebarWorkspaces({
             />
           </div>
         </Space>
+
+        <Typography.Text strong>{t('workspaces.accent')}</Typography.Text>
+        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 8 }}>
+          {t('workspaces.accentHint')}
+        </Typography.Paragraph>
+        <div className="ml-ws-accent-row">
+          {/* "No colour" falls back to the theme accent, so a workspace never has to pick one. */}
+          <button
+            type="button"
+            className={`ml-ws-accent ml-ws-accent--none${draftAccent === null ? ' is-selected' : ''}`}
+            aria-label={t('workspaces.accentNone')}
+            title={t('workspaces.accentNone')}
+            onClick={() => setDraftAccent(null)}
+          />
+          {WORKSPACE_ACCENT_IDS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              className={`ml-ws-accent${draftAccent === id ? ' is-selected' : ''}`}
+              style={{ background: WORKSPACE_ACCENTS[id] }}
+              aria-label={id}
+              title={id}
+              onClick={() => setDraftAccent(id)}
+            />
+          ))}
+        </div>
 
         <Typography.Text strong>{t('workspaces.name')}</Typography.Text>
         <Input
@@ -514,7 +551,12 @@ export function SidebarWorkspaces({
                           }`}
                           aria-label={group.name}
                         >
-                          <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={28} />
+                          <ClusterAvatar
+                            logoUrl={group.logoUrl}
+                            name={group.name}
+                            size={28}
+                            accentColor={workspaceAccentColor(group.accent) ?? undefined}
+                          />
                         </button>
                       </span>
                     </span>
@@ -621,6 +663,16 @@ export function SidebarWorkspaces({
                   <div
                     key={group.id}
                     className={`ml-ws-group${isCollapsed ? ' is-collapsed' : ' is-expanded'}`}
+                    // Scoped custom property on the whole group, not just its header, so the
+                    // clusters nested inside inherit the workspace's colour for their selection
+                    // pill as well. Rules fall back to --ml-primary when it isn't set.
+                    style={
+                      workspaceAccentColor(group.accent)
+                        ? ({
+                            '--ml-ws-accent': workspaceAccentColor(group.accent)
+                          } as React.CSSProperties)
+                        : undefined
+                    }
                   >
                     <div className="ml-ws-group__head">
                       <button
@@ -633,7 +685,12 @@ export function SidebarWorkspaces({
                           <Icon icon={isCollapsed ? ChevronRight : ChevronDown} variant="micro" />
                         </span>
                         <span className="ml-ws-group__avatar">
-                          <ClusterAvatar logoUrl={group.logoUrl} name={group.name} size={20} />
+                          <ClusterAvatar
+                            logoUrl={group.logoUrl}
+                            name={group.name}
+                            size={20}
+                            accentColor={workspaceAccentColor(group.accent) ?? undefined}
+                          />
                         </span>
                         <span className="ml-ws-group__meta">
                           <span className="ml-ws-group__name">{group.name}</span>
@@ -670,6 +727,8 @@ export function SidebarWorkspaces({
                               cluster={cluster}
                               active={cluster.id === activeClusterId}
                               nested
+                              accentColor={workspaceAccentColor(group.accent) ?? undefined}
+                              fallbackLogoUrl={group.logoUrl}
                               onActivate={onNavigate}
                               onEdit={onEditCluster}
                             />

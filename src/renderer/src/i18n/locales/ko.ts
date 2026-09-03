@@ -80,8 +80,6 @@ export const ko: TranslationOverrides = {
       checkAutomatically: '업데이트 자동 확인',
       checkOnStartup: '시작 시 확인',
       includePrerelease: '사전 출시 버전 포함',
-      macosManual:
-        '유료 Apple Developer ID 인증서가 없으면 macOS에서 자동 다운로드/설치를 사용할 수 없습니다. 업데이트가 있으면 MagicLens가 GitHub 릴리스로 안내하여 DMG를 수동으로 다운로드하게 합니다.',
       autoDownload: '업데이트 자동 다운로드',
       askBeforeInstall: '설치 전 확인',
       checkNow: '지금 업데이트 확인',

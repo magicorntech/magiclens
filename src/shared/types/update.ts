@@ -25,7 +25,6 @@ export interface UpdateState {
    * across different builds, so the update UI instead links out to the GitHub release for a
    * manual download).
    */
-  manualDownloadOnly: boolean
   /** GitHub release page for the latest version, used for manual download links. */
   releaseUrl: string | null
 }
