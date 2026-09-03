@@ -1081,6 +1081,28 @@
   height: 16px !important;
 }
 
+/* Same icon-only Segmented, full-width in Settings → Appearance — antd doesn't center a
+   lone icon within the label box on its own, so it sits off-center/lopsided without this. */
+.ml-theme-toggle .ant-segmented-item-label {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
+  line-height: 1 !important;
+}
+
+.ml-theme-toggle .ant-segmented-item-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 0 !important;
+}
+
+.ml-theme-toggle .ant-segmented-item-icon > svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
 .ml-chrome-actions--strip .ml-icon-btn svg,
 .ml-chrome-actions .ml-icon-btn svg,
 .app-top-bar-actions .ml-icon-btn svg {

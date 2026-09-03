@@ -3007,6 +3007,31 @@ html[data-ui-contrast='bright'] #root {
   max-width: 280px;
 }
 
+.ml-settings-theme-preview {
+  display: flex;
+  gap: 18px;
+  padding: 4px 14px 14px;
+}
+
+.ml-settings-theme-preview__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ml-settings-theme-preview__swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1px solid var(--ml-border-secondary);
+  flex: none;
+}
+
+.ml-settings-theme-preview__label {
+  font-size: 12px;
+  color: var(--ml-text-secondary);
+}
+
 .ml-settings-theme-group {
   padding: 12px 14px 14px;
   border-top: 1px solid var(--ml-border-secondary);

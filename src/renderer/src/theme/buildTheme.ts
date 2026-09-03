@@ -8,7 +8,8 @@ import { typography, radius } from '../design-system/tokens'
 export function buildAntdTheme(
   isDark: boolean,
   colorScheme: ColorSchemeId = 'rose',
-  customAccent?: string
+  customAccent?: string,
+  fontSans?: string
 ): ThemeConfig {
   const p = getSchemePalette(colorScheme, isDark, customAccent)
 
@@ -32,7 +33,7 @@ export function buildAntdTheme(
       borderRadiusLG: radius.md,
       borderRadiusSM: radius.xs,
       wireframe: false,
-      fontFamily: typography.fontSans,
+      fontFamily: fontSans ?? typography.fontSans,
       fontSize: 13,
       controlHeight: 32,
       motionDurationMid: '0.18s',
@@ -128,7 +129,8 @@ export function buildAntdTheme(
 export function syncDocumentTheme(
   isDark: boolean,
   colorScheme: ColorSchemeId = 'rose',
-  customAccent?: string
+  customAccent?: string,
+  fontSans?: string
 ): void {
   const p = getSchemePalette(colorScheme, isDark, customAccent)
   const root = document.documentElement
@@ -206,7 +208,7 @@ export function syncDocumentTheme(
     '--ml-status-neutral-fg': isDark ? '#94a3b8' : '#64748b',
     '--ml-status-orange-bg': isDark ? 'rgba(249,115,22,0.12)' : 'rgba(234,88,12,0.1)',
     '--ml-status-orange-fg': isDark ? '#fdba74' : '#c2410c',
-    '--ml-font-sans': typography.fontSans,
+    '--ml-font-sans': fontSans ?? typography.fontSans,
     '--ml-font-mono': typography.fontMono
   }
 

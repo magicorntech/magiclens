@@ -8,6 +8,8 @@ import { queryClient } from './queries/queryClient'
 import { buildAntdTheme, syncDocumentTheme } from './theme'
 import { useResolvedDarkMode } from './stores/useResolvedDarkMode'
 import { useThemeStore } from './stores/themeStore'
+import { useDisplaySettingsStore } from './stores/displaySettingsStore'
+import { UI_FONT_STACKS } from '@shared/types/uiTypography'
 import { getAntdLocale } from './i18n/antdLocales'
 import {
   parseTopologyPopoutRoute,
@@ -16,6 +18,10 @@ import {
 import { MenuBarWidgetApp, isMenuBarWidgetRoute } from './components/MenuBarWidget/MenuBarWidgetApp'
 import './i18n'
 import '@fontsource-variable/inter'
+import '@fontsource-variable/manrope'
+import '@fontsource-variable/plus-jakarta-sans'
+import '@fontsource-variable/outfit'
+import '@fontsource-variable/sora'
 import '@fontsource/jetbrains-mono/400.css'
 import '@fontsource/jetbrains-mono/500.css'
 import './styles/global.css'
@@ -26,17 +32,19 @@ function Root(): React.JSX.Element {
   const isDark = useResolvedDarkMode()
   const colorScheme = useThemeStore((s) => s.colorScheme)
   const customAccentColor = useThemeStore((s) => s.customAccentColor)
+  const uiFont = useDisplaySettingsStore((s) => s.uiTypography.font)
+  const fontSans = UI_FONT_STACKS[uiFont]
   const antdTheme = useMemo(
-    () => buildAntdTheme(isDark, colorScheme, customAccentColor),
-    [isDark, colorScheme, customAccentColor]
+    () => buildAntdTheme(isDark, colorScheme, customAccentColor, fontSans),
+    [isDark, colorScheme, customAccentColor, fontSans]
   )
   const antdLocale = useMemo(() => getAntdLocale(i18n.language), [i18n.language])
   const topologyPopout = useMemo(() => parseTopologyPopoutRoute(), [])
   const menuBarWidget = useMemo(() => isMenuBarWidgetRoute(), [])
 
   useEffect(() => {
-    syncDocumentTheme(isDark, colorScheme, customAccentColor)
-  }, [isDark, colorScheme, customAccentColor])
+    syncDocumentTheme(isDark, colorScheme, customAccentColor, fontSans)
+  }, [isDark, colorScheme, customAccentColor, fontSans])
 
   return (
     <ConfigProvider theme={antdTheme} locale={antdLocale}>
