@@ -293,7 +293,7 @@
   width: 26px !important;
   height: 26px !important;
   border-radius: 6px !important;
-  opacity: 1;
+  opacity: 0;
   color: var(--ml-text-tertiary) !important;
 }
 
