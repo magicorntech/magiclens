@@ -15,6 +15,15 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.23': {
+    title: 'Port forwards, fonts, and custom themes',
+    items: [
+      'Port forwards left idle now close themselves automatically — set the timeout (or turn it off) from Settings → Port Forwarding, which also lists every open forward across all clusters.',
+      'Custom accent colors can be saved under a name and switched between, right alongside the built-in themes.',
+      'Five new bundled fonts — Manrope, Plus Jakarta Sans, Outfit, Sora, and Inter — and the font picker actually applies your choice now.',
+      'Update status and preferences live in one place: Settings → Updates, instead of a separate Update Center window.'
+    ]
+  },
   '0.1.21': {
     title: 'Automatic updates on macOS',
     items: [
