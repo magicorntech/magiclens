@@ -15,6 +15,12 @@ import { vpnManager } from './vpn/vpnManager'
 applyChromiumPerformanceFlags()
 registerSparksMediaScheme()
 
+// In dev, Electron doesn't reliably pick up package.json's `name`, so the app menu, Dock,
+// and system notifications fall back to "Electron" until this is set explicitly. Packaged
+// builds get the right name from electron-builder's productName regardless, but setting it
+// here too keeps dev and packaged behavior identical instead of relying on that distinction.
+app.setName('MagicLens')
+
 let isQuitting = false
 
 app.whenReady().then(() => {

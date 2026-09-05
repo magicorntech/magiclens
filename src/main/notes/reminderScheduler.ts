@@ -1,4 +1,4 @@
-import { BrowserWindow, Notification, app } from 'electron'
+import { BrowserWindow, Notification } from 'electron'
 import { randomUUID } from 'crypto'
 import { join } from 'node:path'
 import { IPC } from '@shared/ipc-contract'
@@ -68,10 +68,6 @@ export function showOsNotification(title: string, body: string): Promise<OsNotif
     }
 
     try {
-      if (process.platform === 'darwin') {
-        app.setName('MagicLens')
-      }
-
       const icon = notificationIcon()
       const notification = new Notification({
         title: title || 'MagicLens',
