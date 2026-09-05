@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import {
   Button,
   Dropdown,
@@ -681,7 +682,7 @@ export function SidebarWorkspaces({
                         aria-expanded={!isCollapsed}
                       >
                         <span className="ml-ws-group__chevron" aria-hidden>
-                          <Icon icon={isCollapsed ? ChevronRight : ChevronDown} variant="micro" />
+                          <Icon icon={ChevronDown} variant="micro" />
                         </span>
                         <span className="ml-ws-group__avatar">
                           <ClusterAvatar
@@ -712,26 +713,37 @@ export function SidebarWorkspaces({
                         </button>
                       </Dropdown>
                     </div>
-                    {!isCollapsed && (
-                      <div className="ml-ws-group__list">
-                        {members.length === 0 ? (
-                          <div className="ml-ws-group__empty">{t('workspaces.noClusters')}</div>
-                        ) : (
-                          members.map((cluster) => (
-                            <FavoriteClusterBox
-                              key={`${group.id}-${cluster.id}`}
-                              cluster={cluster}
-                              active={cluster.id === activeClusterId}
-                              nested
-                              accentColor={workspaceAccentColor(group.accent) ?? undefined}
-                              fallbackLogoUrl={group.logoUrl}
-                              onActivate={onNavigate}
-                              onEdit={onEditCluster}
-                            />
-                          ))
-                        )}
-                      </div>
-                    )}
+                    <AnimatePresence initial={false}>
+                      {!isCollapsed && (
+                        <motion.div
+                          key="list"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                          style={{ overflow: 'hidden' }}
+                        >
+                          <div className="ml-ws-group__list">
+                            {members.length === 0 ? (
+                              <div className="ml-ws-group__empty">{t('workspaces.noClusters')}</div>
+                            ) : (
+                              members.map((cluster) => (
+                                <FavoriteClusterBox
+                                  key={`${group.id}-${cluster.id}`}
+                                  cluster={cluster}
+                                  active={cluster.id === activeClusterId}
+                                  nested
+                                  accentColor={workspaceAccentColor(group.accent) ?? undefined}
+                                  fallbackLogoUrl={group.logoUrl}
+                                  onActivate={onNavigate}
+                                  onEdit={onEditCluster}
+                                />
+                              ))
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )
               })}
