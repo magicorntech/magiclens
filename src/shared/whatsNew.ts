@@ -15,6 +15,15 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.24': {
+    title: 'Sidebar polish',
+    items: [
+      'The update badge moved from the sidebar brand to the top-right toolbar, next to the other status icons.',
+      'Workspaces expand and collapse smoothly now, matching the rest of the app’s navigation menu.',
+      'The workspace header’s "…" menu lines up with its clusters’, and both now only show on hover.',
+      'Removed the per-workspace cluster-count badge.'
+    ]
+  },
   '0.1.23': {
     title: 'Port forwards, fonts, and custom themes',
     items: [
