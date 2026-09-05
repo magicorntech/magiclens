@@ -64,7 +64,7 @@
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "@xyflow/react": "^12.11.2",
-    "antd": "6.5.0",
+    "antd": "6.6.2",
     "dayjs": "^1.11.13",
     "electron-store": "^8.2.0",
     "electron-updater": "^6.3.9",
