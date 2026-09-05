@@ -15046,8 +15046,8 @@ body.ml-vault--resizing .ml-vault__sidebar-resize::after {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border-radius: 50%;
   /* Amber, not the theme accent: this is a notice, and it has to stand apart from every other

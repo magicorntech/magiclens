@@ -73,7 +73,7 @@ export function UpdateAvailableBadge(): React.JSX.Element | null {
           className={`ml-update-badge${ready ? ' is-ready' : ''}${phase === 'downloading' ? ' is-busy' : ''}`}
           aria-label={label}
         >
-          <Icon icon={ArrowDown} variant="detail" />
+          <Icon icon={ArrowDown} variant="micro" />
         </button>
       </Tooltip>
     </Dropdown>
