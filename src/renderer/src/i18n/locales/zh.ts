@@ -116,8 +116,6 @@ export const zh: TranslationOverrides = {
       showFavoritesHint: '启用后，收藏会显示在左侧边栏的 Workspaces 上方。点击标题可折叠或展开。',
       showWorkspaces: '显示 Workspaces 部分',
       showWorkspacesHint: '启用后，Workspaces 会出现在左侧边栏。折叠时用 W 标记工作区集群。',
-      showWorkspaceClusterCounts: '显示工作区集群数量',
-      showWorkspaceClusterCountsHint: '启用后，每个工作区标题会显示包含的集群数量。',
       tabIconsTitle: '标签图标',
       showClusterLogos: '在集群标签上显示徽标',
       showResourceIcons: '在资源标签上显示图标',

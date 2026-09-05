@@ -293,9 +293,6 @@ export const tr: TranslationOverrides = {
       showWorkspaces: 'Workspaces bölümünü göster',
       showWorkspacesHint:
         'Açıkken Workspaces sol kenar çubuğunda görünür. Daraltılmış sidebar’da W işareti workspace kümelerinin üzerindedir.',
-      showWorkspaceClusterCounts: 'Workspace küme sayılarını göster',
-      showWorkspaceClusterCountsHint:
-        'Açıkken her workspace başlığında kaç küme olduğu gösterilir.',
       workspaceDockMagnification: 'Workspace Dock büyütme efekti',
       workspaceDockMagnificationHint:
         'Sol kenar çubuğu daraltıldığında, workspace ikonları imleç altında macOS Dock gibi büyür.',

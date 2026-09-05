@@ -9343,21 +9343,6 @@ button.ml-sidebar-section-chrome:hover {
  * name now stays exactly as set above in both states.
  */
 
-.ml-ws-group__count {
-  flex-shrink: 0;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 650;
-  color: var(--ml-sidebar-muted);
-  background: transparent;
-}
-
 .ml-ws-group__shortcut {
   flex-shrink: 0;
   max-width: 56px;

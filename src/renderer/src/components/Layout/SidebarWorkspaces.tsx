@@ -92,7 +92,6 @@ export function SidebarWorkspaces({
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
   const openedTabs = useClusterStore((s) => s.openedTabs)
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
-  const showWorkspaceClusterCounts = useDisplaySettingsStore((s) => s.showWorkspaceClusterCounts)
   const workspaceDockMagnification = useDisplaySettingsStore((s) => s.workspaceDockMagnification)
   const groups = useClusterGroupsStore((s) => s.groups)
   const createGroup = useClusterGroupsStore((s) => s.createGroup)
@@ -695,9 +694,6 @@ export function SidebarWorkspaces({
                         <span className="ml-ws-group__meta">
                           <span className="ml-ws-group__name">{group.name}</span>
                           <span className="ml-ws-group__meta-trail">
-                            {showWorkspaceClusterCounts ? (
-                              <span className="ml-ws-group__count">{members.length}</span>
-                            ) : null}
                             {group.shortcut ? (
                               <span className="ml-ws-group__shortcut">
                                 {formatShortcutBinding(group.shortcut, isMac)}

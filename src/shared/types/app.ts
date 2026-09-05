@@ -170,8 +170,6 @@ export interface DisplaySettings {
   showFavoritesSection: boolean
   /** Left sidebar Workspaces section visibility (default on). */
   showWorkspacesSection: boolean
-  /** Show per-workspace cluster counts in the sidebar (default on). */
-  showWorkspaceClusterCounts: boolean
   /**
    * macOS Dock-style magnification on workspace icons when the left sidebar is collapsed
    * (default on).
@@ -212,7 +210,6 @@ export const defaultDisplaySettings: DisplaySettings = {
   showResourceTabIcons: true,
   showFavoritesSection: true,
   showWorkspacesSection: true,
-  showWorkspaceClusterCounts: true,
   workspaceDockMagnification: true,
   showClusterNamespace: true,
   uiTypography: defaultUiTypography,

@@ -43,7 +43,6 @@ interface DisplaySettingsState extends DisplaySettings {
   setShowResourceTabIcons: (value: boolean) => Promise<void>
   setShowFavoritesSection: (value: boolean) => Promise<void>
   setShowWorkspacesSection: (value: boolean) => Promise<void>
-  setShowWorkspaceClusterCounts: (value: boolean) => Promise<void>
   setWorkspaceDockMagnification: (value: boolean) => Promise<void>
   setShowClusterNamespace: (value: boolean) => Promise<void>
   setUiTypography: (value: Partial<UiTypographyPrefs>) => Promise<void>
@@ -114,10 +113,6 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
   },
   setShowWorkspacesSection: async (value) => {
     const next = await window.api.app.setDisplaySettings({ showWorkspacesSection: value })
-    set(applyDisplay(next))
-  },
-  setShowWorkspaceClusterCounts: async (value) => {
-    const next = await window.api.app.setDisplaySettings({ showWorkspaceClusterCounts: value })
     set(applyDisplay(next))
   },
   setWorkspaceDockMagnification: async (value) => {

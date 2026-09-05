@@ -237,9 +237,6 @@ export const en = {
       showWorkspaces: 'Show Workspaces section',
       showWorkspacesHint:
         'When enabled, Workspaces appear in the left sidebar for grouping clusters. Collapsed sidebar shows a W marker above workspace clusters.',
-      showWorkspaceClusterCounts: 'Show workspace cluster counts',
-      showWorkspaceClusterCountsHint:
-        'When enabled, each workspace header shows how many clusters it contains.',
       workspaceDockMagnification: 'Dock magnification for workspaces',
       workspaceDockMagnificationHint:
         'When the left sidebar is collapsed, workspace icons magnify under the cursor like the macOS Dock.',

@@ -116,8 +116,6 @@ export const ja: TranslationOverrides = {
       showFavoritesHint: '有効にすると、左サイドバーの Workspaces の上にお気に入りが表示されます。見出しをクリックして折りたたみ／展開できます。',
       showWorkspaces: 'Workspaces セクションを表示',
       showWorkspacesHint: '有効にすると左サイドバーに Workspaces が表示されます。折りたたみ時は W マーカーがワークスペースのクラスター上に出ます。',
-      showWorkspaceClusterCounts: 'ワークスペースのクラスター数を表示',
-      showWorkspaceClusterCountsHint: '有効にすると、各ワークスペースの見出しに含まれるクラスター数が表示されます。',
       tabIconsTitle: 'タブのアイコン',
       showClusterLogos: 'クラスタータブにロゴを表示',
       showResourceIcons: 'リソースタブにアイコンを表示',

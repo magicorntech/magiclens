@@ -127,9 +127,6 @@ export const de: TranslationOverrides = {
       showWorkspaces: 'Workspaces-Bereich anzeigen',
       showWorkspacesHint:
         'Wenn aktiv, erscheinen Workspaces in der linken Seitenleiste. In der eingeklappten Leiste markiert ein W die Workspace-Cluster.',
-      showWorkspaceClusterCounts: 'Workspace-Clusteranzahl anzeigen',
-      showWorkspaceClusterCountsHint:
-        'Wenn aktiv, zeigt jeder Workspace-Header an, wie viele Cluster er enthält.',
       tabIconsTitle: 'Tab-Symbole',
       showClusterLogos: 'Logos auf Cluster-Tabs anzeigen',
       showResourceIcons: 'Symbole auf Ressourcen-Tabs anzeigen',

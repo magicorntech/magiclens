@@ -116,8 +116,6 @@ export const ko: TranslationOverrides = {
       showFavoritesHint: '켜면 왼쪽 사이드바의 Workspaces 위에 즐겨찾기가 표시됩니다. 제목을 클릭해 접거나 펼칠 수 있습니다.',
       showWorkspaces: 'Workspaces 섹션 표시',
       showWorkspacesHint: '켜면 왼쪽 사이드바에 Workspaces가 표시됩니다. 접힌 상태에서는 W 표시가 워크스페이스 클러스터 위에 나타납니다.',
-      showWorkspaceClusterCounts: '워크스페이스 클러스터 수 표시',
-      showWorkspaceClusterCountsHint: '켜면 각 워크스페이스 헤더에 포함된 클러스터 수가 표시됩니다.',
       tabIconsTitle: '탭 아이콘',
       showClusterLogos: '클러스터 탭에 로고 표시',
       showResourceIcons: '리소스 탭에 아이콘 표시',

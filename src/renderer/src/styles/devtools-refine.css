@@ -272,17 +272,6 @@
   margin-left: auto;
 }
 
-.ml-ws-group__count {
-  min-width: 20px !important;
-  height: 18px !important;
-  padding: 0 6px !important;
-  border-radius: 999px !important;
-  font-size: 10px !important;
-  font-weight: 500 !important;
-  color: var(--ml-text-tertiary) !important;
-  background: color-mix(in srgb, var(--ml-text) 8%, transparent) !important;
-}
-
 .ml-ws-group__shortcut {
   max-width: min(72px, 28%) !important;
   font-size: 10px !important;

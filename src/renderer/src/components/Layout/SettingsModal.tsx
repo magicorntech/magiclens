@@ -168,8 +168,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const setShowResourceTabIcons = useDisplaySettingsStore((s) => s.setShowResourceTabIcons)
   const setShowFavoritesSection = useDisplaySettingsStore((s) => s.setShowFavoritesSection)
   const setShowWorkspacesSection = useDisplaySettingsStore((s) => s.setShowWorkspacesSection)
-  const showWorkspaceClusterCounts = useDisplaySettingsStore((s) => s.showWorkspaceClusterCounts)
-  const setShowWorkspaceClusterCounts = useDisplaySettingsStore((s) => s.setShowWorkspaceClusterCounts)
   const workspaceDockMagnification = useDisplaySettingsStore((s) => s.workspaceDockMagnification)
   const setWorkspaceDockMagnification = useDisplaySettingsStore((s) => s.setWorkspaceDockMagnification)
   const setShowClusterNamespace = useDisplaySettingsStore((s) => s.setShowClusterNamespace)
@@ -605,12 +603,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 description={t('settings.display.showWorkspacesHint')}
                 checked={showWorkspacesSection}
                 onChange={(checked) => void setShowWorkspacesSection(checked)}
-              />
-              <SettingsToggleRow
-                title={t('settings.display.showWorkspaceClusterCounts')}
-                description={t('settings.display.showWorkspaceClusterCountsHint')}
-                checked={showWorkspaceClusterCounts}
-                onChange={(checked) => void setShowWorkspaceClusterCounts(checked)}
               />
               <SettingsToggleRow
                 title={t('settings.display.workspaceDockMagnification')}

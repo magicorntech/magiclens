@@ -126,9 +126,6 @@ export const fr: TranslationOverrides = {
       showWorkspaces: 'Afficher la section Workspaces',
       showWorkspacesHint:
         'Lorsqu’elle est activée, Workspaces apparaît dans la barre latérale. En mode réduit, un W marque les clusters de workspace.',
-      showWorkspaceClusterCounts: 'Afficher le nombre de clusters par workspace',
-      showWorkspaceClusterCountsHint:
-        'Lorsqu’elle est activée, chaque en-tête de workspace indique combien de clusters il contient.',
       tabIconsTitle: 'Icônes des onglets',
       showClusterLogos: 'Afficher les logos sur les onglets cluster',
       showResourceIcons: 'Afficher les icônes sur les onglets ressource',
