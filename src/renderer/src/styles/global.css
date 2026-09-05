@@ -15049,7 +15049,7 @@ body.ml-vault--resizing .ml-vault__sidebar-resize::after {
   color: var(--ml-primary);
 }
 
-/* —— Update-pending badge (sidebar brand) —— */
+/* —— Update-pending badge (top chrome toolbar) —— */
 
 .ml-update-badge {
   display: inline-flex;
