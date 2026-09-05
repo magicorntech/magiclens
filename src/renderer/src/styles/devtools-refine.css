@@ -297,6 +297,14 @@
   color: var(--ml-text-tertiary) !important;
 }
 
+/* .ml-nav-item (the nested cluster rows) carries a 2px right padding on its outer wrapper;
+   .ml-ws-group__head had none, so its own "…" button sat 2px further out than the nested
+   rows' — matching only the right side here, since the left side was already tuned to align
+   the header/nested avatars and adding padding there would undo that. */
+.ml-ws-group__head {
+  padding-right: 2px !important;
+}
+
 .ml-ws-group__list .ml-nav-item__meta {
   display: none !important;
 }
