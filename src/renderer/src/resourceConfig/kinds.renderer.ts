@@ -61,17 +61,10 @@ export const kindGroups: KindGroup[] = [
     kinds: ['PersistentVolumeClaims', 'PersistentVolumes', 'StorageClasses']
   },
   {
-    title: 'Helm',
-    kinds: [],
-    virtualEntries: [
-      { key: 'helmCharts', label: 'Charts', icon: virtualPageIconComponents.helmCharts },
-      { key: 'helmReleases', label: 'Releases', icon: virtualPageIconComponents.helmReleases }
-    ]
-  },
-  {
     title: 'Argo CD',
     kinds: [],
     virtualEntries: [
+      { key: 'appArgoCd', label: 'Web UI', icon: virtualPageIconComponents.appArgoCd },
       { key: 'argoDashboard', label: 'Dashboard', icon: virtualPageIconComponents.argoDashboard },
       { key: 'argoApplications', label: 'Applications', icon: virtualPageIconComponents.argoApplications },
       {
@@ -96,8 +89,7 @@ export const kindGroups: KindGroup[] = [
     title: 'Custom Resources',
     kinds: ['CustomResourceDefinitions'],
     virtualEntries: [
-      { key: 'operatorResources', label: 'Installed CRDs', icon: virtualPageIconComponents.operatorResources },
-      { key: 'dynamicCustomResources', label: 'Dynamic Resources', icon: virtualPageIconComponents.dynamicCustomResources }
+      { key: 'dynamicCustomResources', label: 'Custom Resources', icon: virtualPageIconComponents.dynamicCustomResources }
     ]
   }
 ]

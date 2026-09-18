@@ -36,6 +36,7 @@ export const fr: TranslationOverrides = {
     noFavoriteClusters: 'Aucun cluster favori',
     collapseSidebar: 'Réduire la barre latérale',
     expandSidebar: 'Développer la barre latérale',
+    resizeSidebar: 'Redimensionner le menu des clusters',
     favoritesHint: 'Clusters épinglés',
     fullscreen: 'Plein écran',
     exitFullscreen: 'Quitter le plein écran'
@@ -214,8 +215,13 @@ export const fr: TranslationOverrides = {
       customAccent: 'Accent personnalisé',
       customAccentHint: 'S’applique aux barres latérales, boutons, surbrillances et accents de graphiques.',
       customSwatch: 'Votre propre couleur d’accent',
-      modeTitle: 'Mode couleur',
-      modeHint: 'Basculez entre clair, sombre ou suivez l’apparence du système.'
+      modeTitle: 'Mode',
+      modeHint: 'Clair, sombre, ou suivre le système.',
+      modeLight: 'Clair',
+      modeDark: 'Sombre',
+      modeSystem: 'Système',
+      colorTitle: 'Couleur',
+      colorHint: 'Utilisé en mode {{mode}}. Changez de mode ci-dessus pour l’autre palette.'
     },
     about: {
       platform: 'Plateforme',
@@ -588,6 +594,7 @@ export const fr: TranslationOverrides = {
   resourceNav: {
     virtual: {
       topology: 'Topologie',
+      visualizer: 'Visualizer',
       clusterOverview: 'Grappe',
       applications: 'Applications',
       workloadsOverview: 'Aperçu',
@@ -608,6 +615,7 @@ export const fr: TranslationOverrides = {
     pinned: 'Épinglé aux onglets',
     emptyFavorites: 'Cliquez avec le bouton droit sur une ressource pour ajouter des favoris.',
     aria: 'Ressources',
+    resize: 'Redimensionner le menu des ressources',
     sections: {
       overview: 'Aperçu',
       workloads: 'Charges de travail',
@@ -1039,7 +1047,8 @@ export const fr: TranslationOverrides = {
       exec: 'Exécutif',
       metrics: 'Métrique',
       pressure: 'Pression',
-      pods: 'Pods'
+      pods: 'Pods',
+      logs: 'Journaux'
     },
     overview: {
       title: 'Aperçu',

@@ -657,11 +657,54 @@ function StorageSection({ settings, patch }: SectionProps): React.JSX.Element {
 function IntegrationsSection({ settings, patch }: SectionProps): React.JSX.Element {
   const { t } = useTranslation()
   const i = settings.integrations
+  const apps = [
+    { id: 'grafana', url: 'grafanaUrl', user: 'grafanaUsername', pass: 'grafanaPassword' },
+    { id: 'prometheus', url: 'prometheusUrl', user: 'prometheusUsername', pass: 'prometheusPassword' },
+    { id: 'argocd', url: 'argoCdUrl', user: 'argoCdUsername', pass: 'argoCdPassword' }
+  ] as const
   return (
     <SettingsSection title={t('clusterSettings.integrations.title')} description={t('clusterSettings.integrations.hint')}>
+      {apps.map((app) => (
+        <div key={app.id} className="ml-settings-app-block">
+          <SettingsRow
+            stacked
+            title={t(`clusterApps.kinds.${app.id}`)}
+            description={t('clusterSettings.integrations.urlHint')}
+            control={
+              <Input
+                value={i[app.url]}
+                onChange={(e) => patch('integrations', { [app.url]: e.target.value })}
+                placeholder="https://grafana.example.com"
+              />
+            }
+          />
+          <SettingsRow
+            stacked
+            title={t('clusterApps.user')}
+            control={
+              <Input
+                value={i[app.user]}
+                onChange={(e) => patch('integrations', { [app.user]: e.target.value })}
+                placeholder="admin"
+                autoComplete="off"
+              />
+            }
+          />
+          <SettingsRow
+            stacked
+            title={t('clusterApps.password')}
+            control={
+              <Input.Password
+                value={i[app.pass]}
+                onChange={(e) => patch('integrations', { [app.pass]: e.target.value })}
+                autoComplete="new-password"
+              />
+            }
+          />
+        </div>
+      ))}
       {(
         [
-          ['grafanaUrl', 'Grafana'],
           ['lokiUrl', 'Loki'],
           ['jaegerUrl', 'Jaeger'],
           ['alertmanagerUrl', 'Alertmanager'],

@@ -77,6 +77,30 @@ export interface PodMetricsRangeRequest extends ClusterIdRequest {
   range: MetricsTimeRange
 }
 
+export interface PvcMetricsRangeRequest extends ClusterIdRequest {
+  namespace: string
+  pvcName: string
+  range: MetricsTimeRange
+}
+
+export interface PvcUsageRequest extends ClusterIdRequest {
+  namespace: string | 'ALL'
+}
+
+export interface PvcUsageEntry {
+  namespace: string
+  name: string
+  usedBytes?: number
+  capacityBytes?: number
+  availableBytes?: number
+  percent?: number
+}
+
+export interface PvcUsageResponse {
+  metricsAvailable: boolean
+  items: PvcUsageEntry[]
+}
+
 export interface ClusterMetricsSummary {
   metricsAvailable: boolean
   totalNodes: number

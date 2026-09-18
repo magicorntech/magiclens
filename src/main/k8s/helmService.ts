@@ -18,7 +18,7 @@ interface DecodedHelmRelease {
   name: string
   namespace: string
   version: number
-  info?: { status?: string; last_deployed?: string; description?: string }
+  info?: { status?: string; last_deployed?: string; description?: string; notes?: string }
   chart?: { metadata?: { name?: string; version?: string; appVersion?: string } }
   manifest?: string
   config?: unknown
@@ -212,6 +212,7 @@ export async function getHelmReleaseDetail(
     appVersion: decoded.chart?.metadata?.appVersion ?? '',
     updated: decoded.info?.last_deployed ?? null,
     valuesYaml,
+    notes: decoded.info?.notes ?? '',
     resources: parseManifestResources(decoded.manifest ?? '', namespace)
   }
 }

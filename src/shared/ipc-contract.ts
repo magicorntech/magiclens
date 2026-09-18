@@ -80,6 +80,8 @@ export const IPC = {
   METRICS_GET_NODE_METRICS: 'metrics:getNodeMetrics',
   METRICS_GET_NODE_RANGE: 'metrics:getNodeRange',
   METRICS_GET_POD_RANGE: 'metrics:getPodRange',
+  METRICS_GET_PVC_USAGE: 'metrics:getPvcUsage',
+  METRICS_GET_PVC_RANGE: 'metrics:getPvcRange',
   METRICS_GET_CLUSTER_RANGE: 'metrics:getClusterRange',
   METRICS_GET_HPA_RANGE: 'metrics:getHpaRange',
   METRICS_GET_DEPLOYMENT_RANGE: 'metrics:getDeploymentRange',
@@ -109,6 +111,7 @@ export const IPC = {
   WORKLOAD_RESUME_CRONJOB: 'workload:resumeCronJob',
   WORKLOAD_TRIGGER_CRONJOB: 'workload:triggerCronJob',
   WORKLOAD_DELETE_PODS: 'workload:deletePods',
+  WORKLOAD_GET_PODS: 'workload:getPods',
 
   APP_GET_INFO: 'app:getInfo',
   APP_GET_WELCOME_STATE: 'app:getWelcomeState',
@@ -138,10 +141,13 @@ export const IPC = {
   POD_GET_NETWORK: 'pod:getNetwork',
 
   POD_LOGS_START: 'pod:logs:start',
+  /** Multi-pod/container aggregated tail — same POD_LOGS_DATA/POD_LOGS_ENDED channels, tagged with `source`. */
+  POD_LOGS_START_MERGED: 'pod:logs:startMerged',
   POD_LOGS_STOP: 'pod:logs:stop',
   POD_LOGS_DATA: 'pod:logs:data',
   POD_LOGS_ENDED: 'pod:logs:ended',
   POD_LOGS_DOWNLOAD: 'pod:logs:download',
+  POD_LOGS_DOWNLOAD_MERGED: 'pod:logs:downloadMerged',
 
   POD_EXEC_START: 'pod:exec:start',
   POD_EXEC_INPUT: 'pod:exec:input',
@@ -178,6 +184,9 @@ export const IPC = {
 
   HELM_LIST_RELEASES: 'helm:listReleases',
   HELM_LIST_CHARTS: 'helm:listCharts',
+  HELM_SEARCH_CATALOG: 'helm:searchCatalog',
+  HELM_GET_PACKAGE: 'helm:getPackage',
+  HELM_INSTALL: 'helm:install',
   HELM_GET_HISTORY: 'helm:getHistory',
   HELM_GET_RELEASE_DETAIL: 'helm:getReleaseDetail',
   HELM_ROLLBACK: 'helm:rollback',
@@ -227,5 +236,13 @@ export const IPC = {
   VPN_INSTALL_TOOL: 'vpn:installTool',
 
   TOPOLOGY_GET_GRAPH: 'topology:getGraph',
-  TOPOLOGY_OPEN_WINDOW: 'topology:openWindow'
+  TOPOLOGY_OPEN_WINDOW: 'topology:openWindow',
+
+  VISUALIZER_GET_GRAPH: 'visualizer:getGraph',
+
+  CLUSTER_APPS_DISCOVER: 'clusterApps:discover',
+  CLUSTER_APPS_OPEN: 'clusterApps:open',
+  CLUSTER_APPS_SAVE_MANUAL: 'clusterApps:saveManual',
+
+  APP_OPEN_EXTERNAL_URL: 'app:openExternalUrl'
 } as const

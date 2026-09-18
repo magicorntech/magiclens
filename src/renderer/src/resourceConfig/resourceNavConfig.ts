@@ -1,20 +1,22 @@
 import type { LucideIcon } from 'lucide-react'
 import {
-  Boxes,
   Calendar,
   FolderOpen,
+  ChartGantt,
   Globe,
   HardDrive,
+  Hexagon,
+  KeyRound,
   LayoutDashboard,
-  Server,
+  Puzzle,
+  Waypoints,
   Settings,
-  Shield,
   Star
 } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { VirtualPageKey } from '@shared/types/navigation'
 import { HelmLogo } from '../icons/HelmLogo'
-import { ArgoLogo } from '../icons/ArgoLogo'
+import { ArgoAppLogo, GrafanaLogo, KubernetesLogo, PrometheusLogo } from '../icons/AppsLogos'
 
 export type NavEntry =
   | { type: 'kind'; kind: ResourceKind; label?: string }
@@ -54,13 +56,14 @@ export const FAVORITES_SECTION_ID = 'favorites'
 /** Lens-style resource sidebar order and grouping. */
 export const resourceNavLayout: NavLayoutItem[] = [
   'favorites',
-  { type: 'standalone', kind: 'Nodes', icon: Server },
+  { type: 'standalone', kind: 'Nodes', icon: KubernetesLogo as LucideIcon },
   { type: 'standalone-virtual', key: 'topology', icon: LayoutDashboard, label: 'Topology' },
+  { type: 'standalone-virtual', key: 'visualizer', icon: Waypoints, label: 'Visualizer' },
   {
     type: 'section',
     id: 'workloads',
     title: 'Workloads',
-    icon: Boxes,
+    icon: Hexagon,
     entries: [
       { type: 'virtual', key: 'workloadsOverview', label: 'Overview' },
       { type: 'kind', kind: 'Pods' },
@@ -125,22 +128,17 @@ export const resourceNavLayout: NavLayoutItem[] = [
   },
   { type: 'standalone', kind: 'Namespaces', icon: FolderOpen },
   { type: 'standalone', kind: 'Events', icon: Calendar },
-  {
-    type: 'section',
-    id: 'helm',
-    title: 'Helm',
-    icon: HelmLogo as LucideIcon,
-    entries: [
-      { type: 'virtual', key: 'helmCharts', label: 'Charts' },
-      { type: 'virtual', key: 'helmReleases', label: 'Releases' }
-    ]
-  },
+  { type: 'standalone-virtual', key: 'eventTimeline', icon: ChartGantt, label: 'Timeline' },
+  { type: 'standalone-virtual', key: 'helmCharts', icon: HelmLogo as LucideIcon, label: 'Helm' },
+  { type: 'standalone-virtual', key: 'appGrafana', icon: GrafanaLogo as LucideIcon, label: 'Grafana' },
+  { type: 'standalone-virtual', key: 'appPrometheus', icon: PrometheusLogo as LucideIcon, label: 'Prometheus' },
   {
     type: 'section',
     id: 'argocd',
     title: 'Argo CD',
-    icon: ArgoLogo as LucideIcon,
+    icon: ArgoAppLogo as LucideIcon,
     entries: [
+      { type: 'virtual', key: 'appArgoCd', label: 'Web UI' },
       { type: 'virtual', key: 'argoDashboard', label: 'Dashboard' },
       { type: 'virtual', key: 'argoApplications', label: 'Applications' },
       { type: 'virtual', key: 'argoApplicationSets', label: 'Application Sets' },
@@ -153,7 +151,7 @@ export const resourceNavLayout: NavLayoutItem[] = [
     type: 'section',
     id: 'access-control',
     title: 'Access Control',
-    icon: Shield,
+    icon: KeyRound,
     entries: [
       { type: 'kind', kind: 'ServiceAccounts' },
       { type: 'kind', kind: 'ClusterRoles' },
@@ -166,11 +164,10 @@ export const resourceNavLayout: NavLayoutItem[] = [
     type: 'section',
     id: 'custom-resources',
     title: 'Custom Resources',
-    icon: Boxes,
+    icon: Puzzle,
     entries: [
-      { type: 'kind', kind: 'CustomResourceDefinitions', label: 'Definitions' },
-      { type: 'virtual', key: 'operatorResources', label: 'Installed CRDs' },
-      { type: 'virtual', key: 'dynamicCustomResources', label: 'Dynamic Resources' }
+      { type: 'virtual', key: 'dynamicCustomResources', label: 'Custom Resources' },
+      { type: 'kind', kind: 'CustomResourceDefinitions', label: 'Definitions' }
     ]
   }
 ]

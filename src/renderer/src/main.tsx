@@ -30,10 +30,14 @@ import './styles/devtools-refine.css'
 function Root(): React.JSX.Element {
   const { i18n } = useTranslation()
   const isDark = useResolvedDarkMode()
-  const colorScheme = useThemeStore((s) => s.colorScheme)
-  const customAccentColor = useThemeStore((s) => s.customAccentColor)
+  const lightScheme = useThemeStore((s) => s.lightScheme)
+  const darkScheme = useThemeStore((s) => s.darkScheme)
+  const customAccentLight = useThemeStore((s) => s.customAccentLight)
+  const customAccentDark = useThemeStore((s) => s.customAccentDark)
   const uiFont = useDisplaySettingsStore((s) => s.uiTypography.font)
   const fontSans = UI_FONT_STACKS[uiFont]
+  const colorScheme = isDark ? darkScheme : lightScheme
+  const customAccentColor = isDark ? customAccentDark : customAccentLight
   const antdTheme = useMemo(
     () => buildAntdTheme(isDark, colorScheme, customAccentColor, fontSans),
     [isDark, colorScheme, customAccentColor, fontSans]

@@ -48,6 +48,13 @@ mac:
   icon: build/icon.png
   hardenedRuntime: true
   gatekeeperAssess: false
+  # MagicLens has no multi-window state to restore, so macOS's "Resume" window-restoration
+  # bookkeeping is pure downside for us: it's what produces the "The last time you opened
+  # MagicLens, it was force quit while reopening windows" prompt some users (mostly on Apple
+  # Silicon) hit on the next launch after any abnormal termination. Turning it off entirely
+  # means an abnormal quit is just a normal relaunch with no dialog.
+  extendInfo:
+    NSQuitAlwaysKeepsWindows: false
   target:
     - target: dmg
       arch: [x64, arm64]
@@ -60,6 +67,9 @@ dmg:
 win:
   icon: build/icon.png
   # NSIS produces a single installer .exe; add "msi" here too if a WiX toolchain is available in CI.
+  # Authenticode signing is WIN_CSC_LINK-only. CSC_LINK is the macOS Developer ID p12 and must
+  # never be present on the Windows CI job — Windows cannot trust Apple's CA, and
+  # electron-updater then rejects the update as "not signed by the application owner".
   target:
     - target: nsis
       arch: [x64]

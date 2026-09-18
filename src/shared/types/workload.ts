@@ -27,6 +27,20 @@ export function isWorkloadKind(kind: ResourceKind): kind is WorkloadKind {
   return WORKLOAD_KINDS.has(kind)
 }
 
+/** Workloads that own pods directly — aggregated Logs tab is available for these. */
+export const WORKLOAD_LOG_KINDS: ReadonlySet<WorkloadKind> = new Set([
+  'Deployments',
+  'StatefulSets',
+  'DaemonSets',
+  'ReplicaSets',
+  'ReplicationControllers',
+  'Jobs'
+])
+
+export function isWorkloadLogKind(kind: ResourceKind): kind is WorkloadKind {
+  return WORKLOAD_LOG_KINDS.has(kind as WorkloadKind)
+}
+
 export type WorkloadActionId =
   | 'scale'
   | 'restart'
@@ -151,6 +165,15 @@ export interface WorkloadPermissionsRequest extends ClusterIdRequest {
   namespace: string
   name: string
 }
+
+export interface WorkloadPodInfo {
+  name: string
+  containers: string[]
+  ready: boolean
+  status: string
+}
+
+export type WorkloadPodsResponse = { pods: WorkloadPodInfo[] } | { error: string }
 
 export interface WorkloadAuditEntry {
   id: string

@@ -39,14 +39,19 @@ export function authFingerprintForContext(kc: KubeConfig, contextName: string): 
 
 function toParsedResult(kc: KubeConfig, source: KubeconfigSource): ParsedKubeconfigResult {
   const clusters = new Map(kc.getClusters().map((c) => [c.name, c]))
-  const contexts: ContextInfo[] = kc.getContexts().map((ctx) => ({
-    name: ctx.name,
-    clusterName: ctx.cluster,
-    userName: ctx.user,
-    namespace: ctx.namespace,
-    server: clusters.get(ctx.cluster)?.server,
-    authFingerprint: authFingerprintForUser(kc.getUser(ctx.user))
-  }))
+  const contexts: ContextInfo[] = kc.getContexts().map((ctx) => {
+    const user = kc.getUser(ctx.user)
+    return {
+      name: ctx.name,
+      clusterName: ctx.cluster,
+      userName: ctx.user,
+      namespace: ctx.namespace,
+      server: clusters.get(ctx.cluster)?.server,
+      authFingerprint: authFingerprintForUser(user),
+      execCommand: user?.exec?.command,
+      authProvider: user?.authProvider?.name
+    }
+  })
 
   return {
     contexts,

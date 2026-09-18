@@ -31,6 +31,7 @@ import {
 import { resourceWatchManager } from '../k8s/resourceWatchManager'
 import { listEventsForObject, listRecentClusterEvents } from '../k8s/eventsService'
 import { onSenderDestroyed } from './senderCleanup'
+import { getDemoManifest, isDemoCluster, listDemoResources, demoClusterEvents } from '../k8s/demoMode'
 
 function resolveTarget(target: ResourceMutationTarget): { apiVersion: string; kind: string } {
   if (target.type === 'builtin') {
@@ -42,6 +43,9 @@ function resolveTarget(target: ResourceMutationTarget): { apiVersion: string; ki
 
 export function registerResourceHandlers(): void {
   ipcMain.handle(IPC.RESOURCE_LIST, async (_e, req: ResourceListRequest): Promise<ResourceListResponse> => {
+    if (isDemoCluster(req.clusterId)) {
+      return { items: listDemoResources(req.kind, req.namespace) }
+    }
     try {
       const result = await withClusterClients(req.clusterId, async (clients) => {
         const config = resourceRegistry[req.kind]
@@ -58,6 +62,9 @@ export function registerResourceHandlers(): void {
   ipcMain.handle(
     IPC.RESOURCE_WATCH_START,
     async (event, req: ResourceWatchStartRequest): Promise<ResourceWatchStartResponse> => {
+      if (isDemoCluster(req.clusterId)) {
+        return { error: 'demo' }
+      }
       const sender = event.sender
       onSenderDestroyed(sender, 'resourceWatchManager', () => resourceWatchManager.stopAllForSender(sender.id))
       return resourceWatchManager.start(req, sender)
@@ -72,6 +79,10 @@ export function registerResourceHandlers(): void {
   ipcMain.handle(
     IPC.RESOURCE_GET_MANIFEST,
     async (_e, req: ResourceGetManifestRequest): Promise<ResourceGetManifestResponse> => {
+      if (isDemoCluster(req.clusterId)) {
+        const kind = req.target.type === 'builtin' ? req.target.kind : req.target.kind
+        return { yaml: getDemoManifest(kind, req.name, req.namespace) }
+      }
       try {
         const clients = clusterManager.require(req.clusterId)
         const { apiVersion, kind } = resolveTarget(req.target)
@@ -123,6 +134,7 @@ export function registerResourceHandlers(): void {
   })
 
   ipcMain.handle(IPC.RESOURCE_LIST_EVENTS, async (_e, req: ResourceEventsRequest): Promise<ResourceEventsResponse> => {
+    if (isDemoCluster(req.clusterId)) return { events: [] }
     try {
       const clients = clusterManager.require(req.clusterId)
       const { kind } = resolveTarget(req.target)
@@ -134,16 +146,34 @@ export function registerResourceHandlers(): void {
   })
 
   ipcMain.handle(IPC.RESOURCE_LIST_CLUSTER_EVENTS, async (_e, req: ClusterEventsRequest): Promise<ResourceEventsResponse> => {
+    if (isDemoCluster(req.clusterId)) {
+      const events = demoClusterEvents().filter((event) => {
+        if (req.namespace) return event.involvedNamespace === req.namespace
+        if (req.namespaces?.length) return req.namespaces.includes(event.involvedNamespace)
+        return true
+      })
+      return { events }
+    }
     try {
       const clients = clusterManager.require(req.clusterId)
       const events = await listRecentClusterEvents(clients, {
         limit: req.limit,
         involvedObjectKind: req.involvedObjectKind,
-        involvedObjectName: req.involvedObjectName
+        involvedObjectName: req.involvedObjectName,
+        namespace: req.namespace,
+        namespaces: req.namespaces
       })
       return { events }
     } catch (err) {
-      return { error: err instanceof Error ? err.message : String(err) }
+      return { error: formatClusterEventsError(err) }
     }
   })
+}
+
+function formatClusterEventsError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err)
+  if (/ETIMEDOUT|ECONNRESET|ENETUNREACH|timed out|timeout/i.test(message)) {
+    return 'Cluster events timed out. Choose a namespace and retry — listing events for the whole cluster is often slow on GKE.'
+  }
+  return message
 }

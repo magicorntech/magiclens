@@ -19,7 +19,11 @@ export function useDiscovery(clusterId: string | null) {
   })
 }
 
-export function useCustomResourceKinds(clusterId: string | null, onlyWithInstances: boolean) {
+export function useCustomResourceKinds(
+  clusterId: string | null,
+  onlyWithInstances: boolean,
+  enabled = true
+) {
   return useQuery({
     queryKey: ['custom-resource-kinds', clusterId, onlyWithInstances],
     queryFn: () =>
@@ -27,7 +31,7 @@ export function useCustomResourceKinds(clusterId: string | null, onlyWithInstanc
         clusterId: clusterId as string,
         onlyWithInstances
       } satisfies CustomResourceKindsRequest),
-    enabled: !!clusterId
+    enabled: !!clusterId && enabled
   })
 }
 

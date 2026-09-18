@@ -8,6 +8,8 @@ export interface ContextInfo {
   server?: string
   /** Stable hash of user auth (token/cert/exec) for duplicate detection. */
   authFingerprint?: string
+  execCommand?: string
+  authProvider?: string
 }
 
 export interface ParsedKubeconfigResult {

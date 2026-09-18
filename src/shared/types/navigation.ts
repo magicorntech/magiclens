@@ -7,6 +7,8 @@ export type VirtualPageKey =
   | 'networkOverview'
   | 'storageOverview'
   | 'topology'
+  | 'visualizer'
+  | 'eventTimeline'
   | 'portForwarding'
   | 'dynamicCustomResources'
   | 'operatorResources'
@@ -20,6 +22,9 @@ export type VirtualPageKey =
   | 'argoProjects'
   | 'argoRepositories'
   | 'argoClusters'
+  | 'appArgoCd'
+  | 'appPrometheus'
+  | 'appGrafana'
 
 export interface ResourceFocus {
   kind: ResourceKind

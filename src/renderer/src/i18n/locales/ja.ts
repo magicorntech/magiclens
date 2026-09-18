@@ -36,6 +36,7 @@ export const ja: TranslationOverrides = {
     noFavoriteClusters: 'お気に入りのクラスターはありません',
     collapseSidebar: 'サイドバーを折りたたむ',
     expandSidebar: 'サイドバーを展開',
+    resizeSidebar: 'クラスターメニューのサイズを変更',
     favoritesHint: 'ピン留めされたクラスター',
     fullscreen: '全画面表示',
     exitFullscreen: '全画面表示を終了する'
@@ -196,8 +197,13 @@ export const ja: TranslationOverrides = {
       customAccent: 'カスタムアクセント',
       customAccentHint: 'サイドバー、ボタン、ハイライト、チャートのアクセントに適用されます。',
       customSwatch: '独自のアクセントカラー',
-      modeTitle: 'カラーモード',
-      modeHint: '明暗を切り替えたり、システムの外観に従います。'
+      modeTitle: 'モード',
+      modeHint: 'ライト、ダーク、またはシステムに合わせる。',
+      modeLight: 'ライト',
+      modeDark: 'ダーク',
+      modeSystem: 'システム',
+      colorTitle: 'カラー',
+      colorHint: '{{mode}} モードで使われます。もう一方のパレットは上でモードを切り替えて編集します。'
     },
     about: {
       platform: 'プラットフォーム',
@@ -544,6 +550,7 @@ export const ja: TranslationOverrides = {
   resourceNav: {
     virtual: {
       topology: 'トポロジー',
+      visualizer: 'Visualizer',
       clusterOverview: 'クラスタ',
       applications: 'アプリケーション',
       workloadsOverview: '概要',
@@ -564,6 +571,7 @@ export const ja: TranslationOverrides = {
     pinned: 'タブに固定',
     emptyFavorites: 'リソースを右クリックしてお気に入りを追加します。',
     aria: 'リソース',
+    resize: 'リソースメニューのサイズを変更',
     sections: {
       overview: '概要',
       workloads: 'ワークロード',
@@ -985,7 +993,8 @@ export const ja: TranslationOverrides = {
       exec: '幹部',
       metrics: 'メトリクス',
       pressure: 'プレッシャー',
-      pods: 'Pods'
+      pods: 'Pods',
+      logs: 'ログ'
     },
     overview: {
       title: '概要',

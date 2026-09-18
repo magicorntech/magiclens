@@ -380,13 +380,16 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
     set((state) => {
       const cluster = state.clusters.find((c) => c.id === id)
       if (!cluster) return {}
-      const openVirtualPages = cluster.openVirtualPages.includes(page)
-        ? cluster.openVirtualPages
-        : [...cluster.openVirtualPages, page]
+      const resolved =
+        page === 'helmReleases' ? 'helmCharts' : page === 'operatorResources' ? 'dynamicCustomResources' : page
+      const remaining = cluster.openVirtualPages.filter(
+        (p) => p !== 'helmReleases' && p !== 'operatorResources'
+      )
+      const openVirtualPages = remaining.includes(resolved) ? remaining : [...remaining, resolved]
       return {
         clusters: updateCluster(state.clusters, id, {
           openVirtualPages,
-          selectedVirtualPage: page
+          selectedVirtualPage: resolved
         })
       }
     }),
@@ -455,7 +458,7 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
       activeClusterId: id,
       activeView: 'tabs',
       clusters: updateCluster(state.clusters, id, {
-        pendingNavigation: { virtualPage: 'helmReleases', helmRelease: { namespace, name } },
+        pendingNavigation: { virtualPage: 'helmCharts', helmRelease: { namespace, name } },
         resourceFocus: null
       })
     })),

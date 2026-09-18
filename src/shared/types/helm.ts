@@ -101,7 +101,77 @@ export interface HelmReleaseDetail {
   appVersion: string
   updated: string | null
   valuesYaml: string
+  notes: string
   resources: HelmManifestResource[]
 }
 
 export type HelmReleaseDetailResponse = { detail: HelmReleaseDetail } | { error: string }
+
+export interface HelmCatalogChart {
+  id: string
+  name: string
+  displayName: string
+  description: string
+  version: string
+  appVersion: string
+  repoName: string
+  repoUrl: string
+  logoUrl: string | null
+  stars: number
+  official: boolean
+  packageId?: string
+}
+
+export interface HelmCatalogSearchRequest {
+  clusterId: string
+  query: string
+}
+
+export type HelmCatalogSearchResponse = { charts: HelmCatalogChart[] } | { error: string }
+
+export interface HelmChartVersion {
+  version: string
+  appVersion: string
+}
+
+export interface HelmChartPackageRequest {
+  clusterId: string
+  repoName: string
+  chartName: string
+  version?: string
+  repoUrl?: string
+  packageId?: string
+}
+
+export interface HelmChartPackage {
+  id: string
+  name: string
+  displayName: string
+  description: string
+  version: string
+  appVersion: string
+  repoName: string
+  repoUrl: string
+  logoUrl: string | null
+  homeUrl: string | null
+  sourceUrl: string | null
+  readme: string
+  valuesYaml: string
+  versions: HelmChartVersion[]
+  installCommand: string
+}
+
+export type HelmChartPackageResponse = { pkg: HelmChartPackage } | { error: string }
+
+export interface HelmInstallRequest {
+  clusterId: string
+  repoName: string
+  repoUrl: string
+  chartName: string
+  version: string
+  releaseName: string
+  namespace: string
+  valuesYaml: string
+}
+
+export type HelmInstallResponse = { ok: true; output: string } | { error: string }

@@ -24,7 +24,10 @@ export function applyChromiumPerformanceFlags(): void {
   ]
   app.commandLine.appendSwitch('disable-features', disableFeatures.join(','))
 
-  app.commandLine.appendSwitch('disable-breakpad')
+  // Deliberately NOT disabling breakpad/Crashpad: with it off, GPU/renderer process crashes
+  // (the class of bug behind macOS's "force quit while reopening windows" prompt on some
+  // Apple Silicon Macs) leave zero trace anywhere. Leaving it enabled writes local dumps to
+  // app.getPath('crashDumps') that can be inspected without a remote crash-reporting service.
   app.commandLine.appendSwitch('disable-component-update')
   app.commandLine.appendSwitch('disable-domain-reliability')
   app.commandLine.appendSwitch('disable-speech-api')
@@ -47,8 +50,8 @@ export function createAppWebPreferences(): WebPreferences {
     spellcheck: false,
     backgroundThrottling: true,
     v8CacheOptions: 'code',
-    // MagicLens is a local UI — no Chromium webview/plugins.
-    webviewTag: false,
+    // Needed so Grafana / Prometheus / Argo CD web UIs can open in-app.
+    webviewTag: true,
     enablePreferredSizeMode: false
   }
 }

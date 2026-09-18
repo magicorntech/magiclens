@@ -1,11 +1,11 @@
 /** MagicLens design tokens — crisp desktop UI (GitHub Desktop / VS Code scale). */
 export const radius = {
-  xs: 4,
-  sm: 6,
-  md: 8,
-  lg: 8,
-  xl: 8,
-  full: 9999
+  xs: 0,
+  sm: 0,
+  md: 0,
+  lg: 0,
+  xl: 0,
+  full: 0
 } as const
 
 export const iconSize = {

@@ -16,6 +16,7 @@ import { HelmRowActions } from './HelmRowActions'
 
 interface HelmReleasesPageProps {
   clusterId: string
+  embedded?: boolean
   onNavigateToResource: (focus: ResourceFocus) => void
   initialRelease?: { namespace: string; name: string } | null
   onReleaseFocusConsumed?: () => void
@@ -43,6 +44,7 @@ function statusColor(status: string): string {
 
 export function HelmReleasesPage({
   clusterId,
+  embedded = false,
   onNavigateToResource,
   initialRelease,
   onReleaseFocusConsumed
@@ -197,12 +199,16 @@ export function HelmReleasesPage({
 
   const listPanel = (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <Typography.Title level={4} style={{ marginTop: 0, flexShrink: 0 }}>
-        Helm Releases
-      </Typography.Title>
-      <Typography.Paragraph type="secondary" style={{ flexShrink: 0 }}>
-        Click a release for overview, values, and resources — or open History from the row menu.
-      </Typography.Paragraph>
+      {embedded ? null : (
+        <>
+          <Typography.Title level={4} style={{ marginTop: 0, flexShrink: 0 }}>
+            Helm Releases
+          </Typography.Title>
+          <Typography.Paragraph type="secondary" style={{ flexShrink: 0 }}>
+            Click a release for overview, values, and resources — or open History from the row menu.
+          </Typography.Paragraph>
+        </>
+      )}
       {error ? (
         <Empty description={error} />
       ) : isLoading ? (
@@ -279,7 +285,9 @@ export function HelmReleasesPage({
   )
 
   if (!selectedRelease) {
-    return <div style={{ height: '100%', padding: 16, boxSizing: 'border-box' }}>{listPanel}</div>
+    return (
+      <div style={{ height: '100%', padding: embedded ? 12 : 16, boxSizing: 'border-box' }}>{listPanel}</div>
+    )
   }
 
   return (

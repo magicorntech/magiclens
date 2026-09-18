@@ -2,6 +2,8 @@ import type {
   V1Container,
   V1Deployment,
   V1Job,
+  V1LabelSelector,
+  V1Pod,
   V1ReplicaSet
 } from '@kubernetes/client-node'
 import type { WorkloadKind } from '@shared/types/workload'
@@ -12,6 +14,7 @@ import type {
   RolloutRevision,
   WorkloadContainerInfo,
   WorkloadContextInfo,
+  WorkloadPodInfo,
   WorkloadScaleInfo
 } from '@shared/types/workload'
 import {
@@ -30,6 +33,93 @@ function labelsToSelector(labels: Record<string, string> | undefined): string | 
   return Object.entries(labels)
     .map(([k, v]) => `${k}=${v}`)
     .join(',')
+}
+
+function expressionToSelector(expr: { key?: string; operator?: string; values?: string[] }): string | undefined {
+  const key = expr.key
+  if (!key) return undefined
+  const values = expr.values ?? []
+  switch (expr.operator) {
+    case 'In':
+      return values.length > 0 ? `${key} in (${values.join(',')})` : undefined
+    case 'NotIn':
+      return values.length > 0 ? `${key} notin (${values.join(',')})` : undefined
+    case 'Exists':
+      return key
+    case 'DoesNotExist':
+      return `!${key}`
+    default:
+      return undefined
+  }
+}
+
+/** LabelSelector, ReplicationController map, or pod-template labels as a last resort. */
+function selectorToString(
+  selector: V1LabelSelector | Record<string, string> | undefined,
+  fallbackLabels?: Record<string, string>
+): string | undefined {
+  if (!selector) return labelsToSelector(fallbackLabels)
+  const structured = selector as V1LabelSelector
+  const hasStructured =
+    structured.matchLabels != null ||
+    (structured.matchExpressions != null && structured.matchExpressions.length > 0)
+  if (hasStructured) {
+    const parts: string[] = []
+    if (structured.matchLabels) {
+      for (const [k, v] of Object.entries(structured.matchLabels)) parts.push(`${k}=${v}`)
+    }
+    for (const expr of structured.matchExpressions ?? []) {
+      const part = expressionToSelector(expr)
+      if (part) parts.push(part)
+    }
+    return parts.length > 0 ? parts.join(',') : labelsToSelector(fallbackLabels)
+  }
+  return labelsToSelector(selector as Record<string, string>) ?? labelsToSelector(fallbackLabels)
+}
+
+function ownerUids(objs: Array<{ metadata?: { uid?: string } }>): Set<string> {
+  return new Set(objs.map((o) => o.metadata?.uid).filter((u): u is string => !!u))
+}
+
+function isOwnedBy(pod: V1Pod, ownerKind: string, uids: Set<string>): boolean {
+  if (uids.size === 0) return false
+  return (pod.metadata?.ownerReferences ?? []).some(
+    (ref) => ref.kind === ownerKind && ref.uid != null && uids.has(ref.uid)
+  )
+}
+
+async function listPodsForOwners(
+  clients: ClusterClients,
+  namespace: string,
+  labelSelector: string | undefined,
+  ownerKind: string,
+  uids: Set<string>
+): Promise<V1Pod[]> {
+  if (!labelSelector && uids.size === 0) return []
+  const res = await clients.core.listNamespacedPod({
+    namespace,
+    ...(labelSelector ? { labelSelector } : {})
+  })
+  const items = res.items ?? []
+  if (uids.size === 0) return items
+  const owned = items.filter((pod) => isOwnedBy(pod, ownerKind, uids))
+  return owned.length > 0 ? owned : labelSelector ? items : []
+}
+
+function mapWorkloadPods(items: V1Pod[]): WorkloadPodInfo[] {
+  return items
+    .map((pod): WorkloadPodInfo => {
+      const containers = (pod.spec?.containers ?? []).map((c) => c.name ?? '').filter(Boolean)
+      const statuses = pod.status?.containerStatuses ?? []
+      const ready = containers.length > 0 && statuses.length > 0 && statuses.every((s) => s.ready)
+      return {
+        name: pod.metadata?.name ?? '',
+        containers,
+        ready,
+        status: pod.status?.phase ?? 'Unknown'
+      }
+    })
+    .filter((p) => p.name && p.containers.length > 0)
 }
 
 function extractContainers(containers: V1Container[] | undefined): WorkloadContainerInfo[] {
@@ -98,7 +188,10 @@ async function listReplicaSetsForDeployment(
   namespace: string,
   deployment: V1Deployment
 ): Promise<V1ReplicaSet[]> {
-  const selector = labelsToSelector(deployment.spec?.selector?.matchLabels)
+  const selector = selectorToString(
+    deployment.spec?.selector,
+    deployment.spec?.template?.metadata?.labels
+  )
   const res = await clients.apps.listNamespacedReplicaSet({
     namespace,
     labelSelector: selector
@@ -463,46 +556,138 @@ export async function triggerCronJob(
   }
 }
 
+/**
+ * Shared by `deleteWorkloadPods` and `getWorkloadPods` — every kind that owns pods directly
+ * (i.e. everything except CronJobs, which own Jobs rather than pods, and HPAs, which own
+ * nothing) resolves to the same label selector its controller uses to find its pods.
+ */
+async function resolveWorkloadLabelSelector(
+  clients: ClusterClients,
+  kind: WorkloadKind,
+  namespace: string,
+  name: string
+): Promise<string | undefined> {
+  switch (kind) {
+    case 'Deployments': {
+      const dep = await clients.apps.readNamespacedDeployment({ name, namespace })
+      return selectorToString(dep.spec?.selector, dep.spec?.template?.metadata?.labels)
+    }
+    case 'StatefulSets': {
+      const sts = await clients.apps.readNamespacedStatefulSet({ name, namespace })
+      return selectorToString(sts.spec?.selector, sts.spec?.template?.metadata?.labels)
+    }
+    case 'DaemonSets': {
+      const ds = await clients.apps.readNamespacedDaemonSet({ name, namespace })
+      return selectorToString(ds.spec?.selector, ds.spec?.template?.metadata?.labels)
+    }
+    case 'ReplicaSets': {
+      const rs = await clients.apps.readNamespacedReplicaSet({ name, namespace })
+      return selectorToString(rs.spec?.selector, rs.spec?.template?.metadata?.labels)
+    }
+    case 'ReplicationControllers': {
+      const rc = await clients.core.readNamespacedReplicationController({ name, namespace })
+      return selectorToString(rc.spec?.selector, rc.spec?.template?.metadata?.labels)
+    }
+    case 'Jobs': {
+      const job = await clients.batch.readNamespacedJob({ name, namespace })
+      return selectorToString(job.spec?.selector, job.spec?.template?.metadata?.labels)
+    }
+    default:
+      return undefined
+  }
+}
+
 export async function deleteWorkloadPods(
   clients: ClusterClients,
   kind: WorkloadKind,
   namespace: string,
   name: string
 ): Promise<{ kubectlCommand: string; deletedCount?: number }> {
-  let labelSelector: string | undefined
-  switch (kind) {
-    case 'Deployments': {
-      const dep = await clients.apps.readNamespacedDeployment({ name, namespace })
-      labelSelector = labelsToSelector(dep.spec?.selector?.matchLabels)
-      break
-    }
-    case 'StatefulSets': {
-      const sts = await clients.apps.readNamespacedStatefulSet({ name, namespace })
-      labelSelector = labelsToSelector(sts.spec?.selector?.matchLabels)
-      break
-    }
-    case 'DaemonSets': {
-      const ds = await clients.apps.readNamespacedDaemonSet({ name, namespace })
-      labelSelector = labelsToSelector(ds.spec?.selector?.matchLabels)
-      break
-    }
-    case 'ReplicaSets': {
-      const rs = await clients.apps.readNamespacedReplicaSet({ name, namespace })
-      labelSelector = labelsToSelector(rs.spec?.selector?.matchLabels)
-      break
-    }
-    case 'ReplicationControllers': {
-      const rc = await clients.core.readNamespacedReplicationController({ name, namespace })
-      labelSelector = labelsToSelector(rc.spec?.selector)
-      break
-    }
-    default:
-      throw new Error(`Delete pods is not supported for ${kind}`)
-  }
-  if (!labelSelector) throw new Error('Workload has no pod label selector')
+  const labelSelector = await resolveWorkloadLabelSelector(clients, kind, namespace, name)
+  if (!labelSelector) throw new Error(`Delete pods is not supported for ${kind}`)
   const pods = await clients.core.listNamespacedPod({ namespace, labelSelector })
   const kubectlCommand = `kubectl delete pods -n ${namespace} -l ${labelSelector}`
   if (pods.items.length === 0) return { kubectlCommand, deletedCount: 0 }
   await clients.core.deleteCollectionNamespacedPod({ namespace, labelSelector })
   return { kubectlCommand, deletedCount: pods.items.length }
+}
+
+/** Pods owned by a workload, for aggregated multi-pod log viewing (see podLogManager.startMerged). */
+export async function getWorkloadPods(
+  clients: ClusterClients,
+  kind: WorkloadKind,
+  namespace: string,
+  name: string
+): Promise<WorkloadPodInfo[]> {
+  switch (kind) {
+    case 'Deployments': {
+      const dep = await clients.apps.readNamespacedDeployment({ name, namespace })
+      const rss = await listReplicaSetsForDeployment(clients, namespace, dep)
+      const pods = await listPodsForOwners(
+        clients,
+        namespace,
+        selectorToString(dep.spec?.selector, dep.spec?.template?.metadata?.labels),
+        'ReplicaSet',
+        ownerUids(rss)
+      )
+      return mapWorkloadPods(pods)
+    }
+    case 'StatefulSets': {
+      const sts = await clients.apps.readNamespacedStatefulSet({ name, namespace })
+      const pods = await listPodsForOwners(
+        clients,
+        namespace,
+        selectorToString(sts.spec?.selector, sts.spec?.template?.metadata?.labels),
+        'StatefulSet',
+        ownerUids([sts])
+      )
+      return mapWorkloadPods(pods)
+    }
+    case 'DaemonSets': {
+      const ds = await clients.apps.readNamespacedDaemonSet({ name, namespace })
+      const pods = await listPodsForOwners(
+        clients,
+        namespace,
+        selectorToString(ds.spec?.selector, ds.spec?.template?.metadata?.labels),
+        'DaemonSet',
+        ownerUids([ds])
+      )
+      return mapWorkloadPods(pods)
+    }
+    case 'ReplicaSets': {
+      const rs = await clients.apps.readNamespacedReplicaSet({ name, namespace })
+      const pods = await listPodsForOwners(
+        clients,
+        namespace,
+        selectorToString(rs.spec?.selector, rs.spec?.template?.metadata?.labels),
+        'ReplicaSet',
+        ownerUids([rs])
+      )
+      return mapWorkloadPods(pods)
+    }
+    case 'ReplicationControllers': {
+      const rc = await clients.core.readNamespacedReplicationController({ name, namespace })
+      const pods = await listPodsForOwners(
+        clients,
+        namespace,
+        selectorToString(rc.spec?.selector, rc.spec?.template?.metadata?.labels),
+        'ReplicationController',
+        ownerUids([rc])
+      )
+      return mapWorkloadPods(pods)
+    }
+    case 'Jobs': {
+      const job = await clients.batch.readNamespacedJob({ name, namespace })
+      const pods = await listPodsForOwners(
+        clients,
+        namespace,
+        selectorToString(job.spec?.selector, job.spec?.template?.metadata?.labels),
+        'Job',
+        ownerUids([job])
+      )
+      return mapWorkloadPods(pods)
+    }
+    default:
+      return []
+  }
 }

@@ -14,11 +14,17 @@ import { applyClusterFilterAndSearch } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
 import { EditClusterModal } from '../ClusterTabs/EditClusterModal'
+import { OPEN_CLUSTER_SETTINGS_EVENT } from '../../clusterSettingsEvents'
+import type { ClusterSettingsSectionId } from '@shared/types/clusterSettings'
 import { SidebarWorkspaces } from './SidebarWorkspaces'
 import { Icon } from '../ui/Icon'
+import { useResizableDrawerWidth } from '../../hooks/useResizableDrawerWidth'
 
 const COLLAPSED_WIDTH = 88
 const EXPANDED_WIDTH = 236
+const MIN_SIDEBAR_WIDTH = 180
+const MAX_SIDEBAR_WIDTH = 360
+const SIDEBAR_WIDTH_KEY = 'ml.leftSidebarWidth'
 const DEFAULT_FAVORITES_HEIGHT = 184
 const MIN_FAVORITES_HEIGHT = 96
 const MAX_FAVORITES_HEIGHT = 480
@@ -76,18 +82,28 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const userScope = resolveUserScope(null, true)
   const isDrawer = variant === 'drawer'
   const collapsed = isDrawer ? false : storedCollapsed
+  const { width: expandedWidth, resizing, handleProps } = useResizableDrawerWidth({
+    storageKey: SIDEBAR_WIDTH_KEY,
+    defaultWidth: EXPANDED_WIDTH,
+    minWidth: MIN_SIDEBAR_WIDTH,
+    maxWidth: MAX_SIDEBAR_WIDTH,
+    maxRatio: 0.36,
+    edge: 'left'
+  })
 
   const [favoriteSearch, setFavoriteSearch] = useState('')
   const [favoritesHeight, setFavoritesHeight] = useState(() => loadFavoritesHeight(userScope))
   const [favoritesExpanded, setFavoritesExpanded] = useState(() => loadFavoritesExpanded(userScope))
   const [workspacesExpanded, setWorkspacesExpanded] = useState(() => loadWorkspacesExpanded(userScope))
   const [editingCluster, setEditingCluster] = useState<ClusterEntry | null>(null)
+  const [editSection, setEditSection] = useState<ClusterSettingsSectionId | 'appearance' | 'kubeconfig' | undefined>()
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null)
 
   const favorites = useMemo(
     () => applyClusterFilterAndSearch(clusters, 'favorites', collapsed ? '' : favoriteSearch),
     [clusters, favoriteSearch, collapsed]
   )
+  const hasFavorites = useMemo(() => clusters.some((c) => c.isFavorite), [clusters])
 
   const contextVpnId =
     activeView === 'tabs' && activeClusterId ? clusterVpnLinks[activeClusterId] : undefined
@@ -106,6 +122,24 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
     setFavoritesExpanded(loadFavoritesExpanded(userScope))
     setWorkspacesExpanded(loadWorkspacesExpanded(userScope))
   }, [userScope])
+
+  useEffect(() => {
+    function onOpen(event: Event): void {
+      const detail = (event as CustomEvent<{ clusterId?: string; section?: string }>).detail
+      const found = clusters.find((c) => c.id === detail?.clusterId)
+      if (!found) return
+      if (detail.section === 'appearance' || detail.section === 'kubeconfig') {
+        setEditSection(detail.section)
+      } else if (detail.section) {
+        setEditSection(detail.section as ClusterSettingsSectionId)
+      } else {
+        setEditSection('integrations')
+      }
+      setEditingCluster(found)
+    }
+    window.addEventListener(OPEN_CLUSTER_SETTINGS_EVENT, onOpen)
+    return () => window.removeEventListener(OPEN_CLUSTER_SETTINGS_EVENT, onOpen)
+  }, [clusters])
 
   function handleNavigate(action: () => void): void {
     action()
@@ -163,27 +197,27 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
     window.addEventListener('mouseup', onResizeEnd)
   }
 
-  const width = isDrawer ? '100%' : collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH
-  const favoritesBodyOpen = favoritesExpanded
-  const showFavoritesInRail = showFavoritesSection && (!collapsed || favoritesExpanded)
+  const width = isDrawer ? '100%' : collapsed ? COLLAPSED_WIDTH : expandedWidth
+  const favoritesBodyOpen = favoritesExpanded && hasFavorites
+  const showFavoritesInRail = showFavoritesSection && (hasFavorites || !collapsed)
   // Collapsed rail always shows the workspaces dock — `workspacesExpanded` only means
   // "list open" in the full sidebar's collapsible section, not "hide entirely" here.
   const showWorkspacesInRail = showWorkspacesSection
 
   useEffect(() => {
     if (isDrawer) return
-    const px = `${collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH}px`
+    const px = `${collapsed ? COLLAPSED_WIDTH : expandedWidth}px`
     document.documentElement.style.setProperty('--ml-left-sidebar-width', px)
     return () => {
       document.documentElement.style.removeProperty('--ml-left-sidebar-width')
     }
-  }, [collapsed, isDrawer])
+  }, [collapsed, isDrawer, expandedWidth])
 
   return (
     <motion.aside
-      className={`ml-sidebar${collapsed ? ' ml-sidebar--collapsed' : ''}${isDrawer ? ' ml-sidebar--drawer' : ''}`}
+      className={`ml-sidebar${collapsed ? ' ml-sidebar--collapsed' : ''}${isDrawer ? ' ml-sidebar--drawer' : ''}${resizing ? ' ml-sidebar--resizing' : ''}`}
       animate={{ width }}
-      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      transition={resizing ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
       style={{ width }}
     >
       <div
@@ -320,12 +354,12 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
       {showFavoritesInRail ? (
         <div
           className={`ml-sidebar-section ml-sidebar-section--favorites${
-            favoritesExpanded ? '' : ' ml-sidebar-section--favorites-collapsed'
+            favoritesBodyOpen ? '' : ' ml-sidebar-section--favorites-collapsed'
           }`}
           style={
             collapsed
               ? undefined
-              : favoritesExpanded
+              : favoritesBodyOpen
                 ? { height: favoritesHeight, flex: 'none' }
                 : { height: 'auto', flex: 'none' }
           }
@@ -335,10 +369,13 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
               <button
                 type="button"
                 className="ml-sidebar-section-chrome__toggle"
-                aria-expanded={favoritesExpanded}
-                onClick={() => setFavoritesExpanded((open) => !open)}
+                aria-expanded={favoritesBodyOpen}
+                onClick={() => {
+                  if (!hasFavorites) return
+                  setFavoritesExpanded((open) => !open)
+                }}
               >
-                <Icon icon={favoritesExpanded ? ChevronDown : ChevronRight} variant="micro" />
+                <Icon icon={favoritesBodyOpen ? ChevronDown : ChevronRight} variant="micro" />
                 <span className="ml-sidebar-section-chrome__glyph" aria-hidden>
                   <Icon icon={Star} variant="micro" />
                 </span>
@@ -385,7 +422,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
                   ))
                 )}
               </div>
-              {!collapsed && !isDrawer && favoritesExpanded && (
+              {!collapsed && !isDrawer && favoritesBodyOpen && (
                 <div
                   className="ml-sidebar-section-resize"
                   role="separator"
@@ -443,7 +480,23 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
           ) : null}
         </div>
       </div>
-      <EditClusterModal cluster={editingCluster} onClose={() => setEditingCluster(null)} />
+      <EditClusterModal
+        cluster={editingCluster}
+        initialSection={editSection}
+        onClose={() => {
+          setEditingCluster(null)
+          setEditSection(undefined)
+        }}
+      />
+      {!collapsed && !isDrawer ? (
+        <button
+          type="button"
+          className="ml-rail-resize-handle titlebar-no-drag"
+          aria-label={t('chrome.resizeSidebar')}
+          title={t('chrome.resizeSidebar')}
+          {...handleProps}
+        />
+      ) : null}
     </motion.aside>
   )
 }

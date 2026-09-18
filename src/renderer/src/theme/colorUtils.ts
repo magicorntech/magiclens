@@ -61,14 +61,14 @@ export function deriveSchemeFromAccent(accent: string): DerivedSchemeColors {
   const base = normalizeHex(accent)
   return {
     primaryLight: base,
-    primaryLightHover: darken(base, 0.12),
-    primaryDark: lighten(base, 0.25),
-    primaryDarkHover: lighten(base, 0.38),
-    resourceSiderLight: darken(base, 0.35),
-    resourceSiderDark: darken(base, 0.65),
-    spotlightLight: lighten(base, 0.92),
-    spotlightDark: mixHex(darken(base, 0.55), '#1a1225', 0.7),
-    layoutLight: lighten(base, 0.94),
-    layoutDark: darken(base, 0.72)
+    primaryLightHover: darken(base, 0.14),
+    primaryDark: lighten(base, 0.22),
+    primaryDarkHover: lighten(base, 0.36),
+    resourceSiderLight: darken(base, 0.42),
+    resourceSiderDark: mixHex(darken(base, 0.78), '#000000', 0.55),
+    spotlightLight: lighten(base, 0.94),
+    spotlightDark: mixHex(darken(base, 0.62), '#0a0a0f', 0.55),
+    layoutLight: lighten(base, 0.96),
+    layoutDark: mixHex(darken(base, 0.82), '#050508', 0.45)
   }
 }

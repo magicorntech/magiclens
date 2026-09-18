@@ -19,6 +19,28 @@ export function useNodeMetricsRange(
   })
 }
 
+export function usePvcMetricsRange(
+  clusterId: string | null,
+  namespace: string | null,
+  pvcName: string | null,
+  range: MetricsTimeRange,
+  isActive: boolean
+) {
+  const refetchInterval = useLiveRefetchInterval(isActive)
+  return useQuery({
+    queryKey: ['metrics-pvc-range', clusterId, namespace, pvcName, JSON.stringify(range)],
+    queryFn: () =>
+      window.api.metrics.getPvcRange({
+        clusterId: clusterId as string,
+        namespace: namespace as string,
+        pvcName: pvcName as string,
+        range
+      }),
+    enabled: !!clusterId && !!namespace && !!pvcName && isActive,
+    refetchInterval
+  })
+}
+
 export function usePodMetricsRange(
   clusterId: string | null,
   namespace: string | null,

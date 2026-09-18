@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Dropdown, type MenuProps } from 'antd'
 import { Reorder, useDragControls } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import {
   Columns2,
   GripVertical,
@@ -429,8 +430,10 @@ function VirtualTabItem({
   onSelect: () => void
   onClose: () => void
 }): React.JSX.Element {
+  const { t } = useTranslation()
   const showIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
   const dragControls = useDragControls()
+  const label = t(`resourceNav.virtual.${page}`, { defaultValue: VIRTUAL_PAGE_LABELS[page] })
   return (
     <Reorder.Item
       value={id}
@@ -474,8 +477,8 @@ function VirtualTabItem({
             <Icon icon={virtualPageIcons[page]} variant="micro" />
           </span>
         ) : null}
-        <span className="ml-resource-tab-label-text" title={VIRTUAL_PAGE_LABELS[page]}>
-          {VIRTUAL_PAGE_LABELS[page]}
+        <span className="ml-resource-tab-label-text" title={label}>
+          {label}
         </span>
         <span className="ml-resource-tab-label-actions">
           <span

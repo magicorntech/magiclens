@@ -15,6 +15,16 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.25': {
+    title: 'Visualizer, Timeline, and cluster apps',
+    items: [
+      'Visualizer maps the cluster by namespace and Helm release, with brand icons on each service and workload.',
+      'Timeline shows recent cluster events as a Gantt, filterable by namespace.',
+      'Cluster avatars pick up AWS, GCP, Azure, or Huawei from the kubeconfig — a custom logo still wins.',
+      'Helm has a chart catalog, Custom Resources live on one page, and Prometheus historical metrics work through the API proxy.',
+      'Windows updates sign with the Windows certificate again — 0.1.24 installers were Apple-signed by mistake.'
+    ]
+  },
   '0.1.24': {
     title: 'Sidebar polish',
     items: [

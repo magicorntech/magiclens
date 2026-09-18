@@ -60,6 +60,29 @@ function setState(patch: Partial<UpdateState>): void {
 }
 
 /**
+ * electron-updater's Windows verifier dumps the entire Authenticode JSON (certificates,
+ * thumbprints, StatusMessage, …) into the Error message. That's useful in a log, useless
+ * and alarming in the UI. Collapse the known "Apple cert on a Windows installer" failure
+ * into a short instruction; leave anything else as a one-line message.
+ */
+function describeUpdaterError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err)
+  const isPublisherMismatch =
+    raw.includes('not signed by the application owner') ||
+    raw.includes('Developer ID Application') ||
+    raw.includes('Sertifika zinciri') ||
+    /certificate chain could not be built/i.test(raw)
+  if (isPublisherMismatch) {
+    return (
+      'This Windows update is not signed with a trusted Windows certificate, so it cannot be installed automatically. ' +
+      'Download the installer from the GitHub release page and run it by hand — that replaces the app in place.'
+    )
+  }
+  const firstLine = raw.split('\n')[0]?.trim() ?? raw
+  return firstLine.length > 280 ? `${firstLine.slice(0, 277)}…` : firstLine
+}
+
+/**
  * `electron-updater`'s GitHub provider always resolves release asset URLs over HTTPS and, for
  * every platform, verifies the downloaded file's sha512 checksum against the value published in
  * the provider metadata (latest.yml / latest-mac.yml / latest-linux.yml) before it will install
@@ -86,7 +109,7 @@ function registerUpdaterEvents(): void {
     })
     if (skipped !== info.version && getUpdateSettings().autoDownload) {
       void autoUpdater.downloadUpdate().catch((err) => {
-        setState({ phase: 'error', error: err instanceof Error ? err.message : String(err) })
+        setState({ phase: 'error', error: describeUpdaterError(err) })
       })
     }
   })
@@ -96,7 +119,8 @@ function registerUpdaterEvents(): void {
   })
 
   autoUpdater.on('error', (err) => {
-    setState({ phase: 'error', error: err instanceof Error ? err.message : String(err) })
+    console.error('[update]', err)
+    setState({ phase: 'error', error: describeUpdaterError(err) })
   })
 
   autoUpdater.on('download-progress', (progress) => {
@@ -173,7 +197,7 @@ export async function checkForUpdates(): Promise<void> {
     applySettingsToUpdater(getUpdateSettings())
     await autoUpdater.checkForUpdates()
   } catch (err) {
-    setState({ phase: 'error', error: err instanceof Error ? err.message : String(err) })
+    setState({ phase: 'error', error: describeUpdaterError(err) })
   }
 }
 
@@ -181,7 +205,7 @@ export async function downloadUpdate(): Promise<void> {
   try {
     await autoUpdater.downloadUpdate()
   } catch (err) {
-    setState({ phase: 'error', error: err instanceof Error ? err.message : String(err) })
+    setState({ phase: 'error', error: describeUpdaterError(err) })
   }
 }
 

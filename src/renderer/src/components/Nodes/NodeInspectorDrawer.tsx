@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Drawer, Tabs, Typography } from 'antd'
 import type { ResourceListItem } from '@shared/types/resource'
 import { useLayoutMode } from '../../hooks/useLayoutMode'
+import { useResizableDrawerWidth } from '../../hooks/useResizableDrawerWidth'
 import { useResourceManifest } from '../../queries/useResourceManifest'
 import { useResourceList } from '../../queries/useResourceList'
 import { AgeCell } from '../ResourceTable/AgeCell'
@@ -71,7 +72,14 @@ export function NodeInspectorDrawer({
   onClose
 }: NodeInspectorDrawerProps): React.JSX.Element {
   const layoutMode = useLayoutMode()
-  const width = layoutMode === 'mobile' ? '100%' : layoutMode === 'compact' ? 440 : 560
+  const isMobile = layoutMode === 'mobile'
+  const defaultWidth = layoutMode === 'compact' ? 440 : 560
+  const { width: resizedWidth, resizing, handleProps } = useResizableDrawerWidth({
+    storageKey: 'ml.nodeInspectorDrawerWidth',
+    defaultWidth,
+    minWidth: 380
+  })
+  const width = isMobile ? '100%' : resizedWidth
   const { data: yaml, isLoading: manifestLoading } = useResourceManifest(
     clusterId,
     'Nodes',
@@ -263,14 +271,25 @@ export function NodeInspectorDrawer({
       width={width}
       destroyOnHidden
       closable
-      className="ml-node-inspector-drawer"
+      className={`ml-node-inspector-drawer${resizing ? ' ml-node-inspector-drawer--resizing' : ''}`}
       styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column', height: '100%' } }}
       mask={{ blur: true }}
     >
       {item && (
-        <div className="ml-node-inspector">
-          <Tabs size="small" items={tabItems} className="ml-node-inspector-tabs" destroyOnHidden />
-        </div>
+        <>
+          {!isMobile ? (
+            <button
+              type="button"
+              className="ml-detail-resize-handle"
+              aria-label="Resize inspector panel"
+              title="Drag to resize"
+              {...handleProps}
+            />
+          ) : null}
+          <div className="ml-node-inspector">
+            <Tabs size="small" items={tabItems} className="ml-node-inspector-tabs" destroyOnHidden />
+          </div>
+        </>
       )}
     </Drawer>
   )

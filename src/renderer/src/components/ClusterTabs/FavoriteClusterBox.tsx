@@ -45,7 +45,6 @@ export function FavoriteClusterBox({
   onActivate,
   onEdit
 }: FavoriteClusterBoxProps): React.JSX.Element {
-  const effectiveLogoUrl = cluster.logoUrl || fallbackLogoUrl
   const { t } = useTranslation()
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
   const openedTabs = useClusterStore((s) => s.openedTabs)
@@ -145,7 +144,15 @@ export function FavoriteClusterBox({
             aria-label={cluster.customName}
           >
             <span className="ml-nav-item__avatar-wrap">
-              <ClusterAvatar logoUrl={effectiveLogoUrl} name={cluster.customName} size={28} accentColor={accentColor} />
+              <ClusterAvatar
+                logoUrl={cluster.logoUrl}
+                fallbackLogoUrl={fallbackLogoUrl}
+                name={cluster.customName}
+                contextName={cluster.contextName}
+                endpoint={cluster.endpoint}
+                size={28}
+                accentColor={accentColor}
+              />
               <span className="ml-nav-item__status-dot" aria-hidden />
             </span>
           </button>
@@ -173,8 +180,11 @@ export function FavoriteClusterBox({
       >
         <span className="ml-nav-item__avatar-wrap">
           <ClusterAvatar
-            logoUrl={effectiveLogoUrl}
+            logoUrl={cluster.logoUrl}
+            fallbackLogoUrl={fallbackLogoUrl}
             name={cluster.customName}
+            contextName={cluster.contextName}
+            endpoint={cluster.endpoint}
             // Nested matches the workspace header's own avatar (also 20px) rather than its own
             // slightly-larger size — the two sit in the same tight vertical stack, often
             // showing the same logo repeated, so a couple of px between them read as a visible

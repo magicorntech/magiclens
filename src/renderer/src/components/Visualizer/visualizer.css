@@ -1,0 +1,336 @@
+.ml-viz-page.ml-resource-detail-host {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ml-bg-layout);
+}
+
+.ml-viz-toolbar {
+  position: absolute;
+  z-index: 6;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.ml-viz-toolbar__left,
+.ml-viz-toolbar__right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.ml-viz-toolbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid color-mix(in srgb, var(--ml-text) 14%, transparent);
+  background: color-mix(in srgb, var(--ml-bg-container) 88%, transparent);
+  color: var(--ml-text-secondary);
+  cursor: pointer;
+}
+
+.ml-viz-toolbtn:hover,
+.ml-viz-toolbtn.is-on {
+  color: var(--ml-text);
+  border-color: color-mix(in srgb, var(--ml-text) 28%, transparent);
+}
+
+.ml-viz-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--ml-text) 12%, transparent);
+  background: color-mix(in srgb, var(--ml-bg-container) 88%, transparent);
+}
+
+.ml-viz-title__name {
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.ml-viz-title__meta {
+  font-size: 11px;
+  color: var(--ml-text-secondary);
+}
+
+.ml-viz-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 280px;
+}
+
+.ml-viz-filter__ns {
+  width: 100%;
+}
+
+.ml-viz-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.ml-viz-canvas {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ml-viz-canvas .react-flow {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+.ml-viz-canvas .react-flow__node {
+  font-family: inherit;
+}
+
+.ml-viz-canvas .react-flow__node-vizFrame {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.ml-viz-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ml-text-secondary);
+  pointer-events: none;
+}
+
+.ml-viz-frame {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--ml-text) 16%, transparent);
+  background: color-mix(in srgb, var(--ml-bg-container) 18%, transparent);
+}
+
+.ml-viz-frame--namespace {
+  border-radius: 18px;
+}
+
+.ml-viz-frame--instance {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ml-bg-container) 28%, transparent);
+}
+
+.ml-viz-frame__label {
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ml-text);
+  background: var(--ml-bg-layout);
+  border: 1px solid color-mix(in srgb, var(--ml-text) 14%, transparent);
+  border-radius: 4px;
+  max-width: calc(100% - 28px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-viz-svc,
+.ml-viz-wl {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ml-bg-container) 92%, #111);
+  border: 1px solid color-mix(in srgb, var(--ml-text) 12%, transparent);
+  cursor: pointer;
+}
+
+.ml-viz-svc__head,
+.ml-viz-wl__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: #6fbf4a;
+  color: #10240c;
+  min-height: 26px;
+}
+
+.ml-viz-svc__icon,
+.ml-viz-wl__kind-icon {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+.ml-viz-svc__name,
+.ml-viz-wl__name {
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-viz-svc__type {
+  padding: 6px 8px 2px;
+  font-size: 10px;
+  color: var(--ml-text-secondary);
+}
+
+.ml-viz-svc__ports {
+  padding: 2px 8px 8px;
+}
+
+.ml-viz-svc__port {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--ml-text);
+  line-height: 1.45;
+}
+
+.ml-viz-svc__port span:last-child {
+  color: var(--ml-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-viz-wl {
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-viz-wl__chips {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 6px 0;
+}
+
+.ml-viz-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px 1px 4px;
+  font-size: 10px;
+  font-weight: 650;
+  color: #f0c9c9;
+  background: color-mix(in srgb, #7a2a2a 70%, #1a1a1a);
+  border: 1px solid color-mix(in srgb, #d94c4c 45%, transparent);
+}
+
+.ml-viz-chip__x {
+  color: #ef6666;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.ml-viz-wl__body {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  min-height: 0;
+}
+
+.ml-viz-wl__logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.ml-viz-wl__replicas {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px 10px;
+}
+
+.ml-viz-replica {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ml-text) 14%, transparent);
+}
+
+.ml-viz-replica--on {
+  background: #6fbf4a;
+}
+
+.ml-viz-handle {
+  width: 6px !important;
+  height: 6px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  border: none !important;
+}
+
+.ml-viz-minimap {
+  margin: 12px !important;
+  border: 1px solid color-mix(in srgb, var(--ml-text) 14%, transparent);
+  background: color-mix(in srgb, var(--ml-bg-container) 72%, transparent) !important;
+}
+
+.ml-viz-controls {
+  margin: 12px !important;
+  box-shadow: none !important;
+  border: 1px solid color-mix(in srgb, var(--ml-text) 14%, transparent);
+  background: color-mix(in srgb, var(--ml-bg-container) 88%, transparent) !important;
+}
+
+.ml-viz-controls button {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--ml-text) 10%, transparent) !important;
+}
+
+.ml-viz-page .ml-resource-detail-drawer.ant-drawer {
+  z-index: 30;
+}
+
+.ml-viz-page .ml-resource-detail,
+.ml-viz-page .ml-resource-detail--drawer {
+  height: 100%;
+  min-height: 0;
+}
+
+.ml-viz-page .ml-resource-detail-drawer .ant-drawer-body {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ml-viz-svc--error,
+.ml-viz-wl--error {
+  outline: 1px solid color-mix(in srgb, #d94c4c 55%, transparent);
+}
+
+.ml-viz-svc--degraded,
+.ml-viz-wl--degraded {
+  outline: 1px solid color-mix(in srgb, #d4a017 50%, transparent);
+}

@@ -1,9 +1,13 @@
 import { Avatar } from 'antd'
 import { Layers } from 'lucide-react'
+import { CLOUD_PROVIDER_LABELS, detectCloudProvider } from '@shared/cloudProvider'
+import { CLOUD_PROVIDER_ICONS } from '../../icons/cloudProviderIcons'
 import { Icon } from '../ui/Icon'
 
 interface ClusterAvatarProps {
   logoUrl?: string
+  /** Used when the cluster has no custom logo and the kubeconfig is not a known cloud. */
+  fallbackLogoUrl?: string
   name: string
   size?: number
   /**
@@ -13,36 +17,59 @@ interface ClusterAvatarProps {
    * it belongs to, which is indistinguishable from a workspace that has no colour set at all.
    */
   accentColor?: string
+  contextName?: string
+  endpoint?: string
+  /** Extra kubeconfig strings (exec plugin, auth-provider) used only for cloud detection. */
+  hints?: string
 }
 
-/** Squarer corners for denser sidebar lists. */
-function softRadius(size: number): number {
-  return Math.max(4, Math.min(6, Math.round(size * 0.18)))
+function softRadius(_size: number): number {
+  return 0
 }
 
 export function ClusterAvatar({
   logoUrl,
+  fallbackLogoUrl,
   name,
   size = 32,
-  accentColor
+  accentColor,
+  contextName,
+  endpoint,
+  hints
 }: ClusterAvatarProps): React.JSX.Element {
   const radius = softRadius(size)
+  const provider = logoUrl ? null : detectCloudProvider(endpoint, contextName, name, hints)
+  const src = logoUrl || (provider ? CLOUD_PROVIDER_ICONS[provider] : fallbackLogoUrl)
   const style: React.CSSProperties = {
+    width: size,
+    height: size,
     borderRadius: radius,
     flexShrink: 0,
     overflow: 'hidden'
   }
 
-  if (logoUrl) {
+  if (src) {
+    if (provider) {
+      return (
+        <span
+          className={`ml-cluster-avatar ml-cluster-avatar--${provider}`}
+          style={style}
+          title={CLOUD_PROVIDER_LABELS[provider]}
+        >
+          <img src={src} alt="" width={size} height={size} draggable={false} />
+        </span>
+      )
+    }
     return (
       <Avatar
-        src={logoUrl}
+        src={src}
         size={size}
         shape="square"
         style={{ ...style, background: 'transparent' }}
       />
     )
   }
+
   const initial = name.trim().charAt(0).toUpperCase()
   return (
     <Avatar

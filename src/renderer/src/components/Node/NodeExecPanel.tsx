@@ -122,7 +122,7 @@ export function NodeExecPanel({ clusterId, nodeName, isActive }: NodeExecPanelPr
           minHeight: 0,
           background: 'var(--ml-terminal-bg)',
           padding: 8,
-          borderRadius: 6
+          borderRadius: 0
         }}
       />
     </div>

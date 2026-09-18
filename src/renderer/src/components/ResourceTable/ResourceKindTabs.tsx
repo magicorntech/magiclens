@@ -11,6 +11,7 @@ import { Icon } from '../ui/Icon'
 import { ResourceTable } from './ResourceTable'
 import { ResourceKindTabBar, type ResourceTabContextActions } from './ResourceKindTabBar'
 import { EmptyState } from './EmptyErrorStates'
+import { CLUSTER_APP_PAGES, isClusterAppPage } from '../Apps/ClusterAppPage'
 
 interface ResourceKindTabsProps {
   clusterId: string
@@ -55,6 +56,10 @@ export function ResourceKindTabs({
 
   const showingVirtual = selectedVirtualPage != null && openVirtualPages.includes(selectedVirtualPage)
   const activeKind = showingVirtual ? null : (selectedResourceKind ?? orderedKinds[0] ?? null)
+  const keptAppPages = useMemo(
+    () => CLUSTER_APP_PAGES.filter((page) => openVirtualPages.includes(page) || selectedVirtualPage === page),
+    [openVirtualPages, selectedVirtualPage]
+  )
 
   useEffect(() => {
     if (showingVirtual) return
@@ -474,21 +479,46 @@ export function ResourceKindTabs({
     )
   }
 
+  function renderAppKeepAlive(): React.ReactNode {
+    if (!renderVirtualPage || keptAppPages.length === 0) return null
+    const front = isClusterAppPage(selectedVirtualPage)
+    return (
+      <div className={`ml-cluster-app-host${front ? ' is-front' : ''}`}>
+        {keptAppPages.map((page) => (
+          <div
+            key={page}
+            className={`ml-cluster-app-keep${selectedVirtualPage === page ? ' is-active' : ''}`}
+            aria-hidden={selectedVirtualPage !== page}
+          >
+            {renderVirtualPage(page)}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   function renderResourceContent(): React.ReactNode {
-    if (showingVirtual && selectedVirtualPage && renderVirtualPage) {
-      return renderVirtualPage(selectedVirtualPage)
+    const apps = renderAppKeepAlive()
+    if (showingVirtual && isClusterAppPage(selectedVirtualPage)) {
+      return apps
     }
-    if (activeKind) {
-      return (
-        <ResourceTable
-          clusterId={clusterId}
-          namespace={namespace}
-          kind={activeKind}
-          isActive={isClusterActive}
-        />
-      )
-    }
-    return <EmptyState />
+    return (
+      <>
+        {apps}
+        {showingVirtual && selectedVirtualPage && renderVirtualPage ? (
+          renderVirtualPage(selectedVirtualPage)
+        ) : activeKind ? (
+          <ResourceTable
+            clusterId={clusterId}
+            namespace={namespace}
+            kind={activeKind}
+            isActive={isClusterActive}
+          />
+        ) : (
+          <EmptyState />
+        )}
+      </>
+    )
   }
 
   return (

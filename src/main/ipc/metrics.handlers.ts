@@ -9,7 +9,10 @@ import type {
   NodeMetricsRangeRequest,
   NodeMetricsResponse,
   NodePressureRequest,
-  PodMetricsRangeRequest
+  PodMetricsRangeRequest,
+  PvcMetricsRangeRequest,
+  PvcUsageRequest,
+  PvcUsageResponse
 } from '@shared/types/metrics'
 import { withClusterClients } from '../k8s/withClusterClients'
 import {
@@ -18,14 +21,18 @@ import {
   getHpaMetricsRange,
   getNodeMetricsRange,
   getNodePressureMetrics,
-  getPodMetricsRange
+  getPodMetricsRange,
+  getPvcMetricsRange,
+  getPvcUsageTable
 } from '../k8s/metricsProviderService'
 import { getClusterMetricsSummary, getNodeMetricsTable } from '../k8s/metricsService'
+import { demoPvcUsage, demoClusterSummary, demoNodeMetrics, demoEmptyMetricsRange, isDemoCluster } from '../k8s/demoMode'
 
 export function registerMetricsHandlers(): void {
   ipcMain.handle(
     IPC.METRICS_GET_CLUSTER_SUMMARY,
     async (_e, req: ClusterIdRequest): Promise<ClusterMetricsSummary | { error: string }> => {
+      if (isDemoCluster(req.clusterId)) return demoClusterSummary()
       const result = await withClusterClients(req.clusterId, (clients) =>
         getClusterMetricsSummary(clients, req.clusterId)
       )
@@ -37,6 +44,7 @@ export function registerMetricsHandlers(): void {
   ipcMain.handle(
     IPC.METRICS_GET_NODE_METRICS,
     async (_e, req: ClusterIdRequest): Promise<NodeMetricsResponse | { error: string }> => {
+      if (isDemoCluster(req.clusterId)) return demoNodeMetrics()
       const result = await withClusterClients(req.clusterId, (clients) =>
         getNodeMetricsTable(clients, req.clusterId)
       )
@@ -45,13 +53,29 @@ export function registerMetricsHandlers(): void {
     }
   )
 
-  ipcMain.handle(IPC.METRICS_GET_NODE_RANGE, async (_e, req: NodeMetricsRangeRequest) => getNodeMetricsRange(req))
-  ipcMain.handle(IPC.METRICS_GET_POD_RANGE, async (_e, req: PodMetricsRangeRequest) => getPodMetricsRange(req))
-  ipcMain.handle(IPC.METRICS_GET_CLUSTER_RANGE, async (_e, req: ClusterMetricsRangeRequest) => getClusterMetricsRange(req))
-  ipcMain.handle(IPC.METRICS_GET_HPA_RANGE, async (_e, req: HpaMetricsRangeRequest) => getHpaMetricsRange(req))
-  ipcMain.handle(
-    IPC.METRICS_GET_DEPLOYMENT_RANGE,
-    async (_e, req: DeploymentMetricsRangeRequest) => getDeploymentMetricsRange(req)
+  ipcMain.handle(IPC.METRICS_GET_NODE_RANGE, async (_e, req: NodeMetricsRangeRequest) =>
+    isDemoCluster(req.clusterId) ? demoEmptyMetricsRange() : getNodeMetricsRange(req)
   )
-  ipcMain.handle(IPC.METRICS_GET_NODE_PRESSURE, async (_e, req: NodePressureRequest) => getNodePressureMetrics(req))
+  ipcMain.handle(IPC.METRICS_GET_POD_RANGE, async (_e, req: PodMetricsRangeRequest) =>
+    isDemoCluster(req.clusterId) ? demoEmptyMetricsRange() : getPodMetricsRange(req)
+  )
+  ipcMain.handle(IPC.METRICS_GET_PVC_USAGE, async (_e, req: PvcUsageRequest): Promise<PvcUsageResponse> => {
+    if (isDemoCluster(req.clusterId)) return demoPvcUsage(req.namespace)
+    return getPvcUsageTable(req)
+  })
+  ipcMain.handle(IPC.METRICS_GET_PVC_RANGE, async (_e, req: PvcMetricsRangeRequest) =>
+    isDemoCluster(req.clusterId) ? demoEmptyMetricsRange() : getPvcMetricsRange(req)
+  )
+  ipcMain.handle(IPC.METRICS_GET_CLUSTER_RANGE, async (_e, req: ClusterMetricsRangeRequest) =>
+    isDemoCluster(req.clusterId) ? demoEmptyMetricsRange() : getClusterMetricsRange(req)
+  )
+  ipcMain.handle(IPC.METRICS_GET_HPA_RANGE, async (_e, req: HpaMetricsRangeRequest) =>
+    isDemoCluster(req.clusterId) ? demoEmptyMetricsRange() : getHpaMetricsRange(req)
+  )
+  ipcMain.handle(IPC.METRICS_GET_DEPLOYMENT_RANGE, async (_e, req: DeploymentMetricsRangeRequest) =>
+    isDemoCluster(req.clusterId) ? demoEmptyMetricsRange() : getDeploymentMetricsRange(req)
+  )
+  ipcMain.handle(IPC.METRICS_GET_NODE_PRESSURE, async (_e, req: NodePressureRequest) =>
+    isDemoCluster(req.clusterId) ? demoEmptyMetricsRange() : getNodePressureMetrics(req)
+  )
 }

@@ -96,6 +96,14 @@ export interface ClusterStorageSettings {
 
 export interface ClusterIntegrationsSettings {
   grafanaUrl: string
+  grafanaUsername: string
+  grafanaPassword: string
+  prometheusUrl: string
+  prometheusUsername: string
+  prometheusPassword: string
+  argoCdUrl: string
+  argoCdUsername: string
+  argoCdPassword: string
   lokiUrl: string
   jaegerUrl: string
   alertmanagerUrl: string
@@ -224,6 +232,14 @@ export const defaultClusterSettings = (): ClusterSettings => ({
   },
   integrations: {
     grafanaUrl: '',
+    grafanaUsername: '',
+    grafanaPassword: '',
+    prometheusUrl: '',
+    prometheusUsername: '',
+    prometheusPassword: '',
+    argoCdUrl: '',
+    argoCdUsername: '',
+    argoCdPassword: '',
     lokiUrl: '',
     jaegerUrl: '',
     alertmanagerUrl: '',

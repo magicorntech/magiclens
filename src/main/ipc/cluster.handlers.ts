@@ -15,9 +15,13 @@ import { portForwardManager } from '../k8s/portForwardManager'
 import { resourceWatchManager } from '../k8s/resourceWatchManager'
 import { podLogManager } from '../k8s/podLogManager'
 import { podExecManager } from '../k8s/podExecManager'
+import { demoNamespaces, isDemoCluster } from '../k8s/demoMode'
 
 export function registerClusterHandlers(): void {
   ipcMain.handle(IPC.CLUSTER_CONNECT, async (_e, req: ConnectRequest): Promise<ConnectResponse> => {
+    if (isDemoCluster(req.clusterId)) {
+      return { ok: true, serverVersion: 'v1.31.2-demo', endpoint: 'https://demo.magiclens.local' }
+    }
     try {
       const clients = clusterManager.connect(req.clusterId, req.source, req.contextName)
       const [versionInfo] = await Promise.all([clients.version.getCode(), clients.core.listNamespace()])
@@ -41,6 +45,9 @@ export function registerClusterHandlers(): void {
   })
 
   ipcMain.handle(IPC.CLUSTER_GET_VERSION, async (_e, req: ClusterIdRequest): Promise<ClusterVersionResponse | { error: string }> => {
+    if (isDemoCluster(req.clusterId)) {
+      return { gitVersion: 'v1.31.2-demo', platform: 'demo' }
+    }
     const result = await withClusterClients(req.clusterId, async (clients) => {
       const versionInfo = await clients.version.getCode()
       return { gitVersion: versionInfo.gitVersion, platform: versionInfo.platform }
@@ -50,6 +57,9 @@ export function registerClusterHandlers(): void {
   })
 
   ipcMain.handle(IPC.CLUSTER_LIST_NAMESPACES, async (_e, req: ClusterIdRequest): Promise<NamespacesResponse | { error: string }> => {
+    if (isDemoCluster(req.clusterId)) {
+      return { namespaces: demoNamespaces() }
+    }
     const result = await withClusterClients(req.clusterId, async (clients) => {
       const res = await clients.core.listNamespace()
       return { namespaces: res.items.map((ns) => ns.metadata?.name ?? '').filter(Boolean) }

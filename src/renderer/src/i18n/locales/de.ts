@@ -36,6 +36,7 @@ export const de: TranslationOverrides = {
     noFavoriteClusters: 'Keine Lieblingscluster',
     collapseSidebar: 'Seitenleiste einklappen',
     expandSidebar: 'Seitenleiste ausklappen',
+    resizeSidebar: 'Cluster-Menü skalieren',
     favoritesHint: 'Angepinnte Cluster',
     fullscreen: 'Vollbild',
     exitFullscreen: 'Beenden Sie den Vollbildmodus'
@@ -215,8 +216,13 @@ export const de: TranslationOverrides = {
       customAccent: 'Benutzerdefinierter Akzent',
       customAccentHint: 'Gilt für Seitenleisten, Schaltflächen, Hervorhebungen und Diagrammakzente.',
       customSwatch: 'Eigene Akzentfarbe',
-      modeTitle: 'Farbmodus',
-      modeHint: 'Wechseln Sie zwischen hell und dunkel oder folgen Sie dem Erscheinungsbild des Systems.'
+      modeTitle: 'Modus',
+      modeHint: 'Hell, dunkel oder System folgen.',
+      modeLight: 'Hell',
+      modeDark: 'Dunkel',
+      modeSystem: 'System',
+      colorTitle: 'Farbe',
+      colorHint: 'Gilt im {{mode}}-Modus. Oben den Modus wechseln, um die andere Palette zu setzen.'
     },
     about: {
       platform: 'Plattform',
@@ -591,6 +597,7 @@ export const de: TranslationOverrides = {
   resourceNav: {
     virtual: {
       topology: 'Topologie',
+      visualizer: 'Visualizer',
       clusterOverview: 'Cluster',
       applications: 'Anwendungen',
       workloadsOverview: 'Überblick',
@@ -611,6 +618,7 @@ export const de: TranslationOverrides = {
     pinned: 'An Tabs angeheftet',
     emptyFavorites: 'Klicken Sie mit der rechten Maustaste auf eine Ressource, um Favoriten hinzuzufügen.',
     aria: 'Ressourcen',
+    resize: 'Ressourcenmenü skalieren',
     sections: {
       overview: 'Überblick',
       workloads: 'Arbeitsbelastungen',

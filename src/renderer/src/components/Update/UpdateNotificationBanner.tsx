@@ -11,13 +11,14 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
   const install = useUpdateStore((s) => s.install)
   const skip = useUpdateStore((s) => s.skip)
   const remindLater = useUpdateStore((s) => s.remindLater)
+  const openReleasePage = useUpdateStore((s) => s.openReleasePage)
   const openUpdateSettings = useSettingsUiStore((s) => s.openSettings)
   const lastErrorRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (state?.phase === 'error' && state.error && state.error !== lastErrorRef.current) {
       lastErrorRef.current = state.error
-      void message.error(`Update error: ${state.error}`)
+      void message.error(state.error)
     }
   }, [state?.phase, state?.error])
 
@@ -27,8 +28,9 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
   const showAvailable = state.phase === 'available' && !state.notificationDismissed && !isSkipped
   const showDownloading = state.phase === 'downloading'
   const showDownloaded = state.phase === 'downloaded'
+  const showError = state.phase === 'error' && !!state.error && !state.notificationDismissed
 
-  if (!showAvailable && !showDownloading && !showDownloaded) return null
+  if (!showAvailable && !showDownloading && !showDownloaded && !showError) return null
 
   return (
     <div
@@ -42,7 +44,7 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
         // directly on the page. The app's own tokens are always defined.
         background: 'var(--ml-bg-elevated)',
         color: 'var(--ml-text)',
-        borderRadius: 10,
+        borderRadius: 0,
         boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
         padding: 16,
         zIndex: 1200,
@@ -54,7 +56,13 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
           <Space size={8}>
             <Icon icon={Rocket} variant="toolbar" style={{ color: 'var(--ml-primary)' }} />
             <Typography.Text strong>
-              {showDownloaded ? 'Update ready to install' : showDownloading ? 'Downloading update…' : 'Update available'}
+              {showError
+                ? 'Update could not be installed'
+                : showDownloaded
+                  ? 'Update ready to install'
+                  : showDownloading
+                    ? 'Downloading update…'
+                    : 'Update available'}
             </Typography.Text>
           </Space>
           {showAvailable && (
@@ -63,7 +71,9 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
         </div>
 
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {showDownloaded
+          {showError
+            ? state.error
+            : showDownloaded
             ? `MagicLens v${state.latestVersion} has been downloaded. Restart to finish installing.`
             : showDownloading
               ? `Downloading v${state.latestVersion}…`
@@ -87,6 +97,20 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
             </Button>
             <Button size="small" onClick={() => void remindLater()}>
               Remind me later
+            </Button>
+          </Space>
+        )}
+
+        {showError && (
+          <Space size={8} wrap>
+            <Button type="primary" size="small" icon={<Icon icon={Download} variant="detail" />} onClick={() => void openReleasePage()}>
+              Download installer
+            </Button>
+            <Button size="small" onClick={() => openUpdateSettings('updates')}>
+              Details
+            </Button>
+            <Button size="small" onClick={() => void remindLater()}>
+              Dismiss
             </Button>
           </Space>
         )}

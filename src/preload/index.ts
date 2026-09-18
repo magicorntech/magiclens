@@ -49,6 +49,9 @@ import type {
   NodeMetricsRangeRequest,
   NodeMetricsResponse,
   NodePressureRequest,
+  PvcMetricsRangeRequest,
+  PvcUsageRequest,
+  PvcUsageResponse,
   PodMetricsRangeRequest
 } from '@shared/types/metrics'
 import type { RbacCanIRequest, RbacCanIResponse, ResourcePermissionsRequest, ResourcePermissionsResponse } from '@shared/types/rbac'
@@ -59,6 +62,7 @@ import type {
   WorkloadContextInfo,
   WorkloadPermissionsRequest,
   WorkloadPermissionsResponse,
+  WorkloadPodsResponse,
   WorkloadRollbackRequest,
   WorkloadScaleRequest,
   WorkloadTargetRequest
@@ -80,9 +84,12 @@ import type {
   PodExecSessionRequest,
   PodExecStartRequest,
   PodLogsDataPayload,
+  PodLogsDownloadMergedRequest,
+  PodLogsDownloadMergedResponse,
   PodLogsDownloadRequest,
   PodLogsDownloadResponse,
   PodLogsEndedPayload,
+  PodLogsMergedStartRequest,
   PodLogsSessionRequest,
   PodLogsStartRequest,
   PodMetricsResponse,
@@ -397,6 +404,10 @@ const api = {
       ipcRenderer.invoke(IPC.METRICS_GET_NODE_RANGE, req),
     getPodRange: (req: PodMetricsRangeRequest): Promise<MetricsRangeResponse> =>
       ipcRenderer.invoke(IPC.METRICS_GET_POD_RANGE, req),
+    getPvcUsage: (req: PvcUsageRequest): Promise<PvcUsageResponse> =>
+      ipcRenderer.invoke(IPC.METRICS_GET_PVC_USAGE, req),
+    getPvcRange: (req: PvcMetricsRangeRequest): Promise<MetricsRangeResponse> =>
+      ipcRenderer.invoke(IPC.METRICS_GET_PVC_RANGE, req),
     getClusterRange: (req: ClusterMetricsRangeRequest): Promise<MetricsRangeResponse> =>
       ipcRenderer.invoke(IPC.METRICS_GET_CLUSTER_RANGE, req),
     getHpaRange: (req: HpaMetricsRangeRequest): Promise<MetricsRangeResponse> =>
@@ -443,7 +454,9 @@ const api = {
     triggerCronJob: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
       ipcRenderer.invoke(IPC.WORKLOAD_TRIGGER_CRONJOB, req),
     deletePods: (req: WorkloadTargetRequest): Promise<WorkloadActionResponse> =>
-      ipcRenderer.invoke(IPC.WORKLOAD_DELETE_PODS, req)
+      ipcRenderer.invoke(IPC.WORKLOAD_DELETE_PODS, req),
+    getPods: (req: WorkloadTargetRequest): Promise<WorkloadPodsResponse> =>
+      ipcRenderer.invoke(IPC.WORKLOAD_GET_PODS, req)
   },
   prometheus: {
     discover: (req: PrometheusDiscoverRequest): Promise<PrometheusStatus> =>
@@ -490,6 +503,8 @@ const api = {
       ipcRenderer.invoke(IPC.APP_GET_HOST_INFO),
     clearCache: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_CLEAR_CACHE),
     openDevTools: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_OPEN_DEVTOOLS),
+    openExternalUrl: (url: string): Promise<{ ok: true } | { error: string }> =>
+      ipcRenderer.invoke(IPC.APP_OPEN_EXTERNAL_URL, { url }),
     onFullscreenChanged: (cb: (payload: { fullscreen: boolean }) => void): (() => void) => {
       const listener = (_e: Electron.IpcRendererEvent, payload: { fullscreen: boolean }): void =>
         cb(payload)
@@ -507,9 +522,13 @@ const api = {
       ipcRenderer.invoke(IPC.POD_GET_NETWORK, req),
     logs: {
       start: (req: PodLogsStartRequest): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.POD_LOGS_START, req),
+      startMerged: (req: PodLogsMergedStartRequest): Promise<{ ok: true }> =>
+        ipcRenderer.invoke(IPC.POD_LOGS_START_MERGED, req),
       stop: (req: PodLogsSessionRequest): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.POD_LOGS_STOP, req),
       download: (req: PodLogsDownloadRequest): Promise<PodLogsDownloadResponse> =>
         ipcRenderer.invoke(IPC.POD_LOGS_DOWNLOAD, req),
+      downloadMerged: (req: PodLogsDownloadMergedRequest): Promise<PodLogsDownloadMergedResponse> =>
+        ipcRenderer.invoke(IPC.POD_LOGS_DOWNLOAD_MERGED, req),
       onData: (cb: (payload: PodLogsDataPayload) => void): (() => void) => {
         const listener = (_e: Electron.IpcRendererEvent, payload: PodLogsDataPayload): void => cb(payload)
         ipcRenderer.on(IPC.POD_LOGS_DATA, listener)
@@ -608,7 +627,15 @@ const api = {
     uninstallChart: (req: HelmUninstallChartRequest): Promise<HelmUninstallChartResponse> =>
       ipcRenderer.invoke(IPC.HELM_UNINSTALL_CHART, req),
     uninstallRelease: (req: HelmUninstallReleaseRequest): Promise<HelmUninstallReleaseResponse> =>
-      ipcRenderer.invoke(IPC.HELM_UNINSTALL_RELEASE, req)
+      ipcRenderer.invoke(IPC.HELM_UNINSTALL_RELEASE, req),
+    searchCatalog: (req: import('@shared/types/helm').HelmCatalogSearchRequest) =>
+      ipcRenderer.invoke(IPC.HELM_SEARCH_CATALOG, req) as Promise<
+        import('@shared/types/helm').HelmCatalogSearchResponse
+      >,
+    getPackage: (req: import('@shared/types/helm').HelmChartPackageRequest) =>
+      ipcRenderer.invoke(IPC.HELM_GET_PACKAGE, req) as Promise<import('@shared/types/helm').HelmChartPackageResponse>,
+    install: (req: import('@shared/types/helm').HelmInstallRequest) =>
+      ipcRenderer.invoke(IPC.HELM_INSTALL, req) as Promise<import('@shared/types/helm').HelmInstallResponse>
   },
   argocd: {
     getOverview: (req: ClusterIdRequest): Promise<ArgoOverviewResponse> =>
@@ -753,7 +780,33 @@ const api = {
       clusterId: string
       namespace: string
     }): Promise<{ ok: true; windowId: number } | { error: string }> =>
-      ipcRenderer.invoke(IPC.TOPOLOGY_OPEN_WINDOW, req)
+      ipcRenderer.invoke(IPC.TOPOLOGY_OPEN_WINDOW, req),
+    getVisualizerGraph: (
+      req: import('@shared/types/visualizer').VisualizerGraphRequest
+    ): Promise<
+      | import('@shared/types/visualizer').VisualizerGraphResponse
+      | { error: string }
+    > => ipcRenderer.invoke(IPC.VISUALIZER_GET_GRAPH, req)
+  },
+  visualizer: {
+    getGraph: (
+      req: import('@shared/types/visualizer').VisualizerGraphRequest
+    ): Promise<
+      | import('@shared/types/visualizer').VisualizerGraphResponse
+      | { error: string }
+    > => ipcRenderer.invoke(IPC.VISUALIZER_GET_GRAPH, req)
+  },
+  clusterApps: {
+    discover: (req: ClusterIdRequest): Promise<import('@shared/types/clusterApps').ClusterAppsDiscoverResponse> =>
+      ipcRenderer.invoke(IPC.CLUSTER_APPS_DISCOVER, req),
+    open: (
+      req: import('@shared/types/clusterApps').ClusterAppOpenRequest
+    ): Promise<import('@shared/types/clusterApps').ClusterAppOpenResponse> =>
+      ipcRenderer.invoke(IPC.CLUSTER_APPS_OPEN, req),
+    saveManual: (
+      req: import('@shared/types/clusterApps').ClusterAppSaveManualRequest
+    ): Promise<{ ok: true } | { ok: false; error: string }> =>
+      ipcRenderer.invoke(IPC.CLUSTER_APPS_SAVE_MANUAL, req)
   }
 }
 

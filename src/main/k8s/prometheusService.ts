@@ -1,5 +1,6 @@
 import fetch from 'node-fetch'
 import type { V1Service } from '@kubernetes/client-node'
+import type { ClusterMetricsSettings } from '@shared/types/clusterSettings'
 import type {
   PrometheusDiscoverRequest,
   PrometheusQueryData,
@@ -25,13 +26,29 @@ const resolvedCache = new Map<string, ResolvedPrometheus>()
 const discoverInFlight = new Map<string, Promise<PrometheusStatus>>()
 
 const PREFERRED_NAMESPACES = ['monitoring', 'prometheus', 'observability', 'kube-system']
+const FAIL_TTL_MS = 45_000
+const HEALTH_TIMEOUT_MS = 5_000
 
 function nowIso(): string {
   return new Date().toISOString()
 }
 
+function clusterRecord(clusterId: string) {
+  return listClusters().find((c) => c.id === clusterId)
+}
+
+function metricsSettings(clusterId: string): ClusterMetricsSettings | undefined {
+  return clusterRecord(clusterId)?.settings?.metrics
+}
+
+function queryTimeoutMs(clusterId: string, health: boolean): number {
+  if (health) return HEALTH_TIMEOUT_MS
+  const sec = metricsSettings(clusterId)?.queryTimeoutSec
+  return Math.max(3_000, (Number.isFinite(sec) ? Number(sec) : 15) * 1000)
+}
+
 function manualUrlForCluster(clusterId: string): string | undefined {
-  const cluster = listClusters().find((c) => c.id === clusterId)
+  const cluster = clusterRecord(clusterId)
   const trimmed = cluster?.prometheusUrl?.trim() || cluster?.settings?.metrics?.endpointUrl?.trim()
   return trimmed || undefined
 }
@@ -40,16 +57,28 @@ function buildProxyBase(server: string, namespace: string, serviceName: string, 
   return `${server.replace(/\/$/, '')}/api/v1/namespaces/${encodeURIComponent(namespace)}/services/${encodeURIComponent(serviceName)}:${port}/proxy`
 }
 
-function resolveManualBase(server: string, manualUrl: string): string {
+function applyPathPrefix(base: string, prefix?: string): string {
+  const trimmed = prefix?.trim()
+  if (!trimmed) return base.replace(/\/$/, '')
+  const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+  return `${base.replace(/\/$/, '')}${path.replace(/\/$/, '')}`
+}
+
+function resolveManualBase(server: string, manualUrl: string, pathPrefix?: string): string {
   const trimmed = manualUrl.trim()
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed.replace(/\/$/, '')
-  if (trimmed.startsWith('/')) return `${server.replace(/\/$/, '')}${trimmed}`.replace(/\/$/, '')
-  return trimmed.replace(/\/$/, '')
+  let base: string
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) base = trimmed.replace(/\/$/, '')
+  else if (trimmed.startsWith('/')) base = `${server.replace(/\/$/, '')}${trimmed}`.replace(/\/$/, '')
+  else base = trimmed.replace(/\/$/, '')
+  return applyPathPrefix(base, pathPrefix)
 }
 
 function resolveServicePort(svc: V1Service): number | string | null {
   const ports = svc.spec?.ports ?? []
-  const named = ports.find((p) => p.name === 'http' || p.name === 'web' || p.name === 'prometheus')
+  const named = ports.find((p) => {
+    const name = (p.name ?? '').toLowerCase()
+    return name === 'http' || name === 'web' || name === 'http-web' || name === 'prometheus'
+  })
   if (named?.port) return named.port
   const promPort = ports.find((p) => p.port === 9090)
   if (promPort?.port) return promPort.port
@@ -62,14 +91,38 @@ function isPrometheusCandidate(svc: V1Service): boolean {
   const labels = svc.metadata?.labels ?? {}
   if (labels['app.kubernetes.io/name'] === 'prometheus') return true
   if (labels.app === 'prometheus') return true
+  if (labels['operated-prometheus'] === 'true') return true
   return name.includes('prometheus')
 }
 
+function sameOrigin(a: string, b: string): boolean {
+  try {
+    return new URL(a).origin === new URL(b).origin
+  } catch {
+    return false
+  }
+}
+
+function manualAuthHeaders(clusterId: string): Record<string, string> {
+  const metrics = metricsSettings(clusterId)
+  if (!metrics || metrics.authType === 'none') return {}
+  if (metrics.authType === 'bearer' && metrics.authBearer.trim()) {
+    return { Authorization: `Bearer ${metrics.authBearer.trim()}` }
+  }
+  if (metrics.authType === 'basic' && metrics.authUser) {
+    const token = Buffer.from(`${metrics.authUser}:${metrics.authPassword}`).toString('base64')
+    return { Authorization: `Basic ${token}` }
+  }
+  return {}
+}
+
 async function prometheusFetch(
+  clusterId: string,
   clients: ClusterClients,
   queryBaseUrl: string,
   apiPath: string,
-  params?: Record<string, string>
+  params?: Record<string, string>,
+  timeoutMs?: number
 ): Promise<Awaited<ReturnType<typeof fetch>>> {
   const base = queryBaseUrl.replace(/\/$/, '')
   const path = apiPath.startsWith('/') ? apiPath : `/${apiPath}`
@@ -77,14 +130,36 @@ async function prometheusFetch(
   if (params) {
     for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value)
   }
-  const opts = await clients.kc.applyToFetchOptions({})
-  opts.method = 'GET'
-  return fetch(url.toString(), opts)
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs ?? queryTimeoutMs(clusterId, false))
+  try {
+    const server = clients.kc.getCurrentCluster()?.server ?? ''
+    const viaApiServer = Boolean(server) && sameOrigin(server, queryBaseUrl)
+    if (viaApiServer) {
+      const opts = await clients.kc.applyToFetchOptions({})
+      opts.method = 'GET'
+      opts.signal = controller.signal
+      return await fetch(url.toString(), opts)
+    }
+
+    const headers = manualAuthHeaders(clusterId)
+    return await fetch(url.toString(), { method: 'GET', headers, signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
-async function healthCheck(clients: ClusterClients, queryBaseUrl: string): Promise<boolean> {
+async function healthCheck(clusterId: string, clients: ClusterClients, queryBaseUrl: string): Promise<boolean> {
   try {
-    const res = await prometheusFetch(clients, queryBaseUrl, '/api/v1/query', { query: 'up' })
+    const res = await prometheusFetch(
+      clusterId,
+      clients,
+      queryBaseUrl,
+      '/api/v1/query',
+      { query: 'up' },
+      queryTimeoutMs(clusterId, true)
+    )
     if (res.status !== 200) return false
     const json = (await res.json()) as { status?: string }
     return json.status === 'success'
@@ -94,16 +169,17 @@ async function healthCheck(clients: ClusterClients, queryBaseUrl: string): Promi
 }
 
 async function tryManualUrl(
+  clusterId: string,
   clients: ClusterClients,
   server: string,
   manualUrl: string
 ): Promise<ResolvedPrometheus | null> {
-  const queryBaseUrl = resolveManualBase(server, manualUrl)
-  if (!(await healthCheck(clients, queryBaseUrl))) return null
+  const queryBaseUrl = resolveManualBase(server, manualUrl, metricsSettings(clusterId)?.pathPrefix)
+  if (!(await healthCheck(clusterId, clients, queryBaseUrl))) return null
   return { queryBaseUrl, discoveryMethod: 'manual' }
 }
 
-async function tryPrometheusOperator(clients: ClusterClients, server: string): Promise<ResolvedPrometheus | null> {
+async function tryPrometheusOperator(clusterId: string, clients: ClusterClients, server: string): Promise<ResolvedPrometheus | null> {
   try {
     const res = await clients.customObjects.listClusterCustomObject({
       group: 'monitoring.coreos.com',
@@ -115,10 +191,12 @@ async function tryPrometheusOperator(clients: ClusterClients, server: string): P
       const namespace = prom.metadata?.namespace
       const name = prom.metadata?.name
       if (!namespace || !name) continue
-      for (const serviceName of [name, `${name}-prometheus`, 'prometheus-operated', 'prometheus-k8s']) {
-        for (const port of [9090, 'http']) {
+      const serviceNames = [name, `${name}-prometheus`, 'prometheus-operated', 'prometheus-k8s']
+      const ports: Array<number | string> = [9090, 'http-web', 'web', 'http']
+      for (const serviceName of serviceNames) {
+        for (const port of ports) {
           const queryBaseUrl = buildProxyBase(server, namespace, serviceName, port)
-          if (await healthCheck(clients, queryBaseUrl)) {
+          if (await healthCheck(clusterId, clients, queryBaseUrl)) {
             return {
               queryBaseUrl,
               discoveryMethod: 'auto',
@@ -136,7 +214,7 @@ async function tryPrometheusOperator(clients: ClusterClients, server: string): P
   return null
 }
 
-async function tryServiceDiscovery(clients: ClusterClients, server: string): Promise<ResolvedPrometheus | null> {
+async function tryServiceDiscovery(clusterId: string, clients: ClusterClients, server: string): Promise<ResolvedPrometheus | null> {
   const candidates: V1Service[] = []
 
   for (const namespace of PREFERRED_NAMESPACES) {
@@ -159,7 +237,7 @@ async function tryServiceDiscovery(clients: ClusterClients, server: string): Pro
     const port = resolveServicePort(svc)
     if (!namespace || !serviceName || port == null) continue
     const queryBaseUrl = buildProxyBase(server, namespace, serviceName, port)
-    if (await healthCheck(clients, queryBaseUrl)) {
+    if (await healthCheck(clusterId, clients, queryBaseUrl)) {
       return {
         queryBaseUrl,
         discoveryMethod: 'auto',
@@ -208,13 +286,13 @@ export async function discoverPrometheus(req: PrometheusDiscoverRequest): Promis
     let resolved: ResolvedPrometheus | null = null
 
     if (manualUrl) {
-      resolved = await tryManualUrl(clients, server, manualUrl)
+      resolved = await tryManualUrl(req.clusterId, clients, server, manualUrl)
     }
     if (!resolved) {
-      resolved = await tryPrometheusOperator(clients, server)
+      resolved = await tryPrometheusOperator(req.clusterId, clients, server)
     }
     if (!resolved) {
-      resolved = await tryServiceDiscovery(clients, server)
+      resolved = await tryServiceDiscovery(req.clusterId, clients, server)
     }
 
     const status = toStatus(resolved)
@@ -235,7 +313,11 @@ export async function discoverPrometheus(req: PrometheusDiscoverRequest): Promis
 export async function ensurePrometheusDiscovered(clusterId: string): Promise<PrometheusStatus> {
   if (resolvedCache.has(clusterId)) return getPrometheusStatus(clusterId)
   const cached = statusCache.get(clusterId)
-  if (cached && cached.error !== 'Prometheus has not been discovered yet') return cached
+  if (cached?.available) return cached
+  if (cached && cached.error !== 'Prometheus has not been discovered yet') {
+    const age = Date.now() - Date.parse(cached.lastCheckedAt)
+    if (Number.isFinite(age) && age >= 0 && age < FAIL_TTL_MS) return cached
+  }
   const inflight = discoverInFlight.get(clusterId)
   if (inflight) return inflight
   return discoverPrometheus({ clusterId })
@@ -278,7 +360,7 @@ export async function prometheusQuery(req: PrometheusQueryRequest): Promise<Prom
     const clients = clusterManager.require(req.clusterId)
     const params: Record<string, string> = { query: req.query }
     if (req.time !== undefined) params.time = String(req.time)
-    const res = await prometheusFetch(clients, resolved.queryBaseUrl, '/api/v1/query', params)
+    const res = await prometheusFetch(req.clusterId, clients, resolved.queryBaseUrl, '/api/v1/query', params)
     const json = await res.json()
     if (res.status !== 200) {
       const message = (json as { error?: string }).error ?? `HTTP ${res.status}`
@@ -300,7 +382,7 @@ export async function prometheusQueryRange(req: PrometheusQueryRangeRequest): Pr
 
   try {
     const clients = clusterManager.require(req.clusterId)
-    const res = await prometheusFetch(clients, resolved.queryBaseUrl, '/api/v1/query_range', {
+    const res = await prometheusFetch(req.clusterId, clients, resolved.queryBaseUrl, '/api/v1/query_range', {
       query: req.query,
       start: String(req.start),
       end: String(req.end),

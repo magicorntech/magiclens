@@ -36,6 +36,7 @@ export const zh: TranslationOverrides = {
     noFavoriteClusters: '暂无收藏的集群',
     collapseSidebar: '折叠侧边栏',
     expandSidebar: '展开侧边栏',
+    resizeSidebar: '调整集群菜单宽度',
     favoritesHint: '固定集群',
     fullscreen: '全屏',
     exitFullscreen: '退出全屏'
@@ -195,8 +196,13 @@ export const zh: TranslationOverrides = {
       customAccent: '自定义强调色',
       customAccentHint: '应用于侧边栏、按钮、高亮与图表强调色。',
       customSwatch: '你自己的强调色',
-      modeTitle: '色彩模式',
-      modeHint: '在浅色、深色之间切换，或遵循系统外观。'
+      modeTitle: '模式',
+      modeHint: '浅色、深色，或跟随系统。',
+      modeLight: '浅色',
+      modeDark: '深色',
+      modeSystem: '系统',
+      colorTitle: '颜色',
+      colorHint: '用于{{mode}}模式。切换上方模式以编辑另一套配色。'
     },
     about: {
       platform: '平台',
@@ -543,6 +549,7 @@ export const zh: TranslationOverrides = {
   resourceNav: {
     virtual: {
       topology: '拓扑',
+      visualizer: 'Visualizer',
       clusterOverview: '簇',
       applications: '应用领域',
       workloadsOverview: '概述',
@@ -563,6 +570,7 @@ export const zh: TranslationOverrides = {
     pinned: '固定到选项卡',
     emptyFavorites: '右键单击资源可添加收藏夹。',
     aria: '资源',
+    resize: '调整资源菜单宽度',
     sections: {
       overview: '概述',
       workloads: '工作负载',
@@ -983,7 +991,8 @@ export const zh: TranslationOverrides = {
       exec: '执行者',
       metrics: '指标',
       pressure: '压力',
-      pods: 'Pods'
+      pods: 'Pods',
+      logs: '日志'
     },
     overview: {
       title: '概述',

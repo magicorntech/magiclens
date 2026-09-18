@@ -1,4 +1,4 @@
-import { BrowserWindow, app, ipcMain, screen } from 'electron'
+import { BrowserWindow, app, ipcMain, screen, shell } from 'electron'
 import { cpus, freemem, hostname, release, totalmem, type as osType } from 'node:os'
 import { IPC } from '@shared/ipc-contract'
 import type {
@@ -227,5 +227,18 @@ export function registerAppHandlers(): void {
     const win = windowFromEvent(event)
     win?.webContents.openDevTools({ mode: 'detach' })
     return { ok: true }
+  })
+
+  ipcMain.handle(IPC.APP_OPEN_EXTERNAL_URL, async (_e, req: { url: string }): Promise<{ ok: true } | { error: string }> => {
+    try {
+      const parsed = new URL(req.url)
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return { error: 'Only http(s) URLs can be opened' }
+      }
+      await shell.openExternal(parsed.toString())
+      return { ok: true }
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : String(err) }
+    }
   })
 }

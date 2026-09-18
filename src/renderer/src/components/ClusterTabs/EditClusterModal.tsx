@@ -44,6 +44,7 @@ import type { LucideIcon } from 'lucide-react'
 
 interface EditClusterModalProps {
   cluster: ClusterEntry | null
+  initialSection?: NavId
   onClose: () => void
 }
 
@@ -90,7 +91,7 @@ function statusTag(
   return <Tag color="default">{t('clusterEdit.prometheusNotFound')}</Tag>
 }
 
-export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): React.JSX.Element {
+export function EditClusterModal({ cluster, initialSection, onClose }: EditClusterModalProps): React.JSX.Element {
   const { t } = useTranslation()
   const layoutMode = useLayoutMode()
   const drawerWidth =
@@ -126,7 +127,7 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
 
   useEffect(() => {
     if (!cluster) return
-    setSection('appearance')
+    setSection(initialSection ?? 'appearance')
     setNavQuery('')
     setCustomName(cluster.customName)
     setLogoUrl(cluster.logoUrl)
@@ -140,7 +141,7 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
     if (cluster.status === 'connected') {
       void window.api.prometheus.getStatus({ clusterId: cluster.id }).then(setPrometheusStatus)
     }
-  }, [cluster, getVpnLink])
+  }, [cluster, getVpnLink, initialSection])
 
   const vpnProfileOptions = useMemo(
     () => [
@@ -344,7 +345,13 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
             <div className="ml-settings-section__body">
               <div className="ml-settings-row ml-settings-row--stacked">
                 <Space align="start" size="middle" style={{ width: '100%' }}>
-                  <ClusterAvatar logoUrl={logoUrl} name={customName} size={56} />
+                  <ClusterAvatar
+                    logoUrl={logoUrl}
+                    name={customName}
+                    contextName={cluster.contextName}
+                    endpoint={cluster.endpoint}
+                    size={56}
+                  />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <Input
                       value={customName}
@@ -585,7 +592,7 @@ export function EditClusterModal({ cluster, onClose }: EditClusterModalProps): R
         onOk={() => void handleSaveKubeconfig()}
         cancelText={t('clusterEdit.close')}
       >
-        <div style={{ height: 520, border: '1px solid var(--ml-border-secondary)', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ height: 520, border: '1px solid var(--ml-border-secondary)', borderRadius: 0, overflow: 'hidden' }}>
           <Editor
             language="yaml"
             theme={isDark ? 'vs-dark' : 'vs'}

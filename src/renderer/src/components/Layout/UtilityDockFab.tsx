@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Tooltip } from 'antd'
-import { FilePlus2, Plus, Sparkles, Terminal, X } from 'lucide-react'
+import { FilePlus2, Plus, Sparkles, Terminal } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { UtilityFabOffset } from '@shared/types/app'
 import { normalizeUtilityFabSide } from '@shared/types/app'
@@ -15,32 +14,32 @@ interface UtilityDockFabProps {
 }
 
 type FabDock = 'left-middle' | 'right-middle' | 'left-bottom' | 'right-bottom'
+type MenuAnchor = 'west' | 'east' | 'north-west' | 'north-east' | 'south-west' | 'south-east'
 
-function tipPlacement(dock: FabDock, offset: UtilityFabOffset | null): 'left' | 'right' | 'top' {
+function menuAnchor(dock: FabDock, offset: UtilityFabOffset | null): MenuAnchor {
   if (offset) {
-    if (offset.yPct > 78) return 'top'
-    return offset.xPct >= 50 ? 'left' : 'right'
+    const east = offset.xPct < 50
+    const south = offset.yPct < 28
+    const north = offset.yPct > 68
+    if (south) return east ? 'south-east' : 'south-west'
+    if (north) return east ? 'north-east' : 'north-west'
+    return east ? 'east' : 'west'
   }
-  if (dock === 'left-middle' || dock === 'left-bottom') return 'right'
-  return 'left'
-}
-
-function fanClass(dock: FabDock): 'left' | 'right' | 'bottom-left' | 'bottom-right' {
-  if (dock === 'left-middle') return 'left'
-  if (dock === 'right-middle') return 'right'
-  if (dock === 'left-bottom') return 'bottom-left'
-  return 'bottom-right'
+  if (dock === 'left-middle') return 'east'
+  if (dock === 'right-middle') return 'west'
+  if (dock === 'left-bottom') return 'north-east'
+  return 'north-west'
 }
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n))
 }
 
-const CLOSE_DELAY_MS = 260
+const CLOSE_DELAY_MS = 180
 const LONG_PRESS_MS = 420
 const MOVE_CANCEL_PX = 8
 
-/** Edge balloon: hover opens a round radial menu; long-press + drag to park. */
+/** Docked + control: hover opens a labeled action menu; long-press + drag to park. */
 export function UtilityDockFab({ clusterId, namespace }: UtilityDockFabProps): React.JSX.Element | null {
   const { t } = useTranslation()
   const show = useDisplaySettingsStore((s) => s.showUtilityFab)
@@ -70,13 +69,21 @@ export function UtilityDockFab({ clusterId, namespace }: UtilityDockFabProps): R
     if (offset == null) setLiveOffset(null)
   }, [offset])
 
+  useEffect(() => {
+    if (!expanded) return
+    function onKey(e: KeyboardEvent): void {
+      if (e.key === 'Escape') setExpanded(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [expanded])
+
   if (!show) return null
 
   const dock = normalizeUtilityFabSide(side) as FabDock
   const activeOffset = liveOffset ?? offset
   const free = activeOffset != null
-  const tip = tipPlacement(dock, activeOffset)
-  const fan = fanClass(dock)
+  const anchor = menuAnchor(dock, activeOffset)
   const ns = namespace === 'ALL' || !namespace ? 'default' : namespace
 
   function clearCloseTimer(): void {
@@ -216,18 +223,21 @@ export function UtilityDockFab({ clusterId, namespace }: UtilityDockFabProps): R
     {
       key: 'terminal',
       label: t('utilityFab.terminal'),
+      hint: t('utilityFab.hintTerminal'),
       icon: Terminal,
       onClick: () => runAction(addTerminalTab)
     },
     {
       key: 'editor',
       label: t('utilityFab.emptyEditor'),
+      hint: t('utilityFab.hintEditor'),
       icon: FilePlus2,
       onClick: () => runAction(openEmptyEditor)
     },
     {
       key: 'spark',
       label: t('utilityFab.addSpark'),
+      hint: t('utilityFab.hintSpark'),
       icon: Sparkles,
       onClick: () => runAction(openSpark)
     }
@@ -236,7 +246,7 @@ export function UtilityDockFab({ clusterId, namespace }: UtilityDockFabProps): R
   return (
     <div
       ref={rootRef}
-      className={`ml-utility-fab ml-utility-fab--${free ? 'free' : dock} ml-utility-fab-fan--${fan}${expanded ? ' is-expanded' : ''}${dragging ? ' is-dragging' : ''}`}
+      className={`ml-utility-fab ml-utility-fab--${free ? 'free' : dock} ml-utility-fab--anchor-${anchor}${expanded ? ' is-expanded' : ''}${dragging ? ' is-dragging' : ''}`}
       style={freeStyle}
       onMouseEnter={openMenu}
       onMouseLeave={scheduleClose}
@@ -247,29 +257,36 @@ export function UtilityDockFab({ clusterId, namespace }: UtilityDockFabProps): R
         scheduleClose()
       }}
     >
-      <div className="ml-utility-fab__orbit" aria-hidden={!expanded}>
-        {actions.map((action, index) => (
-          <span key={action.key} className="ml-utility-fab__slot" data-i={index}>
-            <Tooltip title={action.label} placement={tip} mouseEnterDelay={0.3}>
-              <button
-                type="button"
-                className="ml-utility-fab__action"
-                style={{ transitionDelay: expanded ? `${40 + index * 45}ms` : '0ms' }}
-                aria-label={action.label}
-                tabIndex={expanded ? 0 : -1}
-                onClick={action.onClick}
-              >
-                <Icon icon={action.icon} variant="toolbar" />
-              </button>
-            </Tooltip>
-          </span>
-        ))}
+      <div className="ml-utility-fab__menu" role="menu" aria-label={t('utilityFab.expand')} aria-hidden={!expanded}>
+        <div className="ml-utility-fab__menu-title">{t('utilityFab.expand')}</div>
+        <div className="ml-utility-fab__menu-list">
+          {actions.map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              role="menuitem"
+              className="ml-utility-fab__item"
+              tabIndex={expanded ? 0 : -1}
+              onClick={action.onClick}
+            >
+              <span className="ml-utility-fab__item-icon" aria-hidden>
+                <Icon icon={action.icon} variant="action" />
+              </span>
+              <span className="ml-utility-fab__item-copy">
+                <span className="ml-utility-fab__item-label">{action.label}</span>
+                <span className="ml-utility-fab__item-hint">{action.hint}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="ml-utility-fab__menu-foot">{t('utilityFab.dragHint')}</div>
       </div>
 
       <button
         type="button"
         className="ml-utility-fab__toggle"
         aria-expanded={expanded}
+        aria-haspopup="menu"
         aria-label={t('utilityFab.expand')}
         title={t('utilityFab.dragHint')}
         tabIndex={0}
@@ -278,7 +295,9 @@ export function UtilityDockFab({ clusterId, namespace }: UtilityDockFabProps): R
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
       >
-        <Icon icon={expanded ? X : Plus} variant="toolbar" />
+        <span className="ml-utility-fab__plus" aria-hidden>
+          <Icon icon={Plus} variant="toolbar" />
+        </span>
       </button>
     </div>
   )

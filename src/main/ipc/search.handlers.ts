@@ -3,10 +3,12 @@ import { IPC } from '@shared/ipc-contract'
 import { CLUSTER_NOT_CONNECTED } from '@shared/types/cluster'
 import type { GlobalSearchRequest, GlobalSearchResponse } from '@shared/types/search'
 import { withClusterClients } from '../k8s/withClusterClients'
+import { isDemoCluster } from '../k8s/demoMode'
 import { searchClusterResources } from '../k8s/searchService'
 
 export function registerSearchHandlers(): void {
   ipcMain.handle(IPC.SEARCH_RESOURCES, async (_e, req: GlobalSearchRequest): Promise<GlobalSearchResponse> => {
+    if (isDemoCluster(req.clusterId)) return { groups: [] }
     try {
       const result = await withClusterClients(req.clusterId, async (clients) => {
         const groups = await searchClusterResources(clients, req.clusterId, req.clusterName, req)

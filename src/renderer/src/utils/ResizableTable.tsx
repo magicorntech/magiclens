@@ -59,6 +59,12 @@ function defaultColumnWidth(key: string, col: ColumnType<unknown>): number {
       return 88
     case 'ready':
       return 80
+    case 'hosts':
+      return 280
+    case 'addresses':
+      return 140
+    case 'ingressClass':
+      return 88
     case 'status':
       return 128
     case 'age':

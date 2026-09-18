@@ -5,6 +5,8 @@ import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceFocus } from '@shared/types/navigation'
 import type { ResourceListItem } from '@shared/types/resource'
 import { useResourceList } from '../../queries/useResourceList'
+import { pvcMetricsKey, usePvcTableMetrics } from '../../queries/usePvcTableMetrics'
+import { formatBytes } from '../../format'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { DetailOverview, DetailSection } from '../Detail/detailPrimitives'
 import { OverviewGrid, OverviewPage, OverviewStat } from './OverviewPage'
@@ -33,6 +35,7 @@ export function StorageOverviewPage({
   const pvc = useResourceList(clusterId, 'ALL', 'PersistentVolumeClaims', isActive)
   const pv = useResourceList(clusterId, 'ALL', 'PersistentVolumes', isActive)
   const sc = useResourceList(clusterId, 'ALL', 'StorageClasses', isActive)
+  const pvcUsage = usePvcTableMetrics(clusterId, 'ALL', isActive)
 
   const byKind = useMemo(
     () =>
@@ -57,6 +60,16 @@ export function StorageOverviewPage({
   )
 
   const boundClaimsCount = byKind.PersistentVolumeClaims.length - unboundClaims.length
+
+  const fullestClaims = useMemo(() => {
+    return byKind.PersistentVolumeClaims.map((item) => {
+      const usage = pvcUsage.get(pvcMetricsKey(item.namespace, item.name))
+      return { item, usage }
+    })
+      .filter((row) => row.usage?.percent !== undefined)
+      .sort((a, b) => (b.usage?.percent ?? 0) - (a.usage?.percent ?? 0))
+      .slice(0, 12)
+  }, [byKind.PersistentVolumeClaims, pvcUsage])
 
   if (loading && STORAGE_KINDS.every((k) => byKind[k].length === 0)) return <LoadingState />
 
@@ -111,6 +124,44 @@ export function StorageOverviewPage({
                   </strong>
                   <span className="ml-overview-list__meta">{item.columns.capacity}</span>
                   <Tag color={item.statusColor || 'default'}>{item.statusText}</Tag>
+                </button>
+              ))}
+            </div>
+          )}
+        </DetailSection>
+
+        <DetailSection title={t('storageOverview.fullest')}>
+          {fullestClaims.length === 0 ? (
+            <span className="ml-detail-empty">{t('storageOverview.noUsage')}</span>
+          ) : (
+            <div className="ml-overview-list">
+              {fullestClaims.map(({ item, usage }) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="ml-overview-list__row"
+                  onClick={() =>
+                    onNavigateToResource(
+                      { kind: 'PersistentVolumeClaims', namespace: item.namespace, name: item.name },
+                      item
+                    )
+                  }
+                >
+                  <strong>
+                    {item.namespace}/{item.name}
+                  </strong>
+                  <span className="ml-overview-list__meta">
+                    {usage?.percent !== undefined && usage.usedBytes !== undefined && usage.capacityBytes !== undefined
+                      ? t('storageOverview.usageMeta', {
+                          percent: Math.round(usage.percent),
+                          used: formatBytes(usage.usedBytes),
+                          capacity: formatBytes(usage.capacityBytes)
+                        })
+                      : item.columns.capacity}
+                  </span>
+                  <Tag color={usage && usage.percent !== undefined && usage.percent >= 90 ? 'red' : item.statusColor || 'default'}>
+                    {usage?.percent !== undefined ? `${Math.round(usage.percent)}%` : item.statusText}
+                  </Tag>
                 </button>
               ))}
             </div>

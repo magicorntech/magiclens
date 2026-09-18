@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Dropdown, Input, Popover, Tooltip, type MenuProps } from 'antd'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
@@ -20,13 +20,17 @@ import {
   type NavLayoutItem
 } from '../../resourceConfig/resourceNavConfig'
 import { kindIconLucide, virtualPageIcons } from '../../icons/resourceKindIcons'
+import { BRAND_NAV_ICONS } from '../../icons/AppsLogos'
 import { Icon } from '../ui/Icon'
 import { HighlightText } from '../ClusterTabs/ClusterSearchInput'
 
+function kindNavLabel(kind: ResourceKind, t: TFunction): string {
+  return t(`resourceNav.kinds.${kind}`, { defaultValue: kind })
+}
+
 function resolveNavEntryLabel(entry: NavEntry, t: TFunction): string {
   if (entry.type === 'virtual') return t(`resourceNav.virtual.${entry.key}`)
-  if (entry.kind === 'CustomResourceDefinitions') return t('resourceNav.virtual.definitions')
-  return entry.kind
+  return kindNavLabel(entry.kind, t)
 }
 
 function resolveSectionTitle(sectionId: string, t: TFunction): string {
@@ -63,6 +67,32 @@ function saveExpandedSections(clusterId: string, expanded: Set<string>): void {
   } catch {
     // ignore
   }
+}
+
+function isBrandIcon(icon: LucideIcon): boolean {
+  return BRAND_NAV_ICONS.has(icon)
+}
+
+function brandOrLucide(icon: LucideIcon, size: number, variant: 'toolbar' | 'default' = 'default'): React.ReactNode {
+  return isBrandIcon(icon) ? createElement(icon, { size }) : <Icon icon={icon} variant={variant} />
+}
+
+function navEntryIcon(
+  entry: NavEntry,
+  options?: { child?: boolean; variant?: 'toolbar' | 'default' }
+): React.ReactNode {
+  const lucide = entry.type === 'kind' ? kindIconLucide[entry.kind] : virtualPageIcons[entry.key]
+  const brand = isBrandIcon(lucide)
+  const child = options?.child
+  return (
+    <span
+      className={`ml-resource-nav-item-icon${child ? ' ml-resource-nav-item-icon--child' : ''}${
+        brand ? ' ml-resource-nav-item-icon--brand' : ''
+      }`}
+    >
+      {brandOrLucide(lucide, 16, options?.variant ?? (child ? 'toolbar' : 'default'))}
+    </span>
+  )
 }
 
 function matchesSearch(label: string, query: string): boolean {
@@ -229,15 +259,21 @@ export function ResourceMenu({
         if (item === 'favorites') {
           const favMatches =
             favoriteKinds.length > 0 &&
-            favoriteKinds.some((k) => !hiddenKinds.has(k) && matchesSearch(k, q))
+            favoriteKinds.some(
+              (k) =>
+                !hiddenKinds.has(k) &&
+                (matchesSearch(kindNavLabel(k, t), q) || matchesSearch(k, q))
+            )
           return favMatches || !q ? item : null
         }
         if (item.type === 'standalone') {
-          const label = item.label ?? item.kind
+          const label = kindNavLabel(item.kind, t)
           return matchesSearch(label, q) ? item : null
         }
         if (item.type === 'standalone-virtual') {
-          return matchesSearch(item.label, q) ? item : null
+          return matchesSearch(t(`resourceNav.virtual.${item.key}`, { defaultValue: item.label }), q)
+            ? item
+            : null
         }
         const sectionMatches = matchesSearch(resolveSectionTitle(item.id, t), q)
         const matchingEntries = item.entries.filter((entry) =>
@@ -254,7 +290,7 @@ export function ResourceMenu({
     for (const item of filteredLayout) {
       if (item === 'favorites') {
         for (const kind of favoriteKinds) {
-          if (matchesSearch(kind, search)) keys.push(kind)
+          if (matchesSearch(kindNavLabel(kind, t), search) || matchesSearch(kind, search)) keys.push(kind)
         }
         continue
       }
@@ -297,7 +333,6 @@ export function ResourceMenu({
     const label = resolveNavEntryLabel(entry, t)
     const active = isEntryActive(entry)
     const focused = focusIndex >= 0 && focusableKeys[focusIndex] === key
-    const lucide = entry.type === 'kind' ? kindIconLucide[entry.kind] : virtualPageIcons[entry.key]
     const showPin = entry.type === 'kind' && pinnedKinds.includes(entry.kind)
 
     const item = (
@@ -309,9 +344,7 @@ export function ResourceMenu({
         onFocus={() => setFocusIndex(focusableKeys.indexOf(key))}
         tabIndex={focused ? 0 : -1}
       >
-        <span className="ml-resource-nav-item-icon ml-resource-nav-item-icon--child">
-          <Icon icon={lucide} variant="toolbar" />
-        </span>
+        {navEntryIcon(entry, { child: true })}
         <span className="ml-resource-nav-item-label">
           <HighlightText text={label} query={search} />
         </span>
@@ -369,7 +402,7 @@ export function ResourceMenu({
   }
 
   function renderStandalone(item: Extract<NavLayoutItem, { type: 'standalone' }>): React.ReactNode {
-    const label = item.label ?? item.kind
+    const label = kindNavLabel(item.kind, t)
     const active = isKindActive(item.kind)
     const focused = focusIndex >= 0 && focusableKeys[focusIndex] === item.kind
 
@@ -382,8 +415,8 @@ export function ResourceMenu({
         onFocus={() => setFocusIndex(focusableKeys.indexOf(item.kind))}
         tabIndex={focused ? 0 : -1}
       >
-        <span className="ml-resource-nav-item-icon">
-          <Icon icon={item.icon} variant="default" />
+        <span className={`ml-resource-nav-item-icon${isBrandIcon(item.icon) ? ' ml-resource-nav-item-icon--brand' : ''}`}>
+          {brandOrLucide(item.icon, 16)}
         </span>
         <span className="ml-resource-nav-item-label">
           <HighlightText text={label} query={search} />
@@ -425,11 +458,11 @@ export function ResourceMenu({
             onFocus={() => setFocusIndex(focusableKeys.indexOf(item.key))}
             tabIndex={focused ? 0 : -1}
           >
-            <span className="ml-resource-nav-item-icon">
-              <Icon icon={item.icon} variant="default" />
+            <span className={`ml-resource-nav-item-icon${isBrandIcon(item.icon) ? ' ml-resource-nav-item-icon--brand' : ''}`}>
+              {brandOrLucide(item.icon, 16)}
             </span>
             <span className="ml-resource-nav-item-label">
-              <HighlightText text={item.label} query={search} />
+              <HighlightText text={t(`resourceNav.virtual.${item.key}`, { defaultValue: item.label })} query={search} />
             </span>
           </button>
         </div>
@@ -456,12 +489,8 @@ export function ResourceMenu({
         onClick={() => toggleSection(section.id)}
         aria-expanded={isOpen}
       >
-        <span className="ml-resource-nav-item-icon">
-          <Icon
-            icon={section.icon}
-            variant="default"
-            color={hasActiveChild ? 'var(--ml-primary)' : undefined}
-          />
+        <span className={`ml-resource-nav-item-icon${isBrandIcon(section.icon) ? ' ml-resource-nav-item-icon--brand' : ''}`}>
+          {brandOrLucide(section.icon, 16)}
         </span>
         <span className="ml-resource-nav-group-title">
           <HighlightText text={title} query={search} />
@@ -495,7 +524,9 @@ export function ResourceMenu({
 
   function renderFavorites(): React.ReactNode {
     const visibleFavorites = favoriteKinds.filter(
-      (k) => !hiddenKinds.has(k) && matchesSearch(k, search)
+      (k) =>
+        !hiddenKinds.has(k) &&
+        (matchesSearch(kindNavLabel(k, t), search) || matchesSearch(k, search))
     )
     if (search.trim() && visibleFavorites.length === 0) return null
 
@@ -559,6 +590,7 @@ export function ResourceMenu({
             const label = resolveNavEntryLabel(entry, t)
             const entryActive = isEntryActive(entry)
             const lucide = entry.type === 'kind' ? kindIconLucide[entry.kind] : virtualPageIcons[entry.key]
+            const brand = isBrandIcon(lucide)
             return (
               <button
                 key={entryKey}
@@ -567,8 +599,8 @@ export function ResourceMenu({
                 className={`ml-resource-nav-flyout-item${entryActive ? ' is-active' : ''}`}
                 onClick={() => onSelectEntry(entry)}
               >
-                <span className="ml-resource-nav-flyout-item-icon">
-                  <Icon icon={lucide} variant="toolbar" />
+                <span className={`ml-resource-nav-flyout-item-icon${brand ? ' ml-resource-nav-item-icon--brand' : ''}`}>
+                  {brandOrLucide(lucide, 16, 'toolbar')}
                 </span>
                 <span className="ml-resource-nav-flyout-item-label">{label}</span>
               </button>
@@ -605,10 +637,10 @@ export function ResourceMenu({
         <span className="ml-resource-nav-rail-slot">
           <button
             type="button"
-            className={`ml-resource-nav-rail-item${active ? ' is-active' : ''}`}
+            className={`ml-resource-nav-rail-item${active ? ' is-active' : ''}${isBrandIcon(icon) ? ' ml-resource-nav-rail-item--brand' : ''}`}
             aria-label={title}
           >
-            <Icon icon={icon} variant="toolbar" />
+            {isBrandIcon(icon) ? createElement(icon, { size: 16 }) : <Icon icon={icon} variant="toolbar" />}
           </button>
         </span>
       </Popover>
@@ -627,11 +659,11 @@ export function ResourceMenu({
         <span className="ml-resource-nav-rail-slot">
           <button
             type="button"
-            className={`ml-resource-nav-rail-item${active ? ' is-active' : ''}`}
+            className={`ml-resource-nav-rail-item${active ? ' is-active' : ''}${isBrandIcon(icon) ? ' ml-resource-nav-rail-item--brand' : ''}`}
             onClick={onClick}
             aria-label={label}
           >
-            <Icon icon={icon} variant="toolbar" />
+            {isBrandIcon(icon) ? createElement(icon, { size: 16 }) : <Icon icon={icon} variant="toolbar" />}
           </button>
         </span>
       </Tooltip>
@@ -657,7 +689,7 @@ export function ResourceMenu({
           if (item.type === 'standalone') {
             return renderCollapsedIcon(
               item.kind,
-              item.label ?? item.kind,
+              item.label ?? kindNavLabel(item.kind, t),
               item.icon,
               isKindActive(item.kind),
               () => handleSelectKind(item.kind)
@@ -666,7 +698,7 @@ export function ResourceMenu({
           if (item.type === 'standalone-virtual') {
             return renderCollapsedIcon(
               item.key,
-              item.label,
+              t(`resourceNav.virtual.${item.key}`, { defaultValue: item.label }),
               item.icon,
               isVirtualActive(item.key),
               () => handleSelectVirtual(item.key)

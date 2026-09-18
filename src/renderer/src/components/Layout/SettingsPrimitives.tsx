@@ -121,6 +121,13 @@ export function SettingsSelectRow<T extends string | number>({
   )
 }
 
+interface ThemeSwatchProps {
+  name: string
+  color: string
+  selected: boolean
+  onSelect: () => void
+}
+
 interface ThemeSchemeCardProps {
   name: string
   description: string
@@ -128,6 +135,23 @@ interface ThemeSchemeCardProps {
   selected: boolean
   onSelect: () => void
   trailing?: ReactNode
+}
+
+/** Compact color chip for the appearance picker. */
+export function ThemeSwatch({ name, color, selected, onSelect }: ThemeSwatchProps): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      className={`ml-settings-swatch${selected ? ' is-selected' : ''}`}
+      onClick={onSelect}
+      aria-pressed={selected}
+      title={name}
+    >
+      <span className="ml-settings-swatch__dot" style={{ background: color }} />
+      <span className="ml-settings-swatch__name">{name}</span>
+      {selected ? <Icon icon={Check} variant="micro" className="ml-settings-swatch__check" /> : null}
+    </button>
+  )
 }
 
 export function ThemeSchemeCard({

@@ -12,10 +12,12 @@ import type { ResourceListItem } from '@shared/types/resource'
 import { useResourceList } from '../../queries/useResourceList'
 import { useNodeMetrics } from '../../queries/useNodeMetrics'
 import { podMetricsKey, usePodTableMetrics } from '../../queries/usePodTableMetrics'
+import { pvcMetricsKey, usePvcTableMetrics } from '../../queries/usePvcTableMetrics'
 import { kindColumnDefs } from '../../resourceConfig/kinds.renderer'
 import { buildCreateTemplate } from '../../resourceConfig/manifestTemplates'
 import { formatBytes, formatCores } from '../../format'
 import { NodeMetricUsageBar } from '../Metrics/NodeMetricUsageBar'
+import { ProgressBar } from '../ui/ProgressBar'
 import {
   columnValueSorter,
   compareAgeTimestamps,
@@ -94,6 +96,7 @@ export function ResourceTable({
   const layoutMode = useLayoutMode()
   const isNodesKind = kind === 'Nodes'
   const isPodsKind = kind === 'Pods'
+  const isPvcsKind = kind === 'PersistentVolumeClaims'
   const detailInSidebar = resourceDetailPlacement === 'right' && canUseSplitLayouts(layoutMode)
   const detailInDrawer =
     resourceDetailPlacement === 'drawer' ||
@@ -112,6 +115,11 @@ export function ResourceTable({
     isPodsKind ? clusterId : null,
     namespace,
     isActive && isPodsKind
+  )
+  const pvcMetricsByKey = usePvcTableMetrics(
+    isPvcsKind ? clusterId : null,
+    namespace,
+    isActive && isPvcsKind
   )
 
   function applyNamespaceChange(ns: string): void {
@@ -234,6 +242,41 @@ export function ResourceTable({
           )
         )
       }
+      if (isPvcsKind && col.key === 'capacity') {
+        cols.push(
+          applySortOrder(
+            {
+              title: 'Usage',
+              key: 'pvc-usage',
+              width: 180,
+              sorter: (a, b) => {
+                const pa = pvcMetricsByKey.get(pvcMetricsKey(a.namespace, a.name))?.percent ?? -1
+                const pb = pvcMetricsByKey.get(pvcMetricsKey(b.namespace, b.name))?.percent ?? -1
+                return pa - pb
+              },
+              ellipsis: false,
+              render: (_, item) => {
+                const m = pvcMetricsByKey.get(pvcMetricsKey(item.namespace, item.name))
+                if (!m || (m.percent === undefined && m.usedBytes === undefined)) return '—'
+                return (
+                  <div className="ml-node-metric-cell ml-node-metric-cell--table">
+                    <ProgressBar label="" percent={m.percent} size="sm" />
+                    <span className="ml-node-metric-cell-pct">
+                      {m.percent !== undefined ? `${Math.round(m.percent)}%` : '—'}
+                    </span>
+                    <span className="ml-node-metric-cell-detail">
+                      {m.usedBytes !== undefined && m.capacityBytes !== undefined
+                        ? `${formatBytes(m.usedBytes)} / ${formatBytes(m.capacityBytes)}`
+                        : '—'}
+                    </span>
+                  </div>
+                )
+              }
+            },
+            sortState
+          )
+        )
+      }
     }
     if (isNodesKind) {
       cols.push({
@@ -340,8 +383,10 @@ export function ResourceTable({
     namespace,
     isNodesKind,
     isPodsKind,
+    isPvcsKind,
     nodeMetrics,
     podMetricsByKey,
+    pvcMetricsByKey,
     clusterId,
     listQueryKey,
     sortState,

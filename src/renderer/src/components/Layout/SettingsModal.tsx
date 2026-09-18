@@ -46,10 +46,9 @@ import logo from '../../assets/logo.png'
 import { refreshIntervalOptions, useLiveRefreshStore } from '../../stores/liveRefreshStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useUpdateStore } from '../../stores/updateStore'
-import { useThemeStore } from '../../stores/themeStore'
+import { useThemeStore, type ThemeFamily } from '../../stores/themeStore'
 import { useResolvedDarkMode } from '../../stores/useResolvedDarkMode'
-import { getSchemePalette } from '../../theme/schemes'
-import { COLOR_SCHEME_DEFINITIONS, COLOR_SCHEME_GROUPS } from '../../theme/schemes'
+import { COLOR_SCHEME_DEFINITIONS } from '../../theme/schemes'
 import type { AppInfoResponse } from '@shared/types/app'
 import { APP_LOCALES, APP_LOCALE_LABELS, type AppLocale } from '@shared/types/locale'
 import { useLayoutMode } from '../../hooks/useLayoutMode'
@@ -68,7 +67,7 @@ import {
   SettingsSection,
   SettingsToggleRow,
   SettingsSelectRow,
-  ThemeSchemeCard
+  ThemeSwatch
 } from './SettingsPrimitives'
 import { type SettingsSection as SettingsSectionId, useSettingsUiStore } from '../../stores/settingsUiStore'
 
@@ -78,6 +77,160 @@ interface SettingsModalProps {
 }
 
 const FONT_OPTION_IDS: UiFontId[] = ['default', 'system', 'manrope', 'plusJakartaSans', 'outfit', 'sora']
+
+function schemeChipColor(id: string, swatches: readonly string[]): string {
+  if (id === 'white' || id === 'black') return swatches[1] ?? swatches[0]
+  return swatches[0]
+}
+
+function AppearanceSettings(): React.JSX.Element {
+  const { t } = useTranslation()
+  const isDark = useResolvedDarkMode()
+  const family: ThemeFamily = isDark ? 'dark' : 'light'
+  const scheme = useThemeStore((s) => (isDark ? s.darkScheme : s.lightScheme))
+  const setScheme = useThemeStore((s) => (isDark ? s.setDarkScheme : s.setLightScheme))
+  const customAccent = useThemeStore((s) => (isDark ? s.customAccentDark : s.customAccentLight))
+  const setCustomAccent = useThemeStore((s) => (isDark ? s.setCustomAccentDark : s.setCustomAccentLight))
+  const customThemes = useThemeStore((s) => (isDark ? s.customThemesDark : s.customThemesLight))
+  const activeCustomThemeId = useThemeStore((s) =>
+    isDark ? s.activeCustomThemeIdDark : s.activeCustomThemeIdLight
+  )
+  const saveCustomTheme = useThemeStore((s) => s.saveCustomTheme)
+  const selectCustomTheme = useThemeStore((s) => s.selectCustomTheme)
+  const deleteCustomTheme = useThemeStore((s) => s.deleteCustomTheme)
+  const uiTypography = useDisplaySettingsStore((s) => s.uiTypography)
+  const setUiTypography = useDisplaySettingsStore((s) => s.setUiTypography)
+  const [newThemeName, setNewThemeName] = useState('')
+  const customSelected = scheme === 'custom'
+
+  return (
+    <>
+      <SettingsSection
+        title={t('settings.appearance.modeTitle')}
+        description={t('settings.appearance.modeHint')}
+      >
+        <div className="ml-settings-theme-mode ml-settings-theme-mode--wide">
+          <ThemeToggle labeled />
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        title={t('settings.appearance.colorTitle')}
+        description={t('settings.appearance.colorHint', {
+          mode: t(isDark ? 'settings.appearance.modeDark' : 'settings.appearance.modeLight')
+        })}
+      >
+        <div className="ml-settings-swatch-grid">
+          {COLOR_SCHEME_DEFINITIONS.map((item) => (
+            <ThemeSwatch
+              key={item.id}
+              name={item.name}
+              color={schemeChipColor(item.id, item.swatches)}
+              selected={scheme === item.id}
+              onSelect={() => setScheme(item.id)}
+            />
+          ))}
+          <ThemeSwatch
+            name={t('common.custom')}
+            color={customAccent}
+            selected={customSelected && activeCustomThemeId === null}
+            onSelect={() => setScheme('custom')}
+          />
+          {customThemes.map((theme) => (
+            <ThemeSwatch
+              key={theme.id}
+              name={theme.name}
+              color={theme.accentColor}
+              selected={customSelected && activeCustomThemeId === theme.id}
+              onSelect={() => selectCustomTheme(theme.id, family)}
+            />
+          ))}
+        </div>
+        {customSelected ? (
+          <div className="ml-settings-theme-custom">
+            <ColorPicker
+              value={customAccent}
+              showText
+              onChange={(color: AggregationColor) => setCustomAccent(color.toHexString())}
+            />
+            {activeCustomThemeId ? (
+              <Button
+                danger
+                icon={<Icon icon={Trash2} variant="detail" />}
+                onClick={() => deleteCustomTheme(activeCustomThemeId, family)}
+              >
+                {t('settings.appearance.deleteCustomTheme')}
+              </Button>
+            ) : (
+              <Space.Compact style={{ flex: 1, minWidth: 180, maxWidth: 320 }}>
+                <Input
+                  value={newThemeName}
+                  placeholder={t('settings.appearance.saveCustomThemePlaceholder')}
+                  onChange={(e) => setNewThemeName(e.target.value)}
+                  onPressEnter={() => {
+                    if (!newThemeName.trim()) return
+                    saveCustomTheme(newThemeName, family)
+                    setNewThemeName('')
+                  }}
+                />
+                <Button
+                  type="primary"
+                  icon={<Icon icon={Save} variant="detail" />}
+                  disabled={!newThemeName.trim()}
+                  onClick={() => {
+                    saveCustomTheme(newThemeName, family)
+                    setNewThemeName('')
+                  }}
+                >
+                  {t('settings.appearance.save')}
+                </Button>
+              </Space.Compact>
+            )}
+          </div>
+        ) : null}
+      </SettingsSection>
+
+      <SettingsSection
+        title={t('settings.appearance.typographyTitle')}
+        description={t('settings.appearance.typographyHint')}
+      >
+        <SettingsSelectRow
+          title={t('settings.appearance.font')}
+          value={uiTypography.font}
+          onChange={(value: UiFontId) => void setUiTypography({ font: value })}
+          options={FONT_OPTION_IDS.map((id) => ({
+            value: id,
+            label: (
+              <span style={{ fontFamily: UI_FONT_STACKS[id] }}>
+                {t(`settings.appearance.font_${id}`)}
+              </span>
+            )
+          }))}
+        />
+        <SettingsSelectRow
+          title={t('settings.appearance.weight')}
+          value={uiTypography.weight}
+          onChange={(value: UiFontWeightId) => void setUiTypography({ weight: value })}
+          options={[
+            { value: 'regular', label: t('settings.appearance.weightRegular') },
+            { value: 'medium', label: t('settings.appearance.weightMedium') },
+            { value: 'semibold', label: t('settings.appearance.weightSemibold') }
+          ]}
+        />
+        <SettingsSelectRow
+          title={t('settings.appearance.contrast')}
+          value={uiTypography.contrast}
+          onChange={(value: UiTextContrastId) => void setUiTypography({ contrast: value })}
+          options={[
+            { value: 'soft', label: t('settings.appearance.contrastSoft') },
+            { value: 'normal', label: t('settings.appearance.contrastNormal') },
+            { value: 'bright', label: t('settings.appearance.contrastBright') }
+          ]}
+        />
+      </SettingsSection>
+    </>
+  )
+}
 
 const UPDATE_PHASE_LABEL: Record<UpdatePhase, string> = {
   idle: 'Up to date',
@@ -131,17 +284,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const setSection = useSettingsUiStore((s) => s.setSection)
   const interval = useLiveRefreshStore((s) => s.interval)
   const setInterval_ = useLiveRefreshStore((s) => s.setInterval)
-  const colorScheme = useThemeStore((s) => s.colorScheme)
-  const setColorScheme = useThemeStore((s) => s.setColorScheme)
-  const customAccentColor = useThemeStore((s) => s.customAccentColor)
-  const setCustomAccentColor = useThemeStore((s) => s.setCustomAccentColor)
-  const customThemes = useThemeStore((s) => s.customThemes)
-  const activeCustomThemeId = useThemeStore((s) => s.activeCustomThemeId)
-  const saveCustomTheme = useThemeStore((s) => s.saveCustomTheme)
-  const selectCustomTheme = useThemeStore((s) => s.selectCustomTheme)
-  const deleteCustomTheme = useThemeStore((s) => s.deleteCustomTheme)
-  const isDarkMode = useResolvedDarkMode()
-  const [newThemeName, setNewThemeName] = useState('')
   const [appInfo, setAppInfo] = useState<AppInfoResponse | null>(null)
 
   const updateSettings = useUpdateStore((s) => s.settings)
@@ -430,7 +572,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                       whiteSpace: 'pre-wrap',
                       fontSize: 13,
                       background: 'rgba(127,127,127,0.08)',
-                      borderRadius: 6,
+                      borderRadius: 0,
                       padding: 12
                     }}
                   >
@@ -657,185 +799,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
         return <KeyboardShortcutsSettings />
 
       case 'appearance':
-        return (
-          <>
-            <SettingsSection
-              title={t('settings.appearance.modeTitle')}
-              description={t('settings.appearance.modeHint')}
-            >
-              <div className="ml-settings-theme-mode">
-                <ThemeToggle />
-              </div>
-            </SettingsSection>
-
-            <SettingsSection
-              title={t('settings.appearance.typographyTitle')}
-              description={t('settings.appearance.typographyHint')}
-            >
-              <SettingsSelectRow
-                title={t('settings.appearance.font')}
-                value={uiTypography.font}
-                onChange={(value: UiFontId) => void setUiTypography({ font: value })}
-                options={FONT_OPTION_IDS.map((id) => ({
-                  value: id,
-                  label: (
-                    <span style={{ fontFamily: UI_FONT_STACKS[id] }}>
-                      {t(`settings.appearance.font_${id}`)}
-                    </span>
-                  )
-                }))}
-              />
-              <SettingsSelectRow
-                title={t('settings.appearance.weight')}
-                value={uiTypography.weight}
-                onChange={(value: UiFontWeightId) => void setUiTypography({ weight: value })}
-                options={[
-                  { value: 'regular', label: t('settings.appearance.weightRegular') },
-                  { value: 'medium', label: t('settings.appearance.weightMedium') },
-                  { value: 'semibold', label: t('settings.appearance.weightSemibold') }
-                ]}
-              />
-              <SettingsSelectRow
-                title={t('settings.appearance.contrast')}
-                value={uiTypography.contrast}
-                onChange={(value: UiTextContrastId) => void setUiTypography({ contrast: value })}
-                options={[
-                  { value: 'soft', label: t('settings.appearance.contrastSoft') },
-                  { value: 'normal', label: t('settings.appearance.contrastNormal') },
-                  { value: 'bright', label: t('settings.appearance.contrastBright') }
-                ]}
-              />
-            </SettingsSection>
-
-            <SettingsSection
-              title={t('settings.sections.appearance')}
-              description={t('settings.appearance.intro')}
-            >
-              {COLOR_SCHEME_GROUPS.map((group) => {
-                const schemes = COLOR_SCHEME_DEFINITIONS.filter((s) => s.group === group.id)
-                return (
-                  <div key={group.id} className="ml-settings-theme-group">
-                    <div className="ml-settings-theme-group__label">{t(group.labelKey)}</div>
-                    <div className="ml-settings-theme-grid">
-                      {schemes.map((scheme) => (
-                        <ThemeSchemeCard
-                          key={scheme.id}
-                          name={scheme.name}
-                          description={scheme.description}
-                          swatches={scheme.swatches}
-                          selected={colorScheme === scheme.id}
-                          onSelect={() => setColorScheme(scheme.id)}
-                        />
-                      ))}
-                      {group.id === 'classic' ? (
-                        <>
-                          <ThemeSchemeCard
-                            name={t('common.custom')}
-                            description={t('settings.appearance.customSwatch')}
-                            swatches={[customAccentColor]}
-                            selected={colorScheme === 'custom' && activeCustomThemeId === null}
-                            onSelect={() => setColorScheme('custom')}
-                            trailing={<Icon icon={Palette} variant="detail" />}
-                          />
-                          {customThemes.map((theme) => (
-                            <ThemeSchemeCard
-                              key={theme.id}
-                              name={theme.name}
-                              description={t('settings.appearance.customSwatch')}
-                              swatches={[theme.accentColor]}
-                              selected={colorScheme === 'custom' && activeCustomThemeId === theme.id}
-                              onSelect={() => selectCustomTheme(theme.id)}
-                            />
-                          ))}
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
-                )
-              })}
-            </SettingsSection>
-
-            <SettingsSection
-              title={t('settings.appearance.customAccent')}
-              description={t('settings.appearance.customAccentHint')}
-            >
-              <div className="ml-settings-theme-mode">
-                <ColorPicker
-                  value={customAccentColor}
-                  showText
-                  onChange={(color: AggregationColor) => setCustomAccentColor(color.toHexString())}
-                />
-              </div>
-
-              {(() => {
-                const preview = getSchemePalette('custom', isDarkMode, customAccentColor)
-                const swatches: { label: string; color: string }[] = [
-                  { label: t('settings.appearance.previewPrimary'), color: preview.primary },
-                  { label: t('settings.appearance.previewSidebar'), color: preview.sidebarBg },
-                  { label: t('settings.appearance.previewBackground'), color: preview.bgLayout }
-                ]
-                return (
-                  <div className="ml-settings-theme-preview">
-                    {swatches.map((s) => (
-                      <div key={s.label} className="ml-settings-theme-preview__item">
-                        <span className="ml-settings-theme-preview__swatch" style={{ background: s.color }} />
-                        <span className="ml-settings-theme-preview__label">{s.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                )
-              })()}
-
-              {activeCustomThemeId ? (
-                <SettingsRow
-                  title={t('settings.appearance.activeCustomTheme', {
-                    name: customThemes.find((t2) => t2.id === activeCustomThemeId)?.name ?? ''
-                  })}
-                  control={
-                    <Button
-                      danger
-                      icon={<Icon icon={Trash2} variant="detail" />}
-                      onClick={() => deleteCustomTheme(activeCustomThemeId)}
-                    >
-                      {t('settings.appearance.deleteCustomTheme')}
-                    </Button>
-                  }
-                />
-              ) : (
-                <SettingsRow
-                  title={t('settings.appearance.saveCustomTheme')}
-                  description={t('settings.appearance.saveCustomThemeHint')}
-                  stacked
-                  control={
-                    <Space.Compact style={{ width: '100%', maxWidth: 360 }}>
-                      <Input
-                        value={newThemeName}
-                        placeholder={t('settings.appearance.saveCustomThemePlaceholder')}
-                        onChange={(e) => setNewThemeName(e.target.value)}
-                        onPressEnter={() => {
-                          if (!newThemeName.trim()) return
-                          saveCustomTheme(newThemeName)
-                          setNewThemeName('')
-                        }}
-                      />
-                      <Button
-                        type="primary"
-                        icon={<Icon icon={Save} variant="detail" />}
-                        disabled={!newThemeName.trim()}
-                        onClick={() => {
-                          saveCustomTheme(newThemeName)
-                          setNewThemeName('')
-                        }}
-                      >
-                        {t('settings.appearance.save')}
-                      </Button>
-                    </Space.Compact>
-                  }
-                />
-              )}
-            </SettingsSection>
-          </>
-        )
+        return <AppearanceSettings />
 
       case 'sparks':
         return <SparksSettings />

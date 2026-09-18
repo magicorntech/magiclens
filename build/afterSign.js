@@ -29,6 +29,18 @@ function hasRealSignature(appPath) {
 }
 
 module.exports = async function afterSign(context) {
+  // Windows signing must never pick up CSC_LINK (the Apple Developer ID p12). That cert
+  // Authenticode-signs the NSIS installer with CN="Developer ID Application: …", which
+  // Windows cannot trust, and electron-updater then refuses the update.
+  if (context.electronPlatformName === 'win32') {
+    if (process.env.CSC_LINK && !process.env.WIN_CSC_LINK) {
+      throw new Error(
+        'Windows build would be signed with CSC_LINK (macOS Developer ID). Set WIN_CSC_LINK to a Windows Authenticode certificate, or unset CSC_LINK on the Windows job so the installer stays unsigned.'
+      )
+    }
+    return
+  }
+
   if (context.electronPlatformName !== 'darwin') return
 
   const appPath = path.join(context.appOutDir, `${context.packager.appInfo.productFilename}.app`)

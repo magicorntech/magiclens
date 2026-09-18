@@ -12,14 +12,16 @@ import { PortForwardingPage } from '../components/PortForward/PortForwardingPage
 import { DiscoveredApiGroupsPage } from '../components/Discovery/DiscoveredApiGroupsPage'
 import { DiscoveredApiVersionsPage } from '../components/Discovery/DiscoveredApiVersionsPage'
 import { CustomResourceBrowserPage } from '../components/Discovery/CustomResourceBrowserPage'
-import { HelmChartsPage } from '../components/Helm/HelmChartsPage'
+import { HelmPackageEditor } from '../components/Helm/HelmPackageEditor'
 import { ArgoDashboardPage } from '../components/ArgoCD/ArgoDashboardPage'
 import { ArgoApplicationsPage } from '../components/ArgoCD/ArgoApplicationsPage'
 import { ArgoApplicationSetsPage } from '../components/ArgoCD/ArgoApplicationSetsPage'
 import { ArgoProjectsPage } from '../components/ArgoCD/ArgoProjectsPage'
 import { ArgoClustersPage, ArgoRepositoriesPage } from '../components/ArgoCD/ArgoSettingsPages'
-import { HelmReleasesPage } from '../components/Helm/HelmReleasesPage'
 import { TopologyPage } from '../components/Topology/TopologyPage'
+import { VisualizerPage } from '../components/Visualizer/VisualizerPage'
+import { TimelinePage } from '../components/Timeline/TimelinePage'
+import { ClusterAppPage } from '../components/Apps/ClusterAppPage'
 import { WorkloadsOverviewPage } from '../components/Overview/WorkloadsOverviewPage'
 import { ApplicationsOverviewPage } from '../components/Overview/ApplicationsOverviewPage'
 import { ConfigOverviewPage } from '../components/Overview/ConfigOverviewPage'
@@ -262,6 +264,10 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
             onNamespaceChange={handleNamespaceChange}
           />
         )
+      case 'visualizer':
+        return <VisualizerPage clusterId={clusterId} />
+      case 'eventTimeline':
+        return <TimelinePage clusterId={clusterId} onNavigateToResource={handleNavigateToResource} />
       case 'portForwarding':
         return <PortForwardingPage clusterId={clusterId} />
       case 'discoveredApiGroups':
@@ -269,21 +275,12 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
       case 'discoveredApiVersions':
         return <DiscoveredApiVersionsPage clusterId={clusterId} />
       case 'dynamicCustomResources':
-        return (
-          <CustomResourceBrowserPage
-            clusterId={clusterId}
-            namespace={selectedNamespace}
-            mode="all"
-            initialFocus={dynamicResourceFocus}
-            onFocusConsumed={() => setDynamicResourceFocus(null)}
-          />
-        )
       case 'operatorResources':
         return (
           <CustomResourceBrowserPage
             clusterId={clusterId}
             namespace={selectedNamespace}
-            mode="installed"
+            initialMode={page === 'operatorResources' ? 'installed' : 'all'}
             initialFocus={dynamicResourceFocus}
             onFocusConsumed={() => setDynamicResourceFocus(null)}
           />
@@ -305,12 +302,16 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
         return <ArgoRepositoriesPage clusterId={clusterId} />
       case 'argoClusters':
         return <ArgoClustersPage clusterId={clusterId} />
+      case 'appArgoCd':
+      case 'appPrometheus':
+      case 'appGrafana':
+        return <ClusterAppPage clusterId={clusterId} page={page} />
       case 'helmCharts':
-        return <HelmChartsPage clusterId={clusterId} />
       case 'helmReleases':
         return (
-          <HelmReleasesPage
+          <HelmPackageEditor
             clusterId={clusterId}
+            initialTab={page === 'helmReleases' ? 'releases' : 'charts'}
             onNavigateToResource={handleNavigateToResource}
             initialRelease={helmReleaseFocus}
             onReleaseFocusConsumed={() => setHelmReleaseFocus(null)}

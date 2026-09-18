@@ -482,6 +482,8 @@ export function SidebarWorkspaces({
                                 <ClusterAvatar
                                   logoUrl={cluster.logoUrl}
                                   name={cluster.customName || cluster.contextName}
+                                  contextName={cluster.contextName}
+                                  endpoint={cluster.endpoint}
                                   size={20}
                                 />
                               </span>

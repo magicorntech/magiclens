@@ -1,83 +1,122 @@
 <div align="center">
 
-<img src="resources/icon.png" width="104" alt="MagicLens">
+<img src="resources/icon.png" width="96" alt="MagicLens">
 
 # MagicLens
 
-**A fast, native desktop client for Kubernetes.**
+**Native Kubernetes for macOS, Windows, and Linux.**
 
-Find every cluster in your kubeconfig, open them in tabs, and work across them
-without leaving one window.
+One window for every cluster — browse, debug, and operate without leaving the desktop.
 
-[![Release](https://img.shields.io/github/v/release/magicorntech/magiclens?label=release)](https://github.com/magicorntech/magiclens/releases)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](https://github.com/magicorntech/magiclens/releases/latest)
+[Download](https://github.com/magicorntech/magiclens/releases/latest) ·
+[Releases](https://github.com/magicorntech/magiclens/releases) ·
+[Support](mailto:support@magicorn.co)
+
+[![Release](https://img.shields.io/github/v/release/magicorntech/magiclens?label=latest)](https://github.com/magicorntech/magiclens/releases/latest)
+[![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-555)](https://github.com/magicorntech/magiclens/releases/latest)
 
 </div>
 
+<p align="center">
+  <img src="docs/screenshots/magiclens-logs.png" alt="MagicLens workload logs" width="920">
+</p>
+
 ---
 
-## Install
+## Why MagicLens
 
-Download the latest build for your platform from the
-**[releases page](https://github.com/magicorntech/magiclens/releases/latest)**.
+- **Local-first** — Talks to the Kubernetes API with your kubeconfig. Cluster data stays on your machine.
+- **Multi-cluster** — Open several contexts as tabs. Group them into workspaces with names, logos, and accents.
+- **Operate, don’t just watch** — Scale, restart, roll back, exec, forward ports, sync Argo apps, manage Helm — from the same UI.
 
-| Platform | File |
-|---|---|
+---
+
+## Highlights
+
+**Clusters & workspaces**  
+Scan kubeconfig files or folders. Connect many clusters at once. Favorites, resizable sidebars, light / dark / system themes, and custom accents.
+
+**Resource explorer**  
+Live-watched tables for workloads, config, network, storage, RBAC, and CRDs. Namespace filter, global search (⌘K / Ctrl+K), YAML edit / apply / delete.
+
+**Workloads**  
+Scale, restart, pause or resume rollouts, roll back, change images, run or suspend Jobs and CronJobs. Pods, aggregated logs, events, and notes on one detail view.
+
+**Logs, exec & terminals**  
+Follow and download logs (including merged workload logs). Exec into containers or nodes. Local terminals and a YAML scratch editor from the quick-actions control.
+
+**Port forwarding**  
+Forward pods and services; keep active tunnels in one panel.
+
+**Storage & metrics**  
+PVC usage (used / capacity / % full) when Prometheus scrapes kubelet volume stats. Node and pod CPU/memory from metrics-server; history, disks, and pressure with Prometheus.
+
+**Topology**  
+Live graph of workloads, services, ingresses, and volumes in a namespace.
+
+**Helm**  
+Releases, values, resources, history, rollback, uninstall, and charts.
+
+**Argo CD**  
+Health, sync, ApplicationSets, projects, repos, and clusters via `argoproj.io` CRDs — no extra Argo API URL or token.
+
+**Sparks**  
+Local Markdown vault (notes, sketches, reminders) next to the cluster and resource they belong to.
+
+**VPN**  
+Attach OpenVPN, Pritunl, or WireGuard profiles so connecting a cluster can bring the tunnel up.
+
+**macOS menu bar**  
+Cluster health, CPU, memory, and pod counts for the clusters you pin.
+
+<p align="center">
+  <img src="docs/screenshots/magiclens-storage.png" alt="MagicLens PVC usage" width="920">
+</p>
+
+---
+
+## Download
+
+Get the latest build from **[GitHub Releases](https://github.com/magicorntech/magiclens/releases/latest)**.
+
+| Platform | Artifact |
+| --- | --- |
 | macOS (Apple Silicon) | `MagicLens-<version>-arm64.dmg` |
 | macOS (Intel) | `MagicLens-<version>.dmg` |
 | Windows | `MagicLens-Setup-<version>.exe` |
 | Linux | `MagicLens-<version>.AppImage` or `.deb` |
 
-macOS builds are signed with a Developer ID certificate and notarized by Apple, so
-they open without a Gatekeeper warning and update themselves in place.
+macOS builds are Developer ID signed and notarized. Auto-update runs on all platforms: the download happens in the background, install is always explicit.
 
-### Staying up to date
+### Get started
 
-MagicLens checks for a new release on startup and periodically after that. Once one's
-found, it downloads in the background — nothing is installed without asking first. A
-small arrow badge appears next to the app name in the sidebar; click it for
-**Install Update Now** (once the download's ready) and **View Release Notes**. The
-same update is also announced by a toast in the bottom-right corner, with the option
-to skip a version or be reminded later. All three platforms get this automatically;
-on macOS it works because releases are signed and notarized.
+1. Install MagicLens and add a kubeconfig (file or folder).
+2. Open a cluster tab.
+3. Pick a resource from the sidebar — Deployments, Pods, Storage, Helm, Argo CD, and the rest.
 
-## What it does
+---
 
-**Multi-cluster by default.** MagicLens scans your kubeconfig files, lists every
-context it finds, and lets you connect to several at once. Clusters open as tabs, and
-you can group them into *workspaces* — each one gets its own name, logo and accent
-colour, so a busy tab bar or sidebar stays readable at a glance.
+## Requirements
 
-**Browse and edit any resource.** Built-in kinds get purpose-built tables with live
-watches, and anything else — CRDs, operator resources — is browsable through the same
-interface. Edit YAML in place, apply, or delete.
+| Need | For |
+| --- | --- |
+| Kubeconfig on disk | Cluster access |
+| metrics-server | Live CPU / memory |
+| Prometheus *(optional)* | History, node disks, PVC fullness (`kubelet_volume_stats_*`) |
+| OpenVPN Community CLI or WireGuard *(optional)* | PIN + MFA tunnels — OpenVPN Connect is not supported |
 
-**Workloads.** Scale, restart, pause and resume rollouts, roll back to a previous
-revision, change an image, suspend a CronJob, trigger a Job.
+UI languages: English, Türkçe, Deutsch, Français, 日本語, 한국어, 中文.
 
-**Logs, shells and forwarding.** Stream pod logs, open a shell in a container or on a
-node, and run port-forwards to pods and services from a panel that keeps track of
-what's open.
+---
 
-**Helm.** See what's installed, inspect a release's values and resources, review its
-history, roll back, or uninstall.
+## Privacy
 
-**Argo CD.** A dashboard over the `argoproj.io` CRDs: application health and sync
-state, application sets, and projects. Open an application to see its resource tree,
-edit or delete resources from the drawer, and browse the repository and cluster
-registries. Sync or refresh applications individually or in bulk. Reads through your
-existing cluster connection — no Argo API server URL or token needed.
+MagicLens uses your existing kubeconfig credentials against the cluster API. It does not upload cluster data to Magicorn unless you opt into a hosted account feature.
 
-**Metrics.** Node and pod usage from metrics-server, with richer history and range
-queries when a Prometheus is reachable.
+---
 
-**Topology.** A live graph of how workloads, services and ingresses connect.
+## Docs & support
 
-**Sparks.** A local markdown vault for notes, checklists and reminders, so the context
-around an incident lives next to the cluster it concerns.
-
-**Menu-bar widget** *(macOS)*. Cluster health, CPU, memory and pod counts in the menu
-bar, with a popup for the clusters you pick.
-
-**VPN.** Bring up a VPN profile and tie it to a cluster, so connecting to the cluster
-brings up the tunnel it needs.
+- [Code signing](docs/code-signing.md)
+- [Local backend](docs/backend-local.md)
+- [support@magicorn.co](mailto:support@magicorn.co)

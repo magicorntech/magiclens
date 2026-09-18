@@ -31,7 +31,7 @@ export function SparksMediaPanel({
       onInsertMarkdown(`\n![${res.name}](${src})\n`)
     } else if (kind === 'video' || res.media === 'video') {
       onInsertMarkdown(
-        `\n<video controls src="${src}" style="max-width:100%;border-radius:8px"></video>\n\n[${res.name}](${src})\n`
+        `\n<video controls src="${src}" style="max-width:100%;border-radius:0"></video>\n\n[${res.name}](${src})\n`
       )
     } else {
       onInsertMarkdown(`\n📎 [${res.name}](${src})\n`)

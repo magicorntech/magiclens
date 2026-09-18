@@ -151,5 +151,16 @@ ticket.
 - **Certificates expire** (5 years for Developer ID). Renew *before* expiry and keep the same
   Team ID; already-notarized builds keep working, but new ones need a valid certificate.
 - **Windows signing** uses the separate `WIN_CSC_LINK` / `WIN_CSC_KEY_PASSWORD` secrets and
-  needs its own (non-Apple) certificate. Unsigned Windows builds still run, with a SmartScreen
-  warning.
+  needs its own (non-Apple) Authenticode certificate. The release workflow exports those
+  **only on the Windows job**. Never put the Apple `CSC_LINK` in the Windows environment —
+  electron-builder will otherwise Authenticode-sign `MagicLens-Setup-*.exe` with
+  `Developer ID Application: …`, which Windows cannot trust. Auto-update then fails with
+  "New version is not signed by the application owner" / "certificate chain could not be
+  built to a trusted root authority". Unsigned Windows builds still run, with a SmartScreen
+  warning; they also auto-update between unsigned releases because there is no publisher
+  name to mismatch.
+- **Already-shipped Apple-signed Windows builds cannot auto-update.** The installed app
+  remembers publisher `Developer ID Application: Huseyin YENER (…)` and will reject every
+  later installer (unsigned or correctly Authenticode-signed). Those users have to download
+  the new `.exe` from the GitHub release and run it once; after that, auto-update works
+  again.

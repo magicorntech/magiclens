@@ -2,8 +2,12 @@ import { Drawer } from 'antd'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceListItem } from '@shared/types/resource'
 import { useLayoutMode } from '../../hooks/useLayoutMode'
+import { useResizableDrawerWidth } from '../../hooks/useResizableDrawerWidth'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { ResourceDetailPanel } from '../ResourceTable/ResourceDetailPanel'
+
+const DETAIL_WIDTH_KEY = 'ml.resourceDetailDrawerWidth'
+const DETAIL_MIN_WIDTH = 380
 
 interface ResourceDetailDrawerProps {
   open: boolean
@@ -28,14 +32,14 @@ export function ResourceDetailDrawer({
   const maskBlur = useDisplaySettingsStore((s) => s.resourceDetailMaskBlur)
   // Keep the panel inside the resource page (not the full app chrome). Pods need a
   // bit more width for logs / exec / metrics tabs.
-  const size =
-    layoutMode === 'mobile'
-      ? '100%'
-      : layoutMode === 'compact'
-        ? 440
-        : kind === 'Pods'
-          ? 640
-          : 520
+  const defaultWidth = layoutMode === 'compact' ? 440 : kind === 'Pods' ? 640 : 520
+  const { width, resizing, handleProps } = useResizableDrawerWidth({
+    storageKey: DETAIL_WIDTH_KEY,
+    defaultWidth,
+    minWidth: DETAIL_MIN_WIDTH
+  })
+  const isMobile = layoutMode === 'mobile'
+  const size = isMobile ? '100%' : width
 
   return (
     <Drawer
@@ -50,7 +54,7 @@ export function ResourceDetailDrawer({
       getContainer={false}
       rootStyle={{ position: 'absolute' }}
       destroyOnHidden
-      className="ml-resource-detail-drawer"
+      className={`ml-resource-detail-drawer${resizing ? ' ml-resource-detail-drawer--resizing' : ''}`}
       styles={{
         body: { padding: 0, display: 'flex', flexDirection: 'column', height: '100%' },
         mask: { position: 'absolute' }
@@ -61,15 +65,26 @@ export function ResourceDetailDrawer({
       focusable={{ trap: false }}
     >
       {item && (
-        <ResourceDetailPanel
-          clusterId={clusterId}
-          kind={kind}
-          item={item}
-          isActive={isActive}
-          layout="drawer"
-          listQueryKey={listQueryKey}
-          onClose={onClose}
-        />
+        <>
+          {!isMobile ? (
+            <button
+              type="button"
+              className="ml-detail-resize-handle"
+              aria-label="Resize detail panel"
+              title="Drag to resize"
+              {...handleProps}
+            />
+          ) : null}
+          <ResourceDetailPanel
+            clusterId={clusterId}
+            kind={kind}
+            item={item}
+            isActive={isActive}
+            layout="drawer"
+            listQueryKey={listQueryKey}
+            onClose={onClose}
+          />
+        </>
       )}
     </Drawer>
   )

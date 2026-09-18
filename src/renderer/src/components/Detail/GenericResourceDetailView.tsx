@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Copy, FileCode2, Pencil, Trash2 } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceListItem } from '@shared/types/resource'
-import { isWorkloadKind } from '@shared/types/workload'
+import { isWorkloadKind, isWorkloadLogKind } from '@shared/types/workload'
 import { useTranslation } from 'react-i18next'
 import { useResourceManifest } from '../../queries/useResourceManifest'
 import { AgeCell } from '../ResourceTable/AgeCell'
@@ -13,8 +13,11 @@ import { StatusTag } from '../ResourceTable/StatusTag'
 import { ResourceEventsPanel } from '../ResourceTable/ResourceEventsPanel'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { WorkloadDetailToolbar } from '../Workload/WorkloadDetailToolbar'
+import { WorkloadLogsPanel } from '../Workload/WorkloadLogsPanel'
+import { WorkloadPodsPanel } from '../Workload/WorkloadPodsPanel'
 import { ServicePortForwardPanel } from '../Pod/ServicePortForwardPanel'
 import { NodeMetricsPanel } from '../Metrics/NodeMetricsPanel'
+import { PvcMetricsPanel } from '../Metrics/PvcMetricsPanel'
 import { NodePressurePanel } from '../Metrics/NodePressurePanel'
 import { WorkloadReplicaHistoryPanel } from '../Metrics/WorkloadReplicaHistoryPanel'
 import { NodeExecPanel } from '../Node/NodeExecPanel'
@@ -340,6 +343,40 @@ export function GenericResourceDetailView({
         </DetailPane>
       )
     },
+    ...(isWorkloadLogKind(kind) && namespace
+      ? [
+          {
+            key: 'pods',
+            label: t('resourceDetail.tabs.pods'),
+            children: (
+              <DetailPane>
+                <WorkloadPodsPanel
+                  clusterId={clusterId}
+                  kind={kind}
+                  namespace={namespace}
+                  name={name}
+                  isActive={isActive && activeTab === 'pods'}
+                />
+              </DetailPane>
+            )
+          },
+          {
+            key: 'logs',
+            label: t('resourceDetail.tabs.logs'),
+            children: (
+              <DetailPane full>
+                <WorkloadLogsPanel
+                  clusterId={clusterId}
+                  kind={kind}
+                  namespace={namespace}
+                  name={name}
+                  isActive={isActive && activeTab === 'logs'}
+                />
+              </DetailPane>
+            )
+          }
+        ]
+      : []),
     ...(kind === 'Services'
       ? [
           {
@@ -371,6 +408,24 @@ export function GenericResourceDetailView({
                   resourceName={name}
                   kind={kind as 'Deployments' | 'HorizontalPodAutoscalers'}
                   isActive={isActive}
+                />
+              </DetailPane>
+            )
+          }
+        ]
+      : []),
+    ...(kind === 'PersistentVolumeClaims' && namespace
+      ? [
+          {
+            key: 'metrics',
+            label: t('resourceDetail.tabs.metrics'),
+            children: (
+              <DetailPane>
+                <PvcMetricsPanel
+                  clusterId={clusterId}
+                  namespace={namespace}
+                  pvcName={name}
+                  isActive={isActive && activeTab === 'metrics'}
                 />
               </DetailPane>
             )

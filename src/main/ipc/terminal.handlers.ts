@@ -46,7 +46,7 @@ function kubeconfigEnvForCluster(
 }
 
 export function registerTerminalHandlers(): void {
-  ipcMain.handle(IPC.TERMINAL_START, (event, req: TerminalStartRequest): TerminalStartResponse => {
+  ipcMain.handle(IPC.TERMINAL_START, (event, req: TerminalStartRequest): Promise<TerminalStartResponse> => {
     const sender = event.sender
     onSenderDestroyed(sender, 'localTerminalManager', () => localTerminalManager.stopAllForSender(sender.id))
     let env = req.env

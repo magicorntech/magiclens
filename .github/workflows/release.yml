@@ -66,15 +66,17 @@ jobs:
       - name: Build renderer/main bundles
         run: npm run build
 
-      # macOS code signing / notarization (optional): set these repository secrets to produce
-      # signed & notarized builds. Without them electron-builder still produces working, unsigned
-      # artifacts, but macOS Gatekeeper will warn users and Squirrel.Mac auto-update requires a
-      # signed app, so signing is strongly recommended for real releases.
-      #
-      # These env vars are only exported when the corresponding secret is actually configured.
-      # electron-builder treats an *empty string* CSC_LINK/WIN_CSC_LINK as a (missing) file path
-      # and hard-fails, so we must avoid setting the var at all when no secret is present.
-      - name: Export optional code signing secrets
+      # Code signing secrets are platform-scoped on purpose. electron-builder's generic
+      # CSC_LINK is used for *every* platform when set, so exporting the Apple Developer ID
+      # p12 on the Windows job Authenticode-signs MagicLens-Setup-*.exe with
+      # "Developer ID Application: …". Windows cannot build a trust chain for Apple's CA,
+      # and electron-updater then rejects the file:
+      #   "New version X is not signed by the application owner"
+      # with StatusMessage "The certificate chain could not be built to a trusted root".
+      # electron-builder also treats an *empty string* CSC_LINK/WIN_CSC_LINK as a missing
+      # file path and hard-fails, so we only export a var when the secret is actually set.
+      - name: Export macOS code signing secrets
+        if: matrix.platform == 'mac'
         shell: bash
         run: |
           if [ -n "${{ secrets.MAC_CSC_LINK }}" ]; then echo "CSC_LINK=${{ secrets.MAC_CSC_LINK }}" >> "$GITHUB_ENV"; fi
@@ -82,8 +84,19 @@ jobs:
           if [ -n "${{ secrets.APPLE_ID }}" ]; then echo "APPLE_ID=${{ secrets.APPLE_ID }}" >> "$GITHUB_ENV"; fi
           if [ -n "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" ]; then echo "APPLE_APP_SPECIFIC_PASSWORD=${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" >> "$GITHUB_ENV"; fi
           if [ -n "${{ secrets.APPLE_TEAM_ID }}" ]; then echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}" >> "$GITHUB_ENV"; fi
+
+      - name: Export Windows code signing secrets
+        if: matrix.platform == 'win'
+        shell: bash
+        run: |
           if [ -n "${{ secrets.WIN_CSC_LINK }}" ]; then echo "WIN_CSC_LINK=${{ secrets.WIN_CSC_LINK }}" >> "$GITHUB_ENV"; fi
           if [ -n "${{ secrets.WIN_CSC_KEY_PASSWORD }}" ]; then echo "WIN_CSC_KEY_PASSWORD=${{ secrets.WIN_CSC_KEY_PASSWORD }}" >> "$GITHUB_ENV"; fi
+          # Refuse to run if a leftover Apple CSC_LINK leaked into this job. Signing the
+          # NSIS installer with it ships a Windows update that every client will reject.
+          if [ -n "${CSC_LINK}" ] && [ -z "${WIN_CSC_LINK}" ]; then
+            echo "::error::CSC_LINK is set on the Windows job without WIN_CSC_LINK. Unset it — that is the macOS Developer ID certificate, not a Windows Authenticode cert."
+            exit 1
+          fi
 
       - name: Build & publish desktop artifacts
         run: npx electron-builder --publish always --${{ matrix.platform }}

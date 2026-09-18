@@ -25,6 +25,8 @@ import { registerClusterVpnHandlers } from './clusterVpn.handlers'
 import { registerClusterGroupsHandlers } from './clusterGroups.handlers'
 import { registerNotesHandlers } from './notes.handlers'
 import { registerTopologyHandlers } from './topology.handlers'
+import { registerVisualizerHandlers } from './visualizer.handlers'
+import { registerClusterAppsHandlers } from './clusterApps.handlers'
 
 export function registerIpcHandlers(): void {
   registerSessionHandlers()
@@ -54,4 +56,6 @@ export function registerIpcHandlers(): void {
   registerEnterpriseHandlers()
   registerVpnHandlers()
   registerTopologyHandlers()
+  registerVisualizerHandlers()
+  registerClusterAppsHandlers()
 }

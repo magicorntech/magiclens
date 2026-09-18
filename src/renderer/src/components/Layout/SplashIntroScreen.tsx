@@ -51,7 +51,7 @@ export function SplashIntroScreen({ onStart }: SplashIntroScreenProps): React.JS
             style={{
               width: 88,
               height: 88,
-              borderRadius: 20,
+              borderRadius: 0,
               boxShadow: '0 12px 40px rgba(0, 0, 0, 0.45)'
             }}
           />

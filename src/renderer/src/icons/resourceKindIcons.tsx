@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
   Activity,
@@ -13,9 +14,12 @@ import {
   FileKey,
   FileText,
   Flag,
+  FolderKanban,
+  ChartGantt,
   GitBranch,
   Globe,
   HardDrive,
+  LayoutDashboard,
   Key,
   Layers,
   Link2,
@@ -33,26 +37,28 @@ import {
   Tags,
   TrendingUp,
   Webhook,
+  Waypoints,
   Workflow
 } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { VirtualPageKey } from '@shared/types/navigation'
 import { Icon } from '../components/ui/Icon'
 import { HelmLogo } from './HelmLogo'
-import { ArgoLogo } from './ArgoLogo'
+import { ArgoAppLogo, GrafanaLogo, KubernetesLogo, PrometheusLogo, BRAND_NAV_ICONS } from './AppsLogos'
 
 function kindIcon(icon: LucideIcon): React.ComponentType {
   return function ResourceKindIcon(): React.JSX.Element {
+    const brand = BRAND_NAV_ICONS.has(icon)
     return (
-      <span className="ml-menu-icon-slot">
-        <Icon icon={icon} variant="action" />
+      <span className={`ml-menu-icon-slot${brand ? ' ml-menu-icon-slot--brand' : ''}`}>
+        {brand ? createElement(icon, { size: 16 }) : <Icon icon={icon} variant="action" />}
       </span>
     )
   }
 }
 
 export const kindIcons: Record<ResourceKind, React.ComponentType> = {
-  Nodes: kindIcon(Server),
+  Nodes: kindIcon(KubernetesLogo as LucideIcon),
   Namespaces: kindIcon(Layers),
   Pods: kindIcon(Box),
   Deployments: kindIcon(Rocket),
@@ -100,6 +106,8 @@ export const virtualPageIcons: Record<VirtualPageKey, LucideIcon> = {
   networkOverview: Globe,
   storageOverview: HardDrive,
   topology: Network,
+  visualizer: Waypoints,
+  eventTimeline: ChartGantt,
   portForwarding: ArrowLeftRight,
   dynamicCustomResources: Boxes,
   operatorResources: Package,
@@ -107,12 +115,15 @@ export const virtualPageIcons: Record<VirtualPageKey, LucideIcon> = {
   discoveredApiVersions: GitBranch,
   helmCharts: HelmLogo as LucideIcon,
   helmReleases: HelmLogo as LucideIcon,
-  argoDashboard: ArgoLogo as LucideIcon,
-  argoApplications: ArgoLogo as LucideIcon,
-  argoApplicationSets: ArgoLogo as LucideIcon,
-  argoProjects: ArgoLogo as LucideIcon,
+  argoDashboard: LayoutDashboard,
+  argoApplications: AppWindow,
+  argoApplicationSets: Layers,
+  argoProjects: FolderKanban,
   argoRepositories: GitBranch,
-  argoClusters: Server
+  argoClusters: Server,
+  appArgoCd: ArgoAppLogo as LucideIcon,
+  appPrometheus: PrometheusLogo as LucideIcon,
+  appGrafana: GrafanaLogo as LucideIcon
 }
 
 export const favoriteIcon = Star
@@ -120,9 +131,10 @@ export const favoriteIcon = Star
 function virtualIcon(key: VirtualPageKey): React.ComponentType {
   const lucide = virtualPageIcons[key]
   return function VirtualPageIcon(): React.JSX.Element {
+    const brand = BRAND_NAV_ICONS.has(lucide)
     return (
-      <span className="ml-menu-icon-slot">
-        <Icon icon={lucide} variant="action" />
+      <span className={`ml-menu-icon-slot${brand ? ' ml-menu-icon-slot--brand' : ''}`}>
+        {brand ? createElement(lucide, { size: 16 }) : <Icon icon={lucide} variant="action" />}
       </span>
     )
   }
@@ -130,7 +142,7 @@ function virtualIcon(key: VirtualPageKey): React.ComponentType {
 
 /** Raw Lucide icons for tabs and inline use. */
 export const kindIconLucide: Record<ResourceKind, LucideIcon> = {
-  Nodes: Server,
+  Nodes: KubernetesLogo as LucideIcon,
   Namespaces: Layers,
   Pods: Box,
   Deployments: Rocket,
@@ -178,6 +190,8 @@ export const virtualPageIconComponents: Record<VirtualPageKey, React.ComponentTy
   networkOverview: virtualIcon('networkOverview'),
   storageOverview: virtualIcon('storageOverview'),
   topology: virtualIcon('topology'),
+  visualizer: virtualIcon('visualizer'),
+  eventTimeline: virtualIcon('eventTimeline'),
   portForwarding: virtualIcon('portForwarding'),
   dynamicCustomResources: virtualIcon('dynamicCustomResources'),
   operatorResources: virtualIcon('operatorResources'),
@@ -190,5 +204,8 @@ export const virtualPageIconComponents: Record<VirtualPageKey, React.ComponentTy
   argoApplicationSets: virtualIcon('argoApplicationSets'),
   argoProjects: virtualIcon('argoProjects'),
   argoRepositories: virtualIcon('argoRepositories'),
-  argoClusters: virtualIcon('argoClusters')
+  argoClusters: virtualIcon('argoClusters'),
+  appArgoCd: virtualIcon('appArgoCd'),
+  appPrometheus: virtualIcon('appPrometheus'),
+  appGrafana: virtualIcon('appGrafana')
 }

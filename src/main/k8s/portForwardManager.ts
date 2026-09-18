@@ -19,6 +19,8 @@ interface StartParams {
   localPort?: number
   label: string
   senderId: number
+  /** Skip idle timeout — used for Apps web UIs that must keep cookies/session. */
+  persistent?: boolean
 }
 
 interface InternalSession extends PortForwardSession {
@@ -26,12 +28,14 @@ interface InternalSession extends PortForwardSession {
   senderId: number
   /** Local sockets currently attached; the idle clock only starts once this reaches 0. */
   connectionCount: number
+  persistent?: boolean
 }
 
 type StartResult = { ok: true; session: PortForwardSession } | { ok: false; error: string }
 
 function toPublic(session: InternalSession): PortForwardSession {
-  const { server: _server, senderId: _senderId, connectionCount: _connectionCount, ...pub } = session
+  const { server: _server, senderId: _senderId, connectionCount: _connectionCount, persistent: _persistent, ...pub } =
+    session
   return pub
 }
 
@@ -88,6 +92,7 @@ class PortForwardManager {
           startedAt: new Date().toISOString(),
           idleSince: new Date().toISOString(),
           connectionCount: 0,
+          persistent: params.persistent,
           server,
           senderId: params.senderId
         }
@@ -113,6 +118,26 @@ class PortForwardManager {
     return [...this.sessions.values()].filter((s) => s.clusterId === clusterId).map(toPublic)
   }
 
+  findServiceForward(
+    clusterId: string,
+    namespace: string,
+    serviceName: string,
+    port: number
+  ): PortForwardSession | undefined {
+    for (const session of this.sessions.values()) {
+      if (
+        session.clusterId === clusterId &&
+        session.sourceKind === 'service' &&
+        session.namespace === namespace &&
+        session.sourceName === serviceName &&
+        session.sourcePort === port
+      ) {
+        return toPublic(session)
+      }
+    }
+    return undefined
+  }
+
   listAll(): PortForwardSession[] {
     return [...this.sessions.values()].map(toPublic)
   }
@@ -127,6 +152,7 @@ class PortForwardManager {
     if (!idleTimeoutMinutes) return
     const cutoff = Date.now() - idleTimeoutMinutes * 60_000
     for (const [id, session] of this.sessions) {
+      if (session.persistent) continue
       if (session.connectionCount > 0 || !session.idleSince) continue
       if (new Date(session.idleSince).getTime() <= cutoff) this.stop(id)
     }

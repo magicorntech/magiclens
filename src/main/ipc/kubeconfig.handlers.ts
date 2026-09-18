@@ -22,6 +22,7 @@ import {
   scanDirectoryForKubeconfigs,
   scanKubeconfigPath
 } from '../k8s/kubeconfigParser'
+import { isDemoMode } from '../demoUserData'
 
 function scanDirectorySafely(directoryPath: string): ScanDirectoryResponse {
   const exists = existsSync(directoryPath)
@@ -75,10 +76,15 @@ export function registerKubeconfigHandlers(): void {
   })
 
   ipcMain.handle(IPC.KUBECONFIG_SCAN_DIRECTORY, async (_e, req: { directoryPath: string }) => {
+    if (isDemoMode()) return { directoryPath: req.directoryPath, exists: true, files: [] }
     return scanDirectorySafely(req.directoryPath)
   })
 
   ipcMain.handle(IPC.KUBECONFIG_SCAN_DEFAULT, async () => {
+    if (isDemoMode()) {
+      const directoryPath = resolveScanPath()
+      return { directoryPath, exists: true, files: [] }
+    }
     return scanConfiguredPath()
   })
 

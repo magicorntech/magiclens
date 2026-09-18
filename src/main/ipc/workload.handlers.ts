@@ -5,6 +5,7 @@ import type {
   WorkloadContextInfo,
   WorkloadPermissionsRequest,
   WorkloadPermissionsResponse,
+  WorkloadPodsResponse,
   WorkloadRollbackRequest,
   WorkloadScaleRequest,
   WorkloadTargetRequest
@@ -13,10 +14,16 @@ import type { RolloutHistoryResponse, WorkloadActionResponse } from '@shared/typ
 import { clusterManager } from '../k8s/clusterManager'
 import { getResourcePermissions } from '../k8s/rbacService'
 import {
+  demoWorkloadContext,
+  demoWorkloadPods,
+  isDemoCluster
+} from '../k8s/demoMode'
+import {
   changeWorkloadImage,
   deleteWorkloadPods,
   getDeploymentRolloutHistory,
   getWorkloadContext,
+  getWorkloadPods,
   rerunJob,
   restartWorkload,
   rollbackDeployment,
@@ -39,6 +46,7 @@ export function registerWorkloadHandlers(): void {
   ipcMain.handle(
     IPC.WORKLOAD_GET_CONTEXT,
     async (_e, req: WorkloadTargetRequest): Promise<WorkloadContextInfo | { error: string }> => {
+      if (isDemoCluster(req.clusterId)) return demoWorkloadContext(req.name)
       try {
         const clients = clusterManager.require(req.clusterId)
         return await getWorkloadContext(clients, req.kind, req.namespace, req.name)
@@ -51,6 +59,18 @@ export function registerWorkloadHandlers(): void {
   ipcMain.handle(
     IPC.WORKLOAD_GET_PERMISSIONS,
     async (_e, req: WorkloadPermissionsRequest): Promise<WorkloadPermissionsResponse> => {
+      if (isDemoCluster(req.clusterId)) {
+        return {
+          canGet: true,
+          canUpdate: true,
+          canPatch: true,
+          canDelete: true,
+          canScale: true,
+          canDeletePods: true,
+          canCreateJobs: true,
+          verified: true
+        }
+      }
       const clients = clusterManager.require(req.clusterId)
       return getResourcePermissions(clients, req)
     }
@@ -195,6 +215,16 @@ export function registerWorkloadHandlers(): void {
     try {
       const clients = clusterManager.require(req.clusterId)
       return ok((await deleteWorkloadPods(clients, req.kind, req.namespace, req.name)).kubectlCommand)
+    } catch (e) {
+      return err(e)
+    }
+  })
+
+  ipcMain.handle(IPC.WORKLOAD_GET_PODS, async (_e, req: WorkloadTargetRequest): Promise<WorkloadPodsResponse> => {
+    if (isDemoCluster(req.clusterId)) return { pods: demoWorkloadPods(req.name, req.namespace) }
+    try {
+      const clients = clusterManager.require(req.clusterId)
+      return { pods: await getWorkloadPods(clients, req.kind, req.namespace, req.name) }
     } catch (e) {
       return err(e)
     }

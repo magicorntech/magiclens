@@ -156,7 +156,7 @@
   flex-direction: column;
   min-height: 0;
   border: 1px solid var(--ml-border-secondary);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--ml-bg-elevated);
   transition: width 0.18s ease;
 }
@@ -206,7 +206,7 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 10px;
   font-weight: 550;
   color: var(--ml-text-secondary);
@@ -231,7 +231,7 @@
   height: 26px;
   flex-shrink: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   color: var(--ml-text-tertiary);
   cursor: pointer;
@@ -289,7 +289,7 @@
   flex: 1;
   min-height: 420px;
   border: 1px solid var(--ml-border-secondary);
-  border-radius: 8px;
+  border-radius: 0;
   overflow: hidden;
   background: var(--ml-bg-container);
 }
@@ -329,7 +329,7 @@
 .ml-topo-minimap {
   z-index: 5;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: 0;
   border: 1px solid color-mix(in srgb, var(--ml-border-secondary) 70%, transparent);
   background: color-mix(in srgb, var(--ml-bg-container) 28%, transparent) !important;
   backdrop-filter: blur(8px);
@@ -364,7 +364,7 @@
 .ml-topo-node {
   width: 180px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: 0;
   border: 1px solid var(--ml-border-secondary);
   background: var(--ml-bg-container);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);

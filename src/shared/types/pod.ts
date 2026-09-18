@@ -218,6 +218,26 @@ export interface PodLogsSessionRequest {
 export interface PodLogsDataPayload {
   sessionId: string
   chunk: string
+  /** Set only for merged multi-pod/container streams — `"podName/containerName"` the chunk came from. */
+  source?: string
+}
+
+/** One pod/container pair to tail together as a single aggregated stream. */
+export interface PodLogsSource {
+  podName: string
+  containerName: string
+}
+
+export interface PodLogsMergedStartRequest {
+  sessionId: string
+  clusterId: string
+  namespace: string
+  pods: PodLogsSource[]
+  tailLines?: number
+  timestamps?: boolean
+  sinceTime?: string
+  previous?: boolean
+  follow?: boolean
 }
 
 export interface PodLogsEndedPayload {
@@ -234,6 +254,16 @@ export interface PodLogsDownloadRequest {
 }
 
 export type PodLogsDownloadResponse = { ok: true; filePath: string } | { ok: false; canceled: true } | { ok: false; error: string }
+
+export interface PodLogsDownloadMergedRequest {
+  clusterId: string
+  namespace: string
+  pods: PodLogsSource[]
+  defaultFileName: string
+  timestamps?: boolean
+}
+
+export type PodLogsDownloadMergedResponse = PodLogsDownloadResponse
 
 export interface PodExecStartRequest {
   sessionId: string

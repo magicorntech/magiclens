@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Empty, Input, Space, Splitter, Tag, Typography } from 'antd'
-import { Plus, Trash2 } from 'lucide-react'
-import { Icon } from '../ui/Icon'
+import { Empty, Input, Splitter, Tag } from 'antd'
+import { Boxes, Plus, Search, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ColumnsType } from 'antd/es/table'
 import type { CustomResourceKind, DynamicResourceItem } from '@shared/types/discovery'
@@ -17,35 +17,20 @@ import { ResizableTable } from '../../utils/ResizableTable'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
 import { AgeCell } from '../ResourceTable/AgeCell'
 import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
-import { ResourceTableToolbar } from '../ResourceTable/ResourceTableToolbar'
 import { batchDeleteResources, confirmBatchDelete } from '../ResourceTable/batchDelete'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
+import { Icon } from '../ui/Icon'
+import './crd-browser.css'
 
 interface CustomResourceBrowserPageProps {
   clusterId: string
   namespace: string
-  mode: 'all' | 'installed'
+  initialMode?: 'all' | 'installed'
   initialFocus?: DynamicResourceFocus | null
   onFocusConsumed?: () => void
 }
 
-const kindColumns: ColumnsType<CustomResourceKind> = [
-  {
-    title: 'Kind',
-    dataIndex: 'kind',
-    key: 'kind',
-    ellipsis: true,
-    render: (v: string) => <Typography.Text strong>{v}</Typography.Text>
-  },
-  { title: 'Group', dataIndex: 'group', key: 'group', ellipsis: true },
-  {
-    title: 'Scope',
-    dataIndex: 'namespaced',
-    key: 'namespaced',
-    width: 88,
-    render: (v: boolean) => <Tag color={v ? 'blue' : 'default'}>{v ? 'NS' : 'Cluster'}</Tag>
-  }
-]
+type CrdTab = 'all' | 'installed'
 
 function buildDynamicCreateTemplate(kind: CustomResourceKind, namespaceSelection: string): string {
   const ns = primaryNamespace(namespaceSelection)
@@ -53,58 +38,80 @@ function buildDynamicCreateTemplate(kind: CustomResourceKind, namespaceSelection
   return `apiVersion: ${kind.apiVersion}\nkind: ${kind.kind}\nmetadata:\n  name: my-${kind.singular}${metaNamespace}\nspec: {}\n`
 }
 
+function groupKinds(kinds: CustomResourceKind[]): { group: string; items: CustomResourceKind[] }[] {
+  const map = new Map<string, CustomResourceKind[]>()
+  for (const kind of kinds) {
+    const group = kind.group || 'core'
+    const list = map.get(group)
+    if (list) list.push(kind)
+    else map.set(group, [kind])
+  }
+  return [...map.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([group, items]) => ({
+      group,
+      items: [...items].sort((a, b) => a.kind.localeCompare(b.kind))
+    }))
+}
+
 export function CustomResourceBrowserPage({
   clusterId,
   namespace,
-  mode,
+  initialMode = 'all',
   initialFocus,
   onFocusConsumed
 }: CustomResourceBrowserPageProps): React.JSX.Element {
-  const { data: kindsData, isLoading: kindsLoading } = useCustomResourceKinds(clusterId, mode === 'installed')
+  const { t } = useTranslation()
+  const [tab, setTab] = useState<CrdTab>(initialMode)
   const [search, setSearch] = useState('')
   const [selectedKind, setSelectedKind] = useState<CustomResourceKind | null>(null)
   const { openYamlEditor } = useBottomPanel()
   const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const queryClient = useQueryClient()
   const [selectedInstanceKeys, setSelectedInstanceKeys] = useState<string[]>([])
-  const { setPagination: setKindPagination, paginationProps: kindPaginationProps } = useTablePagination([
-    clusterId,
-    mode,
-    search
-  ])
   const { setPagination: setInstancePagination, paginationProps: instancePaginationProps } = useTablePagination([
     clusterId,
     namespace,
     selectedKind?.crdName ?? null
   ])
 
-  const kinds = kindsData && 'kinds' in kindsData ? kindsData.kinds : []
-  const kindsError = kindsData && 'error' in kindsData ? kindsData.error : null
+  const allQuery = useCustomResourceKinds(clusterId, false, tab === 'all')
+  const installedQuery = useCustomResourceKinds(clusterId, true, tab === 'installed')
+  const kindsQuery = tab === 'installed' ? installedQuery : allQuery
+  const kinds = kindsQuery.data && 'kinds' in kindsQuery.data ? kindsQuery.data.kinds : []
+  const kindsError = kindsQuery.data && 'error' in kindsQuery.data ? kindsQuery.data.error : null
 
-  const filteredKinds = useMemo(
-    () =>
-      kinds.filter(
-        (k) =>
-          k.kind.toLowerCase().includes(search.toLowerCase()) ||
-          k.group.toLowerCase().includes(search.toLowerCase()) ||
-          k.crdName.toLowerCase().includes(search.toLowerCase())
-      ),
-    [kinds, search]
-  )
+  const filteredKinds = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return kinds
+    return kinds.filter(
+      (kind) =>
+        kind.kind.toLowerCase().includes(q) ||
+        kind.group.toLowerCase().includes(q) ||
+        kind.crdName.toLowerCase().includes(q) ||
+        kind.shortNames.some((name) => name.toLowerCase().includes(q))
+    )
+  }, [kinds, search])
+
+  const groups = useMemo(() => groupKinds(filteredKinds), [filteredKinds])
+
+  useEffect(() => {
+    setTab(initialMode)
+  }, [initialMode])
 
   useEffect(() => {
     setSelectedInstanceKeys([])
   }, [selectedKind?.crdName, namespace])
 
   useEffect(() => {
+    if (!initialFocus) return
+    setTab('all')
+  }, [initialFocus])
+
+  useEffect(() => {
     if (!initialFocus || kinds.length === 0) return
-    const kind = kinds.find(
-      (k) => k.kind === initialFocus.kind && k.apiVersion === initialFocus.apiVersion
-    )
-    if (kind) {
-      setSelectedKind(kind)
-      setSearch(initialFocus.name)
-    }
+    const kind = kinds.find((item) => item.kind === initialFocus.kind && item.apiVersion === initialFocus.apiVersion)
+    if (kind) setSelectedKind(kind)
     onFocusConsumed?.()
   }, [initialFocus, kinds, onFocusConsumed])
 
@@ -147,7 +154,7 @@ export function CustomResourceBrowserPage({
   )
 
   useEffect(() => {
-    if (selectedKind && !kinds.some((k) => k.crdName === selectedKind.crdName)) {
+    if (selectedKind && !kinds.some((kind) => kind.crdName === selectedKind.crdName)) {
       setSelectedKind(null)
     }
   }, [kinds, selectedKind])
@@ -173,44 +180,42 @@ export function CustomResourceBrowserPage({
         },
         selectedInstances
       )
-      if (result.failed.length === 0) {
-        setSelectedInstanceKeys([])
-      }
+      if (result.failed.length === 0) setSelectedInstanceKeys([])
       return result
     })
   }
 
   const instanceColumns: ColumnsType<DynamicResourceItem> = useMemo(
     () => [
-      { title: 'Name', dataIndex: 'name', key: 'name', ellipsis: true },
+      { title: t('crdBrowser.colName'), dataIndex: 'name', key: 'name', ellipsis: true },
       {
-        title: 'Namespace',
+        title: t('crdBrowser.colNamespace'),
         dataIndex: 'namespace',
         key: 'namespace',
         width: 140,
         ellipsis: true,
-        render: (v: string | null) => v || '—'
+        render: (value: string | null) => value || '—'
       },
       {
-        title: 'Age',
+        title: t('crdBrowser.colAge'),
         dataIndex: 'ageTimestamp',
         key: 'age',
         width: 100,
         sorter: (a, b) => compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp),
-        render: (v: string | null) => <AgeCell timestamp={v} />
+        render: (value: string | null) => <AgeCell timestamp={value} />
       },
       {
-        title: 'Labels',
+        title: t('crdBrowser.colLabels'),
         dataIndex: 'labelKeys',
         key: 'labelKeys',
         ellipsis: true,
         render: (keys: string[]) =>
           keys.length === 0 ? (
-            <Typography.Text type="secondary">—</Typography.Text>
+            <span className="ml-crd-muted">—</span>
           ) : (
             <span className="ml-crd-label-tags">
-              {keys.slice(0, 4).map((k) => (
-                <Tag key={k}>{k}</Tag>
+              {keys.slice(0, 4).map((key) => (
+                <Tag key={key}>{key}</Tag>
               ))}
               {keys.length > 4 ? <Tag>+{keys.length - 4}</Tag> : null}
             </span>
@@ -240,177 +245,177 @@ export function CustomResourceBrowserPage({
           ) : null
       }
     ],
-    [clusterId, selectedKind, listQueryKey]
+    [clusterId, selectedKind, listQueryKey, t]
   )
 
-  const title = mode === 'installed' ? 'Installed CRDs' : 'Dynamic Resources'
-  const hint =
-    mode === 'installed'
-      ? 'CRD kinds that currently have at least one live instance'
-      : 'Browse any CustomResourceDefinition kind on this cluster'
-
   return (
-    <div className="ml-resource-page ml-crd-browser">
-      <div className="ml-crd-browser__header">
-        <div className="ml-crd-browser__header-copy">
-          <Typography.Title level={4} className="ml-crd-browser__title">
-            {title}
-          </Typography.Title>
-          <Typography.Text type="secondary" className="ml-crd-browser__hint">
-            {hint}
-          </Typography.Text>
+    <div className="ml-crd-browser">
+      <header className="ml-crd-browser__header">
+        <div className="ml-crd-browser__brand">
+          <Icon icon={Boxes} variant="toolbar" />
+          <span>
+            {t('crdBrowser.brand')} <span>/</span> {t('crdBrowser.browser')}
+          </span>
         </div>
-        {selectedKind ? <WatchStatusBadge isError={false} watchStatus={watchStatus} /> : null}
-      </div>
+        <div className="ml-crd-browser__tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'all'}
+            className={tab === 'all' ? 'is-active' : undefined}
+            onClick={() => setTab('all')}
+          >
+            {t('crdBrowser.tabAll')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'installed'}
+            className={tab === 'installed' ? 'is-active' : undefined}
+            onClick={() => setTab('installed')}
+          >
+            {t('crdBrowser.tabInstalled')}
+          </button>
+        </div>
+        <span className="ml-crd-browser__header-count">
+          {t('crdBrowser.kindCount', { count: filteredKinds.length })}
+        </span>
+      </header>
 
       {kindsError ? (
-        <Empty description={kindsError} />
+        <div className="ml-crd-browser__empty">
+          <Empty description={kindsError} />
+        </div>
       ) : (
-        <>
-          <ResourceTableToolbar
-            leading={
-              <NamespaceSelector
-                clusterId={clusterId}
-                value={namespace}
-                onChange={(ns) => setSelectedNamespace(clusterId, ns)}
-              />
-            }
-            search={
-              <Input.Search
-                className="ml-resource-search"
-                placeholder="Search kinds…"
-                allowClear
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            }
-            actions={
-              selectedKind ? (
-                <>
-                  {selectedInstanceKeys.length > 0 ? (
-                    <button
-                      type="button"
-                      className="ml-btn ml-btn--ghost ml-btn--danger"
-                      onClick={handleBatchDelete}
-                    >
-                      <Icon icon={Trash2} variant="detail" />
-                      <span>Delete ({selectedInstanceKeys.length})</span>
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="ml-btn ml-btn--ghost"
-                    onClick={() =>
-                      openYamlEditor({
-                        title: `New ${selectedKind.kind}`,
-                        clusterId,
-                        mode: 'create',
-                        namespace,
-                        initialYaml: buildDynamicCreateTemplate(selectedKind, namespace),
-                        listQueryKey
-                      })
+        <Splitter className="ml-crd-browser__splitter">
+          <Splitter.Panel defaultSize="32%" min="22%" max="46%">
+            <aside className="ml-crd-browser__kinds">
+              <div className="ml-crd-browser__search">
+                <Input
+                  allowClear
+                  prefix={<Icon icon={Search} variant="micro" />}
+                  placeholder={t('crdBrowser.searchKinds')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="ml-crd-browser__kind-scroll">
+                {kindsQuery.isLoading ? (
+                  <p className="ml-crd-browser__status">{t('common.loading')}</p>
+                ) : kinds.length === 0 ? (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={
+                      tab === 'installed' ? t('crdBrowser.emptyInstalled') : t('crdBrowser.emptyKinds')
                     }
-                  >
-                    <Icon icon={Plus} variant="detail" />
-                    <span>Create</span>
-                  </button>
-                </>
-              ) : null
-            }
-          />
-
-          <div className="ml-resource-page-body">
-            {kindsLoading ? (
-              <ResizableTable
-                tableKey={`crd-kinds-${mode}`}
-                rowKey="crdName"
-                columns={kindColumns}
-                dataSource={[]}
-                loading
-                pagination={false}
-                size="middle"
-              />
-            ) : kinds.length === 0 ? (
-              <Empty description="No custom resource kinds found on this cluster" />
-            ) : filteredKinds.length === 0 ? (
-              <Empty description="No kinds match your filter" />
-            ) : (
-              <Splitter className="ml-crd-browser__splitter">
-                <Splitter.Panel defaultSize="34%" min="22%" max="48%">
-                  <div className="ml-crd-browser__kinds">
-                    <ResizableTable
-                      tableKey={`crd-kinds-${mode}`}
-                      rowKey="crdName"
-                      columns={kindColumns}
-                      dataSource={filteredKinds}
-                      pagination={kindPaginationProps(filteredKinds.length)}
-                      onChange={(paginationConfig) =>
-                        setKindPagination(readPaginationChange(paginationConfig))
-                      }
-                      size="middle"
-                      onRow={(row) => ({
-                        onClick: () => setSelectedKind(row),
-                        className:
-                          selectedKind?.crdName === row.crdName
-                            ? 'ml-crd-kind-row is-selected'
-                            : 'ml-crd-kind-row'
-                      })}
-                    />
-                  </div>
-                </Splitter.Panel>
-                <Splitter.Panel>
-                  <div className="ml-crd-browser__instances">
-                    {!selectedKind ? (
-                      <Empty
-                        description="Select a kind on the left to browse its instances"
-                        style={{ marginTop: 48 }}
+                  />
+                ) : filteredKinds.length === 0 ? (
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('crdBrowser.emptyFilter')} />
+                ) : (
+                  groups.map((group) => (
+                    <section key={group.group} className="ml-crd-group">
+                      <h2>{group.group}</h2>
+                      {group.items.map((kind) => (
+                        <button
+                          key={kind.crdName}
+                          type="button"
+                          className={`ml-crd-kind${selectedKind?.crdName === kind.crdName ? ' is-selected' : ''}`}
+                          onClick={() => setSelectedKind(kind)}
+                        >
+                          <span className="ml-crd-kind__name">{kind.kind}</span>
+                          <span className="ml-crd-kind__meta">
+                            {kind.version}
+                            <i className={kind.namespaced ? 'is-ns' : 'is-cluster'}>
+                              {kind.namespaced ? t('crdBrowser.namespaced') : t('crdBrowser.cluster')}
+                            </i>
+                            {kind.instanceCount != null ? <b>{kind.instanceCount}</b> : null}
+                          </span>
+                        </button>
+                      ))}
+                    </section>
+                  ))
+                )}
+              </div>
+            </aside>
+          </Splitter.Panel>
+          <Splitter.Panel>
+            <section className="ml-crd-browser__instances">
+              {!selectedKind ? (
+                <div className="ml-crd-browser__empty">
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('crdBrowser.pickKind')} />
+                </div>
+              ) : (
+                <>
+                  <div className="ml-crd-browser__instance-bar">
+                    <div className="ml-crd-browser__instance-title">
+                      <strong>{selectedKind.kind}</strong>
+                      <span>{selectedKind.apiVersion}</span>
+                      {selectedKind.shortNames.map((name) => (
+                        <Tag key={name}>{name}</Tag>
+                      ))}
+                    </div>
+                    <div className="ml-crd-browser__instance-actions">
+                      <WatchStatusBadge isError={false} watchStatus={watchStatus} />
+                      <NamespaceSelector
+                        clusterId={clusterId}
+                        value={namespace}
+                        onChange={(ns) => setSelectedNamespace(clusterId, ns)}
                       />
-                    ) : instancesError ? (
-                      <Empty description={String(instancesError)} />
-                    ) : (
-                      <>
-                        <div className="ml-crd-browser__instance-meta">
-                          <div className="ml-crd-browser__instance-title">
-                            <Typography.Text strong>{selectedKind.kind}</Typography.Text>
-                            <Typography.Text type="secondary" className="ml-crd-browser__api">
-                              {selectedKind.apiVersion}
-                            </Typography.Text>
-                          </div>
-                          {selectedKind.shortNames.length > 0 ? (
-                            <Space size={[4, 4]} wrap>
-                              {selectedKind.shortNames.map((s) => (
-                                <Tag key={s}>{s}</Tag>
-                              ))}
-                            </Space>
-                          ) : null}
-                        </div>
-                        <div className="ml-crd-browser__instance-table">
-                          <ResizableTable
-                            tableKey={`crd-instances-${selectedKind.crdName}`}
-                            rowKey="id"
-                            columns={instanceColumns}
-                            dataSource={instances}
-                            loading={instancesLoading}
-                            pagination={instancePaginationProps(instances.length)}
-                            onChange={(paginationConfig) =>
-                              setInstancePagination(readPaginationChange(paginationConfig))
-                            }
-                            size="middle"
-                            locale={{ emptyText: 'No live instances of this kind' }}
-                            rowSelection={{
-                              selectedRowKeys: selectedInstanceKeys,
-                              onChange: (keys) => setSelectedInstanceKeys(keys as string[])
-                            }}
-                          />
-                        </div>
-                      </>
-                    )}
+                      {selectedInstanceKeys.length > 0 ? (
+                        <button type="button" className="ml-btn ml-btn--ghost ml-btn--danger" onClick={handleBatchDelete}>
+                          <Icon icon={Trash2} variant="detail" />
+                          <span>{t('crdBrowser.deleteCount', { count: selectedInstanceKeys.length })}</span>
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="ml-btn ml-btn--ghost"
+                        onClick={() =>
+                          openYamlEditor({
+                            title: t('crdBrowser.newKind', { kind: selectedKind.kind }),
+                            clusterId,
+                            mode: 'create',
+                            namespace,
+                            initialYaml: buildDynamicCreateTemplate(selectedKind, namespace),
+                            listQueryKey
+                          })
+                        }
+                      >
+                        <Icon icon={Plus} variant="detail" />
+                        <span>{t('crdBrowser.create')}</span>
+                      </button>
+                    </div>
                   </div>
-                </Splitter.Panel>
-              </Splitter>
-            )}
-          </div>
-        </>
+                  {instancesError ? (
+                    <div className="ml-crd-browser__empty">
+                      <Empty description={String(instancesError)} />
+                    </div>
+                  ) : (
+                    <div className="ml-crd-browser__instance-table">
+                      <ResizableTable
+                        tableKey={`crd-instances-${selectedKind.crdName}`}
+                        rowKey="id"
+                        columns={instanceColumns}
+                        dataSource={instances}
+                        loading={instancesLoading}
+                        pagination={instancePaginationProps(instances.length)}
+                        onChange={(paginationConfig) =>
+                          setInstancePagination(readPaginationChange(paginationConfig))
+                        }
+                        size="middle"
+                        locale={{ emptyText: t('crdBrowser.emptyInstances') }}
+                        rowSelection={{
+                          selectedRowKeys: selectedInstanceKeys,
+                          onChange: (keys) => setSelectedInstanceKeys(keys as string[])
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+          </Splitter.Panel>
+        </Splitter>
       )}
     </div>
   )

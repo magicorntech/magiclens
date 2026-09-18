@@ -38,7 +38,13 @@ export function ClusterPaneTabStrip({
       key: cluster.id,
       label: showClusterTabLogos ? (
         <span className="ml-cluster-tab-label">
-          <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={16} />
+          <ClusterAvatar
+            logoUrl={cluster.logoUrl}
+            name={cluster.customName}
+            contextName={cluster.contextName}
+            endpoint={cluster.endpoint}
+            size={16}
+          />
           <span>{cluster.customName}</span>
         </span>
       ) : (

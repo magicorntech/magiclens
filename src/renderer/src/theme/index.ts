@@ -5,6 +5,8 @@ export {
   COLOR_SCHEME_DEFINITIONS,
   COLOR_SCHEME_GROUPS,
   getSchemePalette,
+  getModePalette,
+  normalizeColorScheme,
   type ColorSchemeId,
   type ColorSchemeGroup
 } from './schemes'

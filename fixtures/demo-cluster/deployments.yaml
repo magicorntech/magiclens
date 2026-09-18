@@ -1,0 +1,35 @@
+# Fictional shop demo — 10 deployments. Not applied to a live cluster.
+# Used by MagicLens `npm run dev:demo` (in-process fixtures).
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: storefront, namespace: shop }
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: checkout-api, namespace: shop }
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: payments-worker, namespace: payments }
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: catalog-cache, namespace: shop }
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: inventory-sync, namespace: shop }
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: search-index, namespace: shop }
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: notify-mailer, namespace: shop }
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: admin-console, namespace: shop }
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: image-resizer, namespace: shop }
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata: { name: session-broker, namespace: shop }

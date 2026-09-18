@@ -21,6 +21,7 @@ import type { ContextInfo, KubeconfigSource } from '@shared/types/kubeconfig'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { applyDedupeResult } from '../../clusterDedupe'
+import { ClusterAvatar } from './ClusterAvatar'
 
 interface AddClusterModalProps {
   open: boolean
@@ -418,6 +419,13 @@ export function AddClusterModal({ open, onClose }: AddClusterModalProps): React.
                     >
                       <Space orientation="vertical" size={0}>
                         <Space size={8} wrap>
+                          <ClusterAvatar
+                            name={entry.customName || entry.context.name}
+                            contextName={entry.context.name}
+                            endpoint={entry.context.server}
+                            hints={[entry.context.execCommand, entry.context.authProvider].filter(Boolean).join(' ')}
+                            size={20}
+                          />
                           <Typography.Text type={!canSelect ? 'secondary' : undefined}>
                             {entry.context.name}
                           </Typography.Text>

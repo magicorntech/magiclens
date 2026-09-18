@@ -28,6 +28,10 @@ export default defineConfig({
       }
     },
     plugins: [react()],
+    server: {
+      port: process.env.MAGICLENS_DEMO === '1' ? 5188 : 5173,
+      strictPort: process.env.MAGICLENS_DEMO === '1'
+    },
     worker: {
       format: 'es'
     },

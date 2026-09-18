@@ -18,6 +18,7 @@ import { canUseSplitLayouts, usesOverlayNavigation, useLayoutMode } from '../../
 import { Icon } from '../ui/Icon'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
 import { useResourceWatchDisplayStore } from '../../stores/resourceWatchDisplayStore'
+import { useResizableDrawerWidth } from '../../hooks/useResizableDrawerWidth'
 
 /**
  * Virtual pages that show data across the whole cluster and do their own filtering. The header's
@@ -26,6 +27,8 @@ import { useResourceWatchDisplayStore } from '../../stores/resourceWatchDisplayS
  */
 const CLUSTER_SCOPED_VIRTUAL_PAGES = new Set<VirtualPageKey>([
   'topology',
+  'visualizer',
+  'eventTimeline',
   'workloadsOverview',
   'configOverview',
   'networkOverview',
@@ -39,12 +42,18 @@ const CLUSTER_SCOPED_VIRTUAL_PAGES = new Set<VirtualPageKey>([
   'argoApplicationSets',
   'argoProjects',
   'argoRepositories',
-  'argoClusters'
+  'argoClusters',
+  'appArgoCd',
+  'appPrometheus',
+  'appGrafana'
 ])
 
 const TERMINAL_LABEL_MIN_WIDTH = 720
-const RESOURCE_SIDER_WIDTH = 220
+const RESOURCE_SIDER_WIDTH = 260
 const RESOURCE_SIDER_COLLAPSED_WIDTH = 56
+const RESOURCE_SIDER_MIN_WIDTH = 196
+const RESOURCE_SIDER_MAX_WIDTH = 420
+const RESOURCE_SIDER_WIDTH_KEY = 'ml.resourceSiderWidth'
 
 function useCompactToolbar(ref: RefObject<HTMLElement | null>): boolean {
   const [compact, setCompact] = useState(true)
@@ -103,23 +112,32 @@ function AppShellInner({
   const allowSidePanel = canUseSplitLayouts(layoutMode)
   const resourceMenuCollapsed = useClusterStore((s) => s.resourceMenuCollapsed)
   const setResourceMenuCollapsed = useClusterStore((s) => s.setResourceMenuCollapsed)
+  const { width: resourceSiderWidth, resizing: resourceSiderResizing, handleProps: resourceSiderHandle } =
+    useResizableDrawerWidth({
+      storageKey: RESOURCE_SIDER_WIDTH_KEY,
+      defaultWidth: RESOURCE_SIDER_WIDTH,
+      minWidth: RESOURCE_SIDER_MIN_WIDTH,
+      maxWidth: RESOURCE_SIDER_MAX_WIDTH,
+      maxRatio: 0.4,
+      edge: 'left'
+    })
 
   // Cluster tabs always match expanded resource menu width (not the collapsed rail).
   useEffect(() => {
-    document.documentElement.style.setProperty('--ml-cluster-tab-width', `${RESOURCE_SIDER_WIDTH}px`)
+    document.documentElement.style.setProperty('--ml-cluster-tab-width', `${resourceSiderWidth}px`)
     const siderPx = `${
       overlayResourceNav
-        ? RESOURCE_SIDER_WIDTH
+        ? resourceSiderWidth
         : resourceMenuCollapsed
           ? RESOURCE_SIDER_COLLAPSED_WIDTH
-          : RESOURCE_SIDER_WIDTH
+          : resourceSiderWidth
     }px`
     document.documentElement.style.setProperty('--ml-resource-sider-width', siderPx)
     return () => {
       document.documentElement.style.removeProperty('--ml-cluster-tab-width')
       document.documentElement.style.removeProperty('--ml-resource-sider-width')
     }
-  }, [overlayResourceNav, resourceMenuCollapsed])
+  }, [overlayResourceNav, resourceMenuCollapsed, resourceSiderWidth])
   const splitView = useClusterStore((s) => s.splitView)
   const utilityPanelPlacement = useDisplaySettingsStore((s) => s.utilityPanelPlacement)
   const headerInnerRef = useRef<HTMLDivElement>(null)
@@ -133,9 +151,9 @@ function AppShellInner({
   const showHeaderNamespace =
     !!selectedVirtualPage && !CLUSTER_SCOPED_VIRTUAL_PAGES.has(selectedVirtualPage)
 
-  const isTopologyPage = selectedVirtualPage === 'topology'
-  const showClusterName = !splitView && !isTopologyPage
-  const showHeaderTerminal = !isTopologyPage
+  const isMapPage = selectedVirtualPage === 'topology' || selectedVirtualPage === 'visualizer'
+  const showClusterName = !splitView && !isMapPage
+  const showHeaderTerminal = !isMapPage
 
   /** Browser model: no dedicated cluster header — only overlay/split/namespace. */
   const showChromeHeader = overlayResourceNav || splitView || showHeaderNamespace
@@ -284,12 +302,12 @@ function AppShellInner({
       <Layout className="ml-workspace-body">
         {!overlayResourceNav && (
           <Sider
-            width={RESOURCE_SIDER_WIDTH}
+            width={resourceSiderWidth}
             collapsible
             collapsed={resourceMenuCollapsed}
             onCollapse={setResourceMenuCollapsed}
             collapsedWidth={RESOURCE_SIDER_COLLAPSED_WIDTH}
-            className="ml-resource-sider"
+            className={`ml-resource-sider${resourceSiderResizing ? ' ml-resource-sider--resizing' : ''}`}
             theme="light"
           >
             <ResourceMenu
@@ -300,12 +318,25 @@ function AppShellInner({
               onSelectVirtualPage={onSelectVirtualPage}
               collapsed={resourceMenuCollapsed}
             />
+            {!resourceMenuCollapsed ? (
+              <button
+                type="button"
+                className="ml-rail-resize-handle titlebar-no-drag"
+                aria-label={t('resourceNav.resize')}
+                title={t('resourceNav.resize')}
+                {...resourceSiderHandle}
+              />
+            ) : null}
           </Sider>
         )}
         <Content className="ml-workspace-content">
           <div className="ml-workspace-content-inner">
             {renderWorkspaceBody()}
-            <UtilityDockFab clusterId={cluster.id} namespace={cluster.selectedNamespace} />
+            {selectedVirtualPage !== 'appArgoCd' &&
+            selectedVirtualPage !== 'appPrometheus' &&
+            selectedVirtualPage !== 'appGrafana' ? (
+              <UtilityDockFab clusterId={cluster.id} namespace={cluster.selectedNamespace} />
+            ) : null}
           </div>
         </Content>
       </Layout>

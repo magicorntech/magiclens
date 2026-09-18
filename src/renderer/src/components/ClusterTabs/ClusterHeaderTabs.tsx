@@ -156,7 +156,13 @@ export function ClusterHeaderTabs(): React.JSX.Element | null {
                 />
                 {showClusterTabLogos ? (
                   <span className="ml-browser-tab__logo">
-                    <ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={18} />
+                    <ClusterAvatar
+                      logoUrl={cluster.logoUrl}
+                      name={cluster.customName}
+                      contextName={cluster.contextName}
+                      endpoint={cluster.endpoint}
+                      size={18}
+                    />
                   </span>
                 ) : null}
                 <span className="ml-browser-tab__label">{cluster.customName}</span>

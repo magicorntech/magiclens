@@ -48,7 +48,7 @@ export function WelcomeCard({ open, onClose }: WelcomeCardProps): React.JSX.Elem
       closable={false}
     >
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <img src={logo} alt="MagicLens" style={{ width: 64, height: 64, borderRadius: 14 }} />
+        <img src={logo} alt="MagicLens" style={{ width: 64, height: 64, borderRadius: 0 }} />
         <Typography.Title level={3} style={{ marginTop: 12, marginBottom: 4 }}>
           Welcome to MagicLens
         </Typography.Title>

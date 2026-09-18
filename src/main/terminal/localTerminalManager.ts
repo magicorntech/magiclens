@@ -1,7 +1,7 @@
 import os from 'node:os'
 import type { WebContents } from 'electron'
 import { unlinkSync } from 'node:fs'
-import * as pty from 'node-pty'
+import type * as pty from 'node-pty'
 import { IPC } from '@shared/ipc-contract'
 import type { TerminalStartResponse } from '@shared/types/terminal'
 
@@ -18,10 +18,25 @@ function defaultShell(): string {
   return process.env['SHELL'] || '/bin/zsh'
 }
 
+/**
+ * `node-pty` ships prebuilt native binaries per-arch. If a bad build/install ever ends up with
+ * a mismatched one (e.g. an x64 binary under an arm64 Electron process), `require`-ing it throws
+ * immediately. Previously that happened as a top-level `import` evaluated while registering IPC
+ * handlers at startup — before the main window existed — so the failure had nowhere to go and
+ * could take the whole app down before the user ever saw a window. Loading it lazily, only when
+ * a terminal is actually opened, means a broken native binary degrades to "the terminal doesn't
+ * work" instead of "the app doesn't start".
+ */
+let ptyModulePromise: Promise<typeof pty> | undefined
+function loadPty(): Promise<typeof pty> {
+  if (!ptyModulePromise) ptyModulePromise = import('node-pty')
+  return ptyModulePromise
+}
+
 class LocalTerminalManager {
   private sessions = new Map<string, Session>()
 
-  start(
+  async start(
     sessionId: string,
     cols: number,
     rows: number,
@@ -29,10 +44,11 @@ class LocalTerminalManager {
     cwd?: string,
     env?: Record<string, string>,
     tempPaths?: string[]
-  ): TerminalStartResponse {
+  ): Promise<TerminalStartResponse> {
     this.stop(sessionId)
 
     try {
+      const pty = await loadPty()
       const shell = defaultShell()
       const proc = pty.spawn(shell, [], {
         name: 'xterm-256color',

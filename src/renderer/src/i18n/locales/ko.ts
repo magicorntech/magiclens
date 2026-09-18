@@ -36,6 +36,7 @@ export const ko: TranslationOverrides = {
     noFavoriteClusters: '즐겨찾는 클러스터 없음',
     collapseSidebar: '사이드바 접기',
     expandSidebar: '사이드바 펼치기',
+    resizeSidebar: '클러스터 메뉴 크기 조절',
     favoritesHint: '고정된 클러스터',
     fullscreen: '전체 화면',
     exitFullscreen: '전체 화면 종료'
@@ -196,8 +197,13 @@ export const ko: TranslationOverrides = {
       customAccent: '사용자 지정 강조색',
       customAccentHint: '사이드바, 버튼, 하이라이트 및 차트 강조색에 적용됩니다.',
       customSwatch: '나만의 강조 색',
-      modeTitle: '컬러 모드',
-      modeHint: '밝음과 어두움 사이를 전환하거나 시스템 모양을 따릅니다.'
+      modeTitle: '모드',
+      modeHint: '밝게, 어둡게, 또는 시스템 따르기.',
+      modeLight: '밝게',
+      modeDark: '어둡게',
+      modeSystem: '시스템',
+      colorTitle: '색상',
+      colorHint: '{{mode}} 모드에서 사용됩니다. 다른 팔레트는 위에서 모드를 바꿔 편집하세요.'
     },
     about: {
       platform: '플랫폼',
@@ -544,6 +550,7 @@ export const ko: TranslationOverrides = {
   resourceNav: {
     virtual: {
       topology: '토폴로지',
+      visualizer: 'Visualizer',
       clusterOverview: '무리',
       applications: '응용',
       workloadsOverview: '개요',
@@ -564,6 +571,7 @@ export const ko: TranslationOverrides = {
     pinned: '탭에 고정됨',
     emptyFavorites: '즐겨찾기를 추가하려면 리소스를 마우스 오른쪽 버튼으로 클릭하세요.',
     aria: '자원',
+    resize: '리소스 메뉴 크기 조절',
     sections: {
       overview: '개요',
       workloads: '워크로드',
@@ -985,7 +993,8 @@ export const ko: TranslationOverrides = {
       exec: '임원',
       metrics: '측정항목',
       pressure: '압력',
-      pods: 'Pods'
+      pods: 'Pods',
+      logs: '로그'
     },
     overview: {
       title: '개요',

@@ -20,7 +20,7 @@ export function MobileAppBar({ onMenuClick }: MobileAppBarProps): React.JSX.Elem
         <Icon icon={Menu} variant="toolbar" />
       </button>
       <div className="mobile-app-bar-brand">
-        <img src={logo} alt="" width={22} height={22} style={{ borderRadius: 6 }} />
+        <img src={logo} alt="" width={22} height={22} style={{ borderRadius: 0 }} />
         <Typography.Text strong style={{ fontSize: 14 }}>
           MagicLens
         </Typography.Text>

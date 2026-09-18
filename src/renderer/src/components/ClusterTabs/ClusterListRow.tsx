@@ -106,7 +106,15 @@ export function ClusterListRow({ cluster, searchQuery, onEdit }: ClusterListRowP
       ]}
     >
       <List.Item.Meta
-        avatar={<ClusterAvatar logoUrl={cluster.logoUrl} name={cluster.customName} size={40} />}
+        avatar={
+          <ClusterAvatar
+            logoUrl={cluster.logoUrl}
+            name={cluster.customName}
+            contextName={cluster.contextName}
+            endpoint={cluster.endpoint}
+            size={40}
+          />
+        }
         title={
           <Space wrap>
             {cluster.origin === 'org' && <Tag color="blue">org</Tag>}
