@@ -86,9 +86,10 @@ In GitHub → **Settings → Secrets and variables → Actions → New repositor
 | `APPLE_APP_SPECIFIC_PASSWORD` | app-specific password (step 3) |
 | `APPLE_TEAM_ID` | the 10-character Team ID (step 1) |
 
-The workflow exports each var **only when its secret exists** — electron-builder treats an
-empty `CSC_LINK` as a broken file path and hard-fails, so partial configuration is worse than
-none. Add all five together.
+The workflow imports the `.p12` into a job-scoped keychain and leaves `CSC_LINK` unset so
+electron-builder signs from `security find-identity`. Do not put `CSC_LINK` back on the
+macOS job: electron-builder 25 then calls `security set-key-partition-list` with the `.p12`
+password, and macOS 26 runners fail with `SecKeychainUnlock`. Add all five secrets together.
 
 That's the whole setup. Notarization needs no config in `electron-builder.yml`:
 electron-builder runs `notarytool` automatically as soon as `APPLE_ID`,
@@ -164,3 +165,8 @@ ticket.
   later installer (unsigned or correctly Authenticode-signed). Those users have to download
   the new `.exe` from the GitHub release and run it once; after that, auto-update works
   again.
+- **`SecKeychainUnlock` on `set-key-partition-list`.** Not a wrong `.p12` password.
+  electron-builder 25 (#10066) unlocks the temporary keychain with the certificate password.
+  macOS 26 refuses that. The release workflow imports the cert itself; do not set `CSC_LINK`
+  to work around it. Fixed upstream in electron-builder 26.16 — we can drop the workaround
+  after upgrading.
