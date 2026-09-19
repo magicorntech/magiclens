@@ -796,6 +796,26 @@ const api = {
       | { error: string }
     > => ipcRenderer.invoke(IPC.VISUALIZER_GET_GRAPH, req)
   },
+  security: {
+    scan: (
+      req: import('@shared/types/security').SecurityScanRequest
+    ): Promise<import('@shared/types/security').SecurityReport | { error: string }> =>
+      ipcRenderer.invoke(IPC.SECURITY_SCAN, req)
+  },
+  ai: {
+    chatComplete: (
+      req: import('@shared/types/aiChat').AiChatCompleteRequest
+    ): Promise<import('@shared/types/aiChat').AiChatCompleteResponse> =>
+      ipcRenderer.invoke(IPC.AI_CHAT_COMPLETE, req),
+    probeProvider: (
+      req: import('@shared/types/aiChat').AiProbeProviderRequest
+    ): Promise<import('@shared/types/aiChat').AiProbeProviderResponse> =>
+      ipcRenderer.invoke(IPC.AI_PROBE_PROVIDER, req),
+    openCliLogin: (
+      req: import('@shared/types/aiChat').AiProviderSetupRequest
+    ): Promise<{ ok: true } | { ok: false; error: string }> =>
+      ipcRenderer.invoke(IPC.AI_OPEN_CLI_LOGIN, req)
+  },
   clusterApps: {
     discover: (req: ClusterIdRequest): Promise<import('@shared/types/clusterApps').ClusterAppsDiscoverResponse> =>
       ipcRenderer.invoke(IPC.CLUSTER_APPS_DISCOVER, req),

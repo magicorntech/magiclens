@@ -21,6 +21,7 @@ import { ArgoClustersPage, ArgoRepositoriesPage } from '../components/ArgoCD/Arg
 import { TopologyPage } from '../components/Topology/TopologyPage'
 import { VisualizerPage } from '../components/Visualizer/VisualizerPage'
 import { TimelinePage } from '../components/Timeline/TimelinePage'
+import { SecurityPage } from '../components/Security/SecurityPage'
 import { ClusterAppPage } from '../components/Apps/ClusterAppPage'
 import { WorkloadsOverviewPage } from '../components/Overview/WorkloadsOverviewPage'
 import { ApplicationsOverviewPage } from '../components/Overview/ApplicationsOverviewPage'
@@ -268,6 +269,8 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
         return <VisualizerPage clusterId={clusterId} />
       case 'eventTimeline':
         return <TimelinePage clusterId={clusterId} onNavigateToResource={handleNavigateToResource} />
+      case 'security':
+        return <SecurityPage clusterId={clusterId} />
       case 'portForwarding':
         return <PortForwardingPage clusterId={clusterId} />
       case 'discoveredApiGroups':

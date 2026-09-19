@@ -535,6 +535,16 @@ export const ja: TranslationOverrides = {
         body:
           'マシン上のボルトに Markdown を書く — フォルダ、Wiki リンク、グラフ＆キャンバス、描画、リマインダー、分割表示。ボルトフォルダを移さない限り端末外へは出ません。'
       },
+      ai: {
+        eyebrow: 'Copilot',
+        title: 'Ask your cluster, get real answers',
+        body: 'Open Copilot from the top bar. Configure Ollama, OpenAI, Claude, or a local CLI in Settings → AI Agent.'
+      },
+      security: {
+        eyebrow: 'Security',
+        title: 'Scan the cluster for risk',
+        body: 'Run a Security scan from the resource menu — findings, charts, and tables help prioritize issues.'
+      },
       ops: {
         eyebrow: '日常',
         title: 'ログ、exec、ターミナル',

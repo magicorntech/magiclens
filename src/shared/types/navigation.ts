@@ -9,6 +9,7 @@ export type VirtualPageKey =
   | 'topology'
   | 'visualizer'
   | 'eventTimeline'
+  | 'security'
   | 'portForwarding'
   | 'dynamicCustomResources'
   | 'operatorResources'

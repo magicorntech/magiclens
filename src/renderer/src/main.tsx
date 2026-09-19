@@ -16,6 +16,7 @@ import {
   TopologyPopoutApp
 } from './components/Topology/TopologyPopoutApp'
 import { MenuBarWidgetApp, isMenuBarWidgetRoute } from './components/MenuBarWidget/MenuBarWidgetApp'
+import { installDemoShot } from './demoShot'
 import './i18n'
 import '@fontsource-variable/inter'
 import '@fontsource-variable/manrope'
@@ -65,6 +66,8 @@ function Root(): React.JSX.Element {
     </ConfigProvider>
   )
 }
+
+installDemoShot()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

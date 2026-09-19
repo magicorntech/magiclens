@@ -536,12 +536,14 @@ function demoRel(
 
 export function demoHelmReleases(): HelmRelease[] {
   return [
-    demoRel('argocd', 'argo-cd', 'argo-cd', '7.8.2', 'v2.14.5', 25),
-    demoRel('redis', 'redis', 'redis', '20.6.1', '7.4.2', 8),
-    demoRel('rabbitmq', 'rabbitmq', 'rabbitmq', '15.4.1', '3.13.2', 3),
+    demoRel('argo-cd', 'argocd', 'argo-cd', '7.8.2', 'v2.14.5', 25),
+    demoRel('redis', 'data', 'redis', '20.6.1', '7.4.2', 8),
+    demoRel('rabbitmq', 'data', 'rabbitmq', '15.4.1', '3.13.2', 3),
     demoRel('prometheus-stack', 'monitoring', 'kube-prometheus-stack', '69.7.1', 'v0.80.0', 12),
     demoRel('goldilocks', 'goldilocks', 'goldilocks', '10.5.0', 'v4.14.1', 2),
-    demoRel('loki', 'logging', 'loki', '6.27.0', '3.4.2', 4)
+    demoRel('loki', 'logging', 'loki', '6.27.0', '3.4.2', 4),
+    demoRel('ingress-nginx', 'ingress-nginx', 'ingress-nginx', '4.12.1', '1.12.1', 9),
+    demoRel('cert-manager', 'cert-manager', 'cert-manager', '1.16.2', 'v1.16.2', 6)
   ]
 }
 

@@ -11,6 +11,7 @@ import {
   Puzzle,
   Waypoints,
   Settings,
+  Shield,
   Star
 } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
@@ -59,6 +60,7 @@ export const resourceNavLayout: NavLayoutItem[] = [
   { type: 'standalone', kind: 'Nodes', icon: KubernetesLogo as LucideIcon },
   { type: 'standalone-virtual', key: 'topology', icon: LayoutDashboard, label: 'Topology' },
   { type: 'standalone-virtual', key: 'visualizer', icon: Waypoints, label: 'Visualizer' },
+  { type: 'standalone-virtual', key: 'security', icon: Shield, label: 'Security' },
   {
     type: 'section',
     id: 'workloads',

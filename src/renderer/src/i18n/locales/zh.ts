@@ -534,6 +534,16 @@ export const zh: TranslationOverrides = {
         body:
           '在本机保险库中写 Markdown — 文件夹、Wiki 链接、图谱与画布、绘图、提醒与分屏。除非你移动保险库文件夹，否则不会离开本机。'
       },
+      ai: {
+        eyebrow: 'Copilot',
+        title: 'Ask your cluster, get real answers',
+        body: 'Open Copilot from the top bar. Configure Ollama, OpenAI, Claude, or a local CLI in Settings → AI Agent.'
+      },
+      security: {
+        eyebrow: 'Security',
+        title: 'Scan the cluster for risk',
+        body: 'Run a Security scan from the resource menu — findings, charts, and tables help prioritize issues.'
+      },
       ops: {
         eyebrow: '日常运维',
         title: '日志、exec 与终端',

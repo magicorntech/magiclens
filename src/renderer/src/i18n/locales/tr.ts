@@ -128,6 +128,7 @@ export const tr: TranslationOverrides = {
       keyboard: 'Klavye',
       appearance: 'Tema',
       sparks: 'Sparks',
+      aiAgent: 'AI Agent',
       developer: 'Geliştirici',
       about: 'Hakkında'
     },
@@ -141,6 +142,7 @@ export const tr: TranslationOverrides = {
       keyboard: 'Genel kısayolları özelleştirin. Çakışan bağlar otomatik yer değiştirir.',
       appearance: 'Açık/koyu mod ve tüm uygulama için renk temaları.',
       sparks: 'Sparks not defteri temaları ve yerel eklenti modülleri.',
+      aiAgent: 'Uygulama içi asistan için yerel veya uzak LLM sağlayıcılarını seçin.',
       developer: 'Hata ayıklama için makine özellikleri ve canlı süreç kullanımı.',
       about: 'Bu MagicLens kurulumunun sürüm ve çalışma zamanı bilgileri.'
     },
@@ -430,6 +432,47 @@ export const tr: TranslationOverrides = {
       pluginsHint: 'Yerleşik özellikleri aç/kapa.',
       localHint: 'Notlar, graf ve canvas Sparks vault klasöründe yerel olarak saklanır.'
     },
+    aiAgent: {
+      title: 'AI Agent',
+      intro:
+        'Sağlayıcı ve model seçin — Copilot sorunuzu (MagicLens bağlamıyla) o servise gönderir ve gerçek yanıtı gösterir. Ollama tamamen yerelde kalır.',
+      privacy:
+        'API anahtarları ve CLI yolları yalnızca bu makinede saklanır. Uzak sağlayıcılar yalnızca gönderdiğiniz sohbet + UI bağlamını alır.',
+      providersHead: 'LLM sağlayıcıları — {{count}} hazır',
+      optionsTitle: 'Asistan seçenekleri',
+      cliWorkdir: 'CLI çalışma dizini',
+      cliWorkdirHint: 'CLI tabanlı ajanlar için isteğe bağlı çalışma dizini.',
+      cliWorkdirPlaceholder: 'İsteğe bağlı',
+      hideAssistant: 'AI asistanını gizle',
+      hideAssistantHint: 'Copilot yan panelini ve FAB girişini kapatır; yeniden açana kadar gizler.',
+      pulseChromeIcon: 'Araç çubuğu ikonu yanıp sönsün',
+      pulseChromeIconHint: 'Bildirimlerin yanındaki Copilot butonunu parlatır. Kapatırsanız sabit ikon kalır.',
+      use: 'Kullan',
+      default: 'Varsayılan',
+      probe: 'Bağlantıyı kontrol et',
+      login: 'Giriş yap',
+      loginOpened: 'Terminal açıldı — orada girişi tamamlayıp yeniden kontrol edin.',
+      cliMissing: 'CLI bulunamadı — yukarıya komut yolunu girin.',
+      status: {
+        ready: 'Hazır',
+        needsKey: 'Anahtar gerekli',
+        notInstalled: 'Yüklü değil'
+      },
+      runbook: {
+        title: 'Entegrasyon rehberi',
+        toggle: 'Kurulum rehberi',
+        credential: 'Kimlik bilgisi',
+        login: 'Giriş yap',
+        install: 'Kur',
+        pull: 'Model indir',
+        serve: 'Sunucuyu başlat',
+        docs: 'Dokümantasyon',
+        docsOpened: 'Tarayıcıda açıldı',
+        copy: 'Komutu kopyala',
+        copied: 'Komut kopyalandı',
+        openLink: 'Bağlantıyı aç'
+      }
+    },
     developer: {
       hostTitle: 'Bilgisayar özellikleri',
       hostHint: 'Bu makinenin donanım ve işletim sistemi bilgileri (bölümü açınca bir kez yüklenir).',
@@ -712,7 +755,7 @@ export const tr: TranslationOverrides = {
         eyebrow: 'Hoş geldiniz',
         title: 'Kubernetes için MagicLens',
         body:
-          'Kümeleri, kaynakları, VPN tünellerini, logları ve terminalleri tek yerden yöneten hızlı bir masaüstü istemcisi — makinenizde offline-first.'
+          'Kümeler, kaynaklar, VPN, güvenlik taraması ve Copilot — hepsi tek masaüstü istemcide, makinenizde offline-first.'
       },
       clusters: {
         eyebrow: 'Kümeler',
@@ -755,6 +798,18 @@ export const tr: TranslationOverrides = {
         title: 'Yerel notlar, seninle kalsın',
         body:
           'Makinedeki vault’ta Markdown yaz — klasörler, wiki linkler, graf & canvas, çizim, hatırlatıcılar ve bölünmüş görünüm. Vault klasörünü sen taşımadıkça hiçbir şey cihaz dışına çıkmaz.'
+      },
+      ai: {
+        eyebrow: 'Copilot',
+        title: 'Kümenize sorun, gerçek yanıt alın',
+        body:
+          'Üst çubuktan (bildirimlerin yanı) Copilot’u açın. Ayarlar → AI Agent’ta Ollama, OpenAI, Claude veya yerel CLI seçin — her sağlayıcı için kurulum ve giriş rehberi var.'
+      },
+      security: {
+        eyebrow: 'Güvenlik',
+        title: 'Kümedeki riskleri tarayın',
+        body:
+          'Kaynak menüsünden Security taraması çalıştırın — bulgular, grafikler ve tablolar RBAC, ağ ve iş yükü sorunlarını önceliklendirmenize yardım eder.'
       },
       ops: {
         eyebrow: 'Günlük iş',
@@ -825,6 +880,7 @@ export const tr: TranslationOverrides = {
       topology: 'Topoloji',
       visualizer: 'Visualizer',
       eventTimeline: 'Timeline',
+      security: 'Güvenlik',
       portForwarding: 'Port Forwards',
       helmCharts: 'Helm',
       helmReleases: 'Helm',
@@ -892,6 +948,49 @@ export const tr: TranslationOverrides = {
       RoleBindings: 'Role Bindings',
       CustomResourceDefinitions: 'Tanımlar'
     }
+  },
+  security: {
+    title: 'Güvenlik',
+    eyebrow: 'Küme',
+    score: 'Skor',
+    typeChart: 'Zafiyet türleri',
+    severityChart: 'Öneme göre zafiyetler',
+    namespaceChart: 'Namespace’e göre zafiyetler',
+    tabVulns: 'Zafiyetler',
+    tabEntry: 'Giriş noktaları',
+    tabVectors: 'Vektörler',
+    lastScan: 'Son tarama',
+    export: 'Dışa aktar',
+    exportDone: 'Güvenlik raporu dışa aktarıldı',
+    scan: 'Tara',
+    scanning: 'Küme taranıyor…',
+    empty: 'Henüz güvenlik bulgusu yok',
+    noFlags: 'Risk bayrağı yok',
+    risk: {
+      critical: 'Kritik risk',
+      high: 'Yüksek risk',
+      medium: 'Orta risk',
+      low: 'Düşük risk',
+      healthy: 'Sağlıklı'
+    },
+    colSeverity: 'Önem',
+    colWorkload: 'İş yükü',
+    colTitle: 'Başlık',
+    colNamespace: 'Namespace',
+    colRule: 'Kural',
+    colSource: 'Kaynak',
+    colPolicy: 'İhlal edilen politika',
+    colDescription: 'Açıklama',
+    colRecommendation: 'Öneri',
+    colName: 'Ad',
+    colType: 'Tür',
+    colPorts: 'Portlar',
+    colStatus: 'Durum',
+    colAge: 'Yaş',
+    colFrom: 'Kaynak',
+    colFromDetail: 'Kaynak detay',
+    colTo: 'Hedef',
+    colToDetail: 'Hedef detay'
   },
   nodesOverview: {
     title: 'Nodes genel bakış',
@@ -1809,10 +1908,46 @@ export const tr: TranslationOverrides = {
     terminal: 'Yeni terminal',
     emptyEditor: 'Boş YAML editörü',
     addSpark: 'Spark ekle',
+    assistant: 'AI asistan',
     hintTerminal: 'Bu kümede kabuk aç',
     hintEditor: 'Yeni bir manifest yaz',
     hintSpark: 'Hızlı not al',
+    hintAssistant: 'Bağlam duyarlı Copilot sohbetini aç',
     dragHint: 'Taşımak için basılı tutup sürükleyin'
+  },
+  aiChat: {
+    title: 'Copilot',
+    subtitle: 'küme-duyarlı asistan',
+    badge: 'Kubernetes için AI',
+    headline: 'Bu küme hakkında sorun — Copilot canlı MagicLens bağlamını kullanır.',
+    lead: 'Ayarlardan sağlayıcı seçin, sonra sohbet edin. Yerel modeller bu makinede kalır; bulut/CLI araçları için bir kez giriş gerekir.',
+    featureContextTitle: 'Bağlam duyarlı yanıtlar',
+    featureContextBody:
+      'Seçili küme, namespace, iş yükü, YAML, event, log ve görünür UI bağlamını kullanır.',
+    featureMcpTitle: 'MCP destekli eylemler',
+    featureMcpBody: 'Sayfa açma, kaynak inceleme, sorun analizi ve değişiklik hazırlama araçları.',
+    featureReviewTitle: 'İncelenen değişiklikler',
+    featureReviewBody: 'Yazma eylemleri onay, RBAC kontrolü ve dry-run ön kontrolünden geçer.',
+    featurePrivacyTitle: 'Gizlilik kontrolleri',
+    featurePrivacyBody: 'Uzak modellere göndermeden önce anonimleştirin veya Ollama ile yerelde kalın.',
+    featureYamlTitle: 'YAML ve tanı',
+    featureYamlBody: 'Manifest inceleme, rollout hata ayıklama, log analizi ve daha güvenli yama önerileri.',
+    tryPrompts: 'Bir komut deneyin',
+    promptMitigate: 'Güvenlik bulgularını iyileştir',
+    promptExplain: 'Bu sayfayı açıkla',
+    promptYaml: 'Daha güvenli YAML yaması öner',
+    promptLogs: 'Event’lerden hata ayıklamaya yardım et',
+    placeholder: 'Bu küme bağlamı hakkında sorun…',
+    composerHint: 'Enter gönder · Shift+Enter yeni satır',
+    send: 'Gönder',
+    clear: 'Sohbeti temizle',
+    minimize: 'Küçült',
+    resize: 'Asistanı yeniden boyutlandır',
+    pickProvider: 'Sağlayıcı seç',
+    usingModel: 'Yanıtlar: {{name}} · {{model}}',
+    copied: 'Kopyalandı',
+    yamlDraft: 'Copilot YAML taslağı',
+    enableInSettings: 'AI asistanı Ayarlar → AI Agent’tan açın'
   },
   notes: {
     brandEyebrow: 'MagicLens',

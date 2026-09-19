@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { app, BrowserWindow, crashReporter } from 'electron'
 import { applyChromiumPerformanceFlags } from './chromiumPerf'
 import { registerIpcHandlers } from './ipc/register'
+import { scheduleDemoScreenshots } from './demoScreenshots'
 import { seedDemoWorkspace } from './k8s/demoMode'
 import { installSparksMediaProtocol, registerSparksMediaScheme } from './notes/mediaProtocol'
 import { startNotesReminderScheduler } from './notes/reminderScheduler'
@@ -45,6 +46,7 @@ app.whenReady().then(() => {
 
   registerIpcHandlers()
   const window = createMainWindow()
+  scheduleDemoScreenshots(window)
   installReloadConfirm(window)
   if (!isDemoMode()) initAutoUpdater(window)
   startNotesReminderScheduler()

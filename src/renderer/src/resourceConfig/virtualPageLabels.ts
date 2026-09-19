@@ -10,6 +10,7 @@ export const VIRTUAL_PAGE_LABELS: Record<VirtualPageKey, string> = {
   topology: 'Topology',
   visualizer: 'Visualizer',
   eventTimeline: 'Timeline',
+  security: 'Security',
   portForwarding: 'Port Forwarding',
   dynamicCustomResources: 'Custom Resources',
   operatorResources: 'Custom Resources',

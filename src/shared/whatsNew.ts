@@ -15,6 +15,15 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.26': {
+    title: 'Copilot and Security',
+    items: [
+      'Copilot lives next to notifications — chat with Ollama, OpenAI, Claude, or local CLIs; each provider has a setup runbook in Settings → AI Agent.',
+      'Turn the pulsing toolbar icon on or off from Settings → AI Agent.',
+      'Security scans the cluster with findings, charts, and tables from the resource menu.',
+      'First-launch tour covers Copilot and Security so new installs see the new tools right away.'
+    ]
+  },
   '0.1.25': {
     title: 'Visualizer, Timeline, and cluster apps',
     items: [

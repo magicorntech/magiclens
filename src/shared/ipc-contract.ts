@@ -240,6 +240,12 @@ export const IPC = {
 
   VISUALIZER_GET_GRAPH: 'visualizer:getGraph',
 
+  SECURITY_SCAN: 'security:scan',
+
+  AI_CHAT_COMPLETE: 'ai:chatComplete',
+  AI_PROBE_PROVIDER: 'ai:probeProvider',
+  AI_OPEN_CLI_LOGIN: 'ai:openCliLogin',
+
   CLUSTER_APPS_DISCOVER: 'clusterApps:discover',
   CLUSTER_APPS_OPEN: 'clusterApps:open',
   CLUSTER_APPS_SAVE_MANUAL: 'clusterApps:saveManual',

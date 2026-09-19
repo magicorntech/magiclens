@@ -580,6 +580,16 @@ export const de: TranslationOverrides = {
         body:
           'Markdown in einem Vault auf Ihrem Rechner — Ordner, Wiki-Links, Graph & Canvas, Zeichnungen, Erinnerungen und Split-Ansichten. Nichts verlässt das Gerät, außer Sie verschieben den Vault-Ordner.'
       },
+      ai: {
+        eyebrow: 'Copilot',
+        title: 'Ask your cluster, get real answers',
+        body: 'Open Copilot from the top bar. Configure Ollama, OpenAI, Claude, or a local CLI in Settings → AI Agent.'
+      },
+      security: {
+        eyebrow: 'Security',
+        title: 'Scan the cluster for risk',
+        body: 'Run a Security scan from the resource menu — findings, charts, and tables help prioritize issues.'
+      },
       ops: {
         eyebrow: 'Alltag',
         title: 'Logs, Exec & Terminals',

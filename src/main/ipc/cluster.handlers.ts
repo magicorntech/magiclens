@@ -58,7 +58,7 @@ export function registerClusterHandlers(): void {
 
   ipcMain.handle(IPC.CLUSTER_LIST_NAMESPACES, async (_e, req: ClusterIdRequest): Promise<NamespacesResponse | { error: string }> => {
     if (isDemoCluster(req.clusterId)) {
-      return { namespaces: demoNamespaces() }
+      return { namespaces: demoNamespaces(req.clusterId) }
     }
     const result = await withClusterClients(req.clusterId, async (clients) => {
       const res = await clients.core.listNamespace()

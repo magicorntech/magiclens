@@ -12,6 +12,7 @@ import { FullscreenToggle } from './FullscreenToggle'
 import { ExpandableSearchControl } from './ExpandableSearchControl'
 import { NotesNotificationBell } from '../Notes/NotesNotificationBell'
 import { UpdateAvailableBadge } from '../Update/UpdateAvailableBadge'
+import { AiAssistantToggleButton } from './AiAssistantPanel'
 
 interface ChromeActionsProps {
   /** Include split-screen control (cluster tab strip). */
@@ -105,6 +106,9 @@ export function ChromeActions({
 
       <div className="ml-chrome-actions__fixed ml-action-group">
         <UpdateAvailableBadge />
+        <span className="ml-chrome-actions__hit">
+          <AiAssistantToggleButton />
+        </span>
         <span className="ml-chrome-actions__hit">
           <NotesNotificationBell />
         </span>

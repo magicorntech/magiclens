@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowLeft,
   ArrowRight,
+  Bot,
   Box,
   Cable,
   Columns2,
@@ -11,6 +12,7 @@ import {
   Layers,
   Network,
   Search,
+  ShieldCheck,
   Sparkles,
   Terminal,
   Waypoints
@@ -37,6 +39,8 @@ type SlideMeta = {
     | 'topology'
     | 'vpn'
     | 'sparks'
+    | 'ai'
+    | 'security'
     | 'ops'
     | 'forward'
   icon: typeof Layers
@@ -52,6 +56,8 @@ const SLIDES: SlideMeta[] = [
   { id: 'topology', icon: Waypoints, accent: '#06b6d4' },
   { id: 'vpn', icon: Network, accent: '#22c55e' },
   { id: 'sparks', icon: Sparkles, accent: '#a78bfa' },
+  { id: 'ai', icon: Bot, accent: '#f97316' },
+  { id: 'security', icon: ShieldCheck, accent: '#10b981' },
   { id: 'ops', icon: Terminal, accent: '#f59e0b' },
   { id: 'forward', icon: Cable, accent: '#ec4899' }
 ]

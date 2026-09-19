@@ -22,7 +22,7 @@ import type {
   HelmUninstallReleaseResponse
 } from '@shared/types/helm'
 import { clusterManager } from '../k8s/clusterManager'
-import { isDemoCluster } from '../k8s/demoMode'
+import { demoHelmCharts, hasDemoCatalog, isDemoCluster } from '../k8s/demoMode'
 import {
   getHelmReleaseHistory,
   getHelmReleaseDetail,
@@ -46,7 +46,9 @@ import {
 
 export function registerHelmHandlers(): void {
   ipcMain.handle(IPC.HELM_LIST_RELEASES, async (_e, req: ClusterIdRequest): Promise<HelmReleasesResponse> => {
-    if (isDemoCluster(req.clusterId)) return { releases: demoHelmReleases() }
+    if (isDemoCluster(req.clusterId)) {
+      return { releases: hasDemoCatalog(req.clusterId) ? demoHelmReleases() : [] }
+    }
     try {
       const clients = clusterManager.require(req.clusterId)
       const releases = await listHelmReleases(clients)
@@ -57,7 +59,7 @@ export function registerHelmHandlers(): void {
   })
 
   ipcMain.handle(IPC.HELM_LIST_CHARTS, async (_e, req: ClusterIdRequest): Promise<HelmChartsResponse> => {
-    if (isDemoCluster(req.clusterId)) return { charts: [] }
+    if (isDemoCluster(req.clusterId)) return { charts: demoHelmCharts(req.clusterId) }
     try {
       const clients = clusterManager.require(req.clusterId)
       const charts = await listHelmCharts(clients)
@@ -121,7 +123,9 @@ export function registerHelmHandlers(): void {
   ipcMain.handle(
     IPC.HELM_GET_HISTORY,
     async (_e, req: HelmReleaseHistoryRequest): Promise<HelmReleaseHistoryResponse> => {
-      if (isDemoCluster(req.clusterId)) return { history: demoHelmHistory(req.namespace, req.name) }
+      if (isDemoCluster(req.clusterId)) {
+        return { history: hasDemoCatalog(req.clusterId) ? demoHelmHistory(req.namespace, req.name) : [] }
+      }
       try {
         const clients = clusterManager.require(req.clusterId)
         const history = await getHelmReleaseHistory(clients, req.namespace, req.name)
@@ -135,7 +139,11 @@ export function registerHelmHandlers(): void {
   ipcMain.handle(
     IPC.HELM_GET_RELEASE_DETAIL,
     async (_e, req: HelmReleaseDetailRequest): Promise<HelmReleaseDetailResponse> => {
-      if (isDemoCluster(req.clusterId)) return { detail: demoHelmReleaseDetail(req.namespace, req.name) }
+      if (isDemoCluster(req.clusterId)) {
+        return hasDemoCatalog(req.clusterId)
+          ? { detail: demoHelmReleaseDetail(req.namespace, req.name) }
+          : { error: 'Release not found' }
+      }
       try {
         const clients = clusterManager.require(req.clusterId)
         const detail = await getHelmReleaseDetail(clients, req.namespace, req.name)

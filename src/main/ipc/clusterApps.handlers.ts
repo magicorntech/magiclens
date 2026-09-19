@@ -14,16 +14,43 @@ import {
   openManualIfSet,
   saveManualClusterApp
 } from '../k8s/clusterAppsService'
-import { isDemoCluster } from '../k8s/demoMode'
+import { hasDemoCatalog, isDemoCluster } from '../k8s/demoMode'
 import { onSenderDestroyed } from './senderCleanup'
 import { portForwardManager } from '../k8s/portForwardManager'
 
 function demoApps(): ClusterAppsDiscoverResponse {
   return {
     apps: [
-      { kind: 'argocd', found: false, source: 'none', displayName: 'Argo CD' },
-      { kind: 'prometheus', found: false, source: 'none', displayName: 'Prometheus' },
-      { kind: 'grafana', found: false, source: 'none', displayName: 'Grafana' }
+      {
+        kind: 'argocd',
+        found: true,
+        source: 'auto',
+        displayName: 'Argo CD',
+        namespace: 'argocd',
+        serviceName: 'argocd-server',
+        servicePort: 80,
+        externalUrl: 'https://argocd.aurora.demo'
+      },
+      {
+        kind: 'prometheus',
+        found: true,
+        source: 'auto',
+        displayName: 'Prometheus',
+        namespace: 'monitoring',
+        serviceName: 'prometheus',
+        servicePort: 9090,
+        externalUrl: 'https://prometheus.aurora.demo'
+      },
+      {
+        kind: 'grafana',
+        found: true,
+        source: 'auto',
+        displayName: 'Grafana',
+        namespace: 'monitoring',
+        serviceName: 'grafana',
+        servicePort: 3000,
+        externalUrl: 'https://grafana.aurora.demo'
+      }
     ]
   }
 }
@@ -32,7 +59,19 @@ export function registerClusterAppsHandlers(): void {
   ipcMain.handle(
     IPC.CLUSTER_APPS_DISCOVER,
     async (_e, req: ClusterIdRequest): Promise<ClusterAppsDiscoverResponse> => {
-      if (isDemoCluster(req.clusterId)) return demoApps()
+      if (isDemoCluster(req.clusterId)) {
+        if (!hasDemoCatalog(req.clusterId)) {
+          return {
+            apps: demoApps().apps.map((app) => ({
+              kind: app.kind,
+              found: false,
+              source: 'none' as const,
+              displayName: app.displayName
+            }))
+          }
+        }
+        return demoApps()
+      }
       try {
         const clients = clusterManager.require(req.clusterId)
         return await discoverClusterApps(clients, req.clusterId)

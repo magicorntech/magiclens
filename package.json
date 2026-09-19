@@ -1,8 +1,8 @@
 {
   "name": "magiclens",
   "productName": "MagicLens",
-  "version": "0.1.25",
-  "buildNumber": "18",
+  "version": "0.1.26",
+  "buildNumber": "19",
   "description": "A simple, fast Kubernetes cluster manager",
   "main": "./out/main/index.js",
   "author": {
@@ -16,7 +16,8 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "website"
   ],
   "scripts": {
     "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",

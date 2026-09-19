@@ -8,6 +8,7 @@ export type SettingsSection =
   | 'keyboard'
   | 'appearance'
   | 'sparks'
+  | 'aiAgent'
   | 'vpnExtensions'
   | 'portForwarding'
   | 'developer'

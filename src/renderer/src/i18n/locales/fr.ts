@@ -577,6 +577,16 @@ export const fr: TranslationOverrides = {
         body:
           'Écrivez du Markdown dans un coffre sur votre machine — dossiers, liens wiki, graphe & canvas, dessins, rappels et vues scindées. Rien ne quitte l’appareil sauf si vous déplacez le dossier du coffre.'
       },
+      ai: {
+        eyebrow: 'Copilot',
+        title: 'Ask your cluster, get real answers',
+        body: 'Open Copilot from the top bar. Configure Ollama, OpenAI, Claude, or a local CLI in Settings → AI Agent.'
+      },
+      security: {
+        eyebrow: 'Security',
+        title: 'Scan the cluster for risk',
+        body: 'Run a Security scan from the resource menu — findings, charts, and tables help prioritize issues.'
+      },
       ops: {
         eyebrow: 'Au quotidien',
         title: 'Logs, exec et terminaux',

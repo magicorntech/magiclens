@@ -1,148 +1,75 @@
 import { app } from 'electron'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { PersistedClusterEntry } from '@shared/types/cluster'
-import type { DiscoveryResponse } from '@shared/types/discovery'
-import type { ClusterMetricsSummary, MetricsRangeResponse, NodeMetricsResponse, PvcUsageResponse } from '@shared/types/metrics'
+import type { DiscoveryResponse, CustomResourceKind, DynamicResourceItem } from '@shared/types/discovery'
+import type {
+  ClusterMetricsSummary,
+  MetricsRangeResponse,
+  NodeMetricsResponse,
+  PvcUsageResponse
+} from '@shared/types/metrics'
 import type { NamespacePodMetricsResponse, PodDetailData, PodMetricsResponse, PodNetworkResponse } from '@shared/types/pod'
 import type { PrometheusStatus } from '@shared/types/prometheus'
 import type { ResourceListItem } from '@shared/types/resource'
 import type { ResourceEventItem } from '@shared/types/resourceEvents'
+import type { HelmChartSummary } from '@shared/types/helm'
+import type { TopologyGraphResponse } from '@shared/types/topology'
+import type { VisualizerGraphResponse } from '@shared/types/visualizer'
 import type { WorkloadContextInfo, WorkloadPodInfo } from '@shared/types/workload'
 import { addCluster, listClusters, updateCluster } from '../persistence/clusterStore'
+import { saveClusterGroups } from '../persistence/clusterGroups'
 import { setHasSeenWelcome, setLastSeenSplashVersion } from '../persistence/appSettings'
 import { getUiState, setUiState } from '../persistence/uiState'
 import { isDemoMode } from '../demoUserData'
 import { K8S_KIND_NAME } from './resourceRegistry'
+import {
+  APPS,
+  BY_KIND,
+  DEMO_CLUSTER_IDS,
+  DEMO_EMPTY_CLUSTER_IDS,
+  DEPLOYMENTS,
+  hasDemoCatalog as clusterHasDemoCatalog,
+  NAMESPACES,
+  NODES,
+  PODS,
+  PVCS,
+  daysAgo,
+  demoCustomResourceKinds,
+  demoDiscovery as catalogDiscovery,
+  demoDynamicResources,
+  demoHelmCharts as catalogHelmCharts,
+  demoMetricsRange as catalogMetricsRange,
+  demoTopologyGraph as catalogTopologyGraph,
+  demoVisualizerGraph as catalogVisualizerGraph,
+  hoursAgo
+} from './demoCatalog'
 
-export const DEMO_CLUSTER_ID = 'demo-aurora-prod'
+export const DEMO_CLUSTER_ID: string = DEMO_CLUSTER_IDS.prod
 export const DEMO_CONTEXT = 'aurora-prod'
 
-const DEMO_KUBECONFIG = `apiVersion: v1
+export function demoHelmCharts(clusterId = DEMO_CLUSTER_ID): HelmChartSummary[] {
+  if (!hasDemoCatalog(clusterId)) return []
+  return catalogHelmCharts()
+}
+
+function kubeconfig(context: string, server: string): string {
+  return `apiVersion: v1
 kind: Config
 clusters:
-  - name: aurora-prod
+  - name: ${context}
     cluster:
-      server: https://demo.magiclens.local
+      server: ${server}
 contexts:
-  - name: aurora-prod
+  - name: ${context}
     context:
-      cluster: aurora-prod
+      cluster: ${context}
       user: demo
-current-context: aurora-prod
+current-context: ${context}
 users:
   - name: demo
     user:
       token: demo
 `
-
-const RUNNING_DOT =
-  '[{"ready":true,"waiting":false,"running":true,"terminated":false,"init":false}]'
-
-function daysAgo(days: number): string {
-  return new Date(Date.now() - days * 86_400_000).toISOString()
-}
-
-function row(
-  kind: string,
-  name: string,
-  namespace: string,
-  statusText: string,
-  statusColor: string,
-  columns: Record<string, string>,
-  ageDays: number
-): ResourceListItem {
-  return {
-    id: `demo-${kind}-${namespace}-${name}`,
-    name,
-    namespace,
-    ageTimestamp: daysAgo(ageDays),
-    statusText,
-    statusColor,
-    columns
-  }
-}
-
-const DEPLOYMENTS: ResourceListItem[] = [
-  row('deploy', 'storefront', 'shop', 'Available', 'green', { ready: '3/3', controlledBy: '-' }, 12),
-  row('deploy', 'checkout-api', 'shop', 'Available', 'green', { ready: '2/2', controlledBy: '-' }, 12),
-  row('deploy', 'payments-worker', 'payments', 'Available', 'green', { ready: '1/1', controlledBy: '-' }, 6),
-  row('deploy', 'catalog-cache', 'shop', 'Available', 'green', { ready: '2/2', controlledBy: '-' }, 4),
-  row('deploy', 'inventory-sync', 'shop', 'Available', 'green', { ready: '1/1', controlledBy: '-' }, 9),
-  row('deploy', 'search-index', 'shop', 'Available', 'green', { ready: '2/2', controlledBy: '-' }, 8),
-  row('deploy', 'notify-mailer', 'shop', 'Available', 'green', { ready: '1/1', controlledBy: '-' }, 15),
-  row('deploy', 'admin-console', 'shop', 'Available', 'green', { ready: '1/1', controlledBy: '-' }, 20),
-  row('deploy', 'image-resizer', 'shop', 'Progressing', 'gold', { ready: '1/2', controlledBy: '-' }, 2),
-  row('deploy', 'session-broker', 'shop', 'Available', 'green', { ready: '2/2', controlledBy: '-' }, 11)
-]
-
-function podsForDeployment(name: string, namespace: string, replicas: number, ageDays: number): ResourceListItem[] {
-  return Array.from({ length: replicas }, (_, i) =>
-    row(
-      'pod',
-      `${name}-7f8d9c-${String.fromCharCode(97 + i)}${i + 2}k`,
-      namespace,
-      i === 1 && name === 'image-resizer' ? 'Pending' : 'Running',
-      i === 1 && name === 'image-resizer' ? 'gold' : 'green',
-      {
-        containers: RUNNING_DOT,
-        ready: i === 1 && name === 'image-resizer' ? '0/1' : '1/1',
-        restarts: '0',
-        controlledBy: 'ReplicaSet',
-        node: `demo-pool-${(i % 3) + 1}`
-      },
-      ageDays
-    )
-  )
-}
-
-const PODS: ResourceListItem[] = DEPLOYMENTS.flatMap((d) => {
-  const ready = Number((d.columns.ready ?? '1/1').split('/')[1] || 1)
-  return podsForDeployment(d.name, d.namespace, ready, 4)
-})
-
-const SERVICES: ResourceListItem[] = [
-  row('svc', 'storefront', 'shop', 'ClusterIP', 'blue', { type: 'ClusterIP', clusterIP: '10.40.1.10', ports: '80' }, 12),
-  row('svc', 'checkout-api', 'shop', 'ClusterIP', 'blue', { type: 'ClusterIP', clusterIP: '10.40.1.11', ports: '8080' }, 12),
-  row('svc', 'payments-worker', 'payments', 'ClusterIP', 'blue', { type: 'ClusterIP', clusterIP: '10.40.2.8', ports: '8080' }, 6),
-  row('svc', 'catalog-cache', 'shop', 'ClusterIP', 'blue', { type: 'ClusterIP', clusterIP: '10.40.1.14', ports: '6379' }, 4)
-]
-
-const PVCS: ResourceListItem[] = [
-  row('pvc', 'shop-data', 'shop', 'Bound', 'green', { capacity: '20Gi' }, 12),
-  row('pvc', 'payments-wal', 'payments', 'Bound', 'green', { capacity: '50Gi' }, 12),
-  row('pvc', 'catalog-idx', 'shop', 'Bound', 'green', { capacity: '8Gi' }, 4),
-  row('pvc', 'redis-data', 'shop', 'Bound', 'green', { capacity: '4Gi' }, 12)
-]
-
-const CONFIGMAPS: ResourceListItem[] = [
-  row('cm', 'storefront-config', 'shop', 'Active', 'default', { keys: '3' }, 12),
-  row('cm', 'checkout-config', 'shop', 'Active', 'default', { keys: '2' }, 12)
-]
-
-const NODES: ResourceListItem[] = [
-  row('node', 'demo-pool-1', '', 'Ready', 'green', { roles: 'control-plane', version: 'v1.31.2' }, 40),
-  row('node', 'demo-pool-2', '', 'Ready', 'green', { roles: 'worker', version: 'v1.31.2' }, 40),
-  row('node', 'demo-pool-3', '', 'Ready', 'green', { roles: 'worker', version: 'v1.31.2' }, 40)
-]
-
-const NAMESPACES: ResourceListItem[] = [
-  row('ns', 'shop', '', 'Active', 'green', {}, 40),
-  row('ns', 'payments', '', 'Active', 'green', {}, 40),
-  row('ns', 'default', '', 'Active', 'green', {}, 40),
-  row('ns', 'kube-system', '', 'Active', 'green', {}, 40)
-]
-
-const BY_KIND: Partial<Record<ResourceKind, ResourceListItem[]>> = {
-  Deployments: DEPLOYMENTS,
-  Pods: PODS,
-  Services: SERVICES,
-  PersistentVolumeClaims: PVCS,
-  ConfigMaps: CONFIGMAPS,
-  Nodes: NODES,
-  Namespaces: NAMESPACES,
-  ReplicaSets: DEPLOYMENTS.map((d) =>
-    row('rs', `${d.name}-7f8d9c`, d.namespace, 'Available', 'green', { ready: d.columns.ready, controlledBy: `Deployment/${d.name}` }, 12)
-  )
 }
 
 function inNamespace(items: ResourceListItem[], namespace: string | 'ALL'): ResourceListItem[] {
@@ -151,14 +78,20 @@ function inNamespace(items: ResourceListItem[], namespace: string | 'ALL'): Reso
 }
 
 export function isDemoCluster(clusterId: string): boolean {
-  return isDemoMode() && clusterId === DEMO_CLUSTER_ID
+  return isDemoMode() && clusterId.startsWith('demo-')
 }
 
-export function demoNamespaces(): string[] {
+export function hasDemoCatalog(clusterId: string): boolean {
+  return clusterHasDemoCatalog(clusterId)
+}
+
+export function demoNamespaces(clusterId = DEMO_CLUSTER_ID): string[] {
+  if (!hasDemoCatalog(clusterId)) return ['default']
   return NAMESPACES.map((n) => n.name)
 }
 
-export function listDemoResources(kind: ResourceKind, namespace: string | 'ALL'): ResourceListItem[] {
+export function listDemoResources(kind: ResourceKind, namespace: string | 'ALL', clusterId = DEMO_CLUSTER_ID): ResourceListItem[] {
+  if (!hasDemoCatalog(clusterId)) return []
   return inNamespace(BY_KIND[kind] ?? [], namespace)
 }
 
@@ -167,12 +100,14 @@ export function getDemoManifest(kind: string, name: string, namespace: string): 
   const nsLine = namespace ? `  namespace: ${namespace}\n` : ''
   const deploy = DEPLOYMENTS.find((d) => d.name === name)
   const replicas = deploy ? (deploy.columns.ready ?? '1/1').split('/')[1] : '1'
+  const app = APPS.find((a) => a.name === name)
   return `apiVersion: apps/v1
 kind: ${k8sKind}
 metadata:
   name: ${name}
 ${nsLine}  labels:
     app: ${name}
+    app.kubernetes.io/instance: ${app?.instance ?? name}
     demo: "true"
 spec:
   replicas: ${replicas}
@@ -186,29 +121,53 @@ spec:
     spec:
       containers:
         - name: ${name}
-          image: ghcr.io/aurora/${name}:1.4.2
+          image: ${app?.image ?? `ghcr.io/aurora/${name}:1.4.2`}
           ports:
-            - containerPort: 80
+            - containerPort: ${app?.port ?? 80}
 `
 }
 
-export function demoDiscovery(): DiscoveryResponse {
-  return { groups: [], resources: [] }
+export function demoDiscovery(clusterId = DEMO_CLUSTER_ID): DiscoveryResponse {
+  if (!hasDemoCatalog(clusterId)) return { groups: [], resources: [] }
+  return catalogDiscovery()
 }
+
+export function demoCrdKinds(clusterId = DEMO_CLUSTER_ID): CustomResourceKind[] {
+  if (!hasDemoCatalog(clusterId)) return []
+  return demoCustomResourceKinds()
+}
+
+export function demoDynamicList(kind: string, namespace: string | 'ALL', clusterId = DEMO_CLUSTER_ID): DynamicResourceItem[] {
+  if (!hasDemoCatalog(clusterId)) return []
+  return demoDynamicResources(kind, namespace)
+}
+
+export function demoVisualizerGraph(namespace: string | 'ALL', clusterId = DEMO_CLUSTER_ID): VisualizerGraphResponse {
+  if (!hasDemoCatalog(clusterId)) return { nodes: [], edges: [] }
+  return catalogVisualizerGraph(namespace)
+}
+
+export function demoTopologyGraph(namespace: string | 'ALL', clusterId = DEMO_CLUSTER_ID): TopologyGraphResponse {
+  if (!hasDemoCatalog(clusterId)) return { nodes: [], edges: [], applications: [] }
+  return catalogTopologyGraph(namespace)
+}
+
+export { demoSecurityReport } from './demoSecurity'
 
 export function demoWorkloadContext(name: string): WorkloadContextInfo {
   const deploy = DEPLOYMENTS.find((d) => d.name === name)
-  const [ready, desired] = (deploy?.columns.ready ?? '1/1').split('/').map(Number)
+  const app = APPS.find((a) => a.name === name)
+  const [ready, desired] = (deploy?.columns.ready ?? `${app?.replicas ?? 1}/${app?.replicas ?? 1}`).split('/').map(Number)
   return {
     replicas: {
       currentReplicas: desired || 1,
       readyReplicas: ready || 0,
-      kubectlResource: 'deployment',
+      kubectlResource: app?.kind === 'StatefulSet' ? 'statefulset' : 'deployment',
       hasOwnerDeployment: false
     },
-    containers: [{ name, image: `ghcr.io/aurora/${name}:1.4.2` }],
+    containers: [{ name, image: app?.image ?? `ghcr.io/aurora/${name}:1.4.2` }],
     paused: false,
-    extensions: { argoRollouts: false, keda: false }
+    extensions: { argoRollouts: name === 'storefront', keda: name === 'checkout-api' }
   }
 }
 
@@ -221,12 +180,18 @@ export function demoWorkloadPods(name: string, namespace: string): WorkloadPodIn
   }))
 }
 
-export function demoPvcUsage(namespace: string | 'ALL'): PvcUsageResponse {
+export function demoPvcUsage(namespace: string | 'ALL', clusterId = DEMO_CLUSTER_ID): PvcUsageResponse {
+  if (!hasDemoCatalog(clusterId)) return { metricsAvailable: true, items: [] }
   const items = [
     { namespace: 'shop', name: 'shop-data', usedBytes: 13_421_772_800, capacityBytes: 21_474_836_480, availableBytes: 8_053_063_680, percent: 62 },
-    { namespace: 'payments', name: 'payments-wal', usedBytes: 22_015_832_064, capacityBytes: 53_687_091_200, availableBytes: 31_671_259_136, percent: 41 },
     { namespace: 'shop', name: 'catalog-idx', usedBytes: 6_710_886_400, capacityBytes: 8_589_934_592, availableBytes: 1_879_048_192, percent: 78 },
-    { namespace: 'shop', name: 'redis-data', usedBytes: 966_367_641, capacityBytes: 4_294_967_296, availableBytes: 3_328_599_655, percent: 22 }
+    { namespace: 'payments', name: 'payments-wal', usedBytes: 22_015_832_064, capacityBytes: 53_687_091_200, availableBytes: 31_671_259_136, percent: 41 },
+    { namespace: 'data', name: 'postgres-data-postgres-0', usedBytes: 41_943_040_000, capacityBytes: 107_374_182_400, availableBytes: 65_431_142_400, percent: 39 },
+    { namespace: 'data', name: 'postgres-data-postgres-1', usedBytes: 38_654_705_664, capacityBytes: 107_374_182_400, availableBytes: 68_719_476_736, percent: 36 },
+    { namespace: 'data', name: 'postgres-data-postgres-2', usedBytes: 44_080_103_424, capacityBytes: 107_374_182_400, availableBytes: 63_294_078_976, percent: 41 },
+    { namespace: 'data', name: 'redis-data-redis-0', usedBytes: 2_147_483_648, capacityBytes: 8_589_934_592, availableBytes: 6_442_450_944, percent: 25 },
+    { namespace: 'logging', name: 'loki-data-loki-0', usedBytes: 92_680_192_000, capacityBytes: 214_748_364_800, availableBytes: 122_068_172_800, percent: 43 },
+    { namespace: 'monitoring', name: 'prometheus-data', usedBytes: 51_539_607_552, capacityBytes: 85_899_345_920, availableBytes: 34_359_738_368, percent: 60 }
   ]
   return {
     metricsAvailable: true,
@@ -234,69 +199,107 @@ export function demoPvcUsage(namespace: string | 'ALL'): PvcUsageResponse {
   }
 }
 
-export function demoNamespacePodMetrics(): NamespacePodMetricsResponse {
-  return { metricsAvailable: false, pods: [] }
-}
-
-export function demoEmptyMetricsRange(): MetricsRangeResponse {
-  return { historicalAvailable: false, prometheusAvailable: false }
-}
-
-export function demoClusterSummary(): ClusterMetricsSummary {
+export function demoNamespacePodMetrics(clusterId = DEMO_CLUSTER_ID): NamespacePodMetricsResponse {
+  if (!hasDemoCatalog(clusterId)) return { metricsAvailable: true, pods: [] }
   return {
     metricsAvailable: true,
-    totalNodes: 3,
-    readyNodes: 3,
-    notReadyNodes: 0,
-    cpuCapacityCores: 24,
-    memoryCapacityBytes: 96 * 1024 ** 3,
-    cpuAllocatableCores: 22.5,
-    memoryAllocatableBytes: 90 * 1024 ** 3,
-    cpuUsageCores: 6.4,
-    memoryUsageBytes: 41 * 1024 ** 3,
-    podCapacity: 330,
+    pods: PODS.filter((p) => p.statusText === 'Running').map((p, i) => ({
+      podName: p.name,
+      namespace: p.namespace,
+      cpuUsageCores: 0.04 + ((i * 17) % 80) / 100,
+      memoryUsageBytes: (80 + ((i * 37) % 420)) * 1024 * 1024
+    }))
+  }
+}
+
+export function demoEmptyMetricsRange(clusterId = DEMO_CLUSTER_ID): MetricsRangeResponse {
+  if (!hasDemoCatalog(clusterId)) {
+    return { historicalAvailable: false, prometheusAvailable: false }
+  }
+  return catalogMetricsRange()
+}
+
+export function demoMetricsRange(clusterId = DEMO_CLUSTER_ID): MetricsRangeResponse {
+  return demoEmptyMetricsRange(clusterId)
+}
+
+export function demoClusterSummary(clusterId = DEMO_CLUSTER_ID): ClusterMetricsSummary {
+  if (!hasDemoCatalog(clusterId)) {
+    return {
+      metricsAvailable: true,
+      totalNodes: 0,
+      readyNodes: 0,
+      notReadyNodes: 0,
+      cpuCapacityCores: 0,
+      memoryCapacityBytes: 0,
+      cpuAllocatableCores: 0,
+      memoryAllocatableBytes: 0,
+      cpuUsageCores: 0,
+      memoryUsageBytes: 0,
+      podCapacity: 0,
+      runningPods: 0,
+      pendingPods: 0,
+      failedPods: 0
+    }
+  }
+  return {
+    metricsAvailable: true,
+    totalNodes: NODES.length,
+    readyNodes: NODES.filter((n) => n.statusText === 'Ready').length,
+    notReadyNodes: NODES.filter((n) => n.statusText !== 'Ready').length,
+    cpuCapacityCores: 56,
+    memoryCapacityBytes: 224 * 1024 ** 3,
+    cpuAllocatableCores: 52,
+    memoryAllocatableBytes: 210 * 1024 ** 3,
+    cpuUsageCores: 18.6,
+    memoryUsageBytes: 97 * 1024 ** 3,
+    podCapacity: 770,
     runningPods: PODS.filter((p) => p.statusText === 'Running').length,
     pendingPods: PODS.filter((p) => p.statusText === 'Pending').length,
     failedPods: 0
   }
 }
 
-export function demoNodeMetrics(): NodeMetricsResponse {
+export function demoNodeMetrics(clusterId = DEMO_CLUSTER_ID): NodeMetricsResponse {
+  if (!hasDemoCatalog(clusterId)) return { metricsAvailable: true, nodes: [] }
+  const cpu = [2.1, 1.8, 4.4, 3.9, 2.6, 3.1, 0.2]
+  const mem = [18, 16, 28, 24, 19, 21, 4]
   return {
     metricsAvailable: true,
     nodes: NODES.map((node, i) => ({
       name: node.name,
-      cpuCapacityCores: 8,
-      memoryCapacityBytes: 32 * 1024 ** 3,
-      cpuAllocatableCores: 7.5,
-      memoryAllocatableBytes: 30 * 1024 ** 3,
-      cpuUsageCores: [2.1, 2.8, 1.5][i],
-      memoryUsageBytes: [14, 18, 9].map((gib) => gib * 1024 ** 3)[i]
+      cpuCapacityCores: node.columns.roles === 'control-plane' ? 4 : 8,
+      memoryCapacityBytes: (node.columns.roles === 'control-plane' ? 16 : 32) * 1024 ** 3,
+      cpuAllocatableCores: node.columns.roles === 'control-plane' ? 3.5 : 7.5,
+      memoryAllocatableBytes: (node.columns.roles === 'control-plane' ? 14 : 30) * 1024 ** 3,
+      cpuUsageCores: cpu[i],
+      memoryUsageBytes: mem[i] * 1024 ** 3
     }))
   }
 }
 
 export function demoPodDetail(namespace: string, podName: string): PodDetailData {
   const item = PODS.find((p) => p.name === podName)
-  const app = podName.split('-').slice(0, -2).join('-') || podName
+  const app = APPS.find((a) => podName.startsWith(`${a.name}-`))
   const running = item?.statusText !== 'Pending'
+  const appName = app?.name ?? podName.split('-')[0]
   return {
     uid: `demo-${podName}`,
-    creationTimestamp: item?.ageTimestamp ?? undefined,
+    creationTimestamp: item?.ageTimestamp ?? daysAgo(4),
     phase: running ? 'Running' : 'Pending',
     statusText: item?.statusText ?? 'Running',
     statusColor: item?.statusColor ?? 'green',
     ready: item?.columns.ready ?? '1/1',
-    totalRestarts: 0,
-    nodeName: item?.columns.node ?? 'demo-pool-1',
-    podIP: '10.42.1.18',
-    hostIP: '10.0.4.12',
+    totalRestarts: Number(item?.columns.restarts ?? 0),
+    nodeName: item?.columns.node && item.columns.node !== '-' ? item.columns.node : 'aurora-pool-a-1',
+    podIP: '10.42.3.18',
+    hostIP: '10.0.12.40',
     qosClass: 'Burstable',
-    serviceAccount: 'default',
+    serviceAccount: appName,
     restartPolicy: 'Always',
-    labels: { app, demo: 'true' },
+    labels: { app: appName, 'app.kubernetes.io/instance': app?.instance ?? appName, demo: 'true' },
     annotations: {},
-    ownerReferences: [{ kind: 'ReplicaSet', name: `${app}-7f8d9c`, controller: true }],
+    ownerReferences: [{ kind: app?.kind ?? 'ReplicaSet', name: `${appName}-7f8d9c`, controller: true }],
     conditions: [{ type: 'Ready', status: running ? 'True' : 'False' }],
     nodeSelector: {},
     tolerations: [],
@@ -304,12 +307,12 @@ export function demoPodDetail(namespace: string, podName: string): PodDetailData
     volumes: [],
     containers: [
       {
-        name: app,
-        image: `ghcr.io/aurora/${app}:1.4.2`,
+        name: appName,
+        image: app?.image ?? `ghcr.io/aurora/${appName}:1.4.2`,
         ready: running,
-        restartCount: 0,
+        restartCount: Number(item?.columns.restarts ?? 0),
         state: running ? 'running' : 'waiting',
-        ports: [{ containerPort: 8080, protocol: 'TCP' }],
+        ports: [{ containerPort: app?.port ?? 8080, protocol: 'TCP' }],
         env: [],
         mounts: [],
         probes: []
@@ -320,34 +323,52 @@ export function demoPodDetail(namespace: string, podName: string): PodDetailData
 }
 
 export function demoPodMetrics(): PodMetricsResponse {
-  return { metricsAvailable: false, containers: [], totalCpuUsageCores: 0, totalMemoryUsageBytes: 0 }
+  return {
+    metricsAvailable: true,
+    containers: [{ name: 'app', cpuUsageCores: 0.12, memoryUsageBytes: 180 * 1024 * 1024 }],
+    totalCpuUsageCores: 0.12,
+    totalMemoryUsageBytes: 180 * 1024 * 1024
+  }
 }
 
 export function demoPodNetwork(): PodNetworkResponse {
-  return { services: [] }
+  return {
+    services: [
+      {
+        name: 'storefront',
+        type: 'LoadBalancer',
+        clusterIP: '10.40.1.10',
+        ports: [{ name: 'http', port: 80, targetPort: '80', protocol: 'TCP' }]
+      }
+    ]
+  }
 }
 
 export function demoLogChunk(podName: string, containerName: string): string {
   const app = containerName || podName.split('-')[0]
   return [
-    `2026-09-18T17:02:11.104Z INFO  ${app} listening on :8080`,
-    `2026-09-18T17:02:11.188Z INFO  ready to serve traffic`,
-    `2026-09-18T17:04:02.441Z INFO  GET /healthz 200 1ms`,
-    `2026-09-18T17:08:19.012Z INFO  GET /api/v1/catalog 200 18ms`,
-    `2026-09-18T17:11:44.773Z INFO  GET /api/v1/cart 200 12ms`
+    `2026-09-18T21:02:11.104Z INFO  ${app} listening`,
+    `2026-09-18T21:02:11.188Z INFO  ready to serve traffic`,
+    `2026-09-18T21:04:02.441Z INFO  GET /healthz 200 1ms`,
+    `2026-09-18T21:08:19.012Z INFO  GET /api/v1/catalog 200 18ms`,
+    `2026-09-18T21:11:44.773Z INFO  GET /api/v1/cart 200 12ms`,
+    `2026-09-18T21:16:02.110Z INFO  GET /metrics 200 3ms`
   ].join('\n') + '\n'
 }
 
-export function demoPrometheusStatus(): PrometheusStatus {
+export function demoPrometheusStatus(clusterId = DEMO_CLUSTER_ID): PrometheusStatus {
+  if (!hasDemoCatalog(clusterId)) {
+    return { available: false, discoveryMethod: 'none', lastCheckedAt: new Date().toISOString() }
+  }
   return {
-    available: false,
-    discoveryMethod: 'none',
+    available: true,
+    discoveryMethod: 'auto',
+    baseUrl: '/api/v1/namespaces/monitoring/services/prometheus:9090/proxy',
+    namespace: 'monitoring',
+    serviceName: 'prometheus',
+    servicePort: 9090,
     lastCheckedAt: new Date().toISOString()
   }
-}
-
-function hoursAgo(hours: number): string {
-  return new Date(Date.now() - hours * 3_600_000).toISOString()
 }
 
 function demoEvent(
@@ -377,87 +398,188 @@ function demoEvent(
   }
 }
 
-export function demoClusterEvents(): ResourceEventItem[] {
+export function demoClusterEvents(clusterId = DEMO_CLUSTER_ID): ResourceEventItem[] {
+  if (!hasDemoCatalog(clusterId)) return []
   return [
     demoEvent('e1', 'Normal', 'Created', 'Created pod: storefront-7f8d9c-a2k', 1, 18, 9, 'Pod', 'storefront-7f8d9c-a2k', 'shop'),
-    demoEvent('e2', 'Normal', 'Pulled', 'Successfully pulled image ghcr.io/aurora/storefront:1.4.2', 1, 18, 17.9, 'Pod', 'storefront-7f8d9c-a2k', 'shop'),
+    demoEvent('e2', 'Normal', 'Pulled', 'Successfully pulled image nginx:1.27-alpine', 1, 18, 17.9, 'Pod', 'storefront-7f8d9c-a2k', 'shop'),
     demoEvent('e3', 'Normal', 'Started', 'Started container storefront', 1, 17.9, 17.9, 'Pod', 'storefront-7f8d9c-a2k', 'shop'),
-    demoEvent('e4', 'Normal', 'ScalingReplicaSet', 'Scaled up replica set storefront-7f8d9c to 3', 1, 18.2, 18.2, 'Deployment', 'storefront', 'shop'),
-    demoEvent('e5', 'Normal', 'SuccessfulCreate', 'Created service storefront', 1, 20, 20, 'Service', 'storefront', 'shop'),
-    demoEvent('e6', 'Warning', 'Unhealthy', 'Readiness probe failed: Get "http://10.42.1.18:8080/ready": dial tcp timeout', 12, 8, 0.2, 'Pod', 'storefront-7f8d9c-a2k', 'shop'),
-    demoEvent('e7', 'Warning', 'BackOff', 'Back-off restarting failed container image-resizer', 18, 14, 0.1, 'Pod', 'image-resizer-7f8d9c-b3k', 'shop'),
-    demoEvent('e8', 'Normal', 'Created', 'Created pod: image-resizer-7f8d9c-b3k', 1, 14.2, 6, 'Pod', 'image-resizer-7f8d9c-b3k', 'shop'),
-    demoEvent('e9', 'Normal', 'Pulled', 'Container image already present', 3, 14.1, 2, 'Pod', 'image-resizer-7f8d9c-b3k', 'shop'),
-    demoEvent('e10', 'Warning', 'Unhealthy', 'Liveness probe failed: HTTP 503', 9, 12, 0.4, 'Pod', 'image-resizer-7f8d9c-b3k', 'shop'),
-    demoEvent('e11', 'Normal', 'SuccessfulCreate', 'Created replicaset image-resizer-7f8d9c', 1, 14.3, 14.3, 'ReplicaSet', 'image-resizer-7f8d9c', 'shop'),
-    demoEvent('e12', 'Normal', 'ScalingReplicaSet', 'Scaled up replica set image-resizer-7f8d9c to 2', 1, 14.3, 14.3, 'Deployment', 'image-resizer', 'shop'),
-    demoEvent('e13', 'Normal', 'Created', 'Created pod: checkout-api-7f8d9c-c4k', 1, 16, 8, 'Pod', 'checkout-api-7f8d9c-c4k', 'shop'),
-    demoEvent('e14', 'Normal', 'Started', 'Started container checkout-api', 1, 15.9, 15.9, 'Pod', 'checkout-api-7f8d9c-c4k', 'shop'),
-    demoEvent('e15', 'Normal', 'SuccessfulCreate', 'Created service checkout-api', 1, 16.2, 16.2, 'Service', 'checkout-api', 'shop'),
-    demoEvent('e16', 'Warning', 'FailedScheduling', '0/3 nodes available: 1 Insufficient cpu', 4, 6, 5.2, 'Pod', 'payments-worker-7f8d9c-d5k', 'payments'),
-    demoEvent('e17', 'Normal', 'Scheduled', 'Successfully assigned payments/payments-worker-7f8d9c-d5k to demo-pool-2', 1, 5.2, 5.2, 'Pod', 'payments-worker-7f8d9c-d5k', 'payments'),
-    demoEvent('e18', 'Normal', 'Started', 'Started container payments-worker', 1, 5.1, 5.1, 'Pod', 'payments-worker-7f8d9c-d5k', 'payments'),
-    demoEvent('e19', 'Normal', 'Created', 'Created pod: catalog-cache-7f8d9c-e6k', 1, 10, 10, 'Pod', 'catalog-cache-7f8d9c-e6k', 'shop'),
-    demoEvent('e20', 'Normal', 'Started', 'Started container catalog-cache', 1, 9.9, 9.9, 'Pod', 'catalog-cache-7f8d9c-e6k', 'shop'),
-    demoEvent('e21', 'Warning', 'Unhealthy', 'Readiness probe failed: connection refused', 6, 4, 1.5, 'Pod', 'catalog-cache-7f8d9c-e6k', 'shop'),
-    demoEvent('e22', 'Normal', 'Killing', 'Stopping container catalog-cache', 1, 1.5, 1.5, 'Pod', 'catalog-cache-7f8d9c-e6k', 'shop'),
-    demoEvent('e23', 'Normal', 'Created', 'Created pod: catalog-cache-7f8d9c-f7k', 1, 1.4, 1.4, 'Pod', 'catalog-cache-7f8d9c-f7k', 'shop'),
-    demoEvent('e24', 'Normal', 'Started', 'Started container catalog-cache', 1, 1.3, 1.3, 'Pod', 'catalog-cache-7f8d9c-f7k', 'shop'),
-    demoEvent('e25', 'Normal', 'SuccessfulCreate', 'Created PDB storefront', 1, 20, 20, 'PodDisruptionBudget', 'storefront', 'shop'),
-    demoEvent('e26', 'Warning', 'FailedGetResourceMetric', 'unable to get metric cpu: no metrics returned', 5, 7, 0.8, 'HorizontalPodAutoscaler', 'storefront', 'shop'),
-    demoEvent('e27', 'Normal', 'SuccessfulRescale', 'New size: 3; reason: cpu resource utilization above target', 2, 3, 3, 'HorizontalPodAutoscaler', 'storefront', 'shop'),
-    demoEvent('e28', 'Normal', 'Sync', 'External sync completed', 8, 22, 0.05, 'Service', 'storefront', 'shop'),
-    demoEvent('e29', 'Warning', 'Unhealthy', 'Readiness probe failed', 7, 9, 2, 'Pod', 'checkout-api-7f8d9c-c4k', 'shop'),
-    demoEvent('e30', 'Normal', 'Created', 'Created replicaset storefront-7f8d9c', 1, 18.3, 18.3, 'ReplicaSet', 'storefront-7f8d9c', 'shop'),
-    demoEvent('e31', 'Normal', 'Created', 'Created replicaset checkout-api-7f8d9c', 1, 16.1, 16.1, 'ReplicaSet', 'checkout-api-7f8d9c', 'shop'),
-    demoEvent('e32', 'Normal', 'ScalingReplicaSet', 'Scaled up replica set checkout-api-7f8d9c to 2', 1, 16.1, 16.1, 'Deployment', 'checkout-api', 'shop'),
-    demoEvent('e33', 'Normal', 'SuccessfulCreate', 'Created service payments-worker', 1, 12, 12, 'Service', 'payments-worker', 'payments'),
-    demoEvent('e34', 'Normal', 'Created', 'Created replicaset payments-worker-7f8d9c', 1, 6.1, 6.1, 'ReplicaSet', 'payments-worker-7f8d9c', 'payments'),
-    demoEvent('e35', 'Normal', 'ScalingReplicaSet', 'Scaled up replica set payments-worker-7f8d9c to 1', 1, 6.1, 6.1, 'Deployment', 'payments-worker', 'payments'),
-    demoEvent('e36', 'Warning', 'FailedMount', 'Unable to attach or mount volumes: shop-data', 3, 11, 10.4, 'Pod', 'storefront-7f8d9c-a2k', 'shop'),
-    demoEvent('e37', 'Normal', 'SuccessfulAttachVolume', 'AttachVolume.Attach succeeded for volume shop-data', 1, 10.4, 10.4, 'Pod', 'storefront-7f8d9c-a2k', 'shop'),
-    demoEvent('e38', 'Warning', 'BackoffLimitExceeded', 'Job has reached the specified backoff limit', 1, 2.2, 2.2, 'Job', 'inventory-sync', 'shop'),
-    demoEvent('e39', 'Normal', 'Completed', 'Job completed', 1, 8, 8, 'Job', 'notify-mailer', 'shop'),
-    demoEvent('e40', 'Warning', 'Unhealthy', 'Startup probe failed: HTTP 000', 11, 13, 11.5, 'Pod', 'admin-console-7f8d9c-g8k', 'shop'),
-    demoEvent('e41', 'Normal', 'Started', 'Started container admin-console', 1, 11.4, 11.4, 'Pod', 'admin-console-7f8d9c-g8k', 'shop'),
-    demoEvent('e42', 'Normal', 'Created', 'Created pod: admin-console-7f8d9c-g8k', 1, 13.1, 13.1, 'Pod', 'admin-console-7f8d9c-g8k', 'shop'),
-    demoEvent('e43', 'Normal', 'SuccessfulCreate', 'Created replicaset admin-console-7f8d9c', 1, 13.2, 13.2, 'ReplicaSet', 'admin-console-7f8d9c', 'shop'),
-    demoEvent('e44', 'Normal', 'ScalingReplicaSet', 'Scaled up replica set admin-console-7f8d9c to 1', 1, 13.2, 13.2, 'Deployment', 'admin-console', 'shop')
+    demoEvent('e4', 'Normal', 'ScalingReplicaSet', 'Scaled up replica set storefront-7f8d9c to 5', 1, 18.2, 18.2, 'Deployment', 'storefront', 'shop'),
+    demoEvent('e5', 'Warning', 'Unhealthy', 'Readiness probe failed: dial tcp timeout', 12, 8, 0.2, 'Pod', 'storefront-7f8d9c-a2k', 'shop'),
+    demoEvent('e6', 'Warning', 'BackOff', 'Back-off restarting failed container image-resizer', 18, 14, 0.1, 'Pod', 'image-resizer-7f8d9c-b3k', 'shop'),
+    demoEvent('e7', 'Warning', 'NodeNotReady', 'Node aurora-pool-b-2 is NotReady', 3, 2, 0.05, 'Node', 'aurora-pool-b-2', ''),
+    demoEvent('e8', 'Warning', 'FailedScheduling', '0/7 nodes available: 1 node(s) not ready', 4, 6, 0.4, 'Pod', 'image-resizer-7f8d9c-c4k', 'shop'),
+    demoEvent('e9', 'Normal', 'SuccessfulRescale', 'New size: 5; reason: cpu resource utilization above target', 2, 3, 3, 'HorizontalPodAutoscaler', 'storefront', 'shop'),
+    demoEvent('e10', 'Normal', 'Sync', 'Argo CD sync succeeded for storefront', 8, 22, 0.05, 'Application', 'storefront', 'argocd'),
+    demoEvent('e11', 'Warning', 'FailedGetResourceMetric', 'unable to get metric cpu: briefly missing', 5, 7, 0.8, 'HorizontalPodAutoscaler', 'checkout-api', 'shop'),
+    demoEvent('e12', 'Normal', 'Scheduled', 'Successfully assigned shop/catalog-api-7f8d9c-d5k to aurora-pool-a-2', 1, 5.2, 5.2, 'Pod', 'catalog-api-7f8d9c-d5k', 'shop'),
+    demoEvent('e13', 'Normal', 'SuccessfulAttachVolume', 'AttachVolume.Attach succeeded for volume shop-data', 1, 10.4, 10.4, 'Pod', 'storefront-7f8d9c-a2k', 'shop'),
+    demoEvent('e14', 'Warning', 'FailedMount', 'Unable to attach or mount volumes: shop-data', 3, 11, 10.4, 'Pod', 'storefront-7f8d9c-a2k', 'shop'),
+    demoEvent('e15', 'Normal', 'Completed', 'Job inventory-backfill completed', 1, 8, 8, 'Job', 'inventory-backfill', 'shop'),
+    demoEvent('e16', 'Warning', 'BackoffLimitExceeded', 'Job image-warmup has reached the specified backoff limit', 1, 2.2, 2.2, 'Job', 'image-warmup', 'shop'),
+    demoEvent('e17', 'Normal', 'Started', 'Started container prometheus', 1, 30, 30, 'Pod', 'prometheus-0', 'monitoring'),
+    demoEvent('e18', 'Normal', 'SuccessfulCreate', 'Created service grafana', 1, 30, 30, 'Service', 'grafana', 'monitoring'),
+    demoEvent('e19', 'Normal', 'ScalingReplicaSet', 'Scaled up replica set payments-api-7f8d9c to 3', 1, 13, 13, 'Deployment', 'payments-api', 'payments'),
+    demoEvent('e20', 'Warning', 'Unhealthy', 'Liveness probe failed: HTTP 503', 9, 12, 0.4, 'Pod', 'image-resizer-7f8d9c-b3k', 'shop')
   ]
+}
+
+function upsertDemoCluster(entry: PersistedClusterEntry): void {
+  const existing = listClusters().find((c) => c.id === entry.id)
+  if (!existing) {
+    addCluster(entry, { force: true })
+    return
+  }
+  updateCluster({ ...existing, ...entry, source: entry.source })
 }
 
 export function seedDemoWorkspace(): void {
   if (!isDemoMode()) return
   setHasSeenWelcome(true)
   setLastSeenSplashVersion(app.getVersion())
-  if (!listClusters().some((c) => c.id === DEMO_CLUSTER_ID)) {
-    const entry: PersistedClusterEntry = {
-      id: DEMO_CLUSTER_ID,
+
+  const clusters: PersistedClusterEntry[] = [
+    {
+      id: DEMO_CLUSTER_IDS.prod,
       customName: 'aurora-prod',
-      contextName: DEMO_CONTEXT,
-      source: { type: 'raw', yaml: DEMO_KUBECONFIG },
-      endpoint: 'https://demo.magiclens.local',
+      contextName: 'aurora-prod',
+      source: { type: 'raw', yaml: kubeconfig('aurora-prod', 'https://A1B2C3D4.gr7.eu-west-1.eks.amazonaws.com') },
+      endpoint: 'https://A1B2C3D4.gr7.eu-west-1.eks.amazonaws.com',
+      isFavorite: true,
+      selectedNamespace: 'ALL',
+      selectedResourceKind: 'Nodes',
+      environment: 'production'
+    },
+    {
+      id: DEMO_CLUSTER_IDS.staging,
+      customName: 'aurora-staging',
+      contextName: 'gke_aurora-staging',
+      source: { type: 'raw', yaml: kubeconfig('gke_aurora-staging', 'https://container.googleapis.com/v1/projects/aurora/locations/europe-west4/clusters/staging') },
+      endpoint: 'https://container.googleapis.com/v1/projects/aurora/locations/europe-west4/clusters/staging',
       isFavorite: false,
       selectedNamespace: 'ALL',
-      selectedResourceKind: 'Deployments'
+      selectedResourceKind: 'Deployments',
+      environment: 'staging'
+    },
+    {
+      id: DEMO_CLUSTER_IDS.test,
+      customName: 'aurora-test',
+      contextName: 'aurora-test',
+      source: { type: 'raw', yaml: kubeconfig('aurora-test', 'https://aurora-test-a1b2c3d4.hcp.westeurope.azmk8s.io') },
+      endpoint: 'https://aurora-test-a1b2c3d4.hcp.westeurope.azmk8s.io',
+      isFavorite: false,
+      selectedNamespace: 'ALL',
+      selectedResourceKind: 'Pods',
+      environment: 'test'
+    },
+    {
+      id: DEMO_EMPTY_CLUSTER_IDS.platform,
+      customName: 'platform-prod',
+      contextName: 'gke_platform-prod',
+      source: { type: 'raw', yaml: kubeconfig('gke_platform-prod', 'https://container.googleapis.com/v1/projects/aurora/locations/europe-west1/clusters/platform') },
+      endpoint: 'https://container.googleapis.com/v1/projects/aurora/locations/europe-west1/clusters/platform',
+      isFavorite: false,
+      selectedNamespace: 'ALL',
+      selectedResourceKind: 'Nodes',
+      environment: 'production'
+    },
+    {
+      id: DEMO_EMPTY_CLUSTER_IDS.payments,
+      customName: 'payments-prod',
+      contextName: 'payments-prod',
+      source: { type: 'raw', yaml: kubeconfig('payments-prod', 'https://payments-a1b2c3d4.hcp.westeurope.azmk8s.io') },
+      endpoint: 'https://payments-a1b2c3d4.hcp.westeurope.azmk8s.io',
+      isFavorite: false,
+      selectedNamespace: 'ALL',
+      selectedResourceKind: 'Deployments',
+      environment: 'production'
+    },
+    {
+      id: DEMO_EMPTY_CLUSTER_IDS.edgeEu,
+      customName: 'edge-eu',
+      contextName: 'edge-eu',
+      source: { type: 'raw', yaml: kubeconfig('edge-eu', 'https://E1F2G3H4.gr7.eu-central-1.eks.amazonaws.com') },
+      endpoint: 'https://E1F2G3H4.gr7.eu-central-1.eks.amazonaws.com',
+      isFavorite: false,
+      selectedNamespace: 'ALL',
+      selectedResourceKind: 'Nodes',
+      environment: 'production'
+    },
+    {
+      id: DEMO_EMPTY_CLUSTER_IDS.edgeUs,
+      customName: 'edge-us',
+      contextName: 'edge-us',
+      source: { type: 'raw', yaml: kubeconfig('edge-us', 'https://I5J6K7L8.gr7.us-east-1.eks.amazonaws.com') },
+      endpoint: 'https://I5J6K7L8.gr7.us-east-1.eks.amazonaws.com',
+      isFavorite: false,
+      selectedNamespace: 'ALL',
+      selectedResourceKind: 'Nodes',
+      environment: 'production'
+    },
+    {
+      id: DEMO_EMPTY_CLUSTER_IDS.obs,
+      customName: 'obs-central',
+      contextName: 'obs-central',
+      source: { type: 'raw', yaml: kubeconfig('obs-central', 'https://obs.cce.myhuaweicloud.com') },
+      endpoint: 'https://obs.cce.myhuaweicloud.com',
+      isFavorite: false,
+      selectedNamespace: 'ALL',
+      selectedResourceKind: 'Nodes',
+      environment: 'production'
     }
-    addCluster(entry, { force: true })
-  } else {
-    const existing = listClusters().find((c) => c.id === DEMO_CLUSTER_ID)
-    if (existing) {
-      updateCluster({
-        ...existing,
-        customName: 'aurora-prod',
-        selectedNamespace: 'ALL',
-        selectedResourceKind: 'Deployments'
-      })
+  ]
+  for (const cluster of clusters) upsertDemoCluster(cluster)
+
+  saveClusterGroups([
+    {
+      id: 'demo-ws-aurora',
+      name: 'Aurora',
+      clusterIds: [DEMO_CLUSTER_IDS.prod, DEMO_CLUSTER_IDS.staging, DEMO_CLUSTER_IDS.test],
+      collapsed: false,
+      accent: 'amber'
+    },
+    {
+      id: 'demo-ws-platform',
+      name: 'Platform',
+      clusterIds: [DEMO_EMPTY_CLUSTER_IDS.platform],
+      collapsed: false,
+      accent: 'purple'
+    },
+    {
+      id: 'demo-ws-payments',
+      name: 'Payments',
+      clusterIds: [DEMO_EMPTY_CLUSTER_IDS.payments],
+      collapsed: false,
+      accent: 'pink'
+    },
+    {
+      id: 'demo-ws-edge-eu',
+      name: 'Edge EU',
+      clusterIds: [DEMO_EMPTY_CLUSTER_IDS.edgeEu],
+      collapsed: false,
+      accent: 'teal'
+    },
+    {
+      id: 'demo-ws-edge-us',
+      name: 'Edge US',
+      clusterIds: [DEMO_EMPTY_CLUSTER_IDS.edgeUs],
+      collapsed: false,
+      accent: 'blue'
+    },
+    {
+      id: 'demo-ws-obs',
+      name: 'Observability',
+      clusterIds: [DEMO_EMPTY_CLUSTER_IDS.obs],
+      collapsed: false,
+      accent: 'green'
     }
-  }
+  ])
+
   const ui = getUiState()
   setUiState({
     ...ui,
-    openedTabs: [DEMO_CLUSTER_ID],
-    activeClusterId: DEMO_CLUSTER_ID,
+    openedTabs: [DEMO_CLUSTER_IDS.prod, DEMO_CLUSTER_IDS.staging, DEMO_CLUSTER_IDS.test],
+    activeClusterId: DEMO_CLUSTER_IDS.prod,
     activeView: 'tabs'
   })
 }

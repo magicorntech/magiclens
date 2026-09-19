@@ -44,7 +44,7 @@ function resolveTarget(target: ResourceMutationTarget): { apiVersion: string; ki
 export function registerResourceHandlers(): void {
   ipcMain.handle(IPC.RESOURCE_LIST, async (_e, req: ResourceListRequest): Promise<ResourceListResponse> => {
     if (isDemoCluster(req.clusterId)) {
-      return { items: listDemoResources(req.kind, req.namespace) }
+      return { items: listDemoResources(req.kind, req.namespace, req.clusterId) }
     }
     try {
       const result = await withClusterClients(req.clusterId, async (clients) => {
@@ -147,7 +147,7 @@ export function registerResourceHandlers(): void {
 
   ipcMain.handle(IPC.RESOURCE_LIST_CLUSTER_EVENTS, async (_e, req: ClusterEventsRequest): Promise<ResourceEventsResponse> => {
     if (isDemoCluster(req.clusterId)) {
-      const events = demoClusterEvents().filter((event) => {
+      const events = demoClusterEvents(req.clusterId).filter((event) => {
         if (req.namespace) return event.involvedNamespace === req.namespace
         if (req.namespaces?.length) return req.namespaces.includes(event.involvedNamespace)
         return true

@@ -18,12 +18,12 @@ import { demoPrometheusStatus, isDemoCluster } from '../k8s/demoMode'
 
 export function registerPrometheusHandlers(): void {
   ipcMain.handle(IPC.PROMETHEUS_DISCOVER, async (_e, req: PrometheusDiscoverRequest): Promise<PrometheusStatus> => {
-    if (isDemoCluster(req.clusterId)) return demoPrometheusStatus()
+    if (isDemoCluster(req.clusterId)) return demoPrometheusStatus(req.clusterId)
     return discoverPrometheus(req)
   })
 
   ipcMain.handle(IPC.PROMETHEUS_GET_STATUS, async (_e, req: ClusterIdRequest): Promise<PrometheusStatus> => {
-    if (isDemoCluster(req.clusterId)) return demoPrometheusStatus()
+    if (isDemoCluster(req.clusterId)) return demoPrometheusStatus(req.clusterId)
     return getPrometheusStatus(req.clusterId)
   })
 

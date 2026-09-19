@@ -47,7 +47,7 @@ export function registerPodHandlers(): void {
   ipcMain.handle(
     IPC.POD_GET_NAMESPACE_METRICS,
     async (_e, req: NamespacePodMetricsRequest): Promise<NamespacePodMetricsResponse> => {
-      if (isDemoCluster(req.clusterId)) return demoNamespacePodMetrics()
+      if (isDemoCluster(req.clusterId)) return demoNamespacePodMetrics(req.clusterId)
       const clients = clusterManager.require(req.clusterId)
       return getNamespacePodMetrics(clients, req.clusterId, req.namespace)
     }

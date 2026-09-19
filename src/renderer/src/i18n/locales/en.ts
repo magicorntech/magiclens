@@ -73,6 +73,7 @@ export const en = {
       keyboard: 'Keyboard',
       appearance: 'Appearance',
       sparks: 'Sparks',
+      aiAgent: 'AI Agent',
       developer: 'Developer',
       about: 'About'
     },
@@ -86,6 +87,7 @@ export const en = {
       keyboard: 'Customize global shortcuts. Conflicting bindings swap automatically.',
       appearance: 'Light/dark mode and color themes for the whole app.',
       sparks: 'Vault themes and built-in modules for your local Sparks notebook.',
+      aiAgent: 'Choose local or remote LLM providers for the in-app assistant.',
       developer: 'Host specs and live process usage for debugging.',
       about: 'Version and runtime information for this MagicLens build.'
     },
@@ -373,6 +375,46 @@ export const en = {
       pluginsHint: 'Toggle built-in features.',
       localHint: 'Notes, graph, and canvas are stored locally in your Sparks vault folder.'
     },
+    aiAgent: {
+      title: 'AI Agent',
+      intro:
+        'Pick a provider and model — Copilot sends your question (plus MagicLens context) to that service and shows the real reply. Ollama stays fully local.',
+      privacy: 'API keys and CLI paths are stored only on this machine. Remote providers only receive the chat + UI context you send.',
+      providersHead: 'LLM providers — {{count}} ready',
+      optionsTitle: 'Assistant options',
+      cliWorkdir: 'CLI workdir',
+      cliWorkdirHint: 'Optional working directory for CLI-based agents.',
+      cliWorkdirPlaceholder: 'Optional',
+      hideAssistant: 'Hide AI assistant',
+      hideAssistantHint: 'Removes the Copilot side panel and FAB entry until you turn this off.',
+      pulseChromeIcon: 'Pulse toolbar icon',
+      pulseChromeIconHint: 'Blink and glow the Copilot button next to notifications. Turn off for a static icon.',
+      use: 'Use',
+      default: 'Default',
+      probe: 'Check connection',
+      login: 'Sign in',
+      loginOpened: 'Terminal opened — finish login there, then re-check.',
+      cliMissing: 'Could not find CLI executable — set the command path above.',
+      status: {
+        ready: 'Ready',
+        needsKey: 'Needs key',
+        notInstalled: 'Not installed'
+      },
+      runbook: {
+        title: 'Integration runbook',
+        toggle: 'Setup guide',
+        credential: 'Credential',
+        login: 'Sign in',
+        install: 'Install',
+        pull: 'Pull model',
+        serve: 'Start server',
+        docs: 'Open docs',
+        docsOpened: 'Opened in your browser',
+        copy: 'Copy command',
+        copied: 'Command copied',
+        openLink: 'Open link'
+      }
+    },
     developer: {
       hostTitle: 'Computer specs',
       hostHint: 'Hardware and OS details for this machine (loaded once when you open this section).',
@@ -653,7 +695,7 @@ export const en = {
       welcome: {
         eyebrow: 'Welcome',
         title: 'MagicLens for Kubernetes',
-        body: 'A fast desktop client to manage clusters, resources, VPN tunnels, logs, and terminals in one place — offline-first on your machine.'
+        body: 'A fast desktop client for clusters, resources, VPN, security scans, and Copilot — offline-first on your machine.'
       },
       clusters: {
         eyebrow: 'Clusters',
@@ -689,6 +731,16 @@ export const en = {
         eyebrow: 'Sparks',
         title: 'Local notes that stay with you',
         body: 'Write Markdown in a vault on your machine — folders, wiki links, graph & canvas, drawings, reminders, and split views. Nothing syncs off-device unless you choose to move the vault folder.'
+      },
+      ai: {
+        eyebrow: 'Copilot',
+        title: 'Ask your cluster, get real answers',
+        body: 'Open Copilot from the top bar (next to notifications). Pick Ollama, OpenAI, Claude, or a local CLI in Settings → AI Agent — each provider has a setup guide for install and sign-in.'
+      },
+      security: {
+        eyebrow: 'Security',
+        title: 'Scan the cluster for risk',
+        body: 'Run a Security scan from the resource menu — findings, charts, and tables help you prioritize RBAC, network, and workload issues before they bite.'
       },
       ops: {
         eyebrow: 'Day-to-day',
@@ -809,6 +861,7 @@ export const en = {
       topology: 'Topology',
       visualizer: 'Visualizer',
       eventTimeline: 'Timeline',
+      security: 'Security',
       portForwarding: 'Port Forwards',
       helmCharts: 'Helm',
       helmReleases: 'Helm',
@@ -825,6 +878,49 @@ export const en = {
       dynamicCustomResources: 'Custom Resources',
       definitions: 'Definitions'
     }
+  },
+  security: {
+    title: 'Security',
+    eyebrow: 'Cluster',
+    score: 'Score',
+    typeChart: 'Type of Vulnerabilities',
+    severityChart: 'Vulnerabilities by Severity',
+    namespaceChart: 'Vulnerabilities by NameSpaces',
+    tabVulns: 'Vulnerabilities',
+    tabEntry: 'Entry Points',
+    tabVectors: 'Vectors',
+    lastScan: 'Last scan',
+    export: 'Export',
+    exportDone: 'Security report exported',
+    scan: 'Scan',
+    scanning: 'Scanning cluster…',
+    empty: 'No security findings yet',
+    noFlags: 'No risk flags',
+    risk: {
+      critical: 'Critical Risk',
+      high: 'High Risk',
+      medium: 'Medium Risk',
+      low: 'Low Risk',
+      healthy: 'Healthy'
+    },
+    colSeverity: 'Severity',
+    colWorkload: 'Workload',
+    colTitle: 'Title',
+    colNamespace: 'Namespace',
+    colRule: 'Rule',
+    colSource: 'Source',
+    colPolicy: 'Violated Policy',
+    colDescription: 'Description',
+    colRecommendation: 'Recommendation',
+    colName: 'Name',
+    colType: 'Type',
+    colPorts: 'Ports',
+    colStatus: 'Status',
+    colAge: 'Age',
+    colFrom: 'From',
+    colFromDetail: 'From detail',
+    colTo: 'To',
+    colToDetail: 'To detail'
   },
   nodesOverview: {
     title: 'Nodes overview',
@@ -1610,10 +1706,46 @@ export const en = {
     terminal: 'New terminal',
     emptyEditor: 'Blank YAML editor',
     addSpark: 'Add spark',
+    assistant: 'AI assistant',
     hintTerminal: 'Open a shell in this cluster',
     hintEditor: 'Write a new manifest',
     hintSpark: 'Capture a note',
+    hintAssistant: 'Open context-aware Copilot chat',
     dragHint: 'Hold and drag to move'
+  },
+  aiChat: {
+    title: 'Copilot',
+    subtitle: 'cluster-aware assistant',
+    badge: 'AI for Kubernetes',
+    headline: 'Ask about this cluster — Copilot uses your live MagicLens context.',
+    lead: 'Pick a provider in Settings, then chat. Local models stay on this machine; cloud/CLI tools need a one-time sign-in.',
+    featureContextTitle: 'Context-aware answers',
+    featureContextBody:
+      'Uses the selected cluster, namespace, workload, YAML, events, logs, and visible UI context.',
+    featureMcpTitle: 'MCP-powered actions',
+    featureMcpBody: 'Structured tools to open pages, inspect resources, analyze issues, and prepare changes.',
+    featureReviewTitle: 'Reviewed changes',
+    featureReviewBody: 'Mutating actions go through confirmation, RBAC checks, and a dry-run preflight.',
+    featurePrivacyTitle: 'Privacy controls',
+    featurePrivacyBody: 'Anonymize sensitive details before remote models, or keep inference local with Ollama.',
+    featureYamlTitle: 'YAML and diagnostics',
+    featureYamlBody: 'Manifest reviews, rollout debugging, log analysis, and safer patch suggestions.',
+    tryPrompts: 'Try a prompt',
+    promptMitigate: 'Mitigate security findings',
+    promptExplain: 'Explain this page',
+    promptYaml: 'Suggest a safer YAML patch',
+    promptLogs: 'Help me debug from events',
+    placeholder: 'Ask about this cluster context…',
+    composerHint: 'Enter to send · Shift+Enter for newline',
+    send: 'Send',
+    clear: 'Clear chat',
+    minimize: 'Minimize',
+    resize: 'Resize assistant',
+    pickProvider: 'Choose provider',
+    usingModel: 'Replies from {{name}} · {{model}}',
+    copied: 'Copied',
+    yamlDraft: 'Copilot YAML draft',
+    enableInSettings: 'Enable AI assistant in Settings → AI Agent'
   },
   notes: {
     brandEyebrow: 'MagicLens',

@@ -5252,6 +5252,11 @@ button.ml-sidebar-section-chrome:hover {
   gap: 8px;
   min-width: 0;
   justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.ml-workspace-header-actions .ml-btn {
+  flex-shrink: 0;
 }
 
 /* Keep the header selector compact; the popup carries the full names. */

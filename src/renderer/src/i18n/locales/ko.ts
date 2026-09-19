@@ -535,6 +535,16 @@ export const ko: TranslationOverrides = {
         body:
           '기기 볼트에 Markdown을 작성하세요 — 폴더, 위키 링크, 그래프 & 캔버스, 그리기, 알림, 분할 보기. 볼트 폴더를 옮기지 않는 한 기기 밖으로 나가지 않습니다.'
       },
+      ai: {
+        eyebrow: 'Copilot',
+        title: 'Ask your cluster, get real answers',
+        body: 'Open Copilot from the top bar. Configure Ollama, OpenAI, Claude, or a local CLI in Settings → AI Agent.'
+      },
+      security: {
+        eyebrow: 'Security',
+        title: 'Scan the cluster for risk',
+        body: 'Run a Security scan from the resource menu — findings, charts, and tables help prioritize issues.'
+      },
       ops: {
         eyebrow: '일상',
         title: '로그, exec, 터미널',

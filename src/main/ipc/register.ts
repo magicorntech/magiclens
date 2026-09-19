@@ -27,6 +27,8 @@ import { registerNotesHandlers } from './notes.handlers'
 import { registerTopologyHandlers } from './topology.handlers'
 import { registerVisualizerHandlers } from './visualizer.handlers'
 import { registerClusterAppsHandlers } from './clusterApps.handlers'
+import { registerSecurityHandlers } from './security.handlers'
+import { registerAiHandlers } from './ai.handlers'
 
 export function registerIpcHandlers(): void {
   registerSessionHandlers()
@@ -58,4 +60,6 @@ export function registerIpcHandlers(): void {
   registerTopologyHandlers()
   registerVisualizerHandlers()
   registerClusterAppsHandlers()
+  registerSecurityHandlers()
+  registerAiHandlers()
 }

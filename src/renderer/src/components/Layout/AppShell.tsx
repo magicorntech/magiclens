@@ -14,11 +14,13 @@ import { NamespaceSelector } from './NamespaceSelector'
 import { BottomPanel } from './BottomPanel'
 import { BottomPanelProvider, useBottomPanel } from './BottomPanelContext'
 import { UtilityDockFab } from './UtilityDockFab'
+import { AiAssistantPanel } from './AiAssistantPanel'
 import { canUseSplitLayouts, usesOverlayNavigation, useLayoutMode } from '../../hooks/useLayoutMode'
 import { Icon } from '../ui/Icon'
 import { WatchStatusBadge } from '../ResourceTable/WatchStatusBadge'
 import { useResourceWatchDisplayStore } from '../../stores/resourceWatchDisplayStore'
 import { useResizableDrawerWidth } from '../../hooks/useResizableDrawerWidth'
+import { useAiAgentStore } from '../../stores/aiAgentStore'
 
 /**
  * Virtual pages that show data across the whole cluster and do their own filtering. The header's
@@ -29,6 +31,7 @@ const CLUSTER_SCOPED_VIRTUAL_PAGES = new Set<VirtualPageKey>([
   'topology',
   'visualizer',
   'eventTimeline',
+  'security',
   'workloadsOverview',
   'configOverview',
   'networkOverview',
@@ -48,7 +51,8 @@ const CLUSTER_SCOPED_VIRTUAL_PAGES = new Set<VirtualPageKey>([
   'appGrafana'
 ])
 
-const TERMINAL_LABEL_MIN_WIDTH = 720
+/** Header width below which Terminal/Copilot drop text labels (icon-only). */
+const TERMINAL_LABEL_MIN_WIDTH = 820
 const RESOURCE_SIDER_WIDTH = 260
 const RESOURCE_SIDER_COLLAPSED_WIDTH = 56
 const RESOURCE_SIDER_MIN_WIDTH = 196
@@ -145,6 +149,9 @@ function AppShellInner({
   const { tabs, addTerminalTab, setActiveTab } = useBottomPanel()
   const [resourceNavOpen, setResourceNavOpen] = useState(false)
   const resourceWatchDisplay = useResourceWatchDisplayStore((s) => s.byCluster[cluster.id])
+  const hideAssistant = useAiAgentStore((s) => s.hideAssistant)
+  const assistantOpen = useAiAgentStore((s) => s.panelOpen)
+  const showAssistant = !hideAssistant && assistantOpen
 
   const hasTerminalTab = tabs.some((tab) => tab.kind === 'terminal')
   const panelPlacement = resolvePanelPlacement(utilityPanelPlacement, allowSidePanel)
@@ -331,12 +338,34 @@ function AppShellInner({
         )}
         <Content className="ml-workspace-content">
           <div className="ml-workspace-content-inner">
-            {renderWorkspaceBody()}
-            {selectedVirtualPage !== 'appArgoCd' &&
-            selectedVirtualPage !== 'appPrometheus' &&
-            selectedVirtualPage !== 'appGrafana' ? (
-              <UtilityDockFab clusterId={cluster.id} namespace={cluster.selectedNamespace} />
-            ) : null}
+            {showAssistant ? (
+              <div className="ml-workspace-with-assistant">
+                <div className="ml-workspace-with-assistant__main">
+                  {renderWorkspaceBody()}
+                  {selectedVirtualPage !== 'appArgoCd' &&
+                  selectedVirtualPage !== 'appPrometheus' &&
+                  selectedVirtualPage !== 'appGrafana' ? (
+                    <UtilityDockFab clusterId={cluster.id} namespace={cluster.selectedNamespace} />
+                  ) : null}
+                </div>
+                <AiAssistantPanel
+                  clusterId={cluster.id}
+                  clusterName={cluster.customName || cluster.contextName || cluster.id}
+                  namespace={cluster.selectedNamespace}
+                  selectedKind={cluster.selectedResourceKind}
+                  selectedVirtualPage={selectedVirtualPage}
+                />
+              </div>
+            ) : (
+              <>
+                {renderWorkspaceBody()}
+                {selectedVirtualPage !== 'appArgoCd' &&
+                selectedVirtualPage !== 'appPrometheus' &&
+                selectedVirtualPage !== 'appGrafana' ? (
+                  <UtilityDockFab clusterId={cluster.id} namespace={cluster.selectedNamespace} />
+                ) : null}
+              </>
+            )}
           </div>
         </Content>
       </Layout>

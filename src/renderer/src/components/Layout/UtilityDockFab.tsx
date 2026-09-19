@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { FilePlus2, Plus, Sparkles, Terminal } from 'lucide-react'
+import { FilePlus2, Plus, Sparkles, Terminal, Bot } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { UtilityFabOffset } from '@shared/types/app'
 import { normalizeUtilityFabSide } from '@shared/types/app'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useNotesStore } from '../../stores/notesStore'
+import { useAiAgentStore } from '../../stores/aiAgentStore'
+import { useSettingsUiStore } from '../../stores/settingsUiStore'
 import { Icon } from '../ui/Icon'
 import { useBottomPanel } from './BottomPanelContext'
 
@@ -48,6 +50,11 @@ export function UtilityDockFab({ clusterId, namespace }: UtilityDockFabProps): R
   const setUtilityFabOffset = useDisplaySettingsStore((s) => s.setUtilityFabOffset)
   const { addTerminalTab, openYamlEditor } = useBottomPanel()
   const openCreateSpark = useNotesStore((s) => s.openCreate)
+  const hideAssistant = useAiAgentStore((s) => s.hideAssistant)
+  const panelOpen = useAiAgentStore((s) => s.panelOpen)
+  const setPanelOpen = useAiAgentStore((s) => s.setPanelOpen)
+  const togglePanel = useAiAgentStore((s) => s.togglePanel)
+  const openSettings = useSettingsUiStore((s) => s.openSettings)
   const [expanded, setExpanded] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [liveOffset, setLiveOffset] = useState<UtilityFabOffset | null>(null)
@@ -240,6 +247,18 @@ export function UtilityDockFab({ clusterId, namespace }: UtilityDockFabProps): R
       hint: t('utilityFab.hintSpark'),
       icon: Sparkles,
       onClick: () => runAction(openSpark)
+    },
+    {
+      key: 'assistant',
+      label: t('utilityFab.assistant'),
+      hint: t('utilityFab.hintAssistant'),
+      icon: Bot,
+      onClick: () =>
+        runAction(() => {
+          if (hideAssistant) openSettings('aiAgent')
+          else if (panelOpen) setPanelOpen(false)
+          else togglePanel()
+        })
     }
   ] as const
 

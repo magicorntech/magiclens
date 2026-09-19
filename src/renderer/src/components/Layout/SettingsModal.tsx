@@ -17,6 +17,7 @@ import {
 import type { AggregationColor } from 'antd/es/color-picker/color'
 import type { LucideIcon } from 'lucide-react'
 import {
+  Bot,
   CheckCircle2,
   CloudDownload,
   Code2,
@@ -60,6 +61,7 @@ import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { VpnExtensionsSettings } from './VpnExtensionsSettings'
 import { PortForwardingSettings } from './PortForwardingSettings'
 import { SparksSettings } from './SparksSettings'
+import { AiAgentSettings } from './AiAgentSettings'
 import { DeveloperSettings } from './DeveloperSettings'
 import { ThemeToggle } from './ThemeToggle'
 import {
@@ -262,6 +264,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'general', icon: Settings2, group: 'preferences' },
   { key: 'appearance', icon: Palette, group: 'preferences' },
   { key: 'sparks', icon: Sparkles, group: 'preferences' },
+  { key: 'aiAgent', icon: Bot, group: 'preferences' },
   { key: 'display', icon: LayoutDashboard, group: 'preferences' },
   { key: 'widget', icon: Gauge, group: 'preferences' },
   { key: 'keyboard', icon: Keyboard, group: 'preferences' },
@@ -803,6 +806,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
 
       case 'sparks':
         return <SparksSettings />
+
+      case 'aiAgent':
+        return <AiAgentSettings />
 
       case 'vpnExtensions':
         return <VpnExtensionsSettings />

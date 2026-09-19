@@ -2,6 +2,7 @@ import { Typography } from 'antd'
 import { Menu } from 'lucide-react'
 import { Icon } from '../ui/Icon'
 import { NotesNotificationBell } from '../Notes/NotesNotificationBell'
+import { AiAssistantToggleButton } from './AiAssistantPanel'
 import logo from '../../assets/logo.png'
 
 interface MobileAppBarProps {
@@ -26,6 +27,9 @@ export function MobileAppBar({ onMenuClick }: MobileAppBarProps): React.JSX.Elem
         </Typography.Text>
       </div>
       <div className="mobile-app-bar-actions titlebar-no-drag ml-chrome-actions__fixed">
+        <span className="ml-chrome-actions__hit">
+          <AiAssistantToggleButton />
+        </span>
         <span className="ml-chrome-actions__hit">
           <NotesNotificationBell />
         </span>
