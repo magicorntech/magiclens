@@ -65,15 +65,77 @@ macOS builds are Developer ID signed and notarized. Windows installers are Authe
 
 ---
 
-## Clusters & workspaces
+## Clusters
 
-Scan a kubeconfig file or a folder of configs. Connect many clusters at once, pin favorites, and keep each context as a tab with its own namespace filter and last-opened resource.
-
-Workspaces group clusters the way your org actually works — Aurora, payments, edge, observability. Give a workspace a name, logo, accent colour, and an optional shortcut that expands it and opens its clusters. Duplicate contexts that share the same API server and credentials can be merged into one entry.
+Scan a kubeconfig file or a folder of configs. The default path is `~/.kube`; Settings can point at any file or directory. Connect many clusters at once, pin favorites, and keep each context as a tab with its own namespace filter and last-opened resource. Duplicate contexts that share the same API server and credentials can be merged into one entry.
 
 Cluster avatars use your custom logo when you set one. Otherwise MagicLens reads the kubeconfig (server URL, context name, exec plugin) and shows AWS, Google Cloud, Azure, or Huawei when it can tell.
 
-Each cluster has its own settings: environment tag, HTTP proxy, default namespace, pinned namespaces, Prometheus URL, terminal shell, node shell, and wallpaper.
+<p align="center">
+  <img src="docs/screenshots/magiclens-clusters.png" alt="MagicLens cluster list" width="920">
+</p>
+
+### Cluster settings
+
+Every cluster has its own **Edit Cluster** sheet — search the sections, then save. Settings stay with that context, not the whole app.
+
+**Appearance.** Display name and a custom logo (otherwise the letter tile or the detected cloud mark). Workspace background: ten built-in landscapes (Alpine Dawn, Ocean Horizon, Forest Mist, …) or upload PNG/JPEG. Panel transparency controls how see-through tables and menus are over the wallpaper.
+
+**General.** Read-only identity from the kubeconfig: context, API server, Kubernetes version, cluster id, connection status, last opened. Then tags, environment (`dev` / `staging` / `prod`), and free-text notes.
+
+**Proxy.** Optional HTTP/HTTPS proxy for API traffic, no-proxy hosts, basic auth, and failover to an alternate endpoint. Link a VPN profile so opening the cluster tab can bring the tunnel up; PIN and MFA stay on that profile.
+
+**Terminal.** Default shell, working directory, default namespace, sync `KUBECONFIG` / context on open, history, auto-complete, RBAC hints, multi-tab, extra `KEY=value` environment.
+
+**Namespaces.** Default namespace, pinned namespaces at the top of the selector, RBAC-based filtering, label grouping.
+
+**Metrics.** Prometheus source: auto-detect (API-server Service proxy) or a custom URL. Scrape interval, query timeout, HTTPS, authentication, path prefix, hide unused series, and Test / rediscover.
+
+**Node shell.** Privileged debug pod for `nsenter` on a node: image, pull policy / secret, CPU and memory limits, privileged / root, node selector, tolerations, cleanup TTL.
+
+**Integrations.** Auto-detect Grafana, Prometheus, and Argo CD Services. Leave the URL blank to port-forward in-cluster; paste an external URL to open that instead.
+
+Also per cluster: Lens Metrics (optional in-cluster stack), security (RBAC viewer, encrypt kubeconfig at rest, client audit), network notes (domain, CIDRs), storage defaults, performance (rate limit, cache, refresh, concurrency), UI density, and debug flags. The kubeconfig itself can be viewed, copied, or edited and saved for this cluster — reconnect to apply.
+
+<p align="center">
+  <img src="docs/screenshots/magiclens-cluster-appearance.png" alt="MagicLens cluster appearance" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/magiclens-cluster-general.png" alt="MagicLens cluster general settings" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/magiclens-cluster-proxy.png" alt="MagicLens cluster proxy settings" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/magiclens-cluster-metrics.png" alt="MagicLens cluster metrics settings" width="920">
+</p>
+
+---
+
+## Workspaces
+
+Workspaces group clusters the way your org actually works — production vs labs, a region, a product line. The sidebar lists every workspace, searchable, expandable, with a count in the header. Create one with **+**, then assign clusters. A cluster can live in a workspace; opening the workspace expands it and opens those clusters as tabs.
+
+**Name & logo.** Give the workspace a title and a square logo (or keep the letter tile). The logo appears in the sidebar next to every cluster in that group.
+
+**Colour.** Amber, blue, green, purple, pink, teal, red — or none. The accent tints the workspace header and its clusters so Aurora and Payments do not look the same at a glance. The same palette is used in the macOS menu-bar widget so a workspace and its cards stay one colour everywhere.
+
+**Clusters.** Multi-select which contexts belong here. Add or remove them later from Edit workspace. An empty workspace still shows in the list so you can fill it when the kubeconfig arrives.
+
+**Keyboard shortcut.** Assign `⌘`/`Ctrl` (or `Alt`) plus a key. That shortcut expands the workspace and opens its clusters. The same bindings are listed under Settings → Keyboard. Conflicting shortcuts swap automatically. Clear the binding if you only want the mouse.
+
+**Sidebar.** Collapse a workspace to hide its clusters. Collapse the whole Workspaces section in Settings → Display. Hover menus on the workspace header cover edit and delete. Search filters workspace names as you type.
+
+<p align="center">
+  <img src="docs/screenshots/magiclens-workspaces-list.png" alt="MagicLens workspaces sidebar" width="420">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/magiclens-workspace-edit.png" alt="MagicLens edit workspace" width="520">
+</p>
 
 <p align="center">
   <img src="docs/screenshots/magiclens-workspaces.png" alt="MagicLens workspaces and nodes overview" width="920">
@@ -161,16 +223,18 @@ Local terminals inherit that cluster’s kubeconfig context, default namespace, 
 
 ## Storage & metrics
 
-PVC tables show capacity, used bytes, and percent full when Prometheus scrapes `kubelet_volume_stats_*`. PersistentVolumes and StorageClasses (provisioner, reclaim policy, age) sit in the same Storage section.
+The Storage sidebar has an overview plus PVCs, PVs, and StorageClasses. The PVC table lists capacity, used bytes, percent full, Bound status, and age. Bars turn amber when a volume is filling up so you see `catalog-idx` at 78% before it pages.
 
-Live CPU and memory come from metrics-server (nodes and pods). Historical charts, disk fullness, and node pressure need Prometheus — auto-discovered through the API-server service proxy, or a URL you set on the cluster. If Prometheus is missing, live metrics still work; history simply stays empty.
+Open a claim for a Metrics tab: used / capacity / free, a fullness bar, volume fullness over time, and bytes used over time. Those series need Prometheus scraping `kubelet_volume_stats_*`. PersistentVolumes and StorageClasses (provisioner, reclaim policy) sit next to the claims.
+
+Live CPU and memory on nodes and pods come from metrics-server. Historical charts, disk fullness, and node pressure need Prometheus — auto-discovered through the API-server Service proxy, or a URL on the cluster. If Prometheus is missing, live metrics still work; history stays empty.
 
 <p align="center">
   <img src="docs/screenshots/magiclens-storage.png" alt="MagicLens PersistentVolumeClaims" width="920">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-storageclasses.png" alt="MagicLens StorageClasses" width="920">
+  <img src="docs/screenshots/magiclens-pvc-metrics.png" alt="MagicLens PVC usage metrics" width="920">
 </p>
 
 <p align="center">
@@ -181,9 +245,17 @@ Live CPU and memory come from metrics-server (nodes and pods). Historical charts
 
 ## Visualizer & Topology
 
-**Visualizer** is a cluster-wide map: namespaces and Helm releases as groups, workloads and services as cards, brand icons from the container image (nginx, postgres, redis, Argo, …). Click a card for the full resource detail. It is a separate page from Topology — both stay in the sidebar.
+**Visualizer** is a cluster-wide map. Namespaces and Helm releases become groups; workloads and services become cards with brand icons from the container image (nginx, postgres, redis, Argo, Grafana, …). Ingress and egress marks sit on the card. Click a card for the full resource drawer. Visualizer is its own page — Topology stays in the sidebar.
 
-**Topology** is the namespace graph: Deployments, Services, Ingresses, and volumes, with health on the nodes so you can jump from an application to its live dependencies.
+**Topology** is a live map of one namespace: how a Deployment owns a ReplicaSet, how that ReplicaSet owns Pods, how a Service selects those pods, how an Ingress routes to the Service, and how pods mount ConfigMaps. Edges are labelled owns / selects / routes / mounts. Health colours follow ready replicas (a 1/2 Deployment is degraded).
+
+Three modes:
+
+- **Topology** — the graph, with a minimap and Insights (crash loops, empty services, orphan ingresses, zero-ready workloads).
+- **Applications** — cards grouped by `app` / `app.kubernetes.io/instance`, with replica summary and error count. Click a card to focus that subgraph.
+- **Resources** — a filterable table (name, kind, health, replicas, age) of the same nodes.
+
+Pick a concrete namespace (`shop`, `payments`, `data`). All namespaces is disabled — the graph would be too large. Open the graph in a separate window if you want it on a second display.
 
 <p align="center">
   <img src="docs/screenshots/magiclens-visualizer.png" alt="MagicLens Visualizer map" width="920">
@@ -193,11 +265,19 @@ Live CPU and memory come from metrics-server (nodes and pods). Historical charts
   <img src="docs/screenshots/magiclens-topology.png" alt="MagicLens topology map" width="920">
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/magiclens-topology-graph.png" alt="MagicLens topology graph detail" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/magiclens-topology-resources.png" alt="MagicLens topology resources" width="920">
+</p>
+
 ---
 
 ## Timeline
 
-Recent cluster events as a Gantt. Filter by namespace, kind, and warning vs normal. Density on the top strip shows when the cluster was noisy. Hover a bar for reason and message — the same events you would `kubectl get events` for, laid out in time.
+Recent namespaced events as a Gantt, grouped by the object they belong to (Deployment, Pod, Job). Filter by namespace, kind, warning vs normal, and a search over reason / message. The density strip on top shows when the cluster was noisy. Hover a bar for reason, message, and count — the same stream as `kubectl get events`, laid out in time instead of a dump. A 30-minute window is the default; zoom the axis when you need a longer stretch.
 
 <p align="center">
   <img src="docs/screenshots/magiclens-timeline.png" alt="MagicLens event timeline" width="920">
@@ -207,7 +287,11 @@ Recent cluster events as a Gantt. Filter by namespace, kind, and warning vs norm
 
 ## Helm
 
-Browse installed charts and releases. Open a release for values (YAML), owned resources, history, rollback, and uninstall. The catalog searches known repos so you can inspect a chart, edit values, and install without leaving the app.
+One page, two tabs: **Charts** and **Releases**.
+
+The catalog searches known repos. Open a chart for description, versions, prerequisites, and values YAML; set a release name and namespace, then deploy. Installed charts also appear as a summary (how many releases, which namespaces).
+
+A release opens notes, owned resources (Deployment / Service / ConfigMap), history, values, rollback, upgrade, and uninstall. Demo and live clusters use the same editor so a values tweak and a rollback stay in one place.
 
 <p align="center">
   <img src="docs/screenshots/magiclens-helm.png" alt="MagicLens Helm chart catalog" width="920">
@@ -221,9 +305,11 @@ Browse installed charts and releases. Open a release for values (YAML), owned re
 
 ## Argo CD, Grafana & Prometheus
 
-Argo CD is first-class: dashboard, Applications, ApplicationSets, projects, repositories, and clusters, read from `argoproj.io` CRDs. Sync or refresh one app or many — no extra Argo API URL or token.
+Argo CD is first-class in the sidebar: dashboard, Applications, ApplicationSets, projects, repositories, and clusters, read from `argoproj.io` CRDs. Sync or refresh one app or many — no extra Argo API URL or token.
 
-Grafana and Prometheus open as cluster apps when MagicLens finds the Service (or you paste a URL). Sessions stay alive via port-forward; you can also set a manual URL, username, and password per cluster.
+**Web UI** opens the in-cluster Argo / Grafana / Prometheus Service through a local port-forward (or a URL you set). Credentials are read from a Secret when MagicLens can find them; you can also paste username and password. The toolbar shows the forwarded address and Open / Refresh. Sessions stay alive while the tab is open.
+
+If the Service is missing, Edit Cluster → Integrations lets you save an external URL and try again.
 
 <p align="center">
   <img src="docs/screenshots/magiclens-grafana.png" alt="MagicLens Grafana cluster app" width="920">
@@ -241,13 +327,15 @@ Grafana and Prometheus open as cluster apps when MagicLens finds the Service (or
 
 ## Port forwarding
 
-Forward a Pod or Service to a local port in a couple of clicks. Every open tunnel — across all clusters — is listed in Settings → Port Forwarding. Idle forwards can close themselves after 15 minutes to 4 hours, or never.
+Forward a Pod or Service to a local port from the resource detail (Port Forward tab) or from the Service table. MagicLens picks a free local port unless you set one. Every open tunnel — across all clusters — is listed in Settings → Port Forwarding; stop any of them from there.
+
+Idle forwards can close themselves after 15 minutes, 30 minutes, 1 hour, 2 hours, 4 hours, or never. That timeout is global so a forgotten `kubectl port-forward` equivalent does not sit forever.
 
 ---
 
 ## Split view
 
-Keep two cluster tabs side by side: Visualizer vs Nodes, Deployments vs Pods, staging vs production. Each pane has its own resource and namespace. Toggle with `⌘\` / `Ctrl+\` (configurable).
+Keep two cluster tabs side by side: Visualizer vs Nodes, Deployments vs Pods, staging vs production. Each pane has its own resource, namespace filter, and detail drawer. Focus follows the pane you click. Toggle with `⌘\` / `Ctrl+\` (configurable). Exit split to return to a single tab strip.
 
 <p align="center">
   <img src="docs/screenshots/magiclens-split.png" alt="MagicLens split view" width="920">
