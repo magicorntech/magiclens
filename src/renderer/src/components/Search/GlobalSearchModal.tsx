@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Empty, Input, Modal, Spin, Tag, Typography } from 'antd'
 import type { InputRef } from 'antd'
-import { Bell, Box, Cloud, FileText, HardDrive, Layers, Lock, Rocket, Search, Share2, Sparkles } from 'lucide-react'
+import { Bell, Box, Cloud, FileText, HardDrive, Layers, Lock, Rocket, Search, Share2, ShieldAlert, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Icon } from '../ui/Icon'
 import type { ResourceKind } from '@shared/resourceKinds'
@@ -11,6 +11,7 @@ import {
   matchesSearchText,
   parseGlobalSearchQuery
 } from '@shared/globalSearchKeywords'
+import { searchSecurityRuleBook } from '@shared/securityCatalog'
 import { GLOBAL_SEARCH_TYPES, type GlobalSearchGroup, type GlobalSearchResult, type GlobalSearchType } from '@shared/types/search'
 import { HighlightText } from '../ClusterTabs/ClusterSearchInput'
 import { matchesSearch } from '../../clusterFilter'
@@ -18,11 +19,12 @@ import { useClusterStore } from '../../stores/clusterStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useGlobalSearchStore } from '../../stores/globalSearchStore'
 import { useNotesStore } from '../../stores/notesStore'
+import { useSecurityStore } from '../../stores/securityStore'
 import { shortcutParts } from '@shared/types/keyboardShortcuts'
 import { kindIcons } from '../../resourceConfig/kinds.renderer'
 
 const FLAT_ITEM_ATTR = 'data-global-search-index'
-const LOCAL_SEARCH_TYPES = new Set<GlobalSearchType>(['clusters', 'sparks'])
+const LOCAL_SEARCH_TYPES = new Set<GlobalSearchType>(['clusters', 'sparks', 'security'])
 
 function sparkSnippet(body: string, query: string): string | undefined {
   const plain = body.replace(/\s+/g, ' ').trim()
@@ -42,6 +44,8 @@ function resultKey(result: GlobalSearchResult): string {
       return `cluster:${result.clusterId}`
     case 'spark':
       return `spark:${result.noteId}`
+    case 'security':
+      return `security:${result.kind}:${result.findingId ?? result.ruleId}:${result.clusterId}`
     case 'builtin':
       return `builtin:${result.clusterId}:${result.kind}:${result.namespace}:${result.name}`
     case 'helm-release':
@@ -61,6 +65,8 @@ function groupIcon(type: GlobalSearchType): React.ReactNode {
       return <Icon icon={Cloud} variant="detail" />
     case 'sparks':
       return <Icon icon={Sparkles} variant="detail" />
+    case 'security':
+      return <Icon icon={ShieldAlert} variant="detail" />
     case 'namespaces':
       return <Icon icon={Layers} variant="detail" />
     case 'pods':
@@ -114,9 +120,13 @@ export function GlobalSearchModal(): React.JSX.Element {
   const navigateToDynamicResource = useClusterStore((s) => s.navigateToDynamicResource)
   const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const openResourceKind = useClusterStore((s) => s.openResourceKind)
+  const openVirtualPage = useClusterStore((s) => s.openVirtualPage)
   const notes = useNotesStore((s) => s.notes)
   const selectNote = useNotesStore((s) => s.selectNote)
   const setWorkspacePanel = useNotesStore((s) => s.setWorkspacePanel)
+  const reportsByCluster = useSecurityStore((s) => s.reportsByCluster)
+  const focusFinding = useSecurityStore((s) => s.focusFinding)
+  const focusRule = useSecurityStore((s) => s.focusRule)
 
   const [apiGroups, setApiGroups] = useState<GlobalSearchGroup[]>([])
   const [loading, setLoading] = useState(false)
@@ -137,6 +147,9 @@ export function GlobalSearchModal(): React.JSX.Element {
 
   const includeSparks =
     !typeFilter || typeFilter === 'sparks' || parsed.types?.includes('sparks') || !parsed.types
+
+  const includeSecurity =
+    !typeFilter || typeFilter === 'security' || parsed.types?.includes('security') || !parsed.types
 
   const clusterGroups = useMemo((): GlobalSearchGroup[] => {
     if (!includeClusters || (parsed.types && !parsed.types.includes('clusters'))) return []
@@ -178,6 +191,83 @@ export function GlobalSearchModal(): React.JSX.Element {
       ? [{ type: 'sparks' as const, label: GLOBAL_SEARCH_TYPE_LABELS.sparks, results }]
       : []
   }, [includeSparks, notes, parsed.text, parsed.types, typeFilter])
+
+  const securityGroups = useMemo((): GlobalSearchGroup[] => {
+    if (!includeSecurity || (parsed.types && !parsed.types.includes('security'))) return []
+    const text = parsed.text.trim()
+    if (!text && typeFilter !== 'security' && !parsed.types?.includes('security')) return []
+
+    const results: GlobalSearchResult[] = []
+    const cluster =
+      (activeClusterId && clusters.find((c) => c.id === activeClusterId)) ||
+      clusters.find((c) => c.status === 'connected') ||
+      clusters[0]
+    const clusterId = cluster?.id ?? ''
+    const clusterName = cluster?.customName || cluster?.contextName || clusterId || '—'
+
+    const report = clusterId ? reportsByCluster[clusterId] : undefined
+    if (report) {
+      for (const v of report.vulnerabilities) {
+        const hay = [
+          v.id,
+          v.rule,
+          v.title,
+          v.workload,
+          v.namespace,
+          v.description,
+          v.recommendation,
+          v.severity,
+          v.source
+        ].join(' ')
+        if (!matchesSearchText(hay, text)) continue
+        results.push({
+          type: 'security',
+          clusterId,
+          clusterName,
+          findingId: v.id,
+          ruleId: v.rule,
+          title: v.title,
+          severity: v.severity,
+          namespace: v.namespace,
+          workload: v.workload,
+          kind: 'finding',
+          snippet: `${v.severity} · ${v.rule} · ${v.namespace}/${v.workload}`
+        })
+        if (results.length >= 12) break
+      }
+    }
+
+    if (results.length < 15) {
+      for (const rule of searchSecurityRuleBook(text)) {
+        if (results.some((r) => r.type === 'security' && r.kind === 'rule' && r.ruleId === rule.id)) {
+          continue
+        }
+        results.push({
+          type: 'security',
+          clusterId,
+          clusterName,
+          ruleId: rule.id,
+          title: rule.title,
+          severity: rule.severity,
+          kind: 'rule',
+          snippet: `${rule.id} · ${rule.summary}`
+        })
+        if (results.length >= 15) break
+      }
+    }
+
+    return results.length > 0
+      ? [{ type: 'security' as const, label: GLOBAL_SEARCH_TYPE_LABELS.security, results }]
+      : []
+  }, [
+    activeClusterId,
+    clusters,
+    includeSecurity,
+    parsed.text,
+    parsed.types,
+    reportsByCluster,
+    typeFilter
+  ])
 
   const targetCluster = useMemo(() => {
     const connected = clusters.filter((c) => c.status === 'connected')
@@ -246,8 +336,8 @@ export function GlobalSearchModal(): React.JSX.Element {
   }, [open, targetCluster, parsed.text, searchTypes, typeFilter])
 
   const allGroups = useMemo(
-    () => [...clusterGroups, ...sparkGroups, ...apiGroups],
-    [clusterGroups, sparkGroups, apiGroups]
+    () => [...clusterGroups, ...sparkGroups, ...securityGroups, ...apiGroups],
+    [clusterGroups, sparkGroups, securityGroups, apiGroups]
   )
 
   const flatResults = useMemo(() => allGroups.flatMap((g) => g.results), [allGroups])
@@ -305,15 +395,24 @@ export function GlobalSearchModal(): React.JSX.Element {
             name: result.name
           })
           break
+        case 'security':
+          if (result.clusterId) openClusterTab(result.clusterId)
+          if (result.kind === 'finding' && result.findingId) focusFinding(result.findingId)
+          else focusRule(result.ruleId)
+          if (result.clusterId) openVirtualPage(result.clusterId, 'security')
+          break
       }
     },
     [
       closeSearch,
+      focusFinding,
+      focusRule,
       navigateToDynamicResource,
       navigateToHelmRelease,
       navigateToResource,
       openClusterTab,
       openResourceKind,
+      openVirtualPage,
       selectNote,
       setActiveView,
       setSelectedNamespace,
@@ -577,6 +676,31 @@ function ResultRow({
               )}
             </span>
           </span>
+        </>
+      )
+    case 'security':
+      return (
+        <>
+          <span className="global-search-item-icon">{icon}</span>
+          <span className="global-search-item-main">
+            <HighlightText text={result.title} query={query} />
+            <span className="global-search-item-sub">
+              {result.kind === 'finding' ? (
+                <>
+                  {result.severity} · {result.ruleId}
+                  {result.namespace ? ` · ${result.namespace}` : ''}
+                  {result.workload ? `/${result.workload}` : ''}
+                </>
+              ) : (
+                <>
+                  {result.ruleId} · {result.snippet}
+                </>
+              )}
+            </span>
+          </span>
+          {result.kind === 'finding' ? (
+            <span className="global-search-item-meta">{result.clusterName}</span>
+          ) : null}
         </>
       )
   }

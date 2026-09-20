@@ -800,7 +800,43 @@ const api = {
     scan: (
       req: import('@shared/types/security').SecurityScanRequest
     ): Promise<import('@shared/types/security').SecurityReport | { error: string }> =>
-      ipcRenderer.invoke(IPC.SECURITY_SCAN, req)
+      ipcRenderer.invoke(IPC.SECURITY_SCAN, req),
+    onScanProgress: (
+      cb: (progress: import('@shared/types/security').SecurityScanProgress) => void
+    ): (() => void) => {
+      const listener = (
+        _e: Electron.IpcRendererEvent,
+        progress: import('@shared/types/security').SecurityScanProgress
+      ): void => {
+        cb(progress)
+      }
+      ipcRenderer.on(IPC.SECURITY_SCAN_PROGRESS, listener)
+      return () => ipcRenderer.removeListener(IPC.SECURITY_SCAN_PROGRESS, listener)
+    },
+    listHistory: (
+      req: import('@shared/types/security').SecurityHistoryListRequest
+    ): Promise<
+      | { items: import('@shared/types/security').SecurityHistorySummary[] }
+      | { error: string }
+    > => ipcRenderer.invoke(IPC.SECURITY_HISTORY_LIST, req),
+    getHistory: (
+      req: import('@shared/types/security').SecurityHistoryGetRequest
+    ): Promise<
+      import('@shared/types/security').SecurityHistoryRecord | { error: string }
+    > => ipcRenderer.invoke(IPC.SECURITY_HISTORY_GET, req),
+    deleteHistory: (
+      req: import('@shared/types/security').SecurityHistoryDeleteRequest
+    ): Promise<{ ok: boolean } | { error: string }> =>
+      ipcRenderer.invoke(IPC.SECURITY_HISTORY_DELETE, req),
+    clearHistory: (
+      req: import('@shared/types/security').SecurityHistoryListRequest
+    ): Promise<{ ok: true } | { error: string }> =>
+      ipcRenderer.invoke(IPC.SECURITY_HISTORY_CLEAR, req),
+    renameHistory: (
+      req: import('@shared/types/security').SecurityHistoryRenameRequest
+    ): Promise<
+      import('@shared/types/security').SecurityHistoryRecord | { error: string }
+    > => ipcRenderer.invoke(IPC.SECURITY_HISTORY_RENAME, req)
   },
   ai: {
     chatComplete: (

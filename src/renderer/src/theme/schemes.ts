@@ -151,28 +151,30 @@ function buildPalette(colors: SchemeColors, isDark: boolean): AppPalette {
 
 const SCHEME_COLORS: Record<Exclude<ColorSchemeId, 'custom'>, SchemeColors> = {
   white: {
+    /* Light-first: bright paper + black ink. Soft charcoal when used in dark. */
     primaryLight: '#171717',
     primaryLightHover: '#000000',
-    primaryDark: '#f5f5f5',
-    primaryDarkHover: '#ffffff',
-    resourceSiderLight: '#e7e7e8',
-    resourceSiderDark: '#111111',
-    spotlightLight: '#fafafa',
-    spotlightDark: '#141414',
+    primaryDark: '#e4e4e7',
+    primaryDarkHover: '#f4f4f5',
+    resourceSiderLight: '#ebebed',
+    resourceSiderDark: '#1c1c1e',
+    spotlightLight: '#ffffff',
+    spotlightDark: '#1c1c1e',
     layoutLight: '#f5f5f7',
-    layoutDark: '#000000'
+    layoutDark: '#121212'
   },
   black: {
-    primaryLight: '#e84d5c',
-    primaryLightHover: '#d64555',
-    primaryDark: '#FF5F6D',
-    primaryDarkHover: '#ff7a85',
-    resourceSiderLight: '#0a0a0a',
+    /* Dark-first: OLED black + white ink. Clean light twin, no black chrome. */
+    primaryLight: '#0a0a0a',
+    primaryLightHover: '#000000',
+    primaryDark: '#ffffff',
+    primaryDarkHover: '#f4f4f5',
+    resourceSiderLight: '#f0f0f2',
     resourceSiderDark: '#000000',
-    spotlightLight: '#f4f4f5',
-    spotlightDark: '#111111',
-    layoutLight: '#ececee',
-    layoutDark: '#050505'
+    spotlightLight: '#fafafa',
+    spotlightDark: '#0a0a0a',
+    layoutLight: '#fafafa',
+    layoutDark: '#000000'
   },
 
   /* —— Classic —— */
@@ -352,16 +354,16 @@ export const COLOR_SCHEME_DEFINITIONS: ColorSchemeDefinition[] = [
   {
     id: 'white',
     name: 'White',
-    description: 'White and black, no tint',
+    description: 'Bright paper light, soft charcoal dark',
     group: 'base',
     swatches: ['#ffffff', '#171717', '#f5f5f7']
   },
   {
     id: 'black',
     name: 'Black',
-    description: 'True black surfaces, coral accent',
+    description: 'True OLED black, pure white accent',
     group: 'base',
-    swatches: ['#050505', '#FF5F6D', '#111111']
+    swatches: ['#000000', '#ffffff', '#0a0a0a']
   },
   {
     id: 'violet',

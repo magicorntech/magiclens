@@ -15,6 +15,15 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.27': {
+    title: 'Security workspace and clean themes',
+    items: [
+      'Security scans open as named tabs with filters, search, rule book, and a detail drawer that can ask Copilot about a finding.',
+      'Scan progress is animated; finished scans stay in history you can reopen, rename, or download.',
+      'The first Security visit shows a one-time intro — opening Security again does not start a new scan automatically.',
+      'White and Black themes are separated: bright paper vs true OLED black, without the coral accent mix-up.'
+    ]
+  },
   '0.1.26': {
     title: 'Copilot and Security',
     items: [

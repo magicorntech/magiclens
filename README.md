@@ -33,7 +33,7 @@ Every cluster in one window — browse, debug, and operate without leaving the d
 
 ## Download
 
-MagicLens ships as **signed desktop installers**. Get the app from a **GitHub Release** — each version is a tag (`v0.1.26`, …). There is no source checkout and nothing to build.
+MagicLens ships as **signed desktop installers**. Get the app from a **GitHub Release** — each version is a tag (`v0.1.27`, …). There is no source checkout and nothing to build.
 
 **[Download the latest release →](https://github.com/magicorntech/magiclens/releases/latest)**
 

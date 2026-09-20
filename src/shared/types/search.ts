@@ -3,6 +3,7 @@ import type { ResourceKind } from '../resourceKinds'
 export const GLOBAL_SEARCH_TYPES = [
   'clusters',
   'sparks',
+  'security',
   'namespaces',
   'pods',
   'deployments',
@@ -87,6 +88,20 @@ export type GlobalSearchResult =
       message: string
       involvedObjectKind?: string
       involvedObjectName?: string
+    }
+  | {
+      type: 'security'
+      clusterId: string
+      clusterName: string
+      /** Finding id when from a scan; rule id when from the book */
+      findingId?: string
+      ruleId: string
+      title: string
+      severity: string
+      namespace?: string
+      workload?: string
+      kind: 'finding' | 'rule'
+      snippet: string
     }
 
 export interface GlobalSearchGroup {

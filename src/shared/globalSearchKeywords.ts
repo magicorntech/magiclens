@@ -3,6 +3,7 @@ import type { GlobalSearchType } from './types/search'
 export const GLOBAL_SEARCH_TYPE_LABELS: Record<GlobalSearchType, string> = {
   clusters: 'Clusters',
   sparks: 'Sparks',
+  security: 'Security',
   namespaces: 'Namespaces',
   pods: 'Pods',
   deployments: 'Deployments',
@@ -26,6 +27,7 @@ export const GLOBAL_SEARCH_TYPE_LABELS: Record<GlobalSearchType, string> = {
 export const GLOBAL_SEARCH_TYPE_KEYWORDS: Record<GlobalSearchType, string[]> = {
   clusters: ['cluster', 'clusters', 'cls'],
   sparks: ['spark', 'sparks', 'note', 'notes', 'md'],
+  security: ['security', 'sec', 'vuln', 'cve', 'finding', 'rbac', 'psp'],
   namespaces: ['ns', 'namespace', 'namespaces'],
   pods: ['pod', 'pods'],
   deployments: ['deploy', 'deployment', 'deployments', 'dep'],

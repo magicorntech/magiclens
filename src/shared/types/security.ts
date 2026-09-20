@@ -1,8 +1,88 @@
 export type SecuritySeverity = 'Critical' | 'High' | 'Medium' | 'Low'
 
-export type SecuritySource = 'securityContext' | 'rbac' | 'podSpec' | 'volumes' | 'service'
+export type SecuritySource =
+  | 'securityContext'
+  | 'rbac'
+  | 'podSpec'
+  | 'volumes'
+  | 'service'
+  | 'network'
 
 export type SecurityPolicy = 'Restricted' | 'Baseline' | 'Privileged'
+
+export type SecurityScanPhase =
+  | 'starting'
+  | 'fetch-pods'
+  | 'fetch-services'
+  | 'fetch-network'
+  | 'fetch-rbac'
+  | 'analyze-pods'
+  | 'analyze-services'
+  | 'analyze-network'
+  | 'analyze-rbac'
+  | 'analyze-vectors'
+  | 'summarize'
+  | 'done'
+
+export interface SecurityScanSeverityLive {
+  critical: number
+  high: number
+  medium: number
+  low: number
+}
+
+export interface SecurityScanProgress {
+  clusterId: string
+  phase: SecurityScanPhase
+  /** Optional detail e.g. "142 pods" */
+  detail?: string
+  resourceCount?: number
+  findingsCount: number
+  severity: SecurityScanSeverityLive
+  percent: number
+}
+
+export interface SecurityHistorySummary {
+  id: string
+  clusterId: string
+  scannedAt: string
+  /** User-editable label */
+  name: string
+  score: number
+  riskLabel: SecurityReport['riskLabel']
+  findingCount: number
+  critical: number
+  high: number
+  medium: number
+  low: number
+  entryPointCount: number
+  vectorCount: number
+  flags: SecurityFlag[]
+}
+
+export interface SecurityHistoryRecord extends SecurityHistorySummary {
+  report: SecurityReport
+}
+
+export interface SecurityHistoryListRequest {
+  clusterId: string
+}
+
+export interface SecurityHistoryGetRequest {
+  clusterId: string
+  id: string
+}
+
+export interface SecurityHistoryDeleteRequest {
+  clusterId: string
+  id: string
+}
+
+export interface SecurityHistoryRenameRequest {
+  clusterId: string
+  id: string
+  name: string
+}
 
 export interface SecurityFlag {
   id: string

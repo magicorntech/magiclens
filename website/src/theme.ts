@@ -29,8 +29,8 @@ export const SCHEMES: SchemeDef[] = [
   { id: 'forest', name: 'Forest', chip: '#4ade80', primaryLight: '#15803d', primaryDark: '#4ade80', layoutLight: '#f4fbf6', layoutDark: '#050d08', siderLight: '#14532d', siderDark: '#03120a' },
   { id: 'sunset', name: 'Sunset', chip: '#fb923c', primaryLight: '#ea580c', primaryDark: '#fb923c', layoutLight: '#fffaf5', layoutDark: '#0e0704', siderLight: '#7c2d12', siderDark: '#160804' },
   { id: 'slate', name: 'Slate', chip: '#94a3b8', primaryLight: '#334155', primaryDark: '#94a3b8', layoutLight: '#f8fafc', layoutDark: '#080b10', siderLight: '#1e293b', siderDark: '#080c12' },
-  { id: 'black', name: 'Black', chip: '#111111', primaryLight: '#e84d5c', primaryDark: '#FF5F6D', layoutLight: '#ececee', layoutDark: '#050505', siderLight: '#0a0a0a', siderDark: '#000000' },
-  { id: 'white', name: 'White', chip: '#ffffff', primaryLight: '#171717', primaryDark: '#f5f5f5', layoutLight: '#f5f5f7', layoutDark: '#000000', siderLight: '#111111', siderDark: '#000000' },
+  { id: 'black', name: 'Black', chip: '#000000', primaryLight: '#0a0a0a', primaryDark: '#ffffff', layoutLight: '#fafafa', layoutDark: '#000000', siderLight: '#f0f0f2', siderDark: '#000000' },
+  { id: 'white', name: 'White', chip: '#ffffff', primaryLight: '#171717', primaryDark: '#e4e4e7', layoutLight: '#f5f5f7', layoutDark: '#121212', siderLight: '#ebebed', siderDark: '#1c1c1e' },
   { id: 'nebula', name: 'Nebula', chip: '#e879f9', primaryLight: '#c026d3', primaryDark: '#e879f9', layoutLight: '#faf5ff', layoutDark: '#090510', siderLight: '#4c1d95', siderDark: '#0c0516' },
   { id: 'shadowflame', name: 'Shadow', chip: '#2dd4bf', primaryLight: '#7c3aed', primaryDark: '#2dd4bf', layoutLight: '#f6f5ff', layoutDark: '#07050e', siderLight: '#312e81', siderDark: '#080616' }
 ]

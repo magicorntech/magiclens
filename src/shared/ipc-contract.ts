@@ -241,6 +241,12 @@ export const IPC = {
   VISUALIZER_GET_GRAPH: 'visualizer:getGraph',
 
   SECURITY_SCAN: 'security:scan',
+  SECURITY_SCAN_PROGRESS: 'security:scanProgress',
+  SECURITY_HISTORY_LIST: 'security:historyList',
+  SECURITY_HISTORY_GET: 'security:historyGet',
+  SECURITY_HISTORY_DELETE: 'security:historyDelete',
+  SECURITY_HISTORY_CLEAR: 'security:historyClear',
+  SECURITY_HISTORY_RENAME: 'security:historyRename',
 
   AI_CHAT_COMPLETE: 'ai:chatComplete',
   AI_PROBE_PROVIDER: 'ai:probeProvider',
