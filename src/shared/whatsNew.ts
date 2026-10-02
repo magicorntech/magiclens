@@ -15,6 +15,14 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.29': {
+    title: 'Update check polish',
+    items: [
+      'Background update checks no longer throw “Object has been destroyed” when the main window is already closed.',
+      'Opening external links fails quietly instead of writing an unhandled rejection to the crash log.',
+      'If a new release tag exists but installers are still uploading, MagicLens stays quiet and only notifies once the update is actually ready.'
+    ]
+  },
   '0.1.28': {
     title: 'Sidebar, stability, and Settings',
     items: [

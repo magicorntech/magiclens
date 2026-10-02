@@ -13,6 +13,10 @@ const AUTO_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000 // 4 hours
 const REMIND_LATER_DELAY_MS = 60 * 60 * 1000 // 1 hour
 const RELEASES_BASE_URL = 'https://github.com/magicorntech/magiclens/releases'
 const RESUME_CHECK_DELAY_MS = 8_000
+/** Tag can exist before CI finishes uploading latest-*.yml + installers. */
+const ARTIFACTS_PENDING_RETRY_MS = 3 * 60 * 1000
+/** Cap quiet retries (~2h) so a permanently broken release does not poll forever. */
+const ARTIFACTS_PENDING_MAX_RETRIES = 40
 
 /*
  * macOS used to be forced down a manual-download path here.
@@ -31,9 +35,13 @@ let mainWindow: BrowserWindow | null = null
 let autoCheckTimer: ReturnType<typeof setInterval> | null = null
 let remindLaterTimer: ReturnType<typeof setTimeout> | null = null
 let resumeCheckTimer: ReturnType<typeof setTimeout> | null = null
+let artifactsPendingRetryTimer: ReturnType<typeof setTimeout> | null = null
+let artifactsPendingRetries = 0
 let initialized = false
 /** Tracks whether the current updater operation is a metadata check or an artifact download. */
 let inFlightKind: UpdateErrorKind | null = null
+/** `checkForUpdates({ manual })` — needed because the updater `error` event has no options bag. */
+let checkRequestedManual = false
 
 let state: UpdateState = {
   phase: 'idle',
@@ -56,7 +64,14 @@ function normalizeReleaseNotes(notes: string | { version: string; note?: string 
 }
 
 function broadcastState(): void {
-  mainWindow?.webContents.send(IPC.UPDATE_STATE_CHANGED, state)
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  const wc = mainWindow.webContents
+  if (!wc || wc.isDestroyed()) return
+  try {
+    wc.send(IPC.UPDATE_STATE_CHANGED, state)
+  } catch {
+    // Window can die between the isDestroyed checks and send (quit / reload).
+  }
 }
 
 function setState(patch: Partial<UpdateState>): void {
@@ -88,12 +103,71 @@ function describeUpdaterError(err: unknown): string {
 }
 
 /**
+ * Tag push creates the GitHub Release before CI finishes electron-builder publish.
+ * Until then electron-updater 404s on latest-mac.yml / latest.yml / latest-linux.yml —
+ * that is not a broken update, just "not ready yet".
+ */
+function isReleaseArtifactsPending(err: unknown): boolean {
+  const raw = err instanceof Error ? err.message : String(err)
+  if (/Cannot find latest(-(mac|linux))?\.yml/i.test(raw)) return true
+  if (/latest(-(mac|linux))?\.yml/i.test(raw) && /\b404\b|HttpError:\s*404|ENOTFOUND|not found/i.test(raw)) {
+    return true
+  }
+  return false
+}
+
+function scheduleArtifactsPendingRetry(): void {
+  if (artifactsPendingRetryTimer) return
+  if (artifactsPendingRetries >= ARTIFACTS_PENDING_MAX_RETRIES) {
+    console.warn('[update] Giving up quiet retries — release artifacts still missing.')
+    return
+  }
+  artifactsPendingRetries += 1
+  artifactsPendingRetryTimer = setTimeout(() => {
+    artifactsPendingRetryTimer = null
+    // Quiet background probe — never surfaces UI until update-available fires with real metadata.
+    void checkForUpdates({ manual: false })
+  }, ARTIFACTS_PENDING_RETRY_MS)
+}
+
+function clearArtifactsPendingRetries(): void {
+  artifactsPendingRetries = 0
+  if (artifactsPendingRetryTimer) {
+    clearTimeout(artifactsPendingRetryTimer)
+    artifactsPendingRetryTimer = null
+  }
+}
+
+/**
  * Check failures (no update package involved) must never surface as "update install failed".
  * Auto-checks go silent; a manual check still records a soft `errorKind: 'check'` for Settings.
+ * Missing release YAMLs (CI still uploading): show nothing and quiet-retry until ready.
  */
 function handleUpdaterFailure(err: unknown, kind: UpdateErrorKind, options?: { manual?: boolean }): void {
-  console.error(`[update] ${kind} failed:`, err)
+  const pending = isReleaseArtifactsPending(err)
+  if (pending) {
+    console.warn(`[update] ${kind} — release artifacts not ready yet (silent, will retry):`, err)
+  } else {
+    console.error(`[update] ${kind} failed:`, err)
+  }
   inFlightKind = null
+
+  if (pending) {
+    scheduleArtifactsPendingRetry()
+    // Show nothing until installers exist. Keep an already-confirmed download in flight;
+    // otherwise clear checking/error so the UI stays quiet.
+    if (state.phase === 'downloading' || state.phase === 'downloaded') {
+      setState({ error: null, errorKind: null })
+      return
+    }
+    setState({
+      phase: 'idle',
+      error: null,
+      errorKind: null,
+      progress: null
+    })
+    return
+  }
 
   if (kind === 'check') {
     const soft = describeUpdaterError(err)
@@ -145,11 +219,18 @@ function handleUpdaterFailure(err: unknown, kind: UpdateErrorKind, options?: { m
 function registerUpdaterEvents(): void {
   autoUpdater.on('checking-for-update', () => {
     inFlightKind = 'check'
-    setState({ phase: 'checking', error: null, errorKind: null })
+    // Background / quiet artifact retries must not flash "Checking…" in Settings.
+    if (checkRequestedManual) {
+      setState({ phase: 'checking', error: null, errorKind: null })
+    } else {
+      setState({ error: null, errorKind: null })
+    }
   })
 
   autoUpdater.on('update-available', (info) => {
     inFlightKind = null
+    checkRequestedManual = false
+    clearArtifactsPendingRetries()
     const skipped = getSkippedVersion()
     setState({
       phase: 'available',
@@ -172,6 +253,8 @@ function registerUpdaterEvents(): void {
 
   autoUpdater.on('update-not-available', () => {
     inFlightKind = null
+    checkRequestedManual = false
+    clearArtifactsPendingRetries()
     setState({
       phase: 'not-available',
       latestVersion: null,
@@ -189,10 +272,12 @@ function registerUpdaterEvents(): void {
       inFlightKind === 'download' || state.phase === 'downloading'
         ? 'download'
         : 'check'
-    // Transient network blips during a background check are especially common after sleep —
-    // never escalate those to an install-error banner.
-    if (kind === 'check') {
-      handleUpdaterFailure(err, 'check')
+    const manual = checkRequestedManual
+    checkRequestedManual = false
+    // Transient network blips / still-publishing releases during a check must never look like
+    // "update install failed".
+    if (kind === 'check' || isReleaseArtifactsPending(err)) {
+      handleUpdaterFailure(err, 'check', { manual })
       return
     }
     handleUpdaterFailure(err, kind)
@@ -257,6 +342,9 @@ export function onSystemResumeForUpdates(): void {
 
 export function initAutoUpdater(window: BrowserWindow): void {
   mainWindow = window
+  window.on('closed', () => {
+    if (mainWindow === window) mainWindow = null
+  })
   if (initialized) return
   initialized = true
 
@@ -314,11 +402,14 @@ export async function checkForUpdates(options?: { manual?: boolean }): Promise<v
   }
 
   try {
+    checkRequestedManual = manual
     inFlightKind = 'check'
     applySettingsToUpdater(getUpdateSettings())
     await autoUpdater.checkForUpdates()
   } catch (err) {
-    handleUpdaterFailure(err, 'check', { manual })
+    const wasManual = checkRequestedManual
+    checkRequestedManual = false
+    handleUpdaterFailure(err, 'check', { manual: wasManual })
   }
 }
 

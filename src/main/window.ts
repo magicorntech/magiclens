@@ -46,7 +46,9 @@ export function createMainWindow(): BrowserWindow {
   })
 
   window.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    void shell.openExternal(details.url).catch((err) => {
+      console.warn('[window] openExternal failed:', details.url, err)
+    })
     return { action: 'deny' }
   })
 
