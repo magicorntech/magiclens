@@ -87,14 +87,16 @@ export async function switchWorkspace(
   await reconnectOpenedTabs()
 }
 
-/** Reconnect opened tabs in the background — never block login/boot on cluster timeouts. */
-export async function reconnectOpenedTabs(): Promise<void> {
+/** Reconnect opened tabs in the background — never block login/boot on cluster timeouts.
+ * Pass `{ force: true }` after sleep/wake so sockets that look "connected" are rebuilt. */
+export async function reconnectOpenedTabs(options?: { force?: boolean }): Promise<void> {
+  const force = options?.force === true
   const { clusters, openedTabs, activeClusterId } = useClusterStore.getState()
 
   // Active cluster: VPN first, then API (only one VPN can be up at a time).
   if (activeClusterId) {
     const active = clusters.find((c) => c.id === activeClusterId)
-    await ensureClusterAccess(activeClusterId, active?.customName)
+    await ensureClusterAccess(activeClusterId, active?.customName, { force })
   }
 
   // Other opened tabs: only auto-connect if they don't require a different VPN.
@@ -103,21 +105,33 @@ export async function reconnectOpenedTabs(): Promise<void> {
     .map((id) => clusters.find((c) => c.id === id))
     .filter((entry): entry is NonNullable<typeof entry> => !!entry)
     .filter((entry) => !useClusterVpnStore.getState().getLink(entry.id))
+    .filter((entry) => force || entry.status !== 'connected')
     .map((entry) =>
       Promise.race([
-        connectCluster(entry.id, entry.source, entry.contextName),
+        (async () => {
+          if (force && (entry.status === 'connected' || entry.status === 'connecting' || entry.status === 'error')) {
+            await disconnectCluster(entry.id)
+          }
+          await connectCluster(entry.id, entry.source, entry.contextName)
+        })(),
         new Promise<void>((resolve) => {
           setTimeout(() => {
             const current = useClusterStore.getState().clusters.find((c) => c.id === entry.id)
             if (current?.status === 'connecting') {
-              useClusterStore.getState().setClusterStatus(
-                entry.id,
-                'error',
-                'Connection timed out — connect VPN first if this is a private cluster'
-              )
+              // After sleep, a soft timeout is better than a sticky error — leave as
+              // connecting so the next resume/online pass can finish the job.
+              if (force) {
+                useClusterStore.getState().setClusterStatus(entry.id, 'disconnected')
+              } else {
+                useClusterStore.getState().setClusterStatus(
+                  entry.id,
+                  'error',
+                  'Connection timed out — connect VPN first if this is a private cluster'
+                )
+              }
             }
             resolve()
-          }, 12_000)
+          }, force ? 20_000 : 12_000)
         })
       ]).catch(() => undefined)
     )

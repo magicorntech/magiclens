@@ -10,13 +10,13 @@ import { createAppWebPreferences } from './chromiumPerf'
 import { getDisplaySettings } from './persistence/appSettings'
 
 /**
- * macOS menu-bar widget: a Tray icon whose click toggles a small frameless popup window
- * showing live metrics for up to 3 chosen clusters.
+ * Tray metrics popup: a Tray icon whose click toggles a small frameless window showing live
+ * metrics for chosen clusters.
  *
  * This is deliberately NOT a WidgetKit widget — those are native Swift App Extensions that
  * need full Xcode plus a signed Apple Developer Team ID with an App Group entitlement, none
  * of which an Electron renderer can produce. A Tray popup is the closest equivalent that
- * ships with the app itself.
+ * ships with the app itself (menu bar on macOS, notification area on Windows/Linux).
  */
 
 /** Stands in for the icon in the menu bar when it can't be loaded — see trayIconMissing. */
@@ -172,26 +172,104 @@ function createPopup(): BrowserWindow {
 }
 
 /**
- * Centers the popup under the tray icon and, since a tall metric set can outgrow the screen,
- * trims the height to what actually fits below the menu bar before positioning.
+ * Anchors the popup next to the tray icon, on the work-area side of the taskbar/menu bar.
+ *
+ * macOS trays sit above the work area → open below the icon.
+ * Windows/Linux trays usually sit on a bottom (or side) taskbar outside the work area →
+ * open above/beside so the panel is not buried under the taskbar.
  */
 function positionPopup(win: BrowserWindow): void {
   if (!tray) return
-  const trayBounds = tray.getBounds()
+
+  const raw = tray.getBounds()
+  // Windows can report empty bounds until the icon is painted; fall back to the cursor.
+  const hasTrayBounds = raw.width > 0 && raw.height > 0
+  const trayBounds = hasTrayBounds
+    ? raw
+    : (() => {
+        const p = screen.getCursorScreenPoint()
+        return { x: p.x - 8, y: p.y - 8, width: 16, height: 16 }
+      })()
+
   const display = screen.getDisplayNearestPoint({
     x: Math.round(trayBounds.x + trayBounds.width / 2),
     y: Math.round(trayBounds.y + trayBounds.height / 2)
   })
   const work = display.workArea
-  const y = Math.max(Math.round(trayBounds.y + trayBounds.height + 6), work.y + 4)
+  const gap = 6
+  const margin = 8
 
-  const bounds = win.getBounds()
-  const available = work.y + work.height - y - 8
-  const height = Math.max(POPUP_MIN_HEIGHT, Math.min(bounds.height, available))
-  if (height !== bounds.height) win.setBounds({ ...bounds, height })
-
+  let bounds = win.getBounds()
   let x = Math.round(trayBounds.x + trayBounds.width / 2 - bounds.width / 2)
-  x = Math.min(Math.max(x, work.x + 8), work.x + work.width - bounds.width - 8)
+  let y: number
+
+  const trayBottom = trayBounds.y + trayBounds.height
+  const trayRight = trayBounds.x + trayBounds.width
+  const workBottom = work.y + work.height
+  const workRight = work.x + work.width
+
+  // Tray is outside (or flush with) the work area → open toward the work area.
+  const belowWork = trayBounds.y >= workBottom - 2
+  const aboveWork = trayBottom <= work.y + 2
+  const rightOfWork = trayBounds.x >= workRight - 2
+  const leftOfWork = trayRight <= work.x + 2
+
+  if (belowWork) {
+    // Bottom taskbar (typical Windows): grow upward from the icon.
+    const available = Math.max(POPUP_MIN_HEIGHT, trayBounds.y - work.y - gap - margin)
+    const height = Math.max(POPUP_MIN_HEIGHT, Math.min(bounds.height, available, POPUP_MAX_HEIGHT))
+    if (height !== bounds.height) {
+      win.setBounds({ ...bounds, height })
+      bounds = win.getBounds()
+    }
+    y = Math.round(trayBounds.y - gap - bounds.height)
+  } else if (aboveWork) {
+    // Menu bar / top taskbar: open below the icon (macOS).
+    y = Math.round(trayBottom + gap)
+    const available = Math.max(POPUP_MIN_HEIGHT, workBottom - y - margin)
+    const height = Math.max(POPUP_MIN_HEIGHT, Math.min(bounds.height, available, POPUP_MAX_HEIGHT))
+    if (height !== bounds.height) {
+      win.setBounds({ ...bounds, height })
+      bounds = win.getBounds()
+    }
+  } else if (rightOfWork || leftOfWork) {
+    // Vertical taskbar: keep vertically centered on the icon, nudge into the work area.
+    y = Math.round(trayBounds.y + trayBounds.height / 2 - bounds.height / 2)
+    const available = Math.max(POPUP_MIN_HEIGHT, work.height - margin * 2)
+    const height = Math.max(POPUP_MIN_HEIGHT, Math.min(bounds.height, available, POPUP_MAX_HEIGHT))
+    if (height !== bounds.height) {
+      win.setBounds({ ...bounds, height })
+      bounds = win.getBounds()
+    }
+    y = Math.round(trayBounds.y + trayBounds.height / 2 - bounds.height / 2)
+    x = rightOfWork
+      ? Math.round(trayBounds.x - gap - bounds.width)
+      : Math.round(trayRight + gap)
+  } else {
+    // Tray inside the work area — prefer below, flip above if there is more room.
+    const belowY = Math.round(trayBottom + gap)
+    const spaceBelow = workBottom - belowY - margin
+    const spaceAbove = trayBounds.y - work.y - gap - margin
+    if (spaceBelow >= Math.min(bounds.height, POPUP_MIN_HEIGHT) || spaceBelow >= spaceAbove) {
+      y = belowY
+      const height = Math.max(POPUP_MIN_HEIGHT, Math.min(bounds.height, spaceBelow, POPUP_MAX_HEIGHT))
+      if (height !== bounds.height) {
+        win.setBounds({ ...bounds, height })
+        bounds = win.getBounds()
+      }
+    } else {
+      const height = Math.max(POPUP_MIN_HEIGHT, Math.min(bounds.height, spaceAbove, POPUP_MAX_HEIGHT))
+      if (height !== bounds.height) {
+        win.setBounds({ ...bounds, height })
+        bounds = win.getBounds()
+      }
+      y = Math.round(trayBounds.y - gap - bounds.height)
+    }
+  }
+
+  bounds = win.getBounds()
+  x = Math.min(Math.max(x, work.x + margin), work.x + work.width - bounds.width - margin)
+  y = Math.min(Math.max(y, work.y + 4), work.y + work.height - bounds.height - 4)
 
   win.setPosition(x, y, false)
 }
@@ -206,6 +284,11 @@ function showPopup(): void {
   const size = popupSizeFor(getDisplaySettings().menuBarWidget)
   popup!.setBounds({ ...popup!.getBounds(), width: size.width, height: size.height })
   positionPopup(popup!)
+  // Windows: raise above other windows after positioning so the panel isn't trapped under
+  // the taskbar / shell chrome when the tray sits on a bottom bar.
+  if (process.platform === 'win32') {
+    popup!.setAlwaysOnTop(true, 'pop-up-menu')
+  }
   popup!.show()
   popup!.focus()
   // The popup is reused across opens and its timers are throttled while hidden, so whatever
@@ -343,7 +426,7 @@ export function hideMenuBarWidgetPopup(): void {
  * active UI font and the locale all shift row heights slightly, and being a few px short
  * means the last card sits behind a scrollbar. So the renderer measures its own overflow and
  * asks for exactly that many extra px; this grows the popup (never past the screen) and
- * re-anchors it under the tray icon.
+ * re-anchors it beside the tray icon.
  */
 export function growMenuBarWidgetPopup(overflowPx: number): void {
   if (!popup || popup.isDestroyed() || !popup.isVisible()) return

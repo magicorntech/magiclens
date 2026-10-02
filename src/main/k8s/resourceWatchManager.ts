@@ -19,9 +19,10 @@ import { listDynamicResourcesRaw, toDynamicItem } from './dynamicResourceService
 
 type WatchItem = ResourceListItem | DynamicResourceItem
 
-const FLUSH_INTERVAL_MS = 30
+const FLUSH_INTERVAL_MS = 200
 const MAX_RETRIES = 5
-const MAX_PENDING_OPS = 2_000
+const MAX_PENDING_OPS = 4_000
+const MAX_FLUSH_BATCH = 800
 const NO_RETRY_STATUS_CODES = new Set([401, 403, 404])
 
 function backoffDelay(retryCount: number): number {
@@ -224,6 +225,11 @@ class ResourceWatchManager {
     }
   }
 
+  /** Active informer sessions — used by local diagnostics reports. */
+  sessionCount(): number {
+    return this.sessions.size
+  }
+
   private scheduleFlush(sessionId: string): void {
     const session = this.sessions.get(sessionId)
     if (!session || session.flushTimer) return
@@ -238,8 +244,20 @@ class ResourceWatchManager {
       session.flushTimer = null
     }
     if (session.pending.size === 0) return
-    const changes = [...session.pending.values()]
+
+    // Cap IPC payload size so a busy cluster can't structured-clone thousands of
+    // items onto the main + renderer threads in one tick (M1/M2 freeze pattern).
+    const all = [...session.pending.values()]
     session.pending.clear()
+    const changes = all.length > MAX_FLUSH_BATCH ? all.slice(0, MAX_FLUSH_BATCH) : all
+    if (all.length > MAX_FLUSH_BATCH) {
+      for (const op of all.slice(MAX_FLUSH_BATCH)) {
+        const id = op.op === 'upsert' ? op.item.id : op.id
+        session.pending.set(id, op)
+      }
+      this.scheduleFlush(sessionId)
+    }
+
     if (!session.sender.isDestroyed()) {
       session.sender.send(IPC.RESOURCE_WATCH_EVENT, { sessionId, changes })
     }

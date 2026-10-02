@@ -127,6 +127,14 @@ export const fr: TranslationOverrides = {
       showWorkspaces: 'Afficher la section Workspaces',
       showWorkspacesHint:
         'Lorsqu’elle est activée, Workspaces apparaît dans la barre latérale. En mode réduit, un W marque les clusters de workspace.',
+      workspaceOrderTitle: 'Ordre des workspaces',
+      workspaceOrderHint: 'Faites glisser pour réordonner les workspaces dans la barre latérale.',
+      workspaceOrderChooser: 'Faites glisser les workspaces pour changer leur ordre.',
+      workspaceOrderEmpty: 'Aucun workspace — créez-en un d’abord dans la barre latérale.',
+      workspaceOrderClusters: '{{count}} clusters',
+      showSidebarLogos: 'Afficher les logos dans la barre latérale',
+      showSidebarLogosHint:
+        'Activé : les lignes workspace/cluster utilisent leurs logos. Désactivé : icônes dossier et statut (style Cursor).',
       tabIconsTitle: 'Icônes des onglets',
       showClusterLogos: 'Afficher les logos sur les onglets cluster',
       showResourceIcons: 'Afficher les icônes sur les onglets ressource',
@@ -138,6 +146,12 @@ export const fr: TranslationOverrides = {
       chromeToolbarChooser:
         'Glissez pour réordonner. Activez la visibilité. Paramètres reste verrouillé.',
       chromeToolbarFixed: 'Fixe',
+      resourceNavOrderTitle: 'Ordre du menu des ressources',
+      resourceNavOrderHint:
+        'Faites glisser pour réordonner la barre latérale des ressources. Les favoris restent en haut s’il y en a.',
+      resourceNavOrderChooser: 'Faites glisser les éléments pour définir l’ordre du menu des ressources.',
+      resourceNavOrderFixed: 'Toujours en premier',
+      resourceNavOrderReset: 'Réinitialiser l’ordre par défaut',
       detailMaskBlur: 'Arrière-plan flou derrière les détails',
       detailMaskBlurHint:
         'Lorsqu’un tiroir de détails de ressources est ouvert, brouillez la liste derrière celui-ci. Désactivé par défaut pour que le tableau reste net.',
@@ -158,6 +172,26 @@ export const fr: TranslationOverrides = {
       fullscreen: 'Plein écran',
       split: 'Diviser les clusters',
       settings: 'Paramètres'
+    },
+    resourceNavOrder: {
+      favorites: 'Favoris',
+      nodes: 'Nodes',
+      topology: 'Topology',
+      visualizer: 'Visualizer',
+      security: 'Security',
+      workloads: 'Workloads',
+      config: 'Config',
+      network: 'Network',
+      storage: 'Storage',
+      namespaces: 'Namespaces',
+      events: 'Events',
+      timeline: 'Timeline',
+      helm: 'Helm',
+      grafana: 'Grafana',
+      prometheus: 'Prometheus',
+      argocd: 'Argo CD',
+      'access-control': 'Access Control',
+      'custom-resources': 'Custom Resources'
     },
     nodesSections: {
       health: 'Santé du cluster',
@@ -359,7 +393,16 @@ export const fr: TranslationOverrides = {
       resumeRefresh: 'Reprendre l\'actualisation',
       clearCache: 'Vider le cache du moteur de rendu',
       cacheCleared: 'Cache du moteur de rendu vidé',
-      openDevTools: 'Ouvrir les outils de développement'
+      openDevTools: 'Ouvrir les outils de développement',
+      diagnosticsTitle: 'Diagnostics locaux',
+      diagnosticsHint:
+        'En cas de gel ou de crash renderer/GPU, MagicLens écrit un JSON de diagnostic dans le dossier logs (et des dumps Crashpad). Rien n’est envoyé — partagez les fichiers manuellement.',
+      saveDiagnostics: 'Enregistrer un rapport de diagnostic',
+      diagnosticsSaved: 'Diagnostic enregistré',
+      openLogsFolder: 'Ouvrir le dossier logs',
+      openCrashDumpsFolder: 'Ouvrir le dossier crash dumps',
+      diagnosticsShareHint:
+        'Joignez le plus récent diagnostics-*.json (et les .dmp récents) pour signaler un gel.'
     }
   },
   vpn: {

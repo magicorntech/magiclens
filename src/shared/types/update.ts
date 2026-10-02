@@ -1,5 +1,8 @@
 export type UpdatePhase = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
 
+/** Where an update failure came from — check failures must never look like "an update failed to install". */
+export type UpdateErrorKind = 'check' | 'download'
+
 export interface UpdateProgress {
   percent: number
   bytesPerSecond: number
@@ -15,6 +18,9 @@ export interface UpdateState {
   releaseDate: string | null
   progress: UpdateProgress | null
   error: string | null
+  /** Present only when `phase === 'error'`. Check failures stay soft (settings only); download
+   * failures may show the install banner. */
+  errorKind: UpdateErrorKind | null
   skippedVersion: string | null
   /** True once the user dismisses the floating banner with "Remind me later" for the current
    * latestVersion; automatically cleared after a delay so the banner reappears. */

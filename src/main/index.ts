@@ -1,6 +1,6 @@
 import { isDemoMode } from './demoUserData'
 import { join } from 'node:path'
-import { app, BrowserWindow, crashReporter } from 'electron'
+import { app, BrowserWindow, crashReporter, powerMonitor } from 'electron'
 import { applyChromiumPerformanceFlags } from './chromiumPerf'
 import { registerIpcHandlers } from './ipc/register'
 import { scheduleDemoScreenshots } from './demoScreenshots'
@@ -8,7 +8,9 @@ import { seedDemoWorkspace } from './k8s/demoMode'
 import { installSparksMediaProtocol, registerSparksMediaScheme } from './notes/mediaProtocol'
 import { startNotesReminderScheduler } from './notes/reminderScheduler'
 import { installApplicationMenu, installReloadConfirm } from './reloadConfirm'
-import { initAutoUpdater } from './update/autoUpdateService'
+import { initAutoUpdater, onSystemResumeForUpdates } from './update/autoUpdateService'
+import { installPowerResumeNotifier } from './powerResume'
+import { installAppProcessDiagnostics } from './diagnostics/installHangCrashDiagnostics'
 import { installCrashLogging } from './util/crashLog'
 import { fixShellPath } from './util/fixShellPath'
 import { createMainWindow } from './window'
@@ -49,6 +51,13 @@ app.whenReady().then(() => {
   scheduleDemoScreenshots(window)
   installReloadConfirm(window)
   if (!isDemoMode()) initAutoUpdater(window)
+  installPowerResumeNotifier(() => BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null)
+  installAppProcessDiagnostics(
+    () => BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0] ?? null
+  )
+  powerMonitor.on('resume', () => {
+    if (!isDemoMode()) onSystemResumeForUpdates()
+  })
   startNotesReminderScheduler()
   syncMenuBarWidget()
 
@@ -59,7 +68,6 @@ app.whenReady().then(() => {
     }
   })
 })
-
 /**
  * VPN teardown can shell out to `osascript ... with administrator privileges` for elevated
  * tunnel cleanup. If that prompt is left unanswered (or the user just wants to quit *now*), the

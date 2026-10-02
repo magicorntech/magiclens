@@ -6,6 +6,7 @@ import { useResourceEvents } from '../../queries/useResourceEvents'
 import { readPaginationChange, embeddedTablePagination, EMBEDDED_TABLE_PAGE_SIZE, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from './AgeCell'
+import { compareAgeTimestamps } from '../../utils/tableSort'
 
 interface ResourceEventsPanelProps {
   clusterId: string
@@ -32,6 +33,7 @@ const columns: ColumnsType<ResourceEventItem> = [
     dataIndex: 'lastTimestamp',
     key: 'lastTimestamp',
     width: 110,
+    sorter: (a, b) => compareAgeTimestamps(a.lastTimestamp, b.lastTimestamp),
     render: (v: string | null) => <AgeCell timestamp={v} />
   },
   { title: 'Source', dataIndex: 'source', key: 'source', width: 140, ellipsis: true }

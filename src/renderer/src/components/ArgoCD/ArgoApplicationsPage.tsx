@@ -13,6 +13,7 @@ import { readPaginationChange, useTablePagination } from '../../utils/tablePagin
 import { ResizableTable } from '../../utils/ResizableTable'
 import { ResourceTableToolbar } from '../ResourceTable/ResourceTableToolbar'
 import { AgeCell } from '../ResourceTable/AgeCell'
+import { compareAgeTimestamps } from '../../utils/tableSort'
 import { Icon } from '../ui/Icon'
 import { ArgoHealthTag, ArgoSyncTag } from './argoStatus'
 import { ArgoNotInstalled } from './ArgoNotInstalled'
@@ -143,6 +144,11 @@ export function ArgoApplicationsPage({ clusterId }: ArgoApplicationsPageProps): 
       title: 'Age',
       key: 'age',
       width: 90,
+      sorter: (a, b) => {
+        const byAge = compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp)
+        if (byAge !== 0) return byAge
+        return a.name.localeCompare(b.name)
+      },
       render: (_v, r) => <AgeCell timestamp={r.ageTimestamp} />
     },
     {

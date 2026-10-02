@@ -176,6 +176,72 @@ export const resourceNavLayout: NavLayoutItem[] = [
 
 export const favoritesSectionIcon = Star
 
+export function navLayoutItemId(
+  item: Exclude<NavLayoutItem, 'favorites'>
+): import('@shared/types/resourceNavOrder').ResourceNavItemId {
+  if (item.type === 'standalone') {
+    if (item.kind === 'Nodes') return 'nodes'
+    if (item.kind === 'Namespaces') return 'namespaces'
+    if (item.kind === 'Events') return 'events'
+    throw new Error(`Unhandled standalone nav kind: ${item.kind}`)
+  }
+  if (item.type === 'standalone-virtual') {
+    switch (item.key) {
+      case 'topology':
+        return 'topology'
+      case 'visualizer':
+        return 'visualizer'
+      case 'security':
+        return 'security'
+      case 'eventTimeline':
+        return 'timeline'
+      case 'helmCharts':
+        return 'helm'
+      case 'appGrafana':
+        return 'grafana'
+      case 'appPrometheus':
+        return 'prometheus'
+      default:
+        throw new Error(`Unhandled standalone-virtual nav key: ${item.key}`)
+    }
+  }
+  switch (item.id) {
+    case 'workloads':
+    case 'config':
+    case 'network':
+    case 'storage':
+    case 'argocd':
+    case 'access-control':
+    case 'custom-resources':
+      return item.id
+    default:
+      throw new Error(`Unhandled section nav id: ${item.id}`)
+  }
+}
+
+/** Reorder the default layout by saved ids. Favorites (if present) always stays first. */
+export function orderResourceNavLayout(
+  layout: NavLayoutItem[],
+  order: import('@shared/types/resourceNavOrder').ResourceNavItemId[]
+): NavLayoutItem[] {
+  const favorites = layout.filter((item) => item === 'favorites')
+  const rest = layout.filter((item): item is Exclude<NavLayoutItem, 'favorites'> => item !== 'favorites')
+  const byId = new Map(rest.map((item) => [navLayoutItemId(item), item] as const))
+  const ordered: NavLayoutItem[] = []
+  const used = new Set<string>()
+  for (const id of order) {
+    const item = byId.get(id)
+    if (!item || used.has(id)) continue
+    ordered.push(item)
+    used.add(id)
+  }
+  for (const item of rest) {
+    const id = navLayoutItemId(item)
+    if (!used.has(id)) ordered.push(item)
+  }
+  return [...favorites, ...ordered]
+}
+
 export function navEntryKey(entry: NavEntry): string {
   return entry.type === 'kind' ? entry.kind : entry.key
 }

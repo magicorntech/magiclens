@@ -57,6 +57,8 @@ import { applyDedupeResult } from '../../clusterDedupe'
 import { NodesDashboardSettings } from '../Nodes/NodesDashboardSettings'
 import { MenuBarWidgetSettings } from './MenuBarWidgetSettings'
 import { ChromeToolbarSettings } from './ChromeToolbarSettings'
+import { ResourceNavOrderSettings } from './ResourceNavOrderSettings'
+import { WorkspaceOrderSettings } from './WorkspaceOrderSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { VpnExtensionsSettings } from './VpnExtensionsSettings'
 import { PortForwardingSettings } from './PortForwardingSettings'
@@ -280,9 +282,17 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const layoutMode = useLayoutMode()
   const isMobileSettings = layoutMode === 'mobile'
   const modalWidth =
-    layoutMode === 'mobile' ? 'calc(100vw - 12px)' : layoutMode === 'compact' ? 860 : 1100
+    layoutMode === 'mobile'
+      ? 'calc(100vw - 12px)'
+      : layoutMode === 'compact'
+        ? 'min(1040px, calc(100vw - 32px))'
+        : 'min(1320px, calc(100vw - 48px))'
   const modalHeight =
-    layoutMode === 'mobile' ? 'calc(100vh - 24px)' : layoutMode === 'compact' ? 620 : 680
+    layoutMode === 'mobile'
+      ? 'calc(100vh - 24px)'
+      : layoutMode === 'compact'
+        ? 'min(760px, calc(100vh - 48px))'
+        : 'min(860px, calc(100vh - 56px))'
   const section = useSettingsUiStore((s) => s.section)
   const setSection = useSettingsUiStore((s) => s.setSection)
   const interval = useLiveRefreshStore((s) => s.interval)
@@ -301,6 +311,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const showResourceTabIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
   const showFavoritesSection = useDisplaySettingsStore((s) => s.showFavoritesSection)
   const showWorkspacesSection = useDisplaySettingsStore((s) => s.showWorkspacesSection)
+  const showSidebarLogos = useDisplaySettingsStore((s) => s.showSidebarLogos)
   const showClusterNamespace = useDisplaySettingsStore((s) => s.showClusterNamespace)
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
   const resourceDetailMaskBlur = useDisplaySettingsStore((s) => s.resourceDetailMaskBlur)
@@ -313,6 +324,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const setShowResourceTabIcons = useDisplaySettingsStore((s) => s.setShowResourceTabIcons)
   const setShowFavoritesSection = useDisplaySettingsStore((s) => s.setShowFavoritesSection)
   const setShowWorkspacesSection = useDisplaySettingsStore((s) => s.setShowWorkspacesSection)
+  const setShowSidebarLogos = useDisplaySettingsStore((s) => s.setShowSidebarLogos)
   const workspaceDockMagnification = useDisplaySettingsStore((s) => s.workspaceDockMagnification)
   const setWorkspaceDockMagnification = useDisplaySettingsStore((s) => s.setWorkspaceDockMagnification)
   const setShowClusterNamespace = useDisplaySettingsStore((s) => s.setShowClusterNamespace)
@@ -537,9 +549,15 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                   <Space size={6}>
                     <Tag
                       icon={isUpdateSpinning ? <Icon icon={RefreshCw} variant="micro" className="ml-icon-spin" /> : undefined}
-                      color={UPDATE_PHASE_COLOR[updatePhase]}
+                      color={
+                        updatePhase === 'error' && updateState?.errorKind !== 'download'
+                          ? 'orange'
+                          : UPDATE_PHASE_COLOR[updatePhase]
+                      }
                     >
-                      {UPDATE_PHASE_LABEL[updatePhase]}
+                      {updatePhase === 'error' && updateState?.errorKind === 'download'
+                        ? 'Download failed'
+                        : UPDATE_PHASE_LABEL[updatePhase]}
                     </Tag>
                     {isUpdateSkipped && <Tag>Skipped by you</Tag>}
                   </Space>
@@ -551,7 +569,16 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
               )}
 
               {updatePhase === 'error' && updateState?.error && (
-                <Alert type="error" showIcon message="Update error" description={updateState.error} />
+                <Alert
+                  type={updateState.errorKind === 'download' ? 'error' : 'warning'}
+                  showIcon
+                  message={
+                    updateState.errorKind === 'download'
+                      ? 'Update error'
+                      : 'Could not check for updates'
+                  }
+                  description={updateState.error}
+                />
               )}
 
               {updatePhase === 'downloaded' && (
@@ -750,6 +777,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 onChange={(checked) => void setShowWorkspacesSection(checked)}
               />
               <SettingsToggleRow
+                title={t('settings.display.showSidebarLogos')}
+                description={t('settings.display.showSidebarLogosHint')}
+                checked={showSidebarLogos}
+                onChange={(checked) => void setShowSidebarLogos(checked)}
+              />
+              <SettingsToggleRow
                 title={t('settings.display.workspaceDockMagnification')}
                 description={t('settings.display.workspaceDockMagnificationHint')}
                 checked={workspaceDockMagnification}
@@ -761,6 +794,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 checked={showClusterNamespace}
                 onChange={(checked) => void setShowClusterNamespace(checked)}
               />
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.display.workspaceOrderTitle')}
+              description={t('settings.display.workspaceOrderHint')}
+            >
+              <WorkspaceOrderSettings />
             </SettingsSection>
 
             <SettingsSection
@@ -784,6 +824,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
               description={t('settings.display.chromeToolbarHint')}
             >
               <ChromeToolbarSettings />
+            </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.display.resourceNavOrderTitle')}
+              description={t('settings.display.resourceNavOrderHint')}
+            >
+              <ResourceNavOrderSettings />
             </SettingsSection>
 
             <SettingsSection

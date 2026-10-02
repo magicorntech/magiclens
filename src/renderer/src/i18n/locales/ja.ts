@@ -117,6 +117,14 @@ export const ja: TranslationOverrides = {
       showFavoritesHint: '有効にすると、左サイドバーの Workspaces の上にお気に入りが表示されます。見出しをクリックして折りたたみ／展開できます。',
       showWorkspaces: 'Workspaces セクションを表示',
       showWorkspacesHint: '有効にすると左サイドバーに Workspaces が表示されます。折りたたみ時は W マーカーがワークスペースのクラスター上に出ます。',
+      workspaceOrderTitle: 'ワークスペースの順序',
+      workspaceOrderHint: 'ドラッグして左サイドバーのワークスペースを並べ替えます。',
+      workspaceOrderChooser: 'ドラッグしてサイドバー内の順序を変更します。',
+      workspaceOrderEmpty: 'ワークスペースがありません — 先にサイドバーで作成してください。',
+      workspaceOrderClusters: '{{count}} クラスター',
+      showSidebarLogos: 'サイドバーにロゴを表示',
+      showSidebarLogosHint:
+        'オンにするとワークスペースとクラスター行にロゴが表示されます。オフではフォルダとステータスアイコンになります。',
       tabIconsTitle: 'タブのアイコン',
       showClusterLogos: 'クラスタータブにロゴを表示',
       showResourceIcons: 'リソースタブにアイコンを表示',
@@ -126,6 +134,12 @@ export const ja: TranslationOverrides = {
         '上部バーのアイコンの表示／非表示と並べ替え。設定は右側に固定され、移動や非表示にはできません。',
       chromeToolbarChooser: 'ドラッグで並べ替え、表示を切り替え。設定はロックされています。',
       chromeToolbarFixed: '固定',
+      resourceNavOrderTitle: 'リソースメニューの順序',
+      resourceNavOrderHint:
+        'ドラッグしてクラスタのリソースサイドバーを並べ替えます。お気に入りがある場合は常に先頭に固定されます。',
+      resourceNavOrderChooser: 'ドラッグしてリソースメニューの順序を設定します。',
+      resourceNavOrderFixed: '常に先頭',
+      resourceNavOrderReset: 'デフォルトの順序に戻す',
       detailMaskBlur: '細部の背後にある背景をぼかす',
       detailMaskBlurHint: 'リソース詳細ドロワーが開いているときは、その背後にあるリストをぼかします。デフォルトではオフになっているため、テーブルは鮮明なままになります。',
       panelTitle: 'ターミナルと YAML パネル',
@@ -143,6 +157,26 @@ export const ja: TranslationOverrides = {
       fullscreen: 'フルスクリーン',
       split: 'クラスター分割',
       settings: '設定'
+    },
+    resourceNavOrder: {
+      favorites: 'お気に入り',
+      nodes: 'Nodes',
+      topology: 'Topology',
+      visualizer: 'Visualizer',
+      security: 'Security',
+      workloads: 'Workloads',
+      config: 'Config',
+      network: 'Network',
+      storage: 'Storage',
+      namespaces: 'Namespaces',
+      events: 'Events',
+      timeline: 'Timeline',
+      helm: 'Helm',
+      grafana: 'Grafana',
+      prometheus: 'Prometheus',
+      argocd: 'Argo CD',
+      'access-control': 'Access Control',
+      'custom-resources': 'Custom Resources'
     },
     nodesSections: {
       health: 'クラスターの健全性',
@@ -330,7 +364,16 @@ export const ja: TranslationOverrides = {
       resumeRefresh: '更新を再開する',
       clearCache: 'レンダラーのキャッシュをクリアする',
       cacheCleared: 'レンダラーのキャッシュがクリアされました',
-      openDevTools: '開発ツールを開く'
+      openDevTools: '開発ツールを開く',
+      diagnosticsTitle: 'ローカル診断',
+      diagnosticsHint:
+        'フリーズやレンダラー/GPU クラッシュ時、MagicLens は logs フォルダに診断 JSON を書き込みます（Crashpad ダンプも別途）。アップロードはしません — 手動で共有してください。',
+      saveDiagnostics: '診断レポートを保存',
+      diagnosticsSaved: '診断を保存しました',
+      openLogsFolder: 'logs フォルダを開く',
+      openCrashDumpsFolder: 'crash dumps フォルダを開く',
+      diagnosticsShareHint:
+        'フリーズ報告時は最新の diagnostics-*.json（と必要なら .dmp）を添付してください。'
     }
   },
   vpn: {

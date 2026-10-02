@@ -13,6 +13,7 @@ import type {
 } from '@shared/types/helm'
 import type { ClusterClients } from './clusterManager'
 import { deleteResourceObject } from './resourceMutationService'
+import { decodeHelmReleasePayloads } from '../workers/runWorkerTask'
 
 interface DecodedHelmRelease {
   name: string
@@ -24,20 +25,13 @@ interface DecodedHelmRelease {
   config?: unknown
 }
 
-/** Helm v3 stores each release revision as a Secret (owner=helm) whose `data.release` value is
- * base64(gzip(json)) — no `helm` CLI or extra dependency needed, we just reverse that encoding. */
-function decodeReleaseSecret(base64Value: string): DecodedHelmRelease | null {
-  try {
-    const helmEncoded = Buffer.from(base64Value, 'base64').toString('utf8')
-    const gzipped = Buffer.from(helmEncoded, 'base64')
-    const json = zlib.gunzipSync(gzipped).toString('utf8')
-    return JSON.parse(json) as DecodedHelmRelease
-  } catch {
-    return null
-  }
+function asDecodedRelease(raw: Record<string, unknown> | null): DecodedHelmRelease | null {
+  if (!raw || typeof raw.name !== 'string' || typeof raw.namespace !== 'string') return null
+  if (typeof raw.version !== 'number') return null
+  return raw as unknown as DecodedHelmRelease
 }
 
-/** Inverse of decodeReleaseSecret — reproduces Helm's own storage encoding exactly. */
+/** Inverse of decode — reproduces Helm's own storage encoding exactly (main-thread; rare path). */
 function encodeReleaseSecret(release: DecodedHelmRelease): string {
   const json = JSON.stringify(release)
   const gzipped = zlib.gzipSync(Buffer.from(json, 'utf8'))
@@ -68,12 +62,20 @@ async function listReleaseSecrets(
   labelSelector: string
 ): Promise<{ secret: V1Secret; decoded: DecodedHelmRelease }[]> {
   const res = await clients.core.listSecretForAllNamespaces({ labelSelector })
-  const decodedList: { secret: V1Secret; decoded: DecodedHelmRelease }[] = []
+  const secretsWithPayload: { secret: V1Secret; raw: string }[] = []
   for (const secret of res.items) {
     const raw = secret.data?.release
     if (!raw) continue
-    const decoded = decodeReleaseSecret(raw)
-    if (decoded) decodedList.push({ secret, decoded })
+    secretsWithPayload.push({ secret, raw })
+  }
+
+  // gunzipSync + JSON.parse per revision is CPU-heavy; run the batch on a worker thread
+  // so Electron's main process (window chrome / IPC) stays responsive.
+  const decodedBatch = await decodeHelmReleasePayloads(secretsWithPayload.map((s) => s.raw))
+  const decodedList: { secret: V1Secret; decoded: DecodedHelmRelease }[] = []
+  for (let i = 0; i < secretsWithPayload.length; i++) {
+    const decoded = asDecodedRelease(decodedBatch[i] ?? null)
+    if (decoded) decodedList.push({ secret: secretsWithPayload[i].secret, decoded })
   }
   return decodedList
 }
@@ -138,11 +140,17 @@ export async function getHelmReleaseHistory(
     namespace,
     labelSelector: `owner=helm,name=${name}`
   })
-  const entries: HelmReleaseHistoryEntry[] = []
+  const payloads: string[] = []
   for (const secret of res.items) {
     const raw = secret.data?.release
-    if (!raw) continue
-    const decoded = decodeReleaseSecret(raw)
+    if (raw) payloads.push(raw)
+  }
+  const decodedBatch = await decodeHelmReleasePayloads(payloads)
+  const entries: HelmReleaseHistoryEntry[] = []
+  let payloadIdx = 0
+  for (const secret of res.items) {
+    if (!secret.data?.release) continue
+    const decoded = asDecodedRelease(decodedBatch[payloadIdx++] ?? null)
     if (!decoded) continue
     entries.push({
       id: secret.metadata?.uid ?? `${namespace}/${name}/${decoded.version}`,

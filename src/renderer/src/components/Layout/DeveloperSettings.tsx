@@ -30,6 +30,7 @@ export function DeveloperSettings(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [pollMs, setPollMs] = useState(1000)
   const [clearing, setClearing] = useState(false)
+  const [savingDiagnostics, setSavingDiagnostics] = useState(false)
   const interval = useLiveRefreshStore((s) => s.interval)
   const setInterval_ = useLiveRefreshStore((s) => s.setInterval)
   const paused = useLiveRefreshStore((s) => s.paused)
@@ -96,6 +97,32 @@ export function DeveloperSettings(): React.JSX.Element {
     } finally {
       setClearing(false)
     }
+  }
+
+  async function handleSaveDiagnostics(): Promise<void> {
+    setSavingDiagnostics(true)
+    try {
+      const res = await window.api.app.writeDiagnostics()
+      if ('error' in res) {
+        message.error(res.error)
+        return
+      }
+      message.success(`${t('settings.developer.diagnosticsSaved')}: ${res.path}`)
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSavingDiagnostics(false)
+    }
+  }
+
+  async function handleOpenLogs(): Promise<void> {
+    const res = await window.api.app.openLogsDir()
+    if ('error' in res) message.error(res.error)
+  }
+
+  async function handleOpenCrashDumps(): Promise<void> {
+    const res = await window.api.app.openCrashDumpsDir()
+    if ('error' in res) message.error(res.error)
   }
 
   const memPct =
@@ -308,6 +335,24 @@ export function DeveloperSettings(): React.JSX.Element {
             {t('settings.developer.clearCache')}
           </Button>
         </div>
+      </SettingsSection>
+
+      <SettingsSection
+        title={t('settings.developer.diagnosticsTitle')}
+        description={t('settings.developer.diagnosticsHint')}
+      >
+        <div className="ml-vpn-ext-actions">
+          <Button type="primary" loading={savingDiagnostics} onClick={() => void handleSaveDiagnostics()}>
+            {t('settings.developer.saveDiagnostics')}
+          </Button>
+          <Button onClick={() => void handleOpenLogs()}>{t('settings.developer.openLogsFolder')}</Button>
+          <Button onClick={() => void handleOpenCrashDumps()}>
+            {t('settings.developer.openCrashDumpsFolder')}
+          </Button>
+        </div>
+        <p className="ml-settings-inline-hint" style={{ marginTop: 10 }}>
+          {t('settings.developer.diagnosticsShareHint')}
+        </p>
       </SettingsSection>
     </>
   )

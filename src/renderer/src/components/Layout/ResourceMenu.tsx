@@ -9,11 +9,14 @@ import type { ResourceKind } from '@shared/resourceKinds'
 import type { VirtualPageKey } from '@shared/types/navigation'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useAuthStore } from '../../stores/authStore'
+import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
+import { normalizeResourceNavOrder } from '@shared/types/resourceNavOrder'
 import {
   FAVORITES_SECTION_ID,
   favoritesSectionIcon,
   findSectionForSelection,
   navEntryKey,
+  orderResourceNavLayout,
   resourceNavLayout,
   type NavCollapsibleSection,
   type NavEntry,
@@ -124,26 +127,39 @@ export function ResourceMenu({
   const pinnedKinds = prefs.pinned
   const hiddenKindList = useAuthStore((s) => s.me?.hiddenResourceKinds ?? EMPTY_HIDDEN_KINDS)
   const hiddenKinds = useMemo(() => new Set(hiddenKindList), [hiddenKindList])
+  const resourceNavOrder = useDisplaySettingsStore((s) => s.resourceNavOrder)
+  const orderedNavLayout = useMemo(
+    () => orderResourceNavLayout(resourceNavLayout, normalizeResourceNavOrder(resourceNavOrder)),
+    [resourceNavOrder]
+  )
 
   const visibleNavLayout = useMemo((): NavLayoutItem[] => {
-    if (hiddenKinds.size === 0) return resourceNavLayout
-    return resourceNavLayout
-      .map((item) => {
-        if (item === 'favorites') return item
-        if (item.type === 'standalone') {
-          return hiddenKinds.has(item.kind) ? null : item
-        }
-        // Virtual pages aren't part of the RBAC hidden-resource-kind system.
-        if (item.type === 'standalone-virtual') return item
-        const entries = item.entries.filter((entry) => {
-          if (entry.type === 'kind') return !hiddenKinds.has(entry.kind)
-          return true
-        })
-        if (entries.length === 0) return null
-        return { ...item, entries }
-      })
-      .filter((item): item is NavLayoutItem => item !== null)
-  }, [hiddenKinds])
+    const layout =
+      hiddenKinds.size === 0
+        ? orderedNavLayout
+        : orderedNavLayout
+            .map((item) => {
+              if (item === 'favorites') return item
+              if (item.type === 'standalone') {
+                return hiddenKinds.has(item.kind) ? null : item
+              }
+              // Virtual pages aren't part of the RBAC hidden-resource-kind system.
+              if (item.type === 'standalone-virtual') return item
+              const entries = item.entries.filter((entry) => {
+                if (entry.type === 'kind') return !hiddenKinds.has(entry.kind)
+                return true
+              })
+              if (entries.length === 0) return null
+              return { ...item, entries }
+            })
+            .filter((item): item is NavLayoutItem => item !== null)
+
+    // Don't reserve a Favorites group when the user hasn't starred any kinds yet.
+    if (favoriteKinds.length === 0) {
+      return layout.filter((item) => item !== 'favorites')
+    }
+    return layout
+  }, [hiddenKinds, favoriteKinds.length, orderedNavLayout])
 
   useEffect(() => {
     const handler = (event: Event): void => {
@@ -523,6 +539,8 @@ export function ResourceMenu({
   }
 
   function renderFavorites(): React.ReactNode {
+    if (favoriteKinds.length === 0) return null
+
     const visibleFavorites = favoriteKinds.filter(
       (k) =>
         !hiddenKinds.has(k) &&

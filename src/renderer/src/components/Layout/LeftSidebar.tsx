@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Empty, Tooltip } from 'antd'
-import { ChevronDown, ChevronLeft, ChevronRight, Layers, Network, Settings, Sparkles, Star } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Box, ChevronDown, ChevronRight, Globe2, PanelLeft, Settings, Sparkles, Star } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import logo from '../../assets/logo.png'
 import { useClusterStore, type ClusterEntry } from '../../stores/clusterStore'
 import { useVpnStore } from '../../stores/vpnStore'
 import { useClusterVpnStore } from '../../stores/clusterVpnStore'
@@ -19,8 +18,9 @@ import type { ClusterSettingsSectionId } from '@shared/types/clusterSettings'
 import { SidebarWorkspaces } from './SidebarWorkspaces'
 import { Icon } from '../ui/Icon'
 import { useResizableDrawerWidth } from '../../hooks/useResizableDrawerWidth'
+import { UpdateAvailableBadge } from '../Update/UpdateAvailableBadge'
 
-const COLLAPSED_WIDTH = 88
+const COLLAPSED_WIDTH = 80
 const EXPANDED_WIDTH = 236
 const MIN_SIDEBAR_WIDTH = 180
 const MAX_SIDEBAR_WIDTH = 360
@@ -70,6 +70,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const clusters = useClusterStore((s) => s.clusters)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
   const activeView = useClusterStore((s) => s.activeView)
+  const openedTabs = useClusterStore((s) => s.openedTabs)
   const storedCollapsed = useClusterStore((s) => s.leftSidebarCollapsed)
   const setCollapsed = useClusterStore((s) => s.setLeftSidebarCollapsed)
   const setActiveView = useClusterStore((s) => s.setActiveView)
@@ -77,11 +78,14 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const showFavoritesSection = useDisplaySettingsStore((s) => s.showFavoritesSection)
   const showWorkspacesSection = useDisplaySettingsStore((s) => s.showWorkspacesSection)
   const vpnStatus = useVpnStore((s) => s.status)
-  const vpnProfiles = useVpnStore((s) => s.profiles)
   const clusterVpnLinks = useClusterVpnStore((s) => s.links)
   const userScope = resolveUserScope(null, true)
   const isDrawer = variant === 'drawer'
   const collapsed = isDrawer ? false : storedCollapsed
+  // Tab strip already clears traffic lights — skip the dead spacer so the hub
+  // starts on the same horizontal line as the content under the tab divider.
+  const tabStripOwnsTop = activeView === 'tabs' && openedTabs.length > 0
+  const showBrandSpacer = !isDrawer && !tabStripOwnsTop
   const { width: expandedWidth, resizing, handleProps } = useResizableDrawerWidth({
     storageKey: SIDEBAR_WIDTH_KEY,
     defaultWidth: EXPANDED_WIDTH,
@@ -105,10 +109,14 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   )
   const hasFavorites = useMemo(() => clusters.some((c) => c.isFavorite), [clusters])
 
+  // If every star was removed, collapse so a later re-add doesn't reopen a stale "empty" pane.
+  useEffect(() => {
+    if (!hasFavorites && favoritesExpanded) setFavoritesExpanded(false)
+  }, [hasFavorites, favoritesExpanded])
+
   const contextVpnId =
     activeView === 'tabs' && activeClusterId ? clusterVpnLinks[activeClusterId] : undefined
   const displayVpnId = contextVpnId ?? vpnStatus?.activeProfileId
-  const displayProfile = vpnProfiles.find((p) => p.id === displayVpnId)
 
   const vpnConnected = displayVpnId
     ? (vpnStatus?.connectedProfileIds?.includes(displayVpnId) ?? false) ||
@@ -199,12 +207,13 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
 
   const width = isDrawer ? '100%' : collapsed ? COLLAPSED_WIDTH : expandedWidth
   const favoritesBodyOpen = favoritesExpanded && hasFavorites
-  const showFavoritesInRail = showFavoritesSection && (hasFavorites || !collapsed)
+  // Empty Favorites chrome is noise — only show when the setting is on AND there is at least one starred cluster.
+  const showFavoritesInRail = showFavoritesSection && hasFavorites
   // Collapsed rail always shows the workspaces dock — `workspacesExpanded` only means
   // "list open" in the full sidebar's collapsible section, not "hide entirely" here.
   const showWorkspacesInRail = showWorkspacesSection
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isDrawer) return
     const px = `${collapsed ? COLLAPSED_WIDTH : expandedWidth}px`
     document.documentElement.style.setProperty('--ml-left-sidebar-width', px)
@@ -220,29 +229,18 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
       transition={resizing ? { duration: 0 } : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
       style={{ width }}
     >
-      <div
-        className={`ml-sidebar-brand titlebar-drag-region${
-          !collapsed && IS_MAC && !isDrawer ? ' ml-sidebar-brand--traffic' : ''
-        }`}
-      >
-        <div className="ml-sidebar-brand__mark titlebar-no-drag">
-          <img src={logo} alt="" className="ml-sidebar-logo" />
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.span
-                className="ml-sidebar-brand-text"
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -6 }}
-              >
-                MagicLens
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+      {showBrandSpacer ? (
+        <div
+          className={`ml-sidebar-brand titlebar-drag-region${
+            !collapsed && IS_MAC ? ' ml-sidebar-brand--traffic' : ''
+          }${collapsed ? ' ml-sidebar-brand--collapsed' : ''}`}
+          aria-hidden
+        />
+      ) : null}
 
-      <div className="ml-sidebar-actions titlebar-no-drag">
+      <div
+        className={`ml-sidebar-actions titlebar-no-drag${tabStripOwnsTop ? ' ml-sidebar-actions--flush' : ''}`}
+      >
         <div
           className={`ml-sidebar-hub${collapsed ? ' ml-sidebar-hub--collapsed' : ''}`}
           role="tablist"
@@ -258,7 +256,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
                 onClick={() => handleNavigate(() => setActiveView('clusters'))}
               >
                 <span className="ml-sidebar-hub-btn-icon">
-                  <Icon icon={Layers} variant="action" />
+                  <Icon icon={Box} size={14} strokeWidth={1.5} />
                 </span>
                 {!collapsed && (
                   <span className="ml-sidebar-hub-btn-text">
@@ -300,7 +298,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
                         : ''
                   }`}
                 >
-                  <Icon icon={Network} variant="action" />
+                  <Icon icon={Globe2} size={14} strokeWidth={1.5} />
                 </span>
                 {!collapsed && (
                   <span className="ml-sidebar-hub-btn-text">
@@ -309,16 +307,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
                 )}
               </button>
             )
-            const vpnTitle = vpnConnected
-              ? t('chrome.vpnConnected', { name: displayProfile?.name ?? 'VPN' })
-              : vpnConnecting
-                ? t('chrome.vpnConnecting', { name: displayProfile?.name ?? 'VPN' })
-                : t('chrome.vpnTooltip')
-            return (
-              <Tooltip title={vpnTitle} placement="right" arrow={false}>
-                {vpnBtn}
-              </Tooltip>
-            )
+            return vpnBtn
           })()}
 
           {(() => {
@@ -331,7 +320,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
                 onClick={() => handleNavigate(() => setActiveView('notes'))}
               >
                 <span className="ml-sidebar-hub-btn-icon">
-                  <Icon icon={Sparkles} variant="action" />
+                  <Icon icon={Sparkles} size={14} strokeWidth={1.5} />
                 </span>
                 {!collapsed && (
                   <span className="ml-sidebar-hub-btn-text">
@@ -448,7 +437,6 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
 
       <div className="ml-sidebar-footer titlebar-no-drag">
         <div className="ml-sidebar-footer__row">
-          <Tooltip title={t('common.settings')} placement="right" arrow={false}>
             <button
               type="button"
               className="ml-sidebar-btn ml-sidebar-btn--ghost ml-sidebar-btn--settings"
@@ -458,10 +446,10 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
                 onNavigate?.()
               }}
             >
-              <Icon icon={Settings} variant="action" />
+              <Icon icon={Settings} size={16} strokeWidth={1.4} />
               {!collapsed ? <span>{t('common.settings')}</span> : null}
             </button>
-          </Tooltip>
+          <UpdateAvailableBadge showLabel={!collapsed} placement="top" />
           {!isDrawer ? (
             <Tooltip
               title={collapsed ? t('chrome.expandSidebar') : t('chrome.collapseSidebar')}
@@ -474,7 +462,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
                 onClick={() => setCollapsed(!collapsed)}
                 aria-label={collapsed ? t('chrome.expandSidebar') : t('chrome.collapseSidebar')}
               >
-                <Icon icon={collapsed ? ChevronRight : ChevronLeft} variant="action" />
+                <Icon icon={PanelLeft} size={16} strokeWidth={1.4} />
               </button>
             </Tooltip>
           ) : null}

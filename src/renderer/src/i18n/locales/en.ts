@@ -240,6 +240,14 @@ export const en = {
       showWorkspaces: 'Show Workspaces section',
       showWorkspacesHint:
         'When enabled, Workspaces appear in the left sidebar for grouping clusters. Collapsed sidebar shows a W marker above workspace clusters.',
+      workspaceOrderTitle: 'Workspace order',
+      workspaceOrderHint: 'Drag to reorder workspaces in the left sidebar.',
+      workspaceOrderChooser: 'Drag workspaces to change their order in the sidebar.',
+      workspaceOrderEmpty: 'No workspaces yet — create one in the sidebar first.',
+      workspaceOrderClusters: '{{count}} clusters',
+      showSidebarLogos: 'Show logos in sidebar',
+      showSidebarLogosHint:
+        'When enabled, workspace and cluster rows use their logos. When off, the sidebar uses simple folder and status icons (Cursor-style).',
       workspaceDockMagnification: 'Dock magnification for workspaces',
       workspaceDockMagnificationHint:
         'When the left sidebar is collapsed, workspace icons magnify under the cursor like the macOS Dock.',
@@ -256,7 +264,13 @@ export const en = {
         'Show, hide, and reorder top-bar icons. Settings stays fixed on the right and cannot be moved or hidden.',
       chromeToolbarChooser:
         'Drag to reorder toolbar icons. Toggle visibility for each control. Settings remains locked.',
-      chromeToolbarFixed: 'Fixed'
+      chromeToolbarFixed: 'Fixed',
+      resourceNavOrderTitle: 'Resource menu order',
+      resourceNavOrderHint:
+        'Drag to reorder the cluster resource sidebar. Favorites stays pinned at the top when you have any.',
+      resourceNavOrderChooser: 'Drag items to set the order used in every cluster resource menu.',
+      resourceNavOrderFixed: 'Always first',
+      resourceNavOrderReset: 'Reset to default order'
     },
     chromeToolbar: {
       search: 'Search',
@@ -265,6 +279,26 @@ export const en = {
       fullscreen: 'Fullscreen',
       split: 'Split clusters',
       settings: 'Settings'
+    },
+    resourceNavOrder: {
+      favorites: 'Favorites',
+      nodes: 'Nodes',
+      topology: 'Topology',
+      visualizer: 'Visualizer',
+      security: 'Security',
+      workloads: 'Workloads',
+      config: 'Config',
+      network: 'Network',
+      storage: 'Storage',
+      namespaces: 'Namespaces',
+      events: 'Events',
+      timeline: 'Timeline',
+      helm: 'Helm',
+      grafana: 'Grafana',
+      prometheus: 'Prometheus',
+      argocd: 'Argo CD',
+      'access-control': 'Access Control',
+      'custom-resources': 'Custom Resources'
     },
     nodesSections: {
       summary: 'Cluster Summary',
@@ -455,7 +489,15 @@ export const en = {
       resumeRefresh: 'Resume refresh',
       clearCache: 'Clear renderer cache',
       cacheCleared: 'Renderer cache cleared',
-      openDevTools: 'Open DevTools'
+      openDevTools: 'Open DevTools',
+      diagnosticsTitle: 'Local diagnostics',
+      diagnosticsHint:
+        'When the app hangs or a renderer/GPU process crashes, MagicLens writes a diagnostics JSON under the logs folder (and Crashpad dumps under crash dumps). Nothing is uploaded — share the files manually if you need help.',
+      saveDiagnostics: 'Save diagnostics report',
+      diagnosticsSaved: 'Diagnostics saved',
+      openLogsFolder: 'Open logs folder',
+      openCrashDumpsFolder: 'Open crash dumps folder',
+      diagnosticsShareHint: 'Attach the newest diagnostics-*.json (and any recent .dmp files) when reporting a freeze.'
     },
     about: {
       platform: 'Platform',
@@ -1715,6 +1757,7 @@ export const en = {
     connectHint: 'Connect a cluster to search resources across namespaces.',
     typeHint:
       'Type to search. Use keywords like spark:todo, pod:nginx, @deploy api, or click a type filter above.',
+    filterAria: 'Filter by resource type',
     searchingIn: 'Searching resources in: {{cluster}}',
     recent: 'Recent',
     clusters: 'Clusters',

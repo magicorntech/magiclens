@@ -21,6 +21,11 @@ interface ClusterAvatarProps {
   endpoint?: string
   /** Extra kubeconfig strings (exec plugin, auth-provider) used only for cloud detection. */
   hints?: string
+  /**
+   * When false, skip inferred AWS/GCP/Azure badges and fall through to fallbackLogoUrl / letter.
+   * Sidebar "show icons" should match workspace tiles, not cloud-provider marks.
+   */
+  cloudIcon?: boolean
 }
 
 function softRadius(_size: number): number {
@@ -35,11 +40,18 @@ export function ClusterAvatar({
   accentColor,
   contextName,
   endpoint,
-  hints
+  hints,
+  cloudIcon = true
 }: ClusterAvatarProps): React.JSX.Element {
   const radius = softRadius(size)
-  const provider = logoUrl ? null : detectCloudProvider(endpoint, contextName, name, hints)
-  const src = logoUrl || (provider ? CLOUD_PROVIDER_ICONS[provider] : fallbackLogoUrl)
+  // Prefer an explicit / workspace fallback logo over inferred cloud badges — sidebar
+  // "show icons" inherits the workspace mark for logo-less clusters; cloud icons were
+  // jumping ahead and showing AWS/GCP/Azure tiles instead.
+  const provider =
+    !cloudIcon || logoUrl || fallbackLogoUrl
+      ? null
+      : detectCloudProvider(endpoint, contextName, name, hints)
+  const src = logoUrl || fallbackLogoUrl || (provider ? CLOUD_PROVIDER_ICONS[provider] : undefined)
   const style: React.CSSProperties = {
     width: size,
     height: size,

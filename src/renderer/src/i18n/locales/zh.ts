@@ -117,6 +117,14 @@ export const zh: TranslationOverrides = {
       showFavoritesHint: '启用后，收藏会显示在左侧边栏的 Workspaces 上方。点击标题可折叠或展开。',
       showWorkspaces: '显示 Workspaces 部分',
       showWorkspacesHint: '启用后，Workspaces 会出现在左侧边栏。折叠时用 W 标记工作区集群。',
+      workspaceOrderTitle: '工作区顺序',
+      workspaceOrderHint: '拖动以重新排列左侧边栏中的工作区。',
+      workspaceOrderChooser: '拖动工作区以更改侧边栏顺序。',
+      workspaceOrderEmpty: '还没有工作区 — 请先在侧边栏创建。',
+      workspaceOrderClusters: '{{count}} 个集群',
+      showSidebarLogos: '在侧边栏显示徽标',
+      showSidebarLogosHint:
+        '开启后工作区和集群行显示徽标；关闭则使用文件夹与状态图标。',
       tabIconsTitle: '标签图标',
       showClusterLogos: '在集群标签上显示徽标',
       showResourceIcons: '在资源标签上显示图标',
@@ -125,6 +133,12 @@ export const zh: TranslationOverrides = {
       chromeToolbarHint: '显示、隐藏并重新排序顶栏图标。设置固定在右侧，无法移动或隐藏。',
       chromeToolbarChooser: '拖动以重新排序，切换可见性。设置保持锁定。',
       chromeToolbarFixed: '固定',
+      resourceNavOrderTitle: '资源菜单顺序',
+      resourceNavOrderHint:
+        '拖动以重新排列集群资源侧边栏。若有收藏，收藏始终置顶。',
+      resourceNavOrderChooser: '拖动项目以设置资源菜单顺序。',
+      resourceNavOrderFixed: '始终置顶',
+      resourceNavOrderReset: '恢复默认顺序',
       detailMaskBlur: '模糊细节背后的背景',
       detailMaskBlurHint: '当资源详细信息抽屉打开时，模糊其后面的列表。默认情况下关闭，以便桌子保持清晰。',
       panelTitle: '终端和 YAML 面板',
@@ -142,6 +156,26 @@ export const zh: TranslationOverrides = {
       fullscreen: '全屏',
       split: '拆分集群',
       settings: '设置'
+    },
+    resourceNavOrder: {
+      favorites: '收藏',
+      nodes: 'Nodes',
+      topology: 'Topology',
+      visualizer: 'Visualizer',
+      security: 'Security',
+      workloads: 'Workloads',
+      config: 'Config',
+      network: 'Network',
+      storage: 'Storage',
+      namespaces: 'Namespaces',
+      events: 'Events',
+      timeline: 'Timeline',
+      helm: 'Helm',
+      grafana: 'Grafana',
+      prometheus: 'Prometheus',
+      argocd: 'Argo CD',
+      'access-control': 'Access Control',
+      'custom-resources': 'Custom Resources'
     },
     nodesSections: {
       health: '集群健康',
@@ -329,7 +363,15 @@ export const zh: TranslationOverrides = {
       resumeRefresh: '恢复刷新',
       clearCache: '清除渲染器缓存',
       cacheCleared: '渲染器缓存已清除',
-      openDevTools: '打开开发工具'
+      openDevTools: '打开开发工具',
+      diagnosticsTitle: '本地诊断',
+      diagnosticsHint:
+        '应用卡死或渲染器/GPU 崩溃时，MagicLens 会在 logs 目录写入诊断 JSON（Crashpad dump 另存）。不会上传 — 请手动分享文件。',
+      saveDiagnostics: '保存诊断报告',
+      diagnosticsSaved: '诊断已保存',
+      openLogsFolder: '打开 logs 文件夹',
+      openCrashDumpsFolder: '打开 crash dumps 文件夹',
+      diagnosticsShareHint: '报告卡死时请附上最新的 diagnostics-*.json（以及近期的 .dmp）。'
     }
   },
   vpn: {

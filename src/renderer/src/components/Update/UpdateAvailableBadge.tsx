@@ -5,16 +5,21 @@ import { Icon } from '../ui/Icon'
 import { useUpdateStore } from '../../stores/updateStore'
 
 /**
- * Ambient "an update is waiting" affordance, shown next to the app name.
+ * Ambient "an update is waiting" affordance.
  *
  * The banner announces a new version once and can be dismissed; after that nothing in the UI
  * says an update is pending. This stays until the update is actually installed, so the state is
  * always discoverable without being interruptive — clicking it opens a two-item menu rather than
- * the full update centre modal, since "install" and "read what changed" are the only two things
- * worth one click from here; anything else (skip, remind later, settings) is still reachable
- * from the banner or Settings.
+ * the full update centre modal.
  */
-export function UpdateAvailableBadge(): React.JSX.Element | null {
+export function UpdateAvailableBadge({
+  showLabel = false,
+  placement = 'right'
+}: {
+  /** When true (expanded sidebar footer), render a compact "Update" pill like Cursor. */
+  showLabel?: boolean
+  placement?: 'top' | 'right' | 'bottom' | 'left'
+}): React.JSX.Element | null {
   const state = useUpdateStore((s) => s.state)
   const install = useUpdateStore((s) => s.install)
   const download = useUpdateStore((s) => s.download)
@@ -63,17 +68,18 @@ export function UpdateAvailableBadge(): React.JSX.Element | null {
     <Dropdown
       menu={{ items, onClick: handleMenuClick }}
       trigger={['click']}
-      placement="bottomLeft"
+      placement="topLeft"
     >
-      <Tooltip title={label} placement="right">
+      <Tooltip title={label} placement={placement}>
         <button
           type="button"
           // `is-ready` switches the amber "there is something to fetch" cue to the theme's
           // success colour once the download has landed and the only step left is restarting.
-          className={`ml-update-badge${ready ? ' is-ready' : ''}${phase === 'downloading' ? ' is-busy' : ''}`}
+          className={`ml-update-badge${showLabel ? ' ml-update-badge--labeled' : ''}${ready ? ' is-ready' : ''}${phase === 'downloading' ? ' is-busy' : ''}`}
           aria-label={label}
         >
           <Icon icon={ArrowDown} variant="micro" />
+          {showLabel ? <span>Update</span> : null}
         </button>
       </Tooltip>
     </Dropdown>

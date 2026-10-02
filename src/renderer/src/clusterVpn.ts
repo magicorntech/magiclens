@@ -5,7 +5,7 @@ import { useClusterStore } from './stores/clusterStore'
 import { connectCluster, disconnectCluster } from './clusterConnect'
 
 let switchInFlight: Promise<void> | null = null
-let pendingCluster: { clusterId: string; clusterName?: string } | null = null
+let pendingCluster: { clusterId: string; clusterName?: string; force?: boolean } | null = null
 
 const VPN_SETTLE_MS = 2000
 const CLUSTER_CONNECT_ATTEMPTS = 5
@@ -15,12 +15,15 @@ const CLUSTER_CONNECT_GAP_MS = 2000
  * Ensure optional MagicLens VPN (if linked) then (re)connect the cluster API.
  * Linked VPN is best-effort only — external VPN tools are enough; we never
  * block cluster connect waiting for an in-app tunnel.
+ *
+ * Pass `{ force: true }` after sleep/wake so stale "connected" sessions are rebuilt.
  */
 export async function ensureClusterAccess(
   clusterId: string,
-  clusterName?: string
+  clusterName?: string,
+  options?: { force?: boolean }
 ): Promise<void> {
-  pendingCluster = { clusterId, clusterName }
+  pendingCluster = { clusterId, clusterName, force: options?.force === true }
 
   if (!switchInFlight) {
     switchInFlight = drainClusterAccessQueue()
@@ -33,7 +36,7 @@ async function drainClusterAccessQueue(): Promise<void> {
     while (pendingCluster) {
       const target = pendingCluster
       pendingCluster = null
-      await runEnsureAccess(target.clusterId, target.clusterName)
+      await runEnsureAccess(target.clusterId, target.clusterName, { force: target.force === true })
     }
   } finally {
     switchInFlight = null
@@ -58,7 +61,12 @@ function isVpnProfileUp(vpnProfileId: string): boolean {
   return status.status === 'connected' && status.activeProfileId === vpnProfileId
 }
 
-async function runEnsureAccess(clusterId: string, clusterName?: string): Promise<void> {
+async function runEnsureAccess(
+  clusterId: string,
+  clusterName?: string,
+  options?: { force?: boolean }
+): Promise<void> {
+  const force = options?.force === true
   const vpnProfileId = useClusterVpnStore.getState().getLink(clusterId)
 
   // Optional in-app VPN in the background — never blocks cluster API connect.
@@ -73,7 +81,7 @@ async function runEnsureAccess(clusterId: string, clusterName?: string): Promise
   const cluster = useClusterStore.getState().clusters.find((c) => c.id === clusterId)
   if (!cluster) return
 
-  if (cluster.status === 'connected') {
+  if (!force && cluster.status === 'connected') {
     return
   }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Empty, Input, Modal, Spin, Tag, Typography } from 'antd'
+import { Empty, Input, Modal, Spin, Typography } from 'antd'
 import type { InputRef } from 'antd'
 import { Bell, Box, Cloud, FileText, HardDrive, Layers, Lock, Rocket, Search, Share2, ShieldAlert, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -26,15 +26,35 @@ import { kindIcons } from '../../resourceConfig/kinds.renderer'
 const FLAT_ITEM_ATTR = 'data-global-search-index'
 const LOCAL_SEARCH_TYPES = new Set<GlobalSearchType>(['clusters', 'sparks', 'security'])
 
+/** Prefer the leaf name for long ARNs / paths so result rows stay scannable. */
+function shortDisplayName(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) return name
+  const slash = trimmed.lastIndexOf('/')
+  if (slash >= 0 && slash < trimmed.length - 1) {
+    const leaf = trimmed.slice(slash + 1)
+    if (leaf.length >= 3) return leaf
+  }
+  return trimmed
+}
+
+function statusTone(status: string): 'ok' | 'warn' | 'err' | 'idle' {
+  const s = status.toLowerCase()
+  if (/(connected|ready|running|active|deployed|healthy|pass)/.test(s)) return 'ok'
+  if (/(connecting|pending|progress|warning|degraded)/.test(s)) return 'warn'
+  if (/(error|fail|denied|critical|crash|offline|disconnected)/.test(s)) return 'err'
+  return 'idle'
+}
+
 function sparkSnippet(body: string, query: string): string | undefined {
   const plain = body.replace(/\s+/g, ' ').trim()
   if (!plain) return undefined
   const needle = query.trim().toLowerCase()
-  if (!needle) return plain.slice(0, 100)
+  if (!needle) return plain.slice(0, 120)
   const idx = plain.toLowerCase().indexOf(needle)
-  if (idx < 0) return plain.slice(0, 100)
-  const start = Math.max(0, idx - 24)
-  const end = Math.min(plain.length, idx + needle.length + 56)
+  if (idx < 0) return plain.slice(0, 120)
+  const start = Math.max(0, idx - 28)
+  const end = Math.min(plain.length, idx + needle.length + 72)
   return `${start > 0 ? '…' : ''}${plain.slice(start, end)}${end < plain.length ? '…' : ''}`
 }
 
@@ -447,7 +467,7 @@ export function GlobalSearchModal(): React.JSX.Element {
       open={open}
       onCancel={closeSearch}
       footer={null}
-      width={640}
+      width={720}
       destroyOnHidden
       className="global-search-modal"
       styles={{ body: { padding: 0 } }}
@@ -467,20 +487,22 @@ export function GlobalSearchModal(): React.JSX.Element {
         />
       </div>
 
-      <div className="global-search-filters">
+      <div className="global-search-filters" role="listbox" aria-label={t('search.filterAria')}>
         {GLOBAL_SEARCH_TYPES.map((type) => {
-          const keywords = GLOBAL_SEARCH_TYPE_KEYWORDS[type].slice(0, 2).join(', ')
+          const active = typeFilter === type
+          const primaryKw = GLOBAL_SEARCH_TYPE_KEYWORDS[type][0]
           return (
-            <Tag
+            <button
               key={type}
-              className="global-search-filter-tag"
-              color={typeFilter === type ? 'blue' : 'default'}
+              type="button"
+              role="option"
+              aria-selected={active}
+              className={`global-search-filter-chip${active ? ' is-active' : ''}`}
               onClick={() => toggleTypeFilter(type)}
-              style={{ cursor: 'pointer', margin: 0 }}
+              title={`${GLOBAL_SEARCH_TYPE_LABELS[type]} — ${primaryKw}:`}
             >
               {GLOBAL_SEARCH_TYPE_LABELS[type]}
-              <span className="global-search-filter-hint">{keywords}</span>
-            </Tag>
+            </button>
           )
         })}
       </div>
@@ -493,28 +515,33 @@ export function GlobalSearchModal(): React.JSX.Element {
         )}
 
         {error && (
-          <Typography.Text type="danger" style={{ display: 'block', padding: 12 }}>
+          <Typography.Text type="danger" className="global-search-error">
             {error}
           </Typography.Text>
         )}
 
         {showHint && (
           <div className="global-search-hint">
-            <Typography.Text type="secondary">{t('search.typeHint')}</Typography.Text>
+            <p className="global-search-hint__lead">{t('search.typeHint')}</p>
+            <p className="global-search-hint__examples">
+              <code>pod:nginx</code>
+              <code>@deploy api</code>
+              <code>spark:todo</code>
+            </p>
             {targetCluster ? (
-              <Typography.Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-                {t('search.searchingIn', { cluster: targetCluster.customName })}
-              </Typography.Text>
+              <p className="global-search-hint__meta">
+                {t('search.searchingIn', { cluster: shortDisplayName(targetCluster.customName) })}
+              </p>
             ) : (
-              <Typography.Text type="warning" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+              <p className="global-search-hint__meta global-search-hint__meta--warn">
                 {t('search.connectHint')}
-              </Typography.Text>
+              </p>
             )}
           </div>
         )}
 
         {showEmpty && (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('search.noResults')} style={{ margin: 24 }} />
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('search.noResults')} className="global-search-empty" />
         )}
 
         {allGroups.map((group) => {
@@ -527,9 +554,8 @@ export function GlobalSearchModal(): React.JSX.Element {
           return (
             <div key={group.type} className="global-search-group">
               <div className="global-search-group-title">
-                {groupIcon(group.type)}
                 <span>{group.label}</span>
-                <Tag style={{ marginLeft: 'auto' }}>{group.results.length}</Tag>
+                <span className="global-search-group-title__count">{group.results.length}</span>
               </div>
               {group.results.map((result, i) => {
                 const index = offset + i
@@ -538,12 +564,16 @@ export function GlobalSearchModal(): React.JSX.Element {
                   <button
                     key={resultKey(result)}
                     type="button"
-                    className={`global-search-item${active ? ' active' : ''}`}
+                    className={`global-search-item${active ? ' is-active' : ''}`}
                     {...{ [FLAT_ITEM_ATTR]: index }}
                     onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => executeResult(result)}
                   >
-                    <ResultRow result={result} query={parsed.text} icon={result.type === 'builtin' ? builtinIcon(result.kind) : groupIcon(group.type)} />
+                    <ResultRow
+                      result={result}
+                      query={parsed.text}
+                      icon={result.type === 'builtin' ? builtinIcon(result.kind) : groupIcon(group.type)}
+                    />
                   </button>
                 )
               })}
@@ -553,11 +583,11 @@ export function GlobalSearchModal(): React.JSX.Element {
       </div>
 
       <div className="global-search-footer">
-        <span>{t('search.hint')}</span>
-        <span style={{ marginLeft: 'auto' }}>
+        <span className="global-search-footer__hint">{t('search.hint')}</span>
+        <span className="global-search-footer__shortcut">
           {searchShortcutParts.map((part, i) => (
-            <span key={`${part}-${i}`}>
-              {i > 0 && !isMac ? '+' : null}
+            <span key={`${part}-${i}`} className="global-search-footer__key-wrap">
+              {i > 0 && !isMac ? <span className="global-search-footer__plus">+</span> : null}
               <kbd>{part}</kbd>
             </span>
           ))}
@@ -577,35 +607,35 @@ function ResultRow({
   icon: React.ReactNode
 }): React.JSX.Element {
   switch (result.type) {
-    case 'cluster':
+    case 'cluster': {
+      const title = shortDisplayName(result.clusterName)
       return (
         <>
           <span className="global-search-item-icon">{icon}</span>
           <span className="global-search-item-main">
-            <HighlightText text={result.clusterName} query={query} />
-            <span className="global-search-item-sub">
-              {result.contextName} · {result.status}
+            <span className="global-search-item-title" title={result.clusterName}>
+              <HighlightText text={title} query={query} />
+            </span>
+            <span className="global-search-item-sub" title={result.contextName}>
+              {result.contextName !== title ? `${result.contextName} · ` : null}
+              <span className={`global-search-status global-search-status--${statusTone(result.status)}`}>
+                {result.status}
+              </span>
             </span>
           </span>
         </>
       )
+    }
     case 'spark':
       return (
         <>
           <span className="global-search-item-icon">{icon}</span>
           <span className="global-search-item-main">
-            <HighlightText text={result.title} query={query} />
+            <span className="global-search-item-title">
+              <HighlightText text={result.title} query={query} />
+            </span>
             <span className="global-search-item-sub">
-              {result.folder ? `${result.folder} · ` : ''}
-              {result.snippet ? (
-                matchesSearchText(result.snippet, query) ? (
-                  <HighlightText text={result.snippet} query={query} />
-                ) : (
-                  result.snippet
-                )
-              ) : (
-                result.path
-              )}
+              {[result.folder, result.snippet ?? result.path].filter(Boolean).join(' · ')}
             </span>
           </span>
         </>
@@ -615,14 +645,16 @@ function ResultRow({
         <>
           <span className="global-search-item-icon">{icon}</span>
           <span className="global-search-item-main">
-            <HighlightText text={result.name} query={query} />
+            <span className="global-search-item-title">
+              <HighlightText text={result.name} query={query} />
+            </span>
             <span className="global-search-item-sub">
-              {result.namespace ? `${result.namespace} · ` : ''}
-              {result.kind}
-              {result.subtitle ? ` · ${result.subtitle}` : ''}
+              {[result.namespace, result.kind, result.subtitle].filter(Boolean).join(' · ')}
             </span>
           </span>
-          <span className="global-search-item-meta">{result.clusterName}</span>
+          <span className="global-search-item-meta" title={result.clusterName}>
+            {shortDisplayName(result.clusterName)}
+          </span>
         </>
       )
     case 'helm-release':
@@ -630,9 +662,14 @@ function ResultRow({
         <>
           <span className="global-search-item-icon">{icon}</span>
           <span className="global-search-item-main">
-            <HighlightText text={result.name} query={query} />
+            <span className="global-search-item-title">
+              <HighlightText text={result.name} query={query} />
+            </span>
             <span className="global-search-item-sub">
-              {result.namespace} · {result.chartName} · {result.status}
+              {result.namespace} · {result.chartName} ·{' '}
+              <span className={`global-search-status global-search-status--${statusTone(result.status)}`}>
+                {result.status}
+              </span>
             </span>
           </span>
         </>
@@ -642,7 +679,9 @@ function ResultRow({
         <>
           <span className="global-search-item-icon">{icon}</span>
           <span className="global-search-item-main">
-            <HighlightText text={result.name} query={query} />
+            <span className="global-search-item-title">
+              <HighlightText text={result.name} query={query} />
+            </span>
             <span className="global-search-item-sub">
               {result.kind} · {result.group}
             </span>
@@ -654,10 +693,11 @@ function ResultRow({
         <>
           <span className="global-search-item-icon">{icon}</span>
           <span className="global-search-item-main">
-            <HighlightText text={result.name} query={query} />
+            <span className="global-search-item-title">
+              <HighlightText text={result.name} query={query} />
+            </span>
             <span className="global-search-item-sub">
-              {result.namespace ? `${result.namespace} · ` : ''}
-              {result.kind}
+              {[result.namespace, result.kind, result.apiVersion].filter(Boolean).join(' · ')}
             </span>
           </span>
         </>
@@ -667,13 +707,18 @@ function ResultRow({
         <>
           <span className="global-search-item-icon">{icon}</span>
           <span className="global-search-item-main">
-            <HighlightText text={result.reason} query={query} />
+            <span className="global-search-item-title">
+              <HighlightText text={result.reason} query={query} />
+            </span>
             <span className="global-search-item-sub">
-              {matchesSearchText(result.message, query) ? (
-                <HighlightText text={result.message.slice(0, 120)} query={query} />
-              ) : (
-                result.message.slice(0, 120)
-              )}
+              {[
+                result.involvedObjectKind,
+                result.namespace,
+                result.involvedObjectName ?? result.name,
+                result.message.slice(0, 100)
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </span>
           </span>
         </>
@@ -683,23 +728,27 @@ function ResultRow({
         <>
           <span className="global-search-item-icon">{icon}</span>
           <span className="global-search-item-main">
-            <HighlightText text={result.title} query={query} />
+            <span className="global-search-item-title">
+              <HighlightText text={result.title} query={query} />
+            </span>
             <span className="global-search-item-sub">
               {result.kind === 'finding' ? (
                 <>
-                  {result.severity} · {result.ruleId}
-                  {result.namespace ? ` · ${result.namespace}` : ''}
-                  {result.workload ? `/${result.workload}` : ''}
+                  <span className={`global-search-status global-search-status--${statusTone(result.severity)}`}>
+                    {result.severity}
+                  </span>
+                  {' · '}
+                  {[result.ruleId, result.namespace, result.workload].filter(Boolean).join(' · ')}
                 </>
               ) : (
-                <>
-                  {result.ruleId} · {result.snippet}
-                </>
+                [result.ruleId, result.snippet].filter(Boolean).join(' · ')
               )}
             </span>
           </span>
           {result.kind === 'finding' ? (
-            <span className="global-search-item-meta">{result.clusterName}</span>
+            <span className="global-search-item-meta" title={result.clusterName}>
+              {shortDisplayName(result.clusterName)}
+            </span>
           ) : null}
         </>
       )

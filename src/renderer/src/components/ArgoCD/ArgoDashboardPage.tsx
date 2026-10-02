@@ -7,6 +7,7 @@ import type { ArgoActivityEvent, ArgoApplication } from '@shared/types/argocd'
 import { useArgoOverview, useArgoSyncMany } from '../../queries/useArgoCd'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from '../ResourceTable/AgeCell'
+import { compareAgeTimestamps } from '../../utils/tableSort'
 import { Icon } from '../ui/Icon'
 import { ArgoHealthTag, ArgoSyncTag } from './argoStatus'
 import { ArgoNotInstalled } from './ArgoNotInstalled'
@@ -165,6 +166,11 @@ export function ArgoDashboardPage({
       title: 'Age',
       key: 'age',
       width: 80,
+      sorter: (a, b) => {
+        const byAge = compareAgeTimestamps(a.timestamp, b.timestamp)
+        if (byAge !== 0) return byAge
+        return a.name.localeCompare(b.name)
+      },
       render: (_v, r) => <AgeCell timestamp={r.timestamp} />
     }
   ]

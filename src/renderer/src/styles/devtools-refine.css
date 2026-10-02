@@ -18,17 +18,17 @@
   --ml-left-sidebar-width: 236px;
 }
 
-/* —— Sidebar: VS Code Explorer —— */
+/* —— Sidebar: Cursor-like calm rail —— */
 .ml-sidebar-brand {
-  height: 44px !important;
-  padding: 0 var(--ml-space-3) !important;
-  justify-content: center !important;
+  height: 48px !important;
+  padding: 0 14px !important;
+  justify-content: flex-start !important;
 }
 
 .ml-sidebar:not(.ml-sidebar--collapsed) .ml-sidebar-brand {
   height: 48px !important;
-  padding: 0 var(--ml-space-3) !important;
-  justify-content: center !important;
+  padding: 0 14px !important;
+  justify-content: flex-start !important;
 }
 
 .ml-sidebar-brand--traffic {
@@ -38,48 +38,44 @@
 
 .ml-sidebar-logo,
 .ml-sidebar:not(.ml-sidebar--collapsed) .ml-sidebar-logo {
-  width: 28px !important;
-  height: 28px !important;
+  width: 22px !important;
+  height: 22px !important;
   border-radius: 0 !important;
 }
 
 .ml-sidebar-brand-text {
-  font-size: 14px !important;
+  font-size: 13.5px !important;
   font-weight: 550 !important;
 }
 
 .ml-sidebar-actions {
-  gap: var(--ml-space-1) !important;
-  padding: var(--ml-space-2) var(--ml-space-2) var(--ml-space-3) !important;
+  gap: 2px !important;
+  padding: 4px 10px 12px !important;
 }
 
 .ml-sidebar-hub-btn {
-  min-height: var(--ml-row-h) !important;
-  padding: 0 10px !important;
+  min-height: 32px !important;
+  padding: 6px 10px !important;
   gap: 10px !important;
-  border-radius: 0 !important;
+  border-radius: 6px !important;
 }
 
 .ml-sidebar-hub-btn--active {
-  background: var(--ml-sidebar-active) !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
   padding-inline-start: 10px !important;
 }
 
 .ml-sidebar-hub-btn--active::before {
-  left: 0 !important;
-  top: 8px !important;
-  bottom: 8px !important;
-  width: 2px !important;
-  border-radius: 0 !important;
+  display: none !important;
 }
 
 .ml-sidebar-hub-btn-icon {
-  width: 20px !important;
-  height: 20px !important;
+  width: 16px !important;
+  height: 16px !important;
   border-radius: 0 !important;
   background: transparent !important;
   color: var(--ml-sidebar-muted) !important;
-  opacity: 0.75;
+  opacity: 0.65;
 }
 
 .ml-sidebar-hub-btn:hover .ml-sidebar-hub-btn-icon,
@@ -90,7 +86,7 @@
 }
 
 .ml-sidebar-hub-btn--active .ml-sidebar-hub-btn-icon {
-  color: var(--ml-primary) !important;
+  color: var(--ml-sidebar-text) !important;
 }
 
 .ml-sidebar-hub-btn-title {
@@ -99,29 +95,29 @@
 }
 
 .ml-sidebar-section {
-  padding: 0 var(--ml-space-2) !important;
-  margin-top: var(--ml-space-2) !important;
+  padding: 0 10px !important;
+  margin-top: 8px !important;
 }
 
 .ml-sidebar-section-chrome--rich {
   min-height: 28px !important;
-  margin: 0 0 var(--ml-space-2) !important;
-  padding: 0 0 var(--ml-space-2) !important;
-  border-bottom: 1px solid var(--ml-sidebar-divider) !important;
+  margin: 0 0 6px !important;
+  padding: 0 2px !important;
+  border-bottom: none !important;
   border-radius: 0 !important;
   background: transparent !important;
 }
 
 .ml-sidebar-section-chrome--rich .ml-sidebar-section-chrome__toggle {
-  min-height: 28px !important;
-  padding: 0 4px !important;
-  border-radius: 0 !important;
+  min-height: 26px !important;
+  padding: 2px 4px !important;
+  border-radius: 6px !important;
 }
 
 .ml-sidebar-section-chrome--rich .ml-sidebar-section-chrome__label {
   font-size: 11px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.02em !important;
+  font-weight: 550 !important;
+  letter-spacing: 0.045em !important;
   text-transform: uppercase !important;
   color: var(--ml-sidebar-muted) !important;
 }
@@ -132,36 +128,34 @@
 
 .favorite-cluster-row,
 .ml-nav-item {
-  min-height: var(--ml-row-h) !important;
-  border-radius: 0 !important;
-  padding: 0 2px !important;
+  min-height: 32px !important;
+  border-radius: 6px !important;
+  padding: 1px 2px !important;
 }
 
 .ml-nav-item__open {
-  min-height: calc(var(--ml-row-h) - 2px) !important;
-  gap: 10px !important;
-  padding: 0 8px !important;
-  border-radius: 0 !important;
+  min-height: 30px !important;
+  gap: 9px !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
 }
 
 .ml-nav-item.is-active {
-  background: var(--ml-sidebar-active) !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
 }
 
 .ml-nav-item.is-active .ml-nav-item__open {
-  /* The leading pill on .ml-nav-item::before now marks selection; a second inset bar here would
-     double it up, and it hid the workspace accent besides. */
   box-shadow: none !important;
 }
 
 .ml-nav-item:not(.is-active):has(.ml-nav-item__open:hover),
 .favorite-cluster-row:not(.active):hover {
-  background: var(--ml-sidebar-hover) !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent) !important;
 }
 
 .ml-nav-item__title {
   font-size: 13px !important;
-  font-weight: 450 !important;
+  font-weight: 500 !important;
 }
 
 /* —— Workspaces list: fluid, scrollable (never collapse to zero) —— */
@@ -186,48 +180,45 @@
 }
 
 .ml-sidebar-section--workspaces .ml-sidebar-section-chrome__glyph {
-  display: inline-flex !important;
+  display: none !important;
 }
 
 .ml-sidebar-section--workspaces .ml-sidebar-search {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
 }
 
 .ml-sidebar-section--workspaces .ml-sidebar-section-chrome--rich {
   align-items: center !important;
-  min-height: 30px !important;
+  min-height: 28px !important;
   gap: 4px !important;
+  margin-bottom: 4px !important;
 }
 
 .ml-sidebar-section--workspaces .ml-sidebar-section-chrome__toggle {
   align-items: center !important;
-  min-height: 28px !important;
-  gap: 8px !important;
-}
-
-.ml-sidebar-section--workspaces .ml-sidebar-section-chrome__glyph {
-  width: 18px !important;
-  height: 18px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  line-height: 0 !important;
+  min-height: 26px !important;
+  gap: 6px !important;
 }
 
 .ml-sidebar-section--workspaces .ml-sidebar-section-chrome__action {
-  width: 26px !important;
-  height: 26px !important;
+  width: 24px !important;
+  height: 24px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
   line-height: 0 !important;
+  border-radius: 6px !important;
 }
 
 .ml-sidebar-section--workspaces .ml-sidebar-section-chrome__count {
   align-self: center !important;
+  opacity: 0.55 !important;
+  padding: 0 2px !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 .ml-sidebar-section--workspaces .ml-sidebar-section-chrome--rich > .ant-tooltip-disabled-compatible-wrapper {
@@ -237,7 +228,7 @@
 }
 
 .ml-sidebar-workspaces {
-  gap: 4px !important;
+  gap: 2px !important;
   padding: 0 0 8px !important;
   scrollbar-gutter: stable;
   flex: 1 1 auto !important;
@@ -246,14 +237,12 @@
 }
 
 /*
- * One deliberate hairline between workspaces, using the same divider token the rest of the
- * sidebar's own section rules already use. Padding-top (not just margin) keeps the line clear
- * of the group above it rather than sitting flush against its last cluster row.
+ * Cursor-like: separate workspaces with whitespace only — no hairline cards.
  */
 .ml-ws-group + .ml-ws-group {
-  margin-top: 8px !important;
-  padding-top: 8px !important;
-  border-top: 1px solid var(--ml-sidebar-divider) !important;
+  margin-top: 4px !important;
+  padding-top: 0 !important;
+  border-top: none !important;
 }
 
 .ml-ws-group__meta {
@@ -308,20 +297,25 @@
 .ml-sidebar-section--compact .ml-ws-rail-item {
   width: 34px;
   height: 34px;
-  border-radius: 0;
+  border-radius: 999px;
+  overflow: hidden;
 }
 
 .ml-sidebar-section--compact .ml-sidebar-list--dock {
-  overflow: visible !important;
+  overflow: hidden !important;
 }
 
 .ml-sidebar-section--compact.ml-sidebar-section--workspaces {
-  overflow: visible !important;
+  overflow: hidden !important;
 }
 
 .ml-sidebar-section--compact .ml-ws-rail-item:hover {
   transform: none;
-  background: transparent;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent);
+}
+
+.ml-sidebar-section--compact .ml-ws-rail-item.is-active {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
 }
 
 .ml-sidebar-list--compact-workspaces {
@@ -340,10 +334,11 @@
 }
 
 .ml-sidebar-footer {
-  padding: var(--ml-space-2) !important;
+  padding: 8px 10px 12px !important;
   margin-top: auto !important;
   flex-shrink: 0 !important;
-  box-shadow: inset 0 1px 0 var(--ml-sidebar-divider) !important;
+  box-shadow: none !important;
+  border-top: none !important;
 }
 
 .ml-sidebar-section--workspaces-collapsed {
@@ -1022,8 +1017,8 @@
 /* —— Cluster tabs: clear left rail + macOS traffic lights —— */
 .ml-cluster-tab-strip--browser,
 .ml-cluster-tab-strip--browser.ml-cluster-tab-strip--traffic {
-  /* When left sidebar collapses, still clear close/minimize/maximize. */
-  padding-left: max(var(--ml-left-sidebar-width, 236px), 88px) !important;
+  /* Must match the live left-rail width exactly — a floor here desyncs tabs from the body. */
+  padding-left: var(--ml-left-sidebar-width, 236px) !important;
 }
 
 .ml-cluster-tab-strip--browser .ml-browser-tabs {
@@ -1109,17 +1104,17 @@
   height: 16px !important;
 }
 
-/* —— Logo + Clusters/VPN hub —— */
+/* —— Logo + Clusters/VPN hub (Cursor-like calm) —— */
 .ml-sidebar-brand {
-  justify-content: center !important;
+  justify-content: flex-start !important;
   height: 48px !important;
-  padding: 0 12px !important;
+  padding: 0 14px !important;
 }
 
 .ml-sidebar:not(.ml-sidebar--collapsed) .ml-sidebar-brand {
   height: 48px !important;
   padding: 0 14px !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
 }
 
 .ml-sidebar-brand--traffic {
@@ -1130,7 +1125,7 @@
 
 .ml-sidebar-brand__mark {
   gap: 9px !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-brand {
@@ -1140,57 +1135,61 @@
 
 .ml-sidebar-logo,
 .ml-sidebar:not(.ml-sidebar--collapsed) .ml-sidebar-logo {
-  width: 28px !important;
-  height: 28px !important;
+  width: 22px !important;
+  height: 22px !important;
   border-radius: 0 !important;
+  opacity: 0.92;
 }
 
 .ml-sidebar-brand-text {
-  font-size: 14px !important;
+  font-size: 13px !important;
   font-weight: 550 !important;
   letter-spacing: -0.02em !important;
-  opacity: 0.95;
+  opacity: 0.92;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-logo {
-  width: 26px !important;
-  height: 26px !important;
+  width: 22px !important;
+  height: 22px !important;
 }
 
 .ml-sidebar-actions {
-  padding: 4px 10px 10px !important;
-  gap: 0 !important;
+  padding: 2px 10px 10px !important;
+  gap: 1px !important;
 }
 
 .ml-sidebar-hub {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   width: 100%;
-  padding: 3px;
+  padding: 0;
   border-radius: 0;
-  background: color-mix(in srgb, var(--ml-sidebar-text) 5%, transparent);
+  background: transparent;
 }
 
 .ml-sidebar-hub--collapsed {
-  grid-template-columns: 1fr;
-  gap: 4px;
-  padding: 3px;
+  gap: 2px;
+  padding: 0;
 }
 
 .ml-sidebar-hub .ml-sidebar-hub-btn {
   min-height: 30px !important;
-  padding: 0 8px !important;
-  gap: 7px !important;
-  border-radius: 0 !important;
-  justify-content: center;
+  padding: 5px 10px !important;
+  gap: 10px !important;
+  border-radius: 6px !important;
+  justify-content: flex-start;
   background: transparent !important;
 }
 
+.ml-sidebar-hub .ml-sidebar-hub-btn:hover {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent) !important;
+}
+
 .ml-sidebar-hub .ml-sidebar-hub-btn--active {
-  background: var(--ml-bg-container) !important;
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--ml-text) 8%, transparent);
-  padding-inline-start: 8px !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
+  box-shadow: none !important;
+  padding-inline-start: 10px !important;
 }
 
 .ml-sidebar-hub .ml-sidebar-hub-btn--active::before {
@@ -1200,37 +1199,43 @@
 .ml-sidebar-hub .ml-sidebar-hub-btn-icon {
   width: 16px !important;
   height: 16px !important;
-  opacity: 0.7;
+  opacity: 0.65;
   background: transparent !important;
 }
 
 .ml-sidebar-hub .ml-sidebar-hub-btn--active .ml-sidebar-hub-btn-icon,
 .ml-sidebar-hub .ml-sidebar-hub-btn:hover .ml-sidebar-hub-btn-icon {
   opacity: 1;
-  color: var(--ml-primary) !important;
+  color: var(--ml-sidebar-text) !important;
   background: transparent !important;
 }
 
 .ml-sidebar-hub .ml-sidebar-hub-btn-title {
-  font-size: 12px !important;
-  font-weight: 450 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
 }
 
 .ml-sidebar-hub .ml-sidebar-hub-btn--vpn-connected {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 10%, transparent) !important;
+  background: transparent !important;
 }
 
 .ml-sidebar-hub .ml-sidebar-hub-btn--vpn-connected.ml-sidebar-hub-btn--active {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 14%, var(--ml-bg-container)) !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-actions {
-  padding: 4px 8px 8px !important;
+  padding: 4px 8px 10px !important;
 }
 
 .ml-sidebar-hub--collapsed .ml-sidebar-hub-btn {
   min-height: 34px !important;
-  padding: 0 !important;
+  padding: 8px !important;
+  justify-content: center;
+  border-radius: 6px !important;
+}
+
+.ml-sidebar-hub--collapsed .ml-sidebar-hub-btn--active {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
 }
 
 /* —— Resource kind menu (cluster resources) —— */
@@ -1464,79 +1469,745 @@
  */
 
 .ml-ws-group__toggle {
-  min-height: 30px !important;
+  min-height: 28px !important;
   padding: 3px 8px !important;
-  border-radius: 0 !important;
+  border-radius: 6px !important;
   font-size: 12.5px !important;
-  font-weight: 450 !important;
-  color: var(--ml-text) !important;
+  font-weight: 500 !important;
+  color: var(--ml-sidebar-text) !important;
+}
+
+.ml-ws-group__toggle:hover {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 5%, transparent) !important;
 }
 
 .ml-ws-group__chevron {
-  opacity: 0.3;
+  opacity: 0.35;
   width: 14px !important;
   height: 14px !important;
 }
 
 .ml-ws-group.is-expanded .ml-ws-group__chevron {
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
 .ml-ws-group__name {
-  letter-spacing: 0.03em !important;
+  letter-spacing: -0.01em !important;
+  font-weight: 500 !important;
 }
 
 /*
- * 20px, not a rounder number: chosen so a nested cluster's own avatar lands exactly under the
- * workspace's avatar above it (verified by measuring both in the live DOM), rather than being
- * indented from the row's own edge by an arbitrary amount. The two icons line up in one column
- * top to bottom, which is what makes this read as a single list rather than a tree.
- *
- * Top/bottom padding matches (2px/2px) rather than the 4px-bottom it briefly had — the group
- * boundary below is already carried by the 8px margin between groups (below), so a heavier
- * bottom pad here just doubled up on it.
+ * Nested clusters: soft capsules, neutral selection — no accent wash, no green live tint.
  */
 .ml-ws-group__list {
-  padding: 2px 0 2px 20px !important;
-  gap: 1px !important;
+  padding: 1px 0 2px 20px !important;
+  gap: 0 !important;
 }
 
 .ml-sidebar-workspaces .ml-nav-item--nested {
   min-height: 28px !important;
-  border-radius: 0 !important;
+  border-radius: 6px !important;
 }
 
 .ml-sidebar-workspaces .ml-nav-item--nested .ml-nav-item__open {
   min-height: 26px !important;
   gap: 8px !important;
   padding: 0 8px !important;
+  border-radius: 6px !important;
 }
 
 .ml-sidebar-workspaces .ml-nav-item--nested .ml-nav-item__title {
-  font-size: 12.5px !important;
-  font-weight: 400 !important;
-  letter-spacing: -0.005em !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--ml-sidebar-text) !important;
 }
 
 .ml-sidebar-workspaces .ml-nav-item--nested:hover:not(.is-active) {
-  background: color-mix(in srgb, var(--ml-text) 5%, transparent) !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent) !important;
 }
 
-/* The one place colour appears in this whole list. */
 .ml-sidebar-workspaces .ml-nav-item--nested.is-active {
-  background: color-mix(in srgb, var(--ml-ws-accent, var(--ml-primary)) 9%, transparent) !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
+  box-shadow: none !important;
 }
 
 .ml-sidebar-workspaces .ml-nav-item--nested.is-active .ml-nav-item__title {
-  color: var(--ml-ws-accent, var(--ml-primary)) !important;
-  font-weight: 450 !important;
+  color: var(--ml-sidebar-text) !important;
+  font-weight: 550 !important;
 }
 
 .ml-ws-group__list .ml-nav-item--nested::before {
   display: none !important;
 }
 
+/* Kill any leftover live/connected green washes inside the sidebar list. */
+.ml-sidebar .ml-nav-item.is-session-live:not(.is-active),
+.ml-sidebar .ml-nav-item.is-fav-connected:not(.is-active),
+.ml-sidebar-workspaces .ml-nav-item.is-session-live:not(.is-active) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ml-sidebar .ml-nav-item.is-session-live.is-active,
+.ml-sidebar .ml-nav-item.is-fav-connected.is-active,
+.ml-sidebar-workspaces .ml-nav-item.is-session-live.is-active {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
+  box-shadow: none !important;
+}
+
 .ml-sidebar-workspaces .ml-nav-item__status-dot {
-  width: 6px !important;
-  height: 6px !important;
+  width: 5px !important;
+  height: 5px !important;
+  min-width: 5px !important;
+  min-height: 5px !important;
+  right: -1px !important;
+  bottom: -1px !important;
+  border-width: 1.5px !important;
+}
+
+/* ============================================================
+   LEFT SIDEBAR — full rebuild (authoritative, loads last)
+   Cursor-like calm rail: one hierarchy, soft capsules, no washes.
+   ============================================================ */
+
+.ml-sidebar {
+  --ml-sb-row: 26px;
+  --ml-sb-pad-x: 8px;
+  --ml-sb-radius: 8px;
+  --ml-sb-icon: 14px;
+  --ml-sb-avatar: 14px;
+  --ml-sb-gap: 8px;
+  --ml-sb-indent: 16px;
+  --ml-sb-hover: color-mix(in srgb, var(--ml-sidebar-text) 5%, transparent);
+  --ml-sb-active: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent);
+  --ml-sb-text: color-mix(in srgb, var(--ml-sidebar-text) 78%, transparent);
+  --ml-sb-text-strong: color-mix(in srgb, var(--ml-sidebar-text) 92%, transparent);
+}
+
+/* —— Brand —— */
+.ml-sidebar-brand {
+  height: 44px !important;
+  padding: 0 var(--ml-sb-pad-x) !important;
+  justify-content: flex-start !important;
+}
+
+.ml-sidebar:not(.ml-sidebar--collapsed) .ml-sidebar-brand {
+  height: 44px !important;
+  padding: 0 var(--ml-sb-pad-x) !important;
+  justify-content: flex-start !important;
+}
+
+.ml-sidebar-brand--traffic {
+  padding-inline: 72px !important;
+  justify-content: center !important;
+}
+
+.ml-sidebar-brand__mark {
+  gap: 8px !important;
+  justify-content: flex-start !important;
+}
+
+.ml-sidebar-logo,
+.ml-sidebar:not(.ml-sidebar--collapsed) .ml-sidebar-logo {
+  width: 20px !important;
+  height: 20px !important;
+  opacity: 0.95 !important;
+}
+
+.ml-sidebar-brand-text {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.02em !important;
+  opacity: 0.88 !important;
+}
+
+/* —— Hub (Clusters / VPN / Sparks) —— */
+.ml-sidebar-actions {
+  padding: 2px var(--ml-sb-pad-x) 8px !important;
+  gap: 1px !important;
+}
+
+.ml-sidebar-hub {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  width: 100% !important;
+  background: transparent !important;
+}
+
+.ml-sidebar-hub .ml-sidebar-hub-btn,
+.ml-sidebar-hub-btn {
+  min-height: var(--ml-sb-row) !important;
+  height: auto !important;
+  padding: 3px 8px !important;
+  gap: var(--ml-sb-gap) !important;
+  border-radius: var(--ml-sb-radius) !important;
+  justify-content: flex-start !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--ml-sb-text) !important;
+}
+
+.ml-sidebar-hub .ml-sidebar-hub-btn:hover,
+.ml-sidebar-hub-btn:hover {
+  background: var(--ml-sb-hover) !important;
+}
+
+.ml-sidebar-hub .ml-sidebar-hub-btn--active,
+.ml-sidebar-hub-btn--active {
+  background: var(--ml-sb-active) !important;
+  box-shadow: none !important;
+  padding-inline-start: 8px !important;
+}
+
+.ml-sidebar-hub .ml-sidebar-hub-btn--active::before,
+.ml-sidebar-hub-btn--active::before {
+  display: none !important;
+  content: none !important;
+}
+
+.ml-sidebar-hub .ml-sidebar-hub-btn-icon,
+.ml-sidebar-hub-btn-icon {
+  width: var(--ml-sb-icon) !important;
+  height: var(--ml-sb-icon) !important;
+  min-width: var(--ml-sb-icon) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  opacity: 0.55 !important;
+  color: inherit !important;
+}
+
+.ml-sidebar-hub .ml-sidebar-hub-btn:hover .ml-sidebar-hub-btn-icon,
+.ml-sidebar-hub .ml-sidebar-hub-btn--active .ml-sidebar-hub-btn-icon,
+.ml-sidebar-hub-btn:hover .ml-sidebar-hub-btn-icon,
+.ml-sidebar-hub-btn--active .ml-sidebar-hub-btn-icon {
+  opacity: 1 !important;
+  color: var(--ml-sidebar-text) !important;
+  background: transparent !important;
+}
+
+.ml-sidebar-hub .ml-sidebar-hub-btn-title,
+.ml-sidebar-hub-btn-title {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.01em !important;
+  color: inherit !important;
+}
+
+.ml-sidebar-hub .ml-sidebar-hub-btn:hover,
+.ml-sidebar-hub-btn:hover,
+.ml-sidebar-hub .ml-sidebar-hub-btn--active,
+.ml-sidebar-hub-btn--active {
+  color: var(--ml-sb-text-strong) !important;
+}
+
+.ml-sidebar-hub-btn-icon--vpn-connected {
+  color: var(--ml-success, #22c55e) !important;
+  opacity: 1 !important;
+  background: transparent !important;
+}
+
+.ml-sidebar-hub .ml-sidebar-hub-btn--vpn-connected,
+.ml-sidebar-hub-btn--vpn-connected {
+  background: transparent !important;
+  color: var(--ml-sidebar-text) !important;
+}
+
+.ml-sidebar-hub .ml-sidebar-hub-btn--vpn-connected.ml-sidebar-hub-btn--active,
+.ml-sidebar-hub-btn--vpn-connected.ml-sidebar-hub-btn--active {
+  background: var(--ml-sb-active) !important;
+}
+
+.ml-sidebar-hub-btn--vpn-connected .ml-sidebar-hub-btn-title {
+  color: var(--ml-sidebar-text) !important;
+}
+
+/* Collapsed hub rail */
+.ml-sidebar-hub--collapsed .ml-sidebar-hub-btn {
+  min-height: 34px !important;
+  padding: 8px !important;
+  justify-content: center !important;
+  border-radius: var(--ml-sb-radius) !important;
+}
+
+.ml-sidebar--collapsed .ml-sidebar-actions {
+  padding: 4px 8px 8px !important;
+}
+
+/* —— Sections —— */
+.ml-sidebar-section {
+  padding: 0 var(--ml-sb-pad-x) !important;
+  margin-top: 6px !important;
+}
+
+.ml-sidebar-section-chrome--rich {
+  min-height: 26px !important;
+  margin: 0 0 4px !important;
+  padding: 0 2px !important;
+  border: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  gap: 4px !important;
+}
+
+.ml-sidebar-section-chrome__glyph {
+  display: none !important;
+}
+
+.ml-sidebar-section-chrome--rich .ml-sidebar-section-chrome__label,
+.ml-sidebar-section-chrome__label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  color: var(--ml-sidebar-muted) !important;
+  opacity: 0.85 !important;
+}
+
+.ml-sidebar-section-chrome__count {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--ml-sidebar-muted) !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 2px !important;
+  opacity: 0.55 !important;
+}
+
+.ml-sidebar-section-chrome__action {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: var(--ml-sb-radius) !important;
+  color: var(--ml-sidebar-muted) !important;
+}
+
+.ml-sidebar-section-chrome__action:hover {
+  background: var(--ml-sb-hover) !important;
+  color: var(--ml-sidebar-text) !important;
+}
+
+.ml-sidebar-section-chrome--rich .ml-sidebar-section-chrome__toggle {
+  min-height: 24px !important;
+  padding: 2px 4px !important;
+  border-radius: var(--ml-sb-radius) !important;
+  gap: 6px !important;
+}
+
+.ml-sidebar-section-chrome--rich .ml-sidebar-section-chrome__toggle > svg {
+  opacity: 0.45 !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* —— Search —— */
+.ml-sidebar-search {
+  margin-bottom: 8px !important;
+}
+
+.ml-sidebar-search .ant-input-affix-wrapper,
+.ml-sidebar-search .ml-sidebar-search__input.ant-input-affix-wrapper {
+  min-height: 28px !important;
+  height: 28px !important;
+  padding: 0 8px !important;
+  border-radius: var(--ml-sb-radius) !important;
+  border: none !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.ml-sidebar-search .ant-input-affix-wrapper:hover,
+.ml-sidebar-search .ant-input-affix-wrapper-focused,
+.ml-sidebar-search .ant-input-affix-wrapper:focus-within {
+  border: none !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.ml-sidebar-search .ant-input {
+  font-size: 12.5px !important;
+  color: var(--ml-sidebar-text) !important;
+}
+
+/* —— Favorites / generic nav rows —— */
+.ml-sidebar .favorite-cluster-row,
+.ml-sidebar .ml-nav-item {
+  min-height: var(--ml-sb-row) !important;
+  padding: 0 !important;
+  border-radius: var(--ml-sb-radius) !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}
+
+.ml-sidebar .ml-nav-item__open {
+  min-height: var(--ml-sb-row) !important;
+  padding: 4px 8px !important;
+  gap: var(--ml-sb-gap) !important;
+  border-radius: var(--ml-sb-radius) !important;
+  background: transparent !important;
+}
+
+.ml-sidebar .ml-nav-item__title {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--ml-sidebar-text) !important;
+  opacity: 1 !important;
+}
+
+.ml-sidebar .ml-nav-item:not(.is-active):hover,
+.ml-sidebar .favorite-cluster-row:not(.active):hover,
+.ml-sidebar .ml-nav-item:not(.is-active):has(.ml-nav-item__open:hover) {
+  background: var(--ml-sb-hover) !important;
+}
+
+.ml-sidebar .ml-nav-item.is-active,
+.ml-sidebar .favorite-cluster-row.active {
+  background: var(--ml-sb-active) !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.ml-sidebar .ml-nav-item::before,
+.ml-sidebar .ml-nav-item.is-active::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* No green / accent washes — status lives on the avatar dot only */
+.ml-sidebar .ml-nav-item.is-session-live,
+.ml-sidebar .ml-nav-item.is-fav-connected,
+.ml-sidebar .ml-nav-item.is-session-live:not(.is-active),
+.ml-sidebar .ml-nav-item.is-fav-connected:not(.is-active) {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.ml-sidebar .ml-nav-item.is-session-live.is-active,
+.ml-sidebar .ml-nav-item.is-fav-connected.is-active {
+  background: var(--ml-sb-active) !important;
+  box-shadow: none !important;
+}
+
+.ml-sidebar .ml-nav-item__status-dot {
+  width: 5px !important;
+  height: 5px !important;
+  min-width: 5px !important;
+  min-height: 5px !important;
+  right: -1px !important;
+  bottom: -1px !important;
+  border-width: 1.5px !important;
+}
+
+/* —— Workspaces: flat list (same row language as hub) —— */
+.ml-sidebar-section--workspaces {
+  margin-top: 6px !important;
+  padding-bottom: 4px !important;
+}
+
+.ml-sidebar-section--workspaces .ml-sidebar-section-chrome--rich {
+  margin-bottom: 6px !important;
+}
+
+.ml-sidebar-section--workspaces .ml-sidebar-section-chrome__label {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: color-mix(in srgb, var(--ml-sidebar-text) 45%, transparent) !important;
+  opacity: 1 !important;
+}
+
+.ml-sidebar-workspaces {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 0 0 6px !important;
+}
+
+.ml-ws-group + .ml-ws-group {
+  margin-top: 1px !important;
+  padding-top: 0 !important;
+  border-top: none !important;
+}
+
+.ml-ws-group {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.ml-ws-group__head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Workspace row = list row */
+.ml-ws-group__toggle {
+  flex: 1 !important;
+  min-width: 0 !important;
+  min-height: 32px !important;
+  padding: 5px 8px !important;
+  gap: 8px !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: var(--ml-sidebar-text) !important;
+}
+
+.ml-ws-group__toggle:hover {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 7%, transparent) !important;
+}
+
+.ml-ws-group__chevron {
+  width: 12px !important;
+  height: 12px !important;
+  opacity: 0.45 !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.ml-ws-group.is-expanded .ml-ws-group__chevron {
+  opacity: 0.65 !important;
+}
+
+.ml-ws-group__avatar {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.ml-ws-group__avatar .ml-cluster-avatar,
+.ml-ws-group__avatar > * {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.ml-ws-group__meta {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.ml-ws-group__name {
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 18px !important;
+  letter-spacing: -0.01em !important;
+  color: var(--ml-sidebar-text) !important;
+  text-transform: none !important;
+  opacity: 1 !important;
+}
+
+.ml-ws-group__shortcut {
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  color: color-mix(in srgb, var(--ml-sidebar-text) 40%, transparent) !important;
+  opacity: 1 !important;
+}
+
+.ml-ws-group__menu {
+  width: 26px !important;
+  height: 26px !important;
+  margin-right: 2px !important;
+  border-radius: 6px !important;
+  opacity: 0 !important;
+  color: color-mix(in srgb, var(--ml-sidebar-text) 55%, transparent) !important;
+}
+
+.ml-ws-group__head:hover .ml-ws-group__menu,
+.ml-ws-group__head:focus-within .ml-ws-group__menu {
+  opacity: 1 !important;
+}
+
+.ml-ws-group__menu:hover {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent) !important;
+  color: var(--ml-sidebar-text) !important;
+}
+
+/*
+ * Cluster children — same list, light indent (chevron column only).
+ * Same type size as readable list labels; no muted "behind" text.
+ */
+.ml-ws-group__list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 0 2px 20px !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested,
+.ml-ws-group__list .ml-nav-item,
+.ml-ws-group__list .ml-nav-item--nested {
+  min-height: 32px !important;
+  padding: 0 !important;
+  border-radius: 6px !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested .ml-nav-item__open,
+.ml-ws-group__list .ml-nav-item__open {
+  min-height: 32px !important;
+  padding: 5px 8px !important;
+  gap: 8px !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested .ml-nav-item__body,
+.ml-ws-group__list .ml-nav-item__body {
+  gap: 0 !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested .ml-nav-item__title,
+.ml-ws-group__list .ml-nav-item__title,
+.ml-sidebar .ml-nav-item--nested .ml-nav-item__title {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 18px !important;
+  letter-spacing: -0.01em !important;
+  color: var(--ml-sidebar-text) !important;
+  opacity: 1 !important;
+}
+
+.ml-ws-group__list .ml-nav-item__meta {
+  display: none !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested:hover:not(.is-active),
+.ml-ws-group__list .ml-nav-item--nested:not(.is-active):hover,
+.ml-ws-group__list .ml-nav-item--nested:not(.is-active):has(.ml-nav-item__open:hover) {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 7%, transparent) !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested.is-active,
+.ml-ws-group__list .ml-nav-item.is-active,
+.ml-ws-group__list .ml-nav-item--nested.is-active {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 12%, transparent) !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested.is-active .ml-nav-item__title,
+.ml-ws-group__list .ml-nav-item.is-active .ml-nav-item__title {
+  color: var(--ml-sidebar-text) !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+.ml-ws-group__list .ml-nav-item--nested::before {
+  display: none !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested .ml-nav-item__avatar-wrap,
+.ml-ws-group__list .ml-nav-item__avatar-wrap {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+}
+
+.ml-sidebar-workspaces .ml-nav-item--nested .ml-cluster-avatar,
+.ml-ws-group__list .ml-cluster-avatar {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.ml-ws-group__empty {
+  padding: 6px 8px 8px 8px !important;
+  font-size: 12px !important;
+  font-weight: 450 !important;
+  color: color-mix(in srgb, var(--ml-sidebar-text) 45%, transparent) !important;
+}
+
+/* —— Footer —— */
+.ml-sidebar-footer {
+  padding: 8px var(--ml-sb-pad-x) 10px !important;
+  margin-top: auto !important;
+  border-top: none !important;
+  box-shadow: none !important;
+}
+
+.ml-sidebar-footer .ml-sidebar-btn {
+  min-height: var(--ml-sb-row) !important;
+  padding: 0 8px !important;
+  border-radius: var(--ml-sb-radius) !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: var(--ml-sb-text) !important;
+}
+
+.ml-sidebar-footer .ml-sidebar-btn:hover:not(.ml-sidebar-btn--settings):not(.ml-sidebar-footer__collapse) {
+  background: var(--ml-sb-hover) !important;
+}
+
+.ml-sidebar-footer__collapse {
+  width: 30px !important;
+  min-width: 30px !important;
+  margin-left: auto !important;
+  border-radius: var(--ml-sb-radius) !important;
+  background: transparent !important;
+}
+
+.ml-sidebar-footer__collapse:hover,
+.ml-sidebar-footer__collapse:focus,
+.ml-sidebar-footer__collapse:active {
+  background: transparent !important;
+}
+
+/* —— Collapsed workspace rail —— */
+.ml-sidebar--collapsed .ml-ws-rail-item,
+.ml-sidebar-section--compact .ml-ws-rail-item {
+  border-radius: 999px !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent) !important;
+  overflow: hidden !important;
+}
+
+.ml-sidebar--collapsed .ml-ws-rail-item.is-active,
+.ml-sidebar-section--compact .ml-ws-rail-item.is-active,
+.ml-ws-rail-item.is-active,
+.ml-ws-rail-item.is-flyout-open {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 14%, transparent) !important;
+}
+
+.ml-ws-rail-item.is-session-live {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent) !important;
+}
+
+.ml-ws-rail-item.is-session-live.is-active {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 14%, transparent) !important;
+}
+
+.ml-sidebar--collapsed .ml-ws-rail-item .ml-cluster-avatar,
+.ml-sidebar-section--compact .ml-ws-rail-item .ml-cluster-avatar,
+.ml-sidebar--collapsed .ml-ws-rail-item img,
+.ml-sidebar-section--compact .ml-ws-rail-item img {
+  border-radius: 999px !important;
 }

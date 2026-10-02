@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { startTransition, useEffect, useState } from 'react'
 import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import type { ResourceKind } from '@shared/resourceKinds'
 import { isNamespaceScoped } from '@shared/resourceKinds'
@@ -51,12 +51,33 @@ function useWatchSession(
     const sessionId = nextSessionId()
     setStatus('connecting')
 
+    // Coalesce IPC watch batches onto one animation frame so a chatty cluster
+    // cannot rebuild the full resource Map dozens of times per second (main
+    // already batches; this keeps the renderer off the critical path too).
+    let pending: ResourceWatchEventPayload['changes'] = []
+    let rafId = 0
+    let needsNamespaceRefresh = false
+
+    const flushPending = (): void => {
+      rafId = 0
+      if (stopped || pending.length === 0) return
+      const changes = pending
+      pending = []
+      const refreshNs = needsNamespaceRefresh
+      needsNamespaceRefresh = false
+      startTransition(() => {
+        queryClient.setQueryData(queryKey, (prev: unknown) => applyChanges(prev, changes))
+      })
+      if (refreshNs) void refreshNamespaces(queryClient, clusterId)
+    }
+
     const unsubEvent = window.api.resource.watch.onEvent((payload) => {
-      if (payload.sessionId !== sessionId) return
-      queryClient.setQueryData(queryKey, (prev: unknown) => applyChanges(prev, payload.changes))
+      if (payload.sessionId !== sessionId || stopped) return
+      pending.push(...payload.changes)
       if (target?.type === 'builtin' && target.kind === 'Namespaces' && payload.changes.length > 0) {
-        void refreshNamespaces(queryClient, clusterId)
+        needsNamespaceRefresh = true
       }
+      if (!rafId) rafId = requestAnimationFrame(flushPending)
     })
 
     const unsubStatus = window.api.resource.watch.onStatus((payload) => {
@@ -76,6 +97,8 @@ function useWatchSession(
 
     return () => {
       stopped = true
+      if (rafId) cancelAnimationFrame(rafId)
+      pending = []
       unsubEvent()
       unsubStatus()
       void window.api.resource.watch.stop({ sessionId })
@@ -98,10 +121,11 @@ export function useBuiltinResourceWatch(
   const queryClient = useQueryClient()
   const kindNeedsNamespace = !!kind && isNamespaceScoped(kind)
   const apiNamespace = kindNeedsNamespace ? listNamespaceParam(namespaceSelection) : 'ALL'
+  const queryKeyNamespace = kindNeedsNamespace ? namespaceSelection : 'ALL'
   const target: ResourceWatchTarget | null = kind ? { type: 'builtin', kind } : null
   return useWatchSession(
     queryClient,
-    ['resource-list', clusterId, namespaceSelection, kind],
+    ['resource-list', clusterId, queryKeyNamespace, kind],
     clusterId,
     apiNamespace ?? 'ALL',
     target,

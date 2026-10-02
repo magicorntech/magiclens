@@ -1117,6 +1117,7 @@ html[data-ui-contrast='bright'] #root {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   height: 48px;
   padding: 0 8px;
   flex-shrink: 0;
@@ -1125,10 +1126,17 @@ html[data-ui-contrast='bright'] #root {
   color: var(--ml-sidebar-text);
 }
 
+/* macOS hiddenInset traffic lights sit over the leading edge — clear them so the
+   menu button is not under the native chrome (matches cluster tab strip inset). */
+.mobile-app-bar--traffic {
+  padding-left: 78px;
+}
+
 .mobile-app-bar-brand {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   color: var(--ml-sidebar-text);
 }
 
@@ -1137,6 +1145,7 @@ html[data-ui-contrast='bright'] #root {
   align-items: center;
   gap: 2px;
   height: 30px;
+  flex-shrink: 0;
 }
 
 .mobile-app-bar .ml-icon-btn {
@@ -1278,91 +1287,89 @@ html[data-ui-contrast='bright'] #root {
 .ml-sidebar-hub-btn {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
   width: 100%;
-  min-height: 36px;
+  min-height: 32px;
   padding: 6px 10px;
   border: none;
-  border-radius: 0;
+  border-radius: 6px;
   background: transparent;
   color: var(--ml-sidebar-text);
   text-align: left;
   cursor: pointer;
   position: relative;
-  transition: background 0.14s ease, color 0.14s ease;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
 .ml-sidebar-hub-btn:hover {
-  background: var(--ml-sidebar-hover);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent);
 }
 
 .ml-sidebar-hub-btn--active {
-  background: var(--ml-sidebar-active);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent);
   box-shadow: none;
   border-inline-start: none;
   padding-inline-start: 10px;
 }
 
 .ml-sidebar-hub-btn--active::before {
-  content: '';
-  position: absolute;
-  left: 3px;
-  top: 9px;
-  bottom: 9px;
-  width: 2.5px;
-  border-radius: 0;
-  background: var(--ml-primary);
+  display: none;
 }
 
 .ml-sidebar-hub-btn-icon {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 18px;
+  height: 18px;
   border-radius: 0;
-  background: color-mix(in srgb, var(--ml-sidebar-text) 5%, transparent);
+  background: transparent;
   color: var(--ml-sidebar-muted);
   flex-shrink: 0;
-  transition: background 0.14s ease, color 0.14s ease;
+  opacity: 0.72;
+  transition: color 0.12s ease, opacity 0.12s ease;
 }
 
 .ml-sidebar-hub-btn:hover .ml-sidebar-hub-btn-icon,
 .ml-sidebar-hub-btn--active .ml-sidebar-hub-btn-icon {
-  color: var(--ml-primary);
-  background: color-mix(in srgb, var(--ml-primary) 12%, transparent);
+  color: var(--ml-sidebar-text);
+  background: transparent;
+  opacity: 1;
 }
 
 .ml-sidebar-hub-btn-icon--vpn-connected {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 22%, transparent);
+  background: transparent;
   color: var(--ml-success, #22c55e);
+  opacity: 1;
   animation: ml-vpn-pulse 1.6s ease-in-out infinite;
 }
 
 .ml-sidebar-hub-btn-icon--vpn-connecting {
-  background: color-mix(in srgb, var(--ml-primary) 18%, transparent);
+  background: transparent;
+  color: var(--ml-primary);
+  opacity: 1;
   animation: ml-vpn-pulse 1s ease-in-out infinite;
 }
 
 .ml-sidebar-hub-btn--vpn-connected {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 12%, transparent);
-  color: var(--ml-success, #22c55e);
+  background: transparent;
+  color: var(--ml-sidebar-text);
 }
 
 .ml-sidebar-hub-btn--vpn-connected:hover {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 18%, transparent);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent);
 }
 
 .ml-sidebar-hub-btn--vpn-connected .ml-sidebar-hub-btn-title {
-  color: var(--ml-success, #22c55e);
-  font-weight: 600;
+  color: var(--ml-sidebar-text);
+  font-weight: 500;
 }
 
 .ml-sidebar-hub-btn--vpn-connected.ml-sidebar-hub-btn--active {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 16%, transparent);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent);
 }
 
 .ml-sidebar-hub-btn--vpn-connected.ml-sidebar-hub-btn--active::before {
-  background: var(--ml-success, #22c55e);
+  display: none;
 }
 
 .ml-sidebar-hub-btn--vpn-connecting {
@@ -1373,11 +1380,9 @@ html[data-ui-contrast='bright'] #root {
   0%,
   100% {
     opacity: 1;
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ml-success, #22c55e) 45%, transparent);
   }
   50% {
-    opacity: 0.72;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--ml-success, #22c55e) 0%, transparent);
+    opacity: 0.55;
   }
 }
 
@@ -2118,7 +2123,7 @@ html[data-ui-contrast='bright'] #root {
 
 .ml-sidebar-hub-btn-title {
   font-size: 13px;
-  font-weight: 450;
+  font-weight: 500;
   letter-spacing: -0.01em;
   line-height: 1.2;
 }
@@ -2133,13 +2138,16 @@ html[data-ui-contrast='bright'] #root {
 
 .ml-sidebar--collapsed .ml-sidebar-hub-btn {
   justify-content: center;
-  padding: 6px;
+  padding: 0;
   min-height: 40px;
+  width: 40px;
+  border-radius: 999px;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-hub-btn-icon {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
 }
 
 .ml-bottom-panel {
@@ -3336,81 +3344,186 @@ html[data-ui-contrast='bright'] #root {
   }
 }
 
-/* Global search (Ctrl+K) */
+/* Global search (⌘K / Ctrl+K) — clean command palette */
+.global-search-modal .ant-modal {
+  max-width: 92vw;
+}
+
 .global-search-modal .ant-modal-content {
+  border-radius: 0 !important;
   overflow: hidden;
+  box-shadow: var(--ml-shadow-lg) !important;
+  border: 1px solid var(--ml-border-secondary);
+  background: var(--ml-bg-container);
 }
 
 .global-search-header {
-  padding: 10px 12px;
-  border-bottom: none;
-  box-shadow: inset 0 -1px 0 var(--ml-border-secondary);
+  padding: 14px 18px;
+  background: var(--ml-bg-container);
+}
+
+.global-search-header .ant-input-affix-wrapper,
+.global-search-header .ant-input {
+  font-size: 15px;
+  line-height: 1.4;
 }
 
 .global-search-filters {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 12px;
-  border-bottom: none;
-  box-shadow: inset 0 -1px 0 var(--ml-border-secondary);
-  max-height: 88px;
-  overflow-y: auto;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 0 14px 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--ml-border-secondary);
 }
 
-.global-search-filter-hint {
-  opacity: 0.55;
-  font-size: 10px;
-  margin-left: 4px;
+.global-search-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.global-search-filter-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 11px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ml-text-tertiary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.12s ease,
+    background 0.12s ease;
+}
+
+.global-search-filter-chip:hover {
+  color: var(--ml-text);
+  background: color-mix(in srgb, var(--ml-text) 5%, transparent);
+}
+
+.global-search-filter-chip.is-active {
+  color: var(--ml-text);
+  background: color-mix(in srgb, var(--ml-text) 9%, transparent);
 }
 
 .global-search-body {
-  max-height: min(60vh, 420px);
+  max-height: min(62vh, 480px);
   overflow-y: auto;
-  padding: 4px 0;
+  padding: 4px 0 8px;
 }
 
 .global-search-loading,
-.global-search-hint {
-  padding: 16px;
+.global-search-hint,
+.global-search-error {
+  padding: 24px 18px;
+}
+
+.global-search-error {
+  display: block;
+}
+
+.global-search-hint__lead {
+  margin: 0;
+  color: var(--ml-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.global-search-hint__examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.global-search-hint__examples code {
+  padding: 3px 8px;
+  border: 1px solid var(--ml-border-secondary);
+  background: transparent;
+  color: var(--ml-text-tertiary);
+  font-family: var(--ml-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+}
+
+.global-search-hint__meta {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--ml-text-tertiary);
+}
+
+.global-search-hint__meta--warn {
+  color: var(--ml-warning);
+}
+
+.global-search-empty {
+  margin: 32px 18px !important;
+}
+
+.global-search-group + .global-search-group {
+  margin-top: 6px;
 }
 
 .global-search-group-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px 4px;
+  padding: 10px 18px 4px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ml-text-secondary);
+  letter-spacing: 0.06em;
+  color: var(--ml-text-tertiary);
+}
+
+.global-search-group-title__count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 550;
+  opacity: 0.75;
 }
 
 .global-search-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
+  min-height: 48px;
   border: none;
   background: transparent;
   text-align: left;
-  padding: 8px 12px;
+  padding: 8px 18px;
   cursor: pointer;
   color: inherit;
 }
 
 .global-search-item:hover,
-.global-search-item.active {
-  background: var(--ml-bg-spotlight, rgba(127, 127, 127, 0.08));
+.global-search-item.is-active {
+  background: color-mix(in srgb, var(--ml-text) 6%, transparent);
 }
 
 .global-search-item-icon {
   display: inline-flex;
-  width: 20px;
+  align-items: center;
   justify-content: center;
-  opacity: 0.75;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
+  opacity: 0.55;
+  color: var(--ml-text-secondary);
+}
+
+.global-search-item.is-active .global-search-item-icon,
+.global-search-item:hover .global-search-item-icon {
+  opacity: 0.85;
 }
 
 .global-search-item-main {
@@ -3421,39 +3534,89 @@ html[data-ui-contrast='bright'] #root {
   gap: 2px;
 }
 
-.global-search-item-sub {
-  font-size: 12px;
-  color: var(--ml-text-secondary);
+.global-search-item-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--ml-text);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.global-search-item-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ml-text-tertiary);
+  line-height: 1.35;
+}
+
+.global-search-status--ok {
+  color: var(--ml-success);
+}
+
+.global-search-status--warn {
+  color: var(--ml-warning);
+}
+
+.global-search-status--err {
+  color: var(--ml-error);
+}
+
+.global-search-status--idle {
+  color: var(--ml-text-tertiary);
 }
 
 .global-search-item-meta {
-  font-size: 11px;
-  color: var(--ml-text-secondary);
+  max-width: 30%;
   flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--ml-text-tertiary);
 }
 
 .global-search-footer {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
-  padding: 8px 12px;
-  border-top: none;
-  box-shadow: inset 0 1px 0 var(--ml-border-secondary);
+  padding: 9px 18px;
+  border-top: 1px solid var(--ml-border-secondary);
   font-size: 11px;
-  color: var(--ml-text-secondary);
+  color: var(--ml-text-tertiary);
+}
+
+.global-search-footer__hint {
+  min-width: 0;
+}
+
+.global-search-footer__shortcut {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.global-search-footer__plus {
+  opacity: 0.5;
 }
 
 .global-search-footer kbd {
   display: inline-block;
-  padding: 1px 5px;
-  border-radius: 0;
+  min-width: 1.35em;
+  padding: 2px 5px;
   border: 1px solid var(--ml-border-secondary);
-  background: var(--ml-bg-container);
+  background: transparent;
+  color: var(--ml-text-tertiary);
   font-size: 10px;
   font-family: inherit;
+  text-align: center;
+  line-height: 1.3;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -3472,6 +3635,17 @@ html[data-ui-contrast='bright'] #root {
   min-height: 0;
   display: flex;
   flex-direction: row;
+}
+
+/* Compact/mobile overlay shell: same flex contract as .app-layout-body so the
+   absolute-fill content pane gets a real height. Without this the main column
+   collapses to 0 and only the mobile app bar is visible over the layout bg. */
+.app-layout-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-layout-content {
@@ -3689,7 +3863,7 @@ html[data-ui-contrast='bright'] #root {
   height: 52px;
   min-height: 52px;
   padding: 0;
-  padding-left: max(var(--ml-left-sidebar-width, 236px), 88px);
+  padding-left: var(--ml-left-sidebar-width, 236px);
   background: var(--ml-bg-elevated);
   border-bottom: 1px solid var(--ml-border-secondary);
   z-index: 32;
@@ -3704,14 +3878,14 @@ html[data-ui-contrast='bright'] #root {
   left: 0;
   top: 0;
   bottom: 0;
-  width: max(var(--ml-left-sidebar-width, 236px), 88px);
+  width: var(--ml-left-sidebar-width, 236px);
   background: var(--ml-sidebar-bg);
   border-right: 1px solid var(--ml-sidebar-divider);
   pointer-events: none;
 }
 
 .ml-cluster-tab-strip--browser.ml-cluster-tab-strip--traffic {
-  padding-left: max(var(--ml-left-sidebar-width, 236px), 88px);
+  padding-left: var(--ml-left-sidebar-width, 236px);
 }
 
 .ml-cluster-tab-strip-tabs {
@@ -3971,6 +4145,35 @@ body.ml-browser-tab-dragging {
   line-height: 0;
 }
 
+.ml-chrome-brand {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 7px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ml-border-secondary, #333) 80%, transparent);
+}
+
+.ml-chrome-brand__logo {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 7px;
+}
+
+.ml-chrome-actions--strip .ml-chrome-brand {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 6px;
+}
+
+.ml-chrome-actions--strip .ml-chrome-brand__logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+
 .ml-chrome-actions .ml-icon-btn,
 .ml-chrome-actions .ml-action-btn {
   width: 30px;
@@ -4192,8 +4395,7 @@ body.ml-browser-tab-dragging {
   display: none !important;
 }
 
-/* Sidebar — calm rail. A 1px divider separates it from the resource nav so the two
-   columns don't melt into one surface when their backgrounds are close. */
+/* Sidebar — Cursor-like calm rail */
 .ml-sidebar {
   position: relative;
   height: 100%;
@@ -4202,75 +4404,49 @@ body.ml-browser-tab-dragging {
   flex-shrink: 0;
   overflow: hidden;
   background: var(--ml-sidebar-bg);
-  border-right: 1px solid var(--ml-sidebar-divider);
+  border-right: 1px solid color-mix(in srgb, var(--ml-sidebar-divider) 55%, transparent);
 }
 
 .ml-sidebar--collapsed {
-  /* Let Dock-magnified workspace icons bloom past the rail edges. */
-  overflow: visible;
-  z-index: 28;
+  /* Keep rail clipped so hub/workspace icons never paint over the resource menu. */
+  overflow: hidden;
+  z-index: 20;
 }
 
 .ml-sidebar-brand {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  height: 48px;
-  padding: 0 14px;
+  display: block;
+  height: 28px;
+  padding: 0;
   flex-shrink: 0;
 }
 
 .ml-sidebar:not(.ml-sidebar--collapsed) .ml-sidebar-brand {
-  height: 52px;
-  padding: 0 16px;
-}
-
-.ml-sidebar--collapsed .ml-sidebar-brand {
-  justify-content: center;
+  height: 28px;
   padding: 0;
 }
 
-/* Reserve traffic-light space equally on both sides so logo+wordmark stay centered */
+.ml-sidebar--collapsed .ml-sidebar-brand {
+  height: 44px;
+  padding: 0;
+}
+
 .ml-sidebar-brand--traffic {
-  padding-inline: 56px;
+  height: 44px;
+  padding: 0;
 }
 
-.ml-sidebar-brand__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.ml-sidebar-logo {
-  width: 26px;
-  height: 26px;
-  border-radius: 0;
-  flex-shrink: 0;
-  object-fit: contain;
-  display: block;
-}
-
-.ml-sidebar:not(.ml-sidebar--collapsed) .ml-sidebar-logo {
-  width: 28px;
-  height: 28px;
-  border-radius: 0;
-}
-
+.ml-sidebar-brand__mark,
+.ml-sidebar-logo-tile,
+.ml-sidebar-logo,
 .ml-sidebar-brand-text {
-  white-space: nowrap;
-  font-size: 14px;
-  font-weight: 550;
-  color: var(--ml-sidebar-text);
-  letter-spacing: -0.02em;
-  line-height: 1;
+  display: none;
 }
 
 .ml-sidebar-actions {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 4px 12px 10px;
+  gap: 2px;
+  padding: 4px 10px 12px;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-actions {
@@ -4281,15 +4457,15 @@ body.ml-browser-tab-dragging {
 .ml-sidebar-btn {
   display: inline-flex;
   align-items: center;
-  gap: var(--ml-icon-label-gap, 12px);
+  gap: var(--ml-icon-label-gap, 10px);
   width: 100%;
   min-height: 32px;
   padding: 0 10px;
   border: none;
-  border-radius: 0;
+  border-radius: 6px;
   background: transparent;
   color: var(--ml-sidebar-text);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   line-height: 1;
   cursor: pointer;
@@ -4297,7 +4473,7 @@ body.ml-browser-tab-dragging {
 }
 
 .ml-sidebar-btn:hover {
-  background: var(--ml-sidebar-hover);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent);
 }
 
 .ml-sidebar-btn--primary {
@@ -4309,9 +4485,9 @@ body.ml-browser-tab-dragging {
 }
 
 .ml-sidebar-btn--active {
-  background: var(--ml-sidebar-active);
-  color: var(--ml-primary);
-  box-shadow: inset 2px 0 0 var(--ml-primary);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent);
+  color: var(--ml-sidebar-text);
+  box-shadow: none;
 }
 
 .ml-sidebar-btn--ghost {
@@ -4319,19 +4495,31 @@ body.ml-browser-tab-dragging {
 }
 
 .ml-sidebar-btn--settings {
-  color: var(--ml-sidebar-text) !important;
-  font-weight: 400;
+  color: var(--ml-sidebar-muted) !important;
+  font-weight: 450;
   letter-spacing: 0.01em;
+  background: transparent !important;
 }
 
 .ml-sidebar-btn--settings svg {
-  color: var(--ml-sidebar-text);
-  opacity: 1;
-  stroke-width: 1.8px;
+  color: inherit;
+  opacity: 0.85;
+  stroke-width: 1.75px;
 }
 
-.ml-sidebar-footer .ml-sidebar-btn:hover {
-  background: transparent;
+.ml-sidebar-btn--settings:hover,
+.ml-sidebar-btn--settings:focus,
+.ml-sidebar-btn--settings:active,
+.ml-sidebar-footer .ml-sidebar-btn--settings:hover,
+.ml-sidebar-footer .ml-sidebar-btn--settings:focus,
+.ml-sidebar-footer .ml-sidebar-btn--settings:active {
+  background: transparent !important;
+  color: var(--ml-sidebar-muted) !important;
+  box-shadow: none !important;
+}
+
+.ml-sidebar-footer .ml-sidebar-btn:hover:not(.ml-sidebar-btn--settings):not(.ml-sidebar-footer__collapse) {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent);
 }
 
 .ml-sidebar-section {
@@ -4339,35 +4527,36 @@ body.ml-browser-tab-dragging {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 12px;
-  margin-top: 4px;
+  padding: 0 10px;
+  margin-top: 8px;
   position: relative;
   overflow: hidden;
 }
 
 .ml-sidebar-section-resize {
   position: absolute;
-  left: 14px;
-  right: 14px;
+  left: 12px;
+  right: 12px;
   bottom: 0;
   height: 5px;
   cursor: row-resize;
-  border-radius: 0;
+  border-radius: 3px;
   transition: background 0.14s ease;
 }
 
 .ml-sidebar-section-resize:hover,
 .ml-sidebar-section-resize:active {
-  background: color-mix(in srgb, var(--ml-primary) 28%, transparent);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 12%, transparent);
 }
 
 .ml-sidebar-section-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ml-sidebar-muted);
   padding: 6px 8px 4px;
+  opacity: 0.85;
 }
 
 .ml-sidebar-section-chrome {
@@ -4375,27 +4564,27 @@ body.ml-browser-tab-dragging {
   align-items: center;
   gap: 4px;
   width: 100%;
-  min-height: 32px;
+  min-height: 28px;
   margin: 0 0 4px;
-  padding: 2px;
+  padding: 0 2px;
   border: none;
-  border-radius: 0;
-  background: color-mix(in srgb, var(--ml-sidebar-hover) 55%, transparent);
+  border-radius: 6px;
+  background: transparent;
   color: var(--ml-sidebar-text);
   text-align: left;
   font: inherit;
   flex-shrink: 0;
-  transition: background 0.14s ease;
+  transition: background 0.12s ease;
 }
 
 button.ml-sidebar-section-chrome {
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 4px 6px;
   gap: 8px;
 }
 
 button.ml-sidebar-section-chrome:hover {
-  background: var(--ml-sidebar-hover);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 5%, transparent);
 }
 
 .ml-sidebar-section-chrome__toggle {
@@ -4403,11 +4592,11 @@ button.ml-sidebar-section-chrome:hover {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 28px;
-  padding: 2px 6px;
+  gap: 6px;
+  min-height: 26px;
+  padding: 2px 4px;
   border: none;
-  border-radius: 0;
+  border-radius: 6px;
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -4416,7 +4605,7 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 .ml-sidebar-section-chrome__toggle:hover {
-  background: color-mix(in srgb, var(--ml-sidebar-hover) 80%, transparent);
+  background: transparent;
 }
 
 .ml-sidebar-section-chrome__label {
@@ -4426,24 +4615,25 @@ button.ml-sidebar-section-chrome:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ml-sidebar-muted);
+  opacity: 0.9;
 }
 
 .ml-sidebar-section-chrome--rich {
   display: flex;
   align-items: center;
   gap: 4px;
-  min-height: 30px;
+  min-height: 28px;
   margin: 0 0 6px;
-  padding: 0;
+  padding: 0 2px;
   background: transparent;
   box-shadow: none;
   border-radius: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--ml-sidebar-divider) 70%, transparent);
-  padding-bottom: 6px;
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .ml-sidebar-section-chrome--rich > .ant-tooltip-disabled-compatible-wrapper,
@@ -4454,39 +4644,42 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 .ml-sidebar-section-chrome--rich .ml-sidebar-section-chrome__toggle {
-  gap: 8px;
-  min-height: 28px;
-  padding: 2px 2px;
-  border-radius: 0;
+  gap: 6px;
+  min-height: 26px;
+  padding: 2px 4px;
+  border-radius: 6px;
   align-items: center;
 }
 
 .ml-sidebar-section-chrome--rich .ml-sidebar-section-chrome__toggle > svg {
   flex-shrink: 0;
   display: block;
+  opacity: 0.45;
 }
 
 .ml-sidebar-section-chrome--rich .ml-sidebar-section-chrome__label {
   flex: none;
-  text-transform: none;
-  letter-spacing: -0.01em;
-  font-size: 12px;
-  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+  font-size: 11px;
+  font-weight: 550;
   color: var(--ml-sidebar-muted);
   line-height: 1;
+  opacity: 0.9;
 }
 
 .ml-sidebar-section-chrome__glyph {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 0;
-  color: var(--ml-primary);
-  background: color-mix(in srgb, var(--ml-primary) 10%, transparent);
+  color: var(--ml-sidebar-muted);
+  background: transparent;
   line-height: 0;
+  opacity: 0.7;
 }
 
 .ml-sidebar-section-chrome__glyph svg {
@@ -4509,22 +4702,24 @@ button.ml-sidebar-section-chrome:hover {
 
 .ml-sidebar-section-chrome__action {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 0;
+  border-radius: 6px;
   background: transparent;
   color: var(--ml-sidebar-muted);
   cursor: pointer;
-  transition: background 0.14s ease, color 0.14s ease;
+  opacity: 0.7;
+  transition: background 0.12s ease, color 0.12s ease, opacity 0.12s ease;
 }
 
 .ml-sidebar-section-chrome__action:hover {
-  background: color-mix(in srgb, var(--ml-primary) 12%, transparent);
-  color: var(--ml-primary);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent);
+  color: var(--ml-sidebar-text);
+  opacity: 1;
 }
 
 .ml-sidebar-section--favorites-collapsed {
@@ -4533,23 +4728,25 @@ button.ml-sidebar-section-chrome:hover {
 
 .ml-sidebar-section-chrome__count {
   flex-shrink: 0;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 6px;
+  min-width: 0;
+  height: auto;
+  padding: 0 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 0;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
   color: var(--ml-sidebar-muted);
-  background: color-mix(in srgb, var(--ml-sidebar-text) 7%, transparent);
+  background: transparent;
+  opacity: 0.65;
 }
 
 .ml-sidebar-section-chrome--rich .ml-sidebar-section-chrome__count {
   color: var(--ml-sidebar-muted);
-  background: color-mix(in srgb, var(--ml-sidebar-text) 7%, transparent);
+  background: transparent;
   margin-inline-end: 0;
 }
 
@@ -4558,7 +4755,7 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 .ml-sidebar-search {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -4570,20 +4767,31 @@ button.ml-sidebar-section-chrome:hover {
   display: flex !important;
   align-items: center !important;
   width: 100%;
-  min-height: 30px !important;
-  height: 30px !important;
+  min-height: 28px !important;
+  height: 28px !important;
   padding: 0 8px !important;
-  border-radius: 0 !important;
+  border-radius: 6px !important;
+  border: none !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent) !important;
+  box-shadow: none !important;
   gap: 6px;
+}
+
+.ml-sidebar-search .ant-input-affix-wrapper:hover,
+.ml-sidebar-search .ant-input-affix-wrapper-focused,
+.ml-sidebar-search .ant-input-affix-wrapper:focus-within {
+  border: none !important;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
+  box-shadow: none !important;
 }
 
 .ml-sidebar-search .ant-input-affix-wrapper .ant-input,
 .ml-sidebar-search .ml-sidebar-search__input .ant-input {
-  height: 28px !important;
-  line-height: 28px !important;
+  height: 26px !important;
+  line-height: 26px !important;
   font-size: 12px !important;
   padding: 0 !important;
-  line-height: 1.2 !important;
+  background: transparent !important;
 }
 
 .ml-sidebar-search .ant-input-prefix,
@@ -4594,13 +4802,13 @@ button.ml-sidebar-section-chrome:hover {
   margin: 0 !important;
   padding: 0 !important;
   line-height: 0 !important;
-  height: 28px !important;
+  height: 26px !important;
 }
 
 .ml-sidebar-search__icon {
   display: block;
   color: var(--ml-sidebar-muted);
-  opacity: 0.85;
+  opacity: 0.65;
 }
 
 .ml-sidebar-search .ant-input-clear-icon {
@@ -4634,14 +4842,14 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 .ml-sidebar-footer {
-  padding: 8px 12px 12px;
+  padding: 10px 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   border-top: none;
   margin-top: auto;
   flex-shrink: 0;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ml-sidebar-divider) 80%, transparent);
+  box-shadow: none;
 }
 
 .ml-sidebar-footer__row {
@@ -4652,30 +4860,57 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 .ml-sidebar-footer__row .ml-sidebar-btn {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
+}
+
+.ml-sidebar-footer__row .ml-sidebar-btn--settings {
+  flex: 0 1 auto;
 }
 
 .ml-sidebar-footer__collapse {
   flex: 0 0 auto !important;
   width: 32px;
   min-width: 32px;
+  margin-left: auto;
   padding-inline: 0;
   justify-content: center;
+  border-radius: 6px;
+  background: transparent !important;
+}
+
+.ml-sidebar-footer__collapse:hover,
+.ml-sidebar-footer__collapse:focus,
+.ml-sidebar-footer__collapse:active {
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-footer {
-  padding: 8px 6px 12px;
+  padding: 8px 8px 12px;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-footer__row {
   flex-direction: column;
+  align-items: center;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-footer__row .ml-sidebar-btn,
-.ml-sidebar--collapsed .ml-sidebar-footer__collapse {
+.ml-sidebar--collapsed .ml-sidebar-footer__collapse,
+.ml-sidebar--collapsed .ml-sidebar-footer__row .ml-update-badge {
   flex: 0 0 auto !important;
-  width: 100%;
+  width: 40px;
+  min-width: 40px;
+  height: 34px;
+  margin-left: 0 !important;
+  padding: 0;
+  justify-content: center;
+}
+
+.ml-sidebar--collapsed .ml-sidebar-footer__row .ml-update-badge {
+  height: 28px;
+  border-radius: 8px;
 }
 
 .ml-sidebar-empty {
@@ -4688,7 +4923,7 @@ button.ml-sidebar-section-chrome:hover {
   padding: 0;
 }
 
-/* Favorite / nav rows — calm dense list */
+/* Favorite / nav rows — soft Cursor-like capsules */
 .favorite-cluster-row,
 .ml-nav-item {
   position: relative;
@@ -4696,16 +4931,16 @@ button.ml-sidebar-section-chrome:hover {
   align-items: center;
   gap: 2px;
   width: 100%;
-  min-height: 34px;
+  min-height: 32px;
   padding: 1px 2px;
   border: none;
-  border-radius: 0;
+  border-radius: 6px;
   background: transparent;
   color: var(--ml-sidebar-text);
   cursor: default;
   text-align: left;
   font: inherit;
-  transition: background 0.14s ease;
+  transition: background 0.12s ease;
   min-width: 0;
 }
 
@@ -4715,10 +4950,10 @@ button.ml-sidebar-section-chrome:hover {
   display: flex;
   align-items: center;
   gap: 9px;
-  min-height: 32px;
-  padding: 3px 6px 3px 7px;
+  min-height: 30px;
+  padding: 4px 8px;
   border: none;
-  border-radius: 0;
+  border-radius: 6px;
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -4734,84 +4969,82 @@ button.ml-sidebar-section-chrome:hover {
   min-height: 30px;
   padding: 0 1px;
   gap: 2px;
-  border-radius: 0;
+  border-radius: 6px;
 }
 
 .ml-nav-item--nested .ml-nav-item__open {
   min-height: 28px;
   gap: 8px;
-  padding: 2px 5px 2px 6px;
+  padding: 3px 8px;
 }
 
 .ml-nav-item--compact {
   width: auto;
   min-height: 34px;
   justify-content: center;
-  padding: 3px;
-  border-radius: 0;
+  padding: 4px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
 .favorite-cluster-row.active,
 .ml-nav-item.is-active {
-  background: color-mix(in srgb, var(--ml-primary) 11%, var(--ml-sidebar-active));
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent);
   box-shadow: none;
   border-inline-start: none;
   padding-inline-start: 2px;
 }
 
 .ml-nav-item.is-active .ml-nav-item__open {
-  box-shadow: inset 2.5px 0 0 var(--ml-primary);
+  box-shadow: none;
 }
 
 .ml-nav-item--compact.is-active {
   border-inline-start: none;
   padding: 4px;
   box-shadow: none;
-  background: color-mix(in srgb, var(--ml-primary) 18%, var(--ml-sidebar-active));
+  background: color-mix(in srgb, var(--ml-sidebar-text) 11%, transparent);
 }
 
 /* Hover only for clusters nested inside a workspace group */
 .ml-nav-item--nested:not(.is-active):has(.ml-nav-item__open:hover) {
-  background: var(--ml-sidebar-hover);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent);
 }
 
 /*
- * Connected + open session, not selected: carried by the green status dot on the avatar alone.
- * An earlier version also washed the whole row in green, which — with several connected
- * clusters in one workspace, each already showing its own random logo colour — read as a row
- * of mismatched tints rather than one flat list. "Colour marks the selected row" only holds if
- * this is the one other place colour was leaking in.
+ * Connected / open session: status is the avatar dot only — no green row wash
+ * (Cursor-like sidebar stays neutral; selection is a soft gray capsule).
  */
 .ml-nav-item.is-session-live:not(.is-active),
 .ml-nav-item.is-fav-connected:not(.is-active) {
   box-shadow: none;
+  background: transparent;
 }
 
 .ml-nav-item--compact.is-session-live:not(.is-active),
 .ml-nav-item--compact.is-fav-connected:not(.is-active) {
   border-inline-start: none;
   padding: 4px;
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 8%, transparent);
+  background: transparent;
   box-shadow: none;
 }
 
 .ml-nav-item.is-session-live.is-active,
 .ml-nav-item.is-fav-connected.is-active {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 10%, var(--ml-sidebar-active));
-  box-shadow: inset 2px 0 0 var(--ml-success, #22c55e);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent);
+  box-shadow: none;
 }
 
 .ml-nav-item.is-session-live.is-active .ml-nav-item__title,
 .ml-nav-item.is-fav-connected.is-active .ml-nav-item__title {
   color: var(--ml-sidebar-text);
-  font-weight: 500;
+  font-weight: 550;
 }
 
 .ml-nav-item--compact.is-session-live.is-active,
 .ml-nav-item--compact.is-fav-connected.is-active {
   border-inline-start: none;
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 12%, var(--ml-sidebar-active));
+  background: color-mix(in srgb, var(--ml-sidebar-text) 11%, transparent);
   box-shadow: none;
 }
 
@@ -4863,12 +5096,16 @@ button.ml-sidebar-section-chrome:hover {
   position: absolute;
   right: -1px;
   bottom: -1px;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  min-height: 6px;
   border-radius: 50%;
-  border: 2px solid var(--ml-sidebar-bg);
-  background: var(--ml-sidebar-muted);
+  border: 1.5px solid var(--ml-sidebar-bg);
+  background: transparent;
   box-sizing: border-box;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .ml-nav-item.is-connected .ml-nav-item__status-dot {
@@ -4897,15 +5134,16 @@ button.ml-sidebar-section-chrome:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 13px;
-  font-weight: 450;
+  font-weight: 500;
   line-height: 18px;
   letter-spacing: -0.01em;
   color: var(--ml-sidebar-text);
 }
 
 .ml-nav-item--nested .ml-nav-item__title {
-  font-size: 12.5px;
-  font-weight: 450;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ml-sidebar-text);
 }
 
 .ml-nav-item__meta {
@@ -5597,9 +5835,17 @@ button.ml-sidebar-section-chrome:hover {
 }
 
 .ml-resource-sider .ant-layout-sider-trigger {
-  background: var(--ml-bg-elevated) !important;
+  background: transparent !important;
   border-top: none !important;
-  box-shadow: inset 0 1px 0 var(--ml-border-secondary);
+  box-shadow: none !important;
+  color: var(--ml-text-tertiary) !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-size: 14px !important;
+}
+
+.ml-resource-sider .ant-layout-sider-trigger:hover {
+  background: color-mix(in srgb, var(--ml-text) 6%, transparent) !important;
   color: var(--ml-text-secondary) !important;
 }
 
@@ -7411,18 +7657,6 @@ html[data-theme='dark'] .ml-brand-img--helm {
   100% {
     background-position: -100% 0;
   }
-}
-
-/* Global search premium */
-.global-search-modal .ant-modal-content {
-  border-radius: 0 !important;
-  overflow: hidden;
-  box-shadow: var(--ml-shadow-lg) !important;
-  border: 1px solid var(--ml-border-secondary);
-}
-
-.global-search-header {
-  background: var(--ml-bg-container);
 }
 
 .ml-icon-spin {
@@ -9707,43 +9941,52 @@ body.ml-detail-resizing * {
 }
 
 .ml-ws-rail-item.is-flyout-open {
-  background: color-mix(in srgb, var(--ml-primary) 16%, var(--ml-sidebar-active));
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent);
 }
 
 .ml-ws-rail-item {
   width: 36px;
   height: 36px;
-  padding: 4px;
+  padding: 2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 0;
-  background: transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent);
   color: var(--ml-sidebar-text);
   cursor: pointer;
+  overflow: hidden;
 }
 
 .ml-ws-rail-item.is-active {
-  background: color-mix(in srgb, var(--ml-primary) 18%, var(--ml-sidebar-active));
+  background: color-mix(in srgb, var(--ml-sidebar-text) 14%, transparent);
+}
+
+.ml-ws-rail-item .ml-cluster-avatar,
+.ml-ws-rail-item img {
+  border-radius: 999px !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
 }
 
 .ml-ws-rail-item.is-session-live {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 8%, transparent);
+  background: transparent;
   box-shadow: none;
 }
 
 .ml-ws-rail-item.is-session-live.is-active {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 12%, var(--ml-sidebar-active));
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent);
 }
 
 .ml-resource-nav-flyout-item.is-session-live {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 7%, transparent);
+  background: transparent;
   color: var(--ml-text);
 }
 
 .ml-resource-nav-flyout-item.is-session-live.is-active {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 10%, transparent);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent);
   color: var(--ml-text);
   font-weight: 500;
 }
@@ -9804,11 +10047,16 @@ body.ml-detail-resizing * {
   background: transparent;
   color: var(--ml-sidebar-text);
   cursor: pointer;
-  padding: 4px 4px;
-  border-radius: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
   font: inherit;
   text-align: left;
   min-height: 30px;
+  transition: background 0.12s ease;
+}
+
+.ml-ws-group__toggle:hover {
+  background: color-mix(in srgb, var(--ml-sidebar-text) 5%, transparent);
 }
 
 .ml-ws-group__chevron {
@@ -9832,13 +10080,10 @@ body.ml-detail-resizing * {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: -0.01em;
   text-transform: none;
-  /* Full-brightness sidebar text, not the muted tone — matches the reference component's own
-     section title (`.ml-resource-nav-group-head { color: var(--ml-text) }`), where the label
-     reads as content, not a faded caption. */
   color: var(--ml-sidebar-text);
 }
 
@@ -9896,23 +10141,24 @@ body.ml-detail-resizing * {
 }
 
 .ml-ws-group__list .ml-nav-item {
-  min-height: 32px;
+  min-height: 30px;
   padding: 0;
-  border-radius: 0;
+  border-radius: 6px;
   background: transparent;
-  color: var(--ml-text);
+  color: var(--ml-sidebar-text);
 }
 
 .ml-ws-group__list .ml-nav-item__open {
-  min-height: 32px;
-  gap: 10px;
-  padding: 6px 10px;
-  border-radius: 0;
+  min-height: 30px;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
 }
 
 .ml-ws-group__list .ml-nav-item__title {
   font-size: 13px;
-  color: var(--ml-text);
+  font-weight: 500;
+  color: var(--ml-sidebar-text);
 }
 
 .ml-ws-group__list .ml-nav-item__meta {
@@ -9921,14 +10167,13 @@ body.ml-detail-resizing * {
 
 .ml-ws-group__list .ml-nav-item--nested:not(.is-active):has(.ml-nav-item__open:hover),
 .ml-ws-group__list .ml-nav-item--nested:not(.is-active):hover {
-  background: var(--ml-bg-spotlight);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent);
 }
 
 .ml-ws-group__list .ml-nav-item.is-active {
-  /* --ml-ws-accent, not --ml-primary: this selector outranks the generic active-row rule, so
-     leaving it hardcoded made a workspace's colour stop at its own header. */
-  background: color-mix(in srgb, var(--ml-ws-accent, var(--ml-primary)) 12%, transparent);
+  background: color-mix(in srgb, var(--ml-sidebar-text) 10%, transparent);
   box-shadow: none;
+  border-radius: 6px;
 }
 
 .ml-ws-group__list .ml-nav-item.is-active .ml-nav-item__open {
@@ -9936,12 +10181,12 @@ body.ml-detail-resizing * {
 }
 
 .ml-ws-group__list .ml-nav-item.is-active .ml-nav-item__title {
-  color: var(--ml-ws-accent, var(--ml-primary));
-  font-weight: 500;
+  color: var(--ml-sidebar-text);
+  font-weight: 550;
 }
 
 .ml-ws-group__list .ml-nav-item.is-session-live:not(.is-active) {
-  background: color-mix(in srgb, var(--ml-success, #22c55e) 7%, transparent);
+  background: transparent;
 }
 
 .ml-ws-group__empty {
@@ -15275,56 +15520,35 @@ body.ml-vault--resizing .ml-vault__sidebar-resize::after {
    persistent has-active/is-expanded state (above) changes how it looks. */
 
 /*
- * Leading-edge selection pill. Drawn on the row itself rather than the label so it lines up
- * across nested and top-level clusters.
- *
- * `left: 0`, never negative: `.ml-ws-group` sets `overflow: hidden` and `.ml-sidebar-list`
- * scrolls, so anything positioned outside the row is clipped away — nested clusters would have
- * shown no pill at all. It sits inside the row's own 2px inline padding instead.
+ * Leading-edge selection pill — hidden for Cursor-like soft capsules.
+ * Workspace accent still tints the active row background where applied.
  */
 .ml-nav-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 3px;
-  height: 0;
-  border-radius: 0;
-  /* Set per workspace in SidebarWorkspaces; unset workspaces fall back to the theme accent. */
-  background: var(--ml-ws-accent, var(--ml-primary));
-  transform: translateY(-50%);
-  transition:
-    height 0.16s ease,
-    opacity 0.16s ease;
-  opacity: 0;
-  pointer-events: none;
+  display: none;
 }
 
-.ml-nav-item:hover::before {
-  height: 40%;
-  opacity: 0.55;
-}
-
+.ml-nav-item:hover::before,
 .ml-nav-item.is-active::before {
-  height: 70%;
-  opacity: 1;
+  display: none;
 }
 
-/*
- * With the pill carrying selection, the active row's inset bar is redundant — two markers for
- * one state. The background tint stays, just lighter, so the row still reads as current when
- * the pill is clipped (collapsed rail, flyouts).
- */
 .ml-nav-item.is-active .ml-nav-item__open {
   box-shadow: none;
 }
 
 .ml-nav-item.is-active {
-  background: color-mix(in srgb, var(--ml-ws-accent, var(--ml-primary)) 8%, var(--ml-sidebar-active));
+  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent);
 }
 
-/* Cluster avatars follow the same square language as their workspace. */
+/* Cluster avatars follow the same square language as their workspace.
+   Keep overflow visible so the connection pip can sit on a corner of the logo. */
 .ml-nav-item__avatar-wrap {
+  border-radius: 0;
+  overflow: visible;
+}
+
+.ml-nav-item__avatar-wrap .ml-cluster-avatar,
+.ml-nav-item__avatar-wrap .ant-avatar {
   border-radius: 0;
   overflow: hidden;
 }
@@ -15455,6 +15679,19 @@ body.ml-vault--resizing .ml-vault__sidebar-resize::after {
     background 0.15s ease,
     border-color 0.15s ease,
     transform 0.15s ease;
+}
+
+/* Sidebar footer: labeled pill next to Settings (only when an update is pending). */
+.ml-update-badge--labeled {
+  width: auto;
+  height: 24px;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
 }
 
 .ml-update-badge:hover {

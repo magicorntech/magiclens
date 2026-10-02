@@ -503,6 +503,13 @@ const api = {
       ipcRenderer.invoke(IPC.APP_GET_HOST_INFO),
     clearCache: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_CLEAR_CACHE),
     openDevTools: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.APP_OPEN_DEVTOOLS),
+    writeDiagnostics: (): Promise<
+      import('@shared/types/app').AppWriteDiagnosticsResponse | { error: string }
+    > => ipcRenderer.invoke(IPC.APP_WRITE_DIAGNOSTICS),
+    openLogsDir: (): Promise<{ ok: true; path: string } | { error: string }> =>
+      ipcRenderer.invoke(IPC.APP_OPEN_LOGS_DIR),
+    openCrashDumpsDir: (): Promise<{ ok: true; path: string } | { error: string }> =>
+      ipcRenderer.invoke(IPC.APP_OPEN_CRASH_DUMPS_DIR),
     openExternalUrl: (url: string): Promise<{ ok: true } | { error: string }> =>
       ipcRenderer.invoke(IPC.APP_OPEN_EXTERNAL_URL, { url }),
     onFullscreenChanged: (cb: (payload: { fullscreen: boolean }) => void): (() => void) => {
@@ -510,6 +517,23 @@ const api = {
         cb(payload)
       ipcRenderer.on(IPC.APP_FULLSCREEN_CHANGED, listener)
       return () => ipcRenderer.removeListener(IPC.APP_FULLSCREEN_CHANGED, listener)
+    },
+    /** Fired after OS sleep/wake (lid open). Debounce reconnects in the renderer. */
+    onPowerResume: (cb: () => void): (() => void) => {
+      const listener = (): void => cb()
+      ipcRenderer.on(IPC.APP_POWER_RESUME, listener)
+      return () => ipcRenderer.removeListener(IPC.APP_POWER_RESUME, listener)
+    },
+    /** Local diagnostics JSON written after hang/crash or manual Save. */
+    onDiagnosticsSaved: (
+      cb: (payload: import('@shared/types/app').AppDiagnosticsSavedPayload) => void
+    ): (() => void) => {
+      const listener = (
+        _e: Electron.IpcRendererEvent,
+        payload: import('@shared/types/app').AppDiagnosticsSavedPayload
+      ): void => cb(payload)
+      ipcRenderer.on(IPC.APP_DIAGNOSTICS_SAVED, listener)
+      return () => ipcRenderer.removeListener(IPC.APP_DIAGNOSTICS_SAVED, listener)
     }
   },
   pod: {

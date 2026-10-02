@@ -9,6 +9,7 @@ import { ResizableTable } from '../../utils/ResizableTable'
 import { ResourceTableToolbar } from '../ResourceTable/ResourceTableToolbar'
 import { ResourceDetailDrawer } from '../ResourceTable/ResourceDetailDrawer'
 import { AgeCell } from '../ResourceTable/AgeCell'
+import { compareAgeTimestamps } from '../../utils/tableSort'
 import { ArgoNotInstalled } from './ArgoNotInstalled'
 import { ArgoPageHeader } from './ArgoPageHeader'
 
@@ -84,6 +85,11 @@ export function ArgoRepositoriesPage({ clusterId }: { clusterId: string }): Reac
       title: 'Age',
       key: 'age',
       width: 90,
+      sorter: (a: { ageTimestamp: string | null; name: string }, b: { ageTimestamp: string | null; name: string }) => {
+        const byAge = compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp)
+        if (byAge !== 0) return byAge
+        return a.name.localeCompare(b.name)
+      },
       render: (_v, r) => <AgeCell timestamp={r.ageTimestamp} />
     }
   ]
@@ -164,6 +170,11 @@ export function ArgoClustersPage({ clusterId }: { clusterId: string }): React.JS
       title: 'Age',
       key: 'age',
       width: 90,
+      sorter: (a: { ageTimestamp: string | null; name: string }, b: { ageTimestamp: string | null; name: string }) => {
+        const byAge = compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp)
+        if (byAge !== 0) return byAge
+        return a.name.localeCompare(b.name)
+      },
       render: (_v, r) => <AgeCell timestamp={r.ageTimestamp} />
     }
   ]

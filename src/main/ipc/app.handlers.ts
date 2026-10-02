@@ -6,6 +6,7 @@ import type {
   AppInfoResponse,
   AppProcessMetricRow,
   AppProcessMetricsResponse,
+  AppWriteDiagnosticsResponse,
   DisplaySettings,
   WelcomeStateResponse
 } from '@shared/types/app'
@@ -17,6 +18,11 @@ import {
   setHasSeenWelcome,
   setLastSeenSplashVersion
 } from '../persistence/appSettings'
+import {
+  getCrashDumpsDir,
+  getLogsDir,
+  writeDiagnosticsReport
+} from '../diagnostics/writeDiagnosticsReport'
 import {
   growMenuBarWidgetPopup,
   hideMenuBarWidgetPopup,
@@ -228,6 +234,40 @@ export function registerAppHandlers(): void {
     win?.webContents.openDevTools({ mode: 'detach' })
     return { ok: true }
   })
+
+  ipcMain.handle(IPC.APP_WRITE_DIAGNOSTICS, async (): Promise<AppWriteDiagnosticsResponse | { error: string }> => {
+    try {
+      const result = writeDiagnosticsReport('manual')
+      return { ok: true, ...result }
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : String(err) }
+    }
+  })
+
+  ipcMain.handle(IPC.APP_OPEN_LOGS_DIR, async (): Promise<{ ok: true; path: string } | { error: string }> => {
+    try {
+      const path = getLogsDir()
+      const err = await shell.openPath(path)
+      if (err) return { error: err }
+      return { ok: true, path }
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : String(err) }
+    }
+  })
+
+  ipcMain.handle(
+    IPC.APP_OPEN_CRASH_DUMPS_DIR,
+    async (): Promise<{ ok: true; path: string } | { error: string }> => {
+      try {
+        const path = getCrashDumpsDir()
+        const err = await shell.openPath(path)
+        if (err) return { error: err }
+        return { ok: true, path }
+      } catch (err) {
+        return { error: err instanceof Error ? err.message : String(err) }
+      }
+    }
+  )
 
   ipcMain.handle(IPC.APP_OPEN_EXTERNAL_URL, async (_e, req: { url: string }): Promise<{ ok: true } | { error: string }> => {
     try {

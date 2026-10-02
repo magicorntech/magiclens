@@ -1,6 +1,6 @@
 import { Dropdown, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
-import { MoreHorizontal, Pencil, Star, Unplug } from 'lucide-react'
+import { Box, MoreHorizontal, Pencil, Star, Unplug } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { formatNamespaceSelectionLabel, isAllNamespaces } from '@shared/namespaceSelection'
 import type { ClusterEntry } from '../../stores/clusterStore'
@@ -51,6 +51,7 @@ export function FavoriteClusterBox({
   const toggleFavorite = useClusterStore((s) => s.toggleFavorite)
   const removeCluster = useClusterStore((s) => s.removeCluster)
   const showClusterNamespace = useDisplaySettingsStore((s) => s.showClusterNamespace)
+  const showSidebarLogos = useDisplaySettingsStore((s) => s.showSidebarLogos)
   const isOpen = active || openedTabs.includes(cluster.id)
 
   const canDisconnect =
@@ -144,15 +145,18 @@ export function FavoriteClusterBox({
             aria-label={cluster.customName}
           >
             <span className="ml-nav-item__avatar-wrap">
-              <ClusterAvatar
-                logoUrl={cluster.logoUrl}
-                fallbackLogoUrl={fallbackLogoUrl}
-                name={cluster.customName}
-                contextName={cluster.contextName}
-                endpoint={cluster.endpoint}
-                size={28}
-                accentColor={accentColor}
-              />
+              {showSidebarLogos ? (
+                <ClusterAvatar
+                  logoUrl={cluster.logoUrl}
+                  fallbackLogoUrl={fallbackLogoUrl}
+                  name={cluster.customName}
+                  size={28}
+                  accentColor={accentColor}
+                  cloudIcon={false}
+                />
+              ) : (
+                <Icon icon={Box} variant="action" strokeWidth={1.5} />
+              )}
               <span className="ml-nav-item__status-dot" aria-hidden />
             </span>
           </button>
@@ -179,20 +183,23 @@ export function FavoriteClusterBox({
         aria-label={cluster.customName}
       >
         <span className="ml-nav-item__avatar-wrap">
-          <ClusterAvatar
-            logoUrl={cluster.logoUrl}
-            fallbackLogoUrl={fallbackLogoUrl}
-            name={cluster.customName}
-            contextName={cluster.contextName}
-            endpoint={cluster.endpoint}
-            // Nested matches the workspace header's own avatar (also 20px) rather than its own
-            // slightly-larger size — the two sit in the same tight vertical stack, often
-            // showing the same logo repeated, so a couple of px between them read as a visible
-            // mismatch rather than an intentional hierarchy cue. The reference pattern this
-            // list mirrors (ResourceMenu) uses one icon size for a section and its children too.
-            size={nested ? 20 : 26}
-            accentColor={accentColor}
-          />
+          {showSidebarLogos ? (
+            <ClusterAvatar
+              logoUrl={cluster.logoUrl}
+              fallbackLogoUrl={fallbackLogoUrl}
+              name={cluster.customName}
+              // Nested matches the workspace header's own avatar (also 18px) rather than its own
+              // slightly-larger size — the two sit in the same tight vertical stack, often
+              // showing the same logo repeated, so a couple of px between them read as a visible
+              // mismatch rather than an intentional hierarchy cue. The reference pattern this
+              // list mirrors (ResourceMenu) uses one icon size for a section and its children too.
+              size={nested ? 18 : 26}
+              accentColor={accentColor}
+              cloudIcon={false}
+            />
+          ) : (
+            <Icon icon={Box} size={nested ? 14 : 16} strokeWidth={1.5} />
+          )}
           <span className="ml-nav-item__status-dot" aria-hidden />
         </span>
         <div className="ml-nav-item__body">

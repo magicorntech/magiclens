@@ -19,8 +19,8 @@ import { formatBytes, formatCores } from '../../format'
 import { NodeMetricUsageBar } from '../Metrics/NodeMetricUsageBar'
 import { ProgressBar } from '../ui/ProgressBar'
 import {
+  ageResourceSorter,
   columnValueSorter,
-  compareAgeTimestamps,
   statusSorter,
   type TableSortState
 } from '../../utils/tableSort'
@@ -95,6 +95,7 @@ export function ResourceTable({
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
   const layoutMode = useLayoutMode()
   const isNodesKind = kind === 'Nodes'
+  const kindNeedsNamespace = isNamespaceScoped(kind)
   const isPodsKind = kind === 'Pods'
   const isPvcsKind = kind === 'PersistentVolumeClaims'
   const detailInSidebar = resourceDetailPlacement === 'right' && canUseSplitLayouts(layoutMode)
@@ -102,7 +103,10 @@ export function ResourceTable({
     resourceDetailPlacement === 'drawer' ||
     (resourceDetailPlacement === 'right' && !canUseSplitLayouts(layoutMode))
   const detailInBottom = resourceDetailPlacement === 'bottom'
-  const listQueryKey = useMemo(() => ['resource-list', clusterId, namespace, kind], [clusterId, namespace, kind])
+  const listQueryKey = useMemo(
+    () => ['resource-list', clusterId, kindNeedsNamespace ? namespace : 'ALL', kind],
+    [clusterId, namespace, kind, kindNeedsNamespace]
+  )
   const { data, isLoading, isError, error, refetch, isFetching, watchStatus } = useResourceList(
     clusterId,
     namespace,
@@ -279,50 +283,76 @@ export function ResourceTable({
       }
     }
     if (isNodesKind) {
-      cols.push({
-        title: 'CPU',
-        key: 'cpu-metric',
-        width: 160,
-        render: (_, item) => {
-          const node = nodeMetrics?.nodes.find((n) => n.name === item.name)
-          if (!nodeMetrics?.metricsAvailable || !node) return '-'
-          return (
-            <NodeMetricUsageBar
-              usage={node.cpuUsageCores}
-              allocatable={node.cpuAllocatableCores}
-              capacity={node.cpuCapacityCores}
-              formatValue={formatCores}
-              clusterId={clusterId}
-              nodeName={item.name}
-              metric="cpu"
-              isActive={isActive}
-              variant="table"
-            />
-          )
-        }
-      })
-      cols.push({
-        title: 'Memory',
-        key: 'memory-metric',
-        width: 160,
-        render: (_, item) => {
-          const node = nodeMetrics?.nodes.find((n) => n.name === item.name)
-          if (!nodeMetrics?.metricsAvailable || !node) return '-'
-          return (
-            <NodeMetricUsageBar
-              usage={node.memoryUsageBytes}
-              allocatable={node.memoryAllocatableBytes}
-              capacity={node.memoryCapacityBytes}
-              formatValue={formatBytes}
-              clusterId={clusterId}
-              nodeName={item.name}
-              metric="memory"
-              isActive={isActive}
-              variant="table"
-            />
-          )
-        }
-      })
+      cols.push(
+        applySortOrder(
+          {
+            title: 'CPU',
+            key: 'cpu-metric',
+            width: 160,
+            sorter: (a, b) => {
+              const ca =
+                nodeMetrics?.nodes.find((n) => n.name === a.name)?.cpuUsageCores ?? -1
+              const cb =
+                nodeMetrics?.nodes.find((n) => n.name === b.name)?.cpuUsageCores ?? -1
+              return ca - cb
+            },
+            ellipsis: false,
+            render: (_, item) => {
+              const node = nodeMetrics?.nodes.find((n) => n.name === item.name)
+              if (!nodeMetrics?.metricsAvailable || !node) return '-'
+              return (
+                <NodeMetricUsageBar
+                  usage={node.cpuUsageCores}
+                  allocatable={node.cpuAllocatableCores}
+                  capacity={node.cpuCapacityCores}
+                  formatValue={formatCores}
+                  clusterId={clusterId}
+                  nodeName={item.name}
+                  metric="cpu"
+                  isActive={isActive}
+                  variant="table"
+                />
+              )
+            }
+          },
+          sortState
+        )
+      )
+      cols.push(
+        applySortOrder(
+          {
+            title: 'Memory',
+            key: 'memory-metric',
+            width: 160,
+            sorter: (a, b) => {
+              const ma =
+                nodeMetrics?.nodes.find((n) => n.name === a.name)?.memoryUsageBytes ?? -1
+              const mb =
+                nodeMetrics?.nodes.find((n) => n.name === b.name)?.memoryUsageBytes ?? -1
+              return ma - mb
+            },
+            ellipsis: false,
+            render: (_, item) => {
+              const node = nodeMetrics?.nodes.find((n) => n.name === item.name)
+              if (!nodeMetrics?.metricsAvailable || !node) return '-'
+              return (
+                <NodeMetricUsageBar
+                  usage={node.memoryUsageBytes}
+                  allocatable={node.memoryAllocatableBytes}
+                  capacity={node.memoryCapacityBytes}
+                  formatValue={formatBytes}
+                  clusterId={clusterId}
+                  nodeName={item.name}
+                  metric="memory"
+                  isActive={isActive}
+                  variant="table"
+                />
+              )
+            }
+          },
+          sortState
+        )
+      )
     }
     cols.push(
       applySortOrder(
@@ -343,7 +373,7 @@ export function ResourceTable({
         {
           title: 'Age',
           key: 'age',
-          sorter: (a, b) => compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp),
+          sorter: ageResourceSorter,
           ellipsis: false,
           render: (_, item) => <AgeCell timestamp={item.ageTimestamp} />
         },
@@ -524,11 +554,13 @@ export function ResourceTable({
       <div className={`ml-resource-page${isNodesKind ? ' ml-resource-page--nodes' : ''}`}>
       <ResourceTableToolbar
         leading={
-          <NamespaceSelector
-            clusterId={clusterId}
-            value={namespace}
-            onChange={applyNamespaceChange}
-          />
+          isNamespaceScoped(kind) ? (
+            <NamespaceSelector
+              clusterId={clusterId}
+              value={namespace}
+              onChange={applyNamespaceChange}
+            />
+          ) : null
         }
         search={
           <Input.Search

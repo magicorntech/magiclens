@@ -11,8 +11,8 @@ import { ThemeToggle } from './ThemeToggle'
 import { FullscreenToggle } from './FullscreenToggle'
 import { ExpandableSearchControl } from './ExpandableSearchControl'
 import { NotesNotificationBell } from '../Notes/NotesNotificationBell'
-import { UpdateAvailableBadge } from '../Update/UpdateAvailableBadge'
 import { AiAssistantToggleButton } from './AiAssistantPanel'
+import logo from '../../assets/logo.png'
 
 interface ChromeActionsProps {
   /** Include split-screen control (cluster tab strip). */
@@ -105,12 +105,14 @@ export function ChromeActions({
       </div>
 
       <div className="ml-chrome-actions__fixed ml-action-group">
-        <UpdateAvailableBadge />
         <span className="ml-chrome-actions__hit">
           <AiAssistantToggleButton />
         </span>
         <span className="ml-chrome-actions__hit">
           <NotesNotificationBell />
+        </span>
+        <span className="ml-chrome-actions__hit ml-chrome-brand" title="MagicLens" aria-label="MagicLens">
+          <img src={logo} alt="" className="ml-chrome-brand__logo" draggable={false} />
         </span>
       </div>
     </div>

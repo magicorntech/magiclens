@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { message } from 'antd'
+import { useTranslation } from 'react-i18next'
 import { whatsNewFor, type WhatsNewEntry } from '@shared/whatsNew'
 import { WhatsNewModal } from './components/Update/WhatsNewModal'
 import { MotionConfig } from 'framer-motion'
@@ -8,6 +10,7 @@ import { useUpdateStore } from './stores/updateStore'
 import { useDisplaySettingsStore } from './stores/displaySettingsStore'
 import { useVpnStore } from './stores/vpnStore'
 import { resolveUserScope, switchWorkspace, reconnectOpenedTabs } from './workspace'
+import { scheduleNetworkResumeRecovery } from './networkResume'
 import { AppLayout } from './components/Layout/AppLayout'
 import { LoadingScreen } from './components/Layout/LoadingScreen'
 import { FeatureTourScreen } from './components/Layout/FeatureTourScreen'
@@ -18,6 +21,7 @@ import { useAppShortcuts } from './hooks/useAppShortcuts'
 import { useSettingsUiStore, type SettingsSection } from './stores/settingsUiStore'
 
 export function App(): React.JSX.Element {
+  const { t } = useTranslation()
   const initUpdates = useUpdateStore((s) => s.init)
   const hydrateDisplaySettings = useDisplaySettingsStore((s) => s.hydrate)
   const hydrateAuth = useAuthStore((s) => s.hydrate)
@@ -32,6 +36,37 @@ export function App(): React.JSX.Element {
   useEffect(() => {
     initUpdates()
   }, [])
+
+  // Lid-close / sleep / brief offline leave stale cluster sockets. Rebuild quietly on resume.
+  useEffect(() => {
+    if (!ready) return
+
+    const unsubPower = window.api.app.onPowerResume(() => {
+      scheduleNetworkResumeRecovery('power-resume')
+    })
+
+    const onOnline = (): void => {
+      scheduleNetworkResumeRecovery('browser-online')
+    }
+    window.addEventListener('online', onOnline)
+
+    return () => {
+      unsubPower()
+      window.removeEventListener('online', onOnline)
+    }
+  }, [ready])
+
+  // Local hang/crash diagnostics — toast with path; nothing is uploaded.
+  useEffect(() => {
+    return window.api.app.onDiagnosticsSaved((payload) => {
+      if (payload.reason === 'manual') return
+      message.warning({
+        content: `${t('settings.developer.diagnosticsSaved')} (${payload.reason}): ${payload.path}`,
+        duration: 8,
+        key: 'ml-diagnostics-saved'
+      })
+    })
+  }, [t])
 
   // The menu-bar widget's gear button asks the main process to focus a Settings section here.
   useEffect(() => {

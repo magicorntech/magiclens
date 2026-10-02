@@ -63,6 +63,21 @@ export interface AppHostInfoResponse {
   systemVersion?: string
 }
 
+/** Local diagnostics write result (never uploaded — manual share only). */
+export interface AppDiagnosticsSavedPayload {
+  reason: string
+  path: string
+  logsDir: string
+  crashDumpsDir: string
+}
+
+export interface AppWriteDiagnosticsResponse {
+  ok: true
+  path: string
+  logsDir: string
+  crashDumpsDir: string
+}
+
 export interface WelcomeStateResponse {
   hasSeenWelcome: boolean
   /** True when the animated intro splash should be shown: either this is the very first
@@ -125,6 +140,8 @@ import type { NodesDashboardPrefs } from './nodesDashboard'
 import { defaultNodesDashboardPrefs } from './nodesDashboard'
 import type { ChromeToolbarPrefs } from './chromeToolbar'
 import { defaultChromeToolbarPrefs } from './chromeToolbar'
+import type { ResourceNavItemId } from './resourceNavOrder'
+import { DEFAULT_RESOURCE_NAV_ORDER } from './resourceNavOrder'
 import type { MenuBarWidgetPrefs } from './menuBarWidget'
 import { defaultMenuBarWidgetPrefs } from './menuBarWidget'
 import type { KeyboardShortcuts } from './keyboardShortcuts'
@@ -171,6 +188,11 @@ export interface DisplaySettings {
   /** Left sidebar Workspaces section visibility (default on). */
   showWorkspacesSection: boolean
   /**
+   * Show workspace / cluster logos in the left sidebar list.
+   * When off, Cursor-style folder + status-dot icons are used instead (default off).
+   */
+  showSidebarLogos: boolean
+  /**
    * macOS Dock-style magnification on workspace icons when the left sidebar is collapsed
    * (default on).
    */
@@ -196,6 +218,11 @@ export interface DisplaySettings {
   menuBarWidget: MenuBarWidgetPrefs
   /** Top chrome icon visibility + order (Settings stays fixed). */
   chromeToolbar: ChromeToolbarPrefs
+  /**
+   * Order of top-level items in the cluster resource menu (Favorites always stays first).
+   * Unknown / missing ids are appended from the default layout.
+   */
+  resourceNavOrder: ResourceNavItemId[]
   keyboardShortcuts: KeyboardShortcuts
   locale: AppLocale
   /**
@@ -210,6 +237,7 @@ export const defaultDisplaySettings: DisplaySettings = {
   showResourceTabIcons: true,
   showFavoritesSection: true,
   showWorkspacesSection: true,
+  showSidebarLogos: false,
   workspaceDockMagnification: true,
   showClusterNamespace: true,
   uiTypography: defaultUiTypography,
@@ -223,6 +251,7 @@ export const defaultDisplaySettings: DisplaySettings = {
   nodesDashboard: defaultNodesDashboardPrefs,
   menuBarWidget: defaultMenuBarWidgetPrefs,
   chromeToolbar: defaultChromeToolbarPrefs,
+  resourceNavOrder: [...DEFAULT_RESOURCE_NAV_ORDER],
   keyboardShortcuts: defaultKeyboardShortcuts,
   locale: defaultAppLocale,
   kubeconfigScanPath: ''

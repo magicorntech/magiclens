@@ -2,11 +2,12 @@ import Store from 'electron-store'
 import type { UpdateSettings } from '@shared/types/update'
 import type { PortForwardSettings } from '@shared/types/portForward'
 import { defaultDisplaySettings, type DisplaySettings, normalizeUtilityFabSide, normalizeUiTypography } from '@shared/types/app'
+import { normalizeChromeToolbarPrefs } from '@shared/types/chromeToolbar'
+import { normalizeResourceNavOrder } from '@shared/types/resourceNavOrder'
+import { normalizeMenuBarWidgetPrefs } from '@shared/types/menuBarWidget'
+import { normalizeNodesDashboardPrefs } from '@shared/types/nodesDashboard'
 import { normalizeKeyboardShortcuts } from '@shared/types/keyboardShortcuts'
 import { normalizeAppLocale } from '@shared/types/locale'
-import { normalizeNodesDashboardPrefs } from '@shared/types/nodesDashboard'
-import { normalizeChromeToolbarPrefs } from '@shared/types/chromeToolbar'
-import { normalizeMenuBarWidgetPrefs } from '@shared/types/menuBarWidget'
 
 interface AppSettings {
   hasSeenWelcome: boolean
@@ -132,6 +133,7 @@ export function getDisplaySettings(): DisplaySettings {
     nodesDashboard: normalizeNodesDashboardPrefs(stored?.nodesDashboard),
     menuBarWidget: normalizeMenuBarWidgetPrefs(stored?.menuBarWidget),
     chromeToolbar: normalizeChromeToolbarPrefs(stored?.chromeToolbar),
+    resourceNavOrder: normalizeResourceNavOrder(stored?.resourceNavOrder),
     keyboardShortcuts: normalizeKeyboardShortcuts(stored?.keyboardShortcuts),
     locale: normalizeAppLocale(stored?.locale),
     kubeconfigScanPath: typeof stored?.kubeconfigScanPath === 'string' ? stored.kubeconfigScanPath : ''
@@ -154,6 +156,7 @@ export function setDisplaySettings(patch: Partial<DisplaySettings>): DisplaySett
     chromeToolbar: patch.chromeToolbar
       ? normalizeChromeToolbarPrefs({ ...current.chromeToolbar, ...patch.chromeToolbar })
       : current.chromeToolbar,
+    resourceNavOrder: normalizeResourceNavOrder(patch.resourceNavOrder ?? current.resourceNavOrder),
     keyboardShortcuts: patch.keyboardShortcuts
       ? normalizeKeyboardShortcuts({ ...current.keyboardShortcuts, ...patch.keyboardShortcuts })
       : current.keyboardShortcuts,

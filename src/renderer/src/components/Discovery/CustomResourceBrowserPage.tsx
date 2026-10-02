@@ -201,7 +201,15 @@ export function CustomResourceBrowserPage({
         dataIndex: 'ageTimestamp',
         key: 'age',
         width: 100,
-        sorter: (a, b) => compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp),
+        sorter: (a, b) => {
+          const byAge = compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp)
+          if (byAge !== 0) return byAge
+          const byNs = (a.namespace ?? '').localeCompare(b.namespace ?? '', undefined, {
+            sensitivity: 'base'
+          })
+          if (byNs !== 0) return byNs
+          return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+        },
         render: (value: string | null) => <AgeCell timestamp={value} />
       },
       {

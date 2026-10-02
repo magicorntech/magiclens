@@ -16,11 +16,18 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
   const lastErrorRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (state?.phase === 'error' && state.error && state.error !== lastErrorRef.current) {
+    // Only toast real download/install failures — check failures are soft (Settings only)
+    // and must never look like "there is an update that broke".
+    if (
+      state?.phase === 'error' &&
+      state.errorKind === 'download' &&
+      state.error &&
+      state.error !== lastErrorRef.current
+    ) {
       lastErrorRef.current = state.error
       void message.error(state.error)
     }
-  }, [state?.phase, state?.error])
+  }, [state?.phase, state?.error, state?.errorKind])
 
   if (!state) return null
 
@@ -28,7 +35,12 @@ export function UpdateNotificationBanner(): React.JSX.Element | null {
   const showAvailable = state.phase === 'available' && !state.notificationDismissed && !isSkipped
   const showDownloading = state.phase === 'downloading'
   const showDownloaded = state.phase === 'downloaded'
-  const showError = state.phase === 'error' && !!state.error && !state.notificationDismissed
+  const showError =
+    state.phase === 'error' &&
+    state.errorKind === 'download' &&
+    !!state.error &&
+    !!state.latestVersion &&
+    !state.notificationDismissed
 
   if (!showAvailable && !showDownloading && !showDownloaded && !showError) return null
 

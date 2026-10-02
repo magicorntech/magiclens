@@ -30,6 +30,10 @@ import {
   type ChromeToolbarPrefs
 } from '@shared/types/chromeToolbar'
 import {
+  normalizeResourceNavOrder,
+  type ResourceNavItemId
+} from '@shared/types/resourceNavOrder'
+import {
   normalizeMenuBarWidgetPrefs,
   type MenuBarWidgetPrefs
 } from '@shared/types/menuBarWidget'
@@ -43,6 +47,7 @@ interface DisplaySettingsState extends DisplaySettings {
   setShowResourceTabIcons: (value: boolean) => Promise<void>
   setShowFavoritesSection: (value: boolean) => Promise<void>
   setShowWorkspacesSection: (value: boolean) => Promise<void>
+  setShowSidebarLogos: (value: boolean) => Promise<void>
   setWorkspaceDockMagnification: (value: boolean) => Promise<void>
   setShowClusterNamespace: (value: boolean) => Promise<void>
   setUiTypography: (value: Partial<UiTypographyPrefs>) => Promise<void>
@@ -61,6 +66,9 @@ interface DisplaySettingsState extends DisplaySettings {
   setChromeToolbarPrefs: (prefs: ChromeToolbarPrefs) => Promise<void>
   toggleChromeToolbarAction: (id: ChromeToolbarActionId) => Promise<void>
   reorderChromeToolbarActions: (fromId: ChromeToolbarActionId, toId: ChromeToolbarActionId) => Promise<void>
+  setResourceNavOrder: (order: ResourceNavItemId[]) => Promise<void>
+  reorderResourceNavItem: (fromId: ResourceNavItemId, toId: ResourceNavItemId) => Promise<void>
+  resetResourceNavOrder: () => Promise<void>
   setShortcut: (action: ShortcutActionId, binding: ShortcutBinding) => Promise<void>
   resetShortcuts: () => Promise<void>
   setLocale: (locale: AppLocale) => Promise<void>
@@ -76,6 +84,7 @@ function applyDisplay(next: DisplaySettings): DisplaySettings {
     nodesDashboard: normalizeNodesDashboardPrefs(next.nodesDashboard),
     menuBarWidget: normalizeMenuBarWidgetPrefs(next.menuBarWidget),
     chromeToolbar: normalizeChromeToolbarPrefs(next.chromeToolbar),
+    resourceNavOrder: normalizeResourceNavOrder(next.resourceNavOrder),
     keyboardShortcuts: normalizeKeyboardShortcuts(next.keyboardShortcuts),
     locale: normalizeAppLocale(next.locale)
   }
@@ -113,6 +122,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
   },
   setShowWorkspacesSection: async (value) => {
     const next = await window.api.app.setDisplaySettings({ showWorkspacesSection: value })
+    set(applyDisplay(next))
+  },
+  setShowSidebarLogos: async (value) => {
+    const next = await window.api.app.setDisplaySettings({ showSidebarLogos: value })
     set(applyDisplay(next))
   },
   setWorkspaceDockMagnification: async (value) => {
@@ -210,6 +223,23 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
     order.splice(from, 1)
     order.splice(to, 0, fromId)
     await get().setChromeToolbarPrefs({ ...current, order })
+  },
+  setResourceNavOrder: async (order) => {
+    const normalized = normalizeResourceNavOrder(order)
+    const next = await window.api.app.setDisplaySettings({ resourceNavOrder: normalized })
+    set(applyDisplay(next))
+  },
+  reorderResourceNavItem: async (fromId, toId) => {
+    const order = [...normalizeResourceNavOrder(get().resourceNavOrder)]
+    const from = order.indexOf(fromId)
+    const to = order.indexOf(toId)
+    if (from < 0 || to < 0 || from === to) return
+    order.splice(from, 1)
+    order.splice(to, 0, fromId)
+    await get().setResourceNavOrder(order)
+  },
+  resetResourceNavOrder: async () => {
+    await get().setResourceNavOrder(normalizeResourceNavOrder(null))
   },
   setShortcut: async (action, binding) => {
     const current = normalizeKeyboardShortcuts(get().keyboardShortcuts)

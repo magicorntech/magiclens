@@ -7,6 +7,7 @@ import { readPaginationChange, useTablePagination } from '../../utils/tablePagin
 import { ResizableTable } from '../../utils/ResizableTable'
 import { ResourceTableToolbar } from '../ResourceTable/ResourceTableToolbar'
 import { AgeCell } from '../ResourceTable/AgeCell'
+import { compareAgeTimestamps } from '../../utils/tableSort'
 import { ArgoNotInstalled } from './ArgoNotInstalled'
 import { ArgoPageHeader } from './ArgoPageHeader'
 
@@ -65,6 +66,11 @@ export function ArgoProjectsPage({ clusterId }: { clusterId: string }): React.JS
       title: 'Age',
       key: 'age',
       width: 90,
+      sorter: (a, b) => {
+        const byAge = compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp)
+        if (byAge !== 0) return byAge
+        return a.name.localeCompare(b.name)
+      },
       render: (_v, r) => <AgeCell timestamp={r.ageTimestamp} />
     }
   ]

@@ -27,9 +27,11 @@ export function useResourceList(
   const apiNamespace = kindNeedsNamespace ? listNamespaceParam(namespaceSelection) : 'ALL'
   const canFetch = !!kind && (!kindNeedsNamespace || (!noNamespace && apiNamespace !== null))
 
+  const queryKeyNamespace = kindNeedsNamespace ? namespaceSelection : 'ALL'
+
   const watchStatus = useBuiltinResourceWatch(
     clusterId,
-    namespaceSelection,
+    queryKeyNamespace,
     kind,
     isActiveTab && isConnected && canFetch
   )
@@ -39,7 +41,7 @@ export function useResourceList(
   const refetchInterval = wantsPolling ? fallbackPollInterval : false
 
   const query = useQuery({
-    queryKey: ['resource-list', clusterId, namespaceSelection, kind],
+    queryKey: ['resource-list', clusterId, queryKeyNamespace, kind],
     queryFn: () =>
       window.api.resource.list({
         clusterId: clusterId as string,
@@ -54,6 +56,8 @@ export function useResourceList(
     if (kindNeedsNamespace && noNamespace) return { items: [] }
     if (!query.data) return undefined
     if ('error' in query.data) return query.data
+    // Cluster-scoped kinds (Nodes, PVs, …) must ignore the sidebar namespace picker.
+    if (!kindNeedsNamespace) return query.data
     return {
       items: filterItemsByNamespaceSelection(query.data.items, namespaceSelection)
     }

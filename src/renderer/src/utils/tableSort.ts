@@ -1,11 +1,35 @@
 import type { ResourceListItem } from '@shared/types/resource'
 
-/** Ascend = youngest first; Ant Design flips for descend. */
-export function compareAgeTimestamps(a: string | null, b: string | null): number {
-  if (!a && !b) return 0
-  if (!a) return 1
-  if (!b) return -1
-  return new Date(b).getTime() - new Date(a).getTime()
+/** Parse an ISO / Date-like timestamp to epoch ms, or null if missing/invalid. */
+export function ageTimestampMs(value: string | null | undefined): number | null {
+  if (value == null || value === '') return null
+  const ms = Date.parse(value)
+  return Number.isFinite(ms) ? ms : null
+}
+
+/**
+ * Compare creation timestamps for an Age column.
+ * Ascend = younger first (smaller age), descend = older first.
+ * Never returns NaN (which makes Array.sort scramble rows).
+ */
+export function compareAgeTimestamps(a: string | null | undefined, b: string | null | undefined): number {
+  const ta = ageTimestampMs(a)
+  const tb = ageTimestampMs(b)
+  if (ta === null && tb === null) return 0
+  // Missing ages sink to the bottom in both directions.
+  if (ta === null) return 1
+  if (tb === null) return -1
+  // Younger (larger timestamp) first on ascend → tb - ta.
+  return tb - ta
+}
+
+/** Stable Age sorter for resource rows — ties break on namespace then name. */
+export function ageResourceSorter(a: ResourceListItem, b: ResourceListItem): number {
+  const byAge = compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp)
+  if (byAge !== 0) return byAge
+  const byNs = (a.namespace ?? '').localeCompare(b.namespace ?? '', undefined, { sensitivity: 'base' })
+  if (byNs !== 0) return byNs
+  return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
 }
 
 function parseFraction(value: string): { num: number; den: number } {

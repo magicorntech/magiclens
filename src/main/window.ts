@@ -1,11 +1,14 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, shell } from 'electron'
 import { createAppWebPreferences } from './chromiumPerf'
+import { installWindowDiagnostics } from './diagnostics/installHangCrashDiagnostics'
 
 export function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1280,
     height: 800,
+    minWidth: 720,
+    minHeight: 480,
     show: false,
     autoHideMenuBar: true,
     // Only affects the Windows/Linux window and taskbar icon — macOS reads the dock icon
@@ -21,6 +24,7 @@ export function createMainWindow(): BrowserWindow {
   })
 
   window.on('ready-to-show', () => window.show())
+  installWindowDiagnostics(window)
 
   // When the window is hidden/minimized, nudge Chromium to drop unused GPU/renderer caches.
   let reclaimTimer: ReturnType<typeof setTimeout> | null = null

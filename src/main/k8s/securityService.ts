@@ -702,11 +702,24 @@ function rbacFindings(
 }
 
 function buildVectors(pods: V1Pod[], services: V1Service[]): SecurityVector[] {
+  // Index services by name / DNS-ish tokens so we don't do O(pods × services) includes().
+  const byToken = new Map<string, V1Service[]>()
+  for (const svc of services) {
+    const svcName = svc.metadata?.name
+    const svcNs = svc.metadata?.namespace || 'default'
+    if (!svcName) continue
+    for (const token of [svcName, `${svcName}.${svcNs}`, `${svcName}.${svcNs}.svc`]) {
+      const list = byToken.get(token)
+      if (list) list.push(svc)
+      else byToken.set(token, [svc])
+    }
+  }
+
   const vectors: SecurityVector[] = []
-  const serviceNames = new Set(
-    services.map((s) => `${s.metadata?.namespace}/${s.metadata?.name}`)
-  )
+  const seen = new Set<string>()
+
   for (const pod of pods) {
+    if (vectors.length >= 80) break
     const ns = pod.metadata?.namespace || 'default'
     const from =
       pod.metadata?.ownerReferences?.find((o) => o.controller)?.name ||
@@ -717,28 +730,37 @@ function buildVectors(pods: V1Pod[], services: V1Service[]): SecurityVector[] {
       .flatMap((c) => c.env ?? [])
       .map((e) => `${e.name}=${e.value || ''}`)
       .join(' ')
-    for (const svc of services) {
-      const svcNs = svc.metadata?.namespace || 'default'
-      const svcName = svc.metadata?.name || ''
-      if (!svcName || (svcNs === ns && svcName === from)) continue
-      const key = `${svcNs}/${svcName}`
-      if (!serviceNames.has(key)) continue
-      const hit =
-        envBlob.includes(svcName) ||
-        envBlob.includes(`${svcName}.${svcNs}`) ||
-        envBlob.includes(`${svcName}.${svcNs}.svc`)
-      if (!hit) continue
-      vectors.push({
-        id: `${ns}/${from}->${svcNs}/${svcName}`,
-        from,
-        fromDetail,
-        to: svcName,
-        toDetail: svcName,
-        namespace: ns
-      })
+
+    const tokens = new Set<string>()
+    for (const part of envBlob.split(/[^A-Za-z0-9._-]+/)) {
+      if (part.length >= 2) tokens.add(part)
+    }
+
+    for (const token of tokens) {
+      if (vectors.length >= 80) break
+      const matches = byToken.get(token)
+      if (!matches) continue
+      for (const svc of matches) {
+        const svcNs = svc.metadata?.namespace || 'default'
+        const svcName = svc.metadata?.name || ''
+        if (!svcName || (svcNs === ns && svcName === from)) continue
+        const id = `${ns}/${from}->${svcNs}/${svcName}`
+        if (seen.has(id)) continue
+        seen.add(id)
+        vectors.push({
+          id,
+          from,
+          fromDetail,
+          to: svcName,
+          toDetail: svcName,
+          namespace: ns
+        })
+        if (vectors.length >= 80) break
+      }
     }
   }
-  return vectors.slice(0, 80)
+
+  return vectors
 }
 
 export function summarizeSecurityFindings(vulns: SecurityVulnerability[]): {

@@ -17,6 +17,7 @@ interface ClusterGroupsStoreState {
   renameGroup: (id: string, name: string) => Promise<void>
   removeGroup: (id: string) => Promise<void>
   setCollapsed: (id: string, collapsed: boolean) => Promise<void>
+  reorderGroups: (fromId: string, toId: string) => Promise<void>
   setGroupClusters: (id: string, clusterIds: string[]) => Promise<void>
   setGroupShortcut: (id: string, shortcut: ShortcutBinding | null) => Promise<void>
   setGroupLogo: (id: string, logoUrl: string | null) => Promise<void>
@@ -58,6 +59,17 @@ export const useClusterGroupsStore = create<ClusterGroupsStoreState>()((set, get
   },
   setCollapsed: async (id, collapsed) => {
     const groups = await window.api.clusterGroups.update(id, { collapsed })
+    set({ groups })
+  },
+  reorderGroups: async (fromId, toId) => {
+    const current = [...get().groups]
+    const from = current.findIndex((g) => g.id === fromId)
+    const to = current.findIndex((g) => g.id === toId)
+    if (from < 0 || to < 0 || from === to) return
+    const [moved] = current.splice(from, 1)
+    if (!moved) return
+    current.splice(to, 0, moved)
+    const groups = await window.api.clusterGroups.save(current)
     set({ groups })
   },
   setGroupClusters: async (id, clusterIds) => {

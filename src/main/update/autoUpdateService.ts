@@ -1,7 +1,7 @@
-import { app, shell, type BrowserWindow } from 'electron'
+import { app, net, shell, type BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { IPC } from '@shared/ipc-contract'
-import type { UpdateSettings, UpdateState } from '@shared/types/update'
+import type { UpdateErrorKind, UpdateSettings, UpdateState } from '@shared/types/update'
 import {
   getSkippedVersion,
   getUpdateSettings,
@@ -12,6 +12,7 @@ import {
 const AUTO_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000 // 4 hours
 const REMIND_LATER_DELAY_MS = 60 * 60 * 1000 // 1 hour
 const RELEASES_BASE_URL = 'https://github.com/magicorntech/magiclens/releases'
+const RESUME_CHECK_DELAY_MS = 8_000
 
 /*
  * macOS used to be forced down a manual-download path here.
@@ -29,7 +30,10 @@ const RELEASES_BASE_URL = 'https://github.com/magicorntech/magiclens/releases'
 let mainWindow: BrowserWindow | null = null
 let autoCheckTimer: ReturnType<typeof setInterval> | null = null
 let remindLaterTimer: ReturnType<typeof setTimeout> | null = null
+let resumeCheckTimer: ReturnType<typeof setTimeout> | null = null
 let initialized = false
+/** Tracks whether the current updater operation is a metadata check or an artifact download. */
+let inFlightKind: UpdateErrorKind | null = null
 
 let state: UpdateState = {
   phase: 'idle',
@@ -39,6 +43,7 @@ let state: UpdateState = {
   releaseDate: null,
   progress: null,
   error: null,
+  errorKind: null,
   skippedVersion: getSkippedVersion(),
   notificationDismissed: false,
   releaseUrl: null
@@ -83,6 +88,53 @@ function describeUpdaterError(err: unknown): string {
 }
 
 /**
+ * Check failures (no update package involved) must never surface as "update install failed".
+ * Auto-checks go silent; a manual check still records a soft `errorKind: 'check'` for Settings.
+ */
+function handleUpdaterFailure(err: unknown, kind: UpdateErrorKind, options?: { manual?: boolean }): void {
+  console.error(`[update] ${kind} failed:`, err)
+  inFlightKind = null
+
+  if (kind === 'check') {
+    const soft = describeUpdaterError(err)
+    if (options?.manual) {
+      setState({
+        phase: 'error',
+        error: soft,
+        errorKind: 'check',
+        progress: null
+      })
+      return
+    }
+    // Background check failed — restore prior "available" UI if we already knew about a version,
+    // otherwise return to idle. Never show an install-error banner for a failed probe.
+    if (state.latestVersion && (state.phase === 'checking' || state.phase === 'error' || state.phase === 'idle')) {
+      setState({
+        phase: 'available',
+        error: null,
+        errorKind: null,
+        progress: null
+      })
+      return
+    }
+    setState({
+      phase: state.phase === 'downloading' || state.phase === 'downloaded' ? state.phase : 'idle',
+      error: null,
+      errorKind: null,
+      progress: null
+    })
+    return
+  }
+
+  setState({
+    phase: 'error',
+    error: describeUpdaterError(err),
+    errorKind: 'download',
+    progress: null
+  })
+}
+
+/**
  * `electron-updater`'s GitHub provider always resolves release asset URLs over HTTPS and, for
  * every platform, verifies the downloaded file's sha512 checksum against the value published in
  * the provider metadata (latest.yml / latest-mac.yml / latest-linux.yml) before it will install
@@ -92,10 +144,12 @@ function describeUpdaterError(err: unknown): string {
  */
 function registerUpdaterEvents(): void {
   autoUpdater.on('checking-for-update', () => {
-    setState({ phase: 'checking', error: null })
+    inFlightKind = 'check'
+    setState({ phase: 'checking', error: null, errorKind: null })
   })
 
   autoUpdater.on('update-available', (info) => {
+    inFlightKind = null
     const skipped = getSkippedVersion()
     setState({
       phase: 'available',
@@ -105,27 +159,51 @@ function registerUpdaterEvents(): void {
       releaseUrl: `${RELEASES_BASE_URL}/tag/v${info.version}`,
       skippedVersion: skipped,
       notificationDismissed: false,
-      error: null
+      error: null,
+      errorKind: null
     })
     if (skipped !== info.version && getUpdateSettings().autoDownload) {
+      inFlightKind = 'download'
       void autoUpdater.downloadUpdate().catch((err) => {
-        setState({ phase: 'error', error: describeUpdaterError(err) })
+        handleUpdaterFailure(err, 'download')
       })
     }
   })
 
   autoUpdater.on('update-not-available', () => {
-    setState({ phase: 'not-available', latestVersion: null, releaseNotes: null, releaseDate: null, error: null })
+    inFlightKind = null
+    setState({
+      phase: 'not-available',
+      latestVersion: null,
+      releaseNotes: null,
+      releaseDate: null,
+      releaseUrl: null,
+      error: null,
+      errorKind: null,
+      progress: null
+    })
   })
 
   autoUpdater.on('error', (err) => {
-    console.error('[update]', err)
-    setState({ phase: 'error', error: describeUpdaterError(err) })
+    const kind: UpdateErrorKind =
+      inFlightKind === 'download' || state.phase === 'downloading'
+        ? 'download'
+        : 'check'
+    // Transient network blips during a background check are especially common after sleep —
+    // never escalate those to an install-error banner.
+    if (kind === 'check') {
+      handleUpdaterFailure(err, 'check')
+      return
+    }
+    handleUpdaterFailure(err, kind)
   })
 
   autoUpdater.on('download-progress', (progress) => {
+    inFlightKind = 'download'
     setState({
       phase: 'downloading',
+      error: null,
+      errorKind: null,
       progress: {
         percent: progress.percent,
         bytesPerSecond: progress.bytesPerSecond,
@@ -136,7 +214,8 @@ function registerUpdaterEvents(): void {
   })
 
   autoUpdater.on('update-downloaded', () => {
-    setState({ phase: 'downloaded', progress: null, error: null })
+    inFlightKind = null
+    setState({ phase: 'downloaded', progress: null, error: null, errorKind: null })
     if (!getUpdateSettings().askBeforeInstall) {
       // "Ask before install" is disabled - proceed straight to install/restart.
       setTimeout(() => autoUpdater.quitAndInstall(), 1000)
@@ -157,9 +236,23 @@ function scheduleAutoCheck(settings: UpdateSettings): void {
   }
   if (settings.checkAutomatically && app.isPackaged) {
     autoCheckTimer = setInterval(() => {
-      void checkForUpdates()
+      void checkForUpdates({ manual: false })
     }, AUTO_CHECK_INTERVAL_MS)
   }
+}
+
+function schedulePostResumeUpdateCheck(): void {
+  if (resumeCheckTimer) clearTimeout(resumeCheckTimer)
+  resumeCheckTimer = setTimeout(() => {
+    resumeCheckTimer = null
+    if (!getUpdateSettings().checkAutomatically) return
+    void checkForUpdates({ manual: false })
+  }, RESUME_CHECK_DELAY_MS)
+}
+
+/** Soft re-check after sleep — never surfaces check failures as install errors. */
+export function onSystemResumeForUpdates(): void {
+  schedulePostResumeUpdateCheck()
 }
 
 export function initAutoUpdater(window: BrowserWindow): void {
@@ -184,28 +277,57 @@ export function initAutoUpdater(window: BrowserWindow): void {
   }
 
   if (settings.checkOnStartup) {
-    setTimeout(() => void checkForUpdates(), 3000)
+    setTimeout(() => void checkForUpdates({ manual: false }), 3000)
   }
 }
 
-export async function checkForUpdates(): Promise<void> {
+export async function checkForUpdates(options?: { manual?: boolean }): Promise<void> {
+  const manual = options?.manual ?? true
+
   if (!app.isPackaged) {
-    setState({ phase: 'error', error: 'Updates can only be checked in a packaged build of MagicLens.' })
+    if (manual) {
+      setState({
+        phase: 'error',
+        error: 'Updates can only be checked in a packaged build of MagicLens.',
+        errorKind: 'check'
+      })
+    }
     return
   }
+
+  if (!net.isOnline()) {
+    if (manual) {
+      setState({
+        phase: 'error',
+        error: 'No network connection — try again when you are online.',
+        errorKind: 'check'
+      })
+    } else {
+      setState({ phase: 'idle', error: null, errorKind: null })
+    }
+    return
+  }
+
+  // Don't interrupt an in-flight download with a check.
+  if (state.phase === 'downloading' || state.phase === 'downloaded') {
+    return
+  }
+
   try {
+    inFlightKind = 'check'
     applySettingsToUpdater(getUpdateSettings())
     await autoUpdater.checkForUpdates()
   } catch (err) {
-    setState({ phase: 'error', error: describeUpdaterError(err) })
+    handleUpdaterFailure(err, 'check', { manual })
   }
 }
 
 export async function downloadUpdate(): Promise<void> {
   try {
+    inFlightKind = 'download'
     await autoUpdater.downloadUpdate()
   } catch (err) {
-    setState({ phase: 'error', error: describeUpdaterError(err) })
+    handleUpdaterFailure(err, 'download')
   }
 }
 

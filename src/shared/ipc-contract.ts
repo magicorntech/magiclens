@@ -130,10 +130,18 @@ export const IPC = {
   APP_GET_FULLSCREEN: 'app:getFullscreen',
   APP_TOGGLE_FULLSCREEN: 'app:toggleFullscreen',
   APP_FULLSCREEN_CHANGED: 'app:fullscreenChanged',
+  /** Main -> renderer: OS resumed from sleep / lid open — reconnect clusters & soft-retry updates. */
+  APP_POWER_RESUME: 'app:powerResume',
   APP_GET_PROCESS_METRICS: 'app:getProcessMetrics',
   APP_GET_HOST_INFO: 'app:getHostInfo',
   APP_CLEAR_CACHE: 'app:clearCache',
   APP_OPEN_DEVTOOLS: 'app:openDevTools',
+  /** Write a local diagnostics JSON under logs (manual share — never uploaded). */
+  APP_WRITE_DIAGNOSTICS: 'app:writeDiagnostics',
+  APP_OPEN_LOGS_DIR: 'app:openLogsDir',
+  APP_OPEN_CRASH_DUMPS_DIR: 'app:openCrashDumpsDir',
+  /** Main -> renderer after auto/manual diagnostics write. */
+  APP_DIAGNOSTICS_SAVED: 'app:diagnosticsSaved',
 
   POD_GET_DETAIL: 'pod:getDetail',
   POD_GET_METRICS: 'pod:getMetrics',

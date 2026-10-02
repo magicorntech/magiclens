@@ -296,6 +296,14 @@ export const tr: TranslationOverrides = {
       showWorkspaces: 'Workspaces bölümünü göster',
       showWorkspacesHint:
         'Açıkken Workspaces sol kenar çubuğunda görünür. Daraltılmış sidebar’da W işareti workspace kümelerinin üzerindedir.',
+      workspaceOrderTitle: 'Workspace sırası',
+      workspaceOrderHint: 'Sol kenar çubuğundaki workspace’leri sürükleyerek yeniden sıralayın.',
+      workspaceOrderChooser: 'Kenar çubuğundaki sırayı değiştirmek için workspace’leri sürükleyin.',
+      workspaceOrderEmpty: 'Henüz workspace yok — önce kenar çubuğundan bir tane oluşturun.',
+      workspaceOrderClusters: '{{count}} küme',
+      showSidebarLogos: 'Kenar çubuğunda logoları göster',
+      showSidebarLogosHint:
+        'Açıkken workspace ve cluster satırlarında logolar görünür. Kapalıyken klasör ve durum ikonları kullanılır (Cursor tarzı).',
       workspaceDockMagnification: 'Workspace Dock büyütme efekti',
       workspaceDockMagnificationHint:
         'Sol kenar çubuğu daraltıldığında, workspace ikonları imleç altında macOS Dock gibi büyür.',
@@ -312,7 +320,13 @@ export const tr: TranslationOverrides = {
         'Üst çubuk simgelerini gösterin, gizleyin ve sıralayın. Ayarlar sağda sabit kalır; taşınamaz veya gizlenemez.',
       chromeToolbarChooser:
         'Sıralamak için sürükleyin. Görünürlüğü açıp kapatın. Ayarlar kilitlidir.',
-      chromeToolbarFixed: 'Sabit'
+      chromeToolbarFixed: 'Sabit',
+      resourceNavOrderTitle: 'Kaynak menü sırası',
+      resourceNavOrderHint:
+        'Küme kaynak kenar çubuğunu sürükleyerek yeniden sıralayın. Favoriler (varsa) her zaman en üstte kalır.',
+      resourceNavOrderChooser: 'Her kümenin kaynak menüsünde kullanılan sırayı ayarlamak için sürükleyin.',
+      resourceNavOrderFixed: 'Her zaman ilk',
+      resourceNavOrderReset: 'Varsayılan sıraya dön'
     },
     chromeToolbar: {
       search: 'Arama',
@@ -321,6 +335,26 @@ export const tr: TranslationOverrides = {
       fullscreen: 'Tam ekran',
       split: 'Küme bölme',
       settings: 'Ayarlar'
+    },
+    resourceNavOrder: {
+      favorites: 'Favoriler',
+      nodes: 'Nodes',
+      topology: 'Topology',
+      visualizer: 'Visualizer',
+      security: 'Security',
+      workloads: 'Workloads',
+      config: 'Config',
+      network: 'Network',
+      storage: 'Storage',
+      namespaces: 'Namespaces',
+      events: 'Events',
+      timeline: 'Timeline',
+      helm: 'Helm',
+      grafana: 'Grafana',
+      prometheus: 'Prometheus',
+      argocd: 'Argo CD',
+      'access-control': 'Access Control',
+      'custom-resources': 'Custom Resources'
     },
     nodesSections: {
       summary: 'Küme özeti',
@@ -512,7 +546,16 @@ export const tr: TranslationOverrides = {
       resumeRefresh: 'Yenilemeyi sürdür',
       clearCache: 'Renderer önbelleğini temizle',
       cacheCleared: 'Renderer önbelleği temizlendi',
-      openDevTools: 'DevTools aç'
+      openDevTools: 'DevTools aç',
+      diagnosticsTitle: 'Yerel tanılama',
+      diagnosticsHint:
+        'Uygulama donduğunda veya renderer/GPU süreci çöktüğünde MagicLens logs klasörüne bir tanılama JSON’u yazar (Crashpad dump’ları da crash dumps’ta). Hiçbir şey yüklenmez — yardım için dosyaları elle paylaşın.',
+      saveDiagnostics: 'Tanılama raporu kaydet',
+      diagnosticsSaved: 'Tanılama kaydedildi',
+      openLogsFolder: 'Logs klasörünü aç',
+      openCrashDumpsFolder: 'Crash dumps klasörünü aç',
+      diagnosticsShareHint:
+        'Donma bildirirken en yeni diagnostics-*.json dosyasını (ve varsa .dmp dosyalarını) ekleyin.'
     },
     about: {
       platform: 'Platform',
@@ -1917,6 +1960,7 @@ export const tr: TranslationOverrides = {
     connectHint: 'Namespace’ler arasında kaynak aramak için bir kümeye bağlanın.',
     typeHint:
       'Aramak için yazın. spark:todo, pod:nginx, @deploy api gibi anahtar kelimeler kullanın veya yukarıdaki tür filtresine tıklayın.',
+    filterAria: 'Kaynak türüne göre filtrele',
     searchingIn: 'Kaynaklar aranıyor: {{cluster}}',
     recent: 'Son',
     clusters: 'Kümeler',

@@ -15,6 +15,19 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.28': {
+    title: 'Sidebar, stability, and Settings',
+    items: [
+      'Cursor-style sidebar with clearer workspaces and clusters, hover edit, and drag-to-reorder in Settings.',
+      'Reorder the resource menu (Favorites, Workloads, …) from Settings; empty Favorites stay hidden until you star something.',
+      'Cluster logos in the sidebar show your image correctly — cloud provider icons no longer win over the logo.',
+      'Connection status is a small corner pip instead of a large overlay button.',
+      'More reliable after sleep/wake and network changes, with fewer false “update available” prompts.',
+      'Smoother on large clusters; Helm decode and security scanning run off the main thread.',
+      'Local crash/hang diagnostics on this machine only — open the folder from Settings → Developer.',
+      'Larger Settings modal for easier reading and reordering.'
+    ]
+  },
   '0.1.27': {
     title: 'Security workspace and clean themes',
     items: [

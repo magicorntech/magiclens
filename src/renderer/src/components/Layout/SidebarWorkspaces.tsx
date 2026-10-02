@@ -17,8 +17,10 @@ import {
 import {
   ChevronDown,
   ChevronRight,
+  Folder,
+  FolderOpen,
   FolderPlus,
-  Layers,
+  ListFilter,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -37,7 +39,6 @@ import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { sortClustersByConnection } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { ClusterAvatar } from '../ClusterTabs/ClusterAvatar'
-import { FavoriteClusterBox } from '../ClusterTabs/FavoriteClusterBox'
 import {
   WORKSPACE_ACCENTS,
   WORKSPACE_ACCENT_IDS,
@@ -94,6 +95,7 @@ export function SidebarWorkspaces({
   const openedTabs = useClusterStore((s) => s.openedTabs)
   const openClusterTab = useClusterStore((s) => s.openClusterTab)
   const workspaceDockMagnification = useDisplaySettingsStore((s) => s.workspaceDockMagnification)
+  const showSidebarLogos = useDisplaySettingsStore((s) => s.showSidebarLogos)
   const groups = useClusterGroupsStore((s) => s.groups)
   const createGroup = useClusterGroupsStore((s) => s.createGroup)
   const renameGroup = useClusterGroupsStore((s) => s.renameGroup)
@@ -105,6 +107,7 @@ export function SidebarWorkspaces({
   const setGroupAccent = useClusterGroupsStore((s) => s.setGroupAccent)
 
   const [query, setQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
@@ -431,7 +434,7 @@ export function SidebarWorkspaces({
             className="ml-sidebar-compact-mark"
             aria-label={t('workspaces.compactTooltip')}
           >
-            <Icon icon={Layers} variant="action" />
+            <Icon icon={Folder} variant="action" strokeWidth={1.5} />
           </span>
         </Tooltip>
         <div
@@ -481,10 +484,11 @@ export function SidebarWorkspaces({
                               <span className="ml-resource-nav-flyout-item-icon">
                                 <ClusterAvatar
                                   logoUrl={cluster.logoUrl}
+                                  fallbackLogoUrl={group.logoUrl}
                                   name={cluster.customName || cluster.contextName}
-                                  contextName={cluster.contextName}
-                                  endpoint={cluster.endpoint}
                                   size={20}
+                                  accentColor={workspaceAccentColor(group.accent) ?? undefined}
+                                  cloudIcon={false}
                                 />
                               </span>
                               <span className="ml-resource-nav-flyout-item-label">
@@ -595,30 +599,41 @@ export function SidebarWorkspaces({
           aria-expanded={sectionExpanded}
           onClick={onToggleSection}
         >
-          <Icon icon={sectionExpanded ? ChevronDown : ChevronRight} variant="micro" />
-          <span className="ml-sidebar-section-chrome__glyph" aria-hidden>
-            <Icon icon={Layers} variant="micro" />
-          </span>
+          <Icon icon={sectionExpanded ? ChevronDown : ChevronRight} variant="micro" strokeWidth={1.5} />
           <span className="ml-sidebar-section-chrome__copy">
             <span className="ml-sidebar-section-chrome__label">{t('workspaces.title')}</span>
           </span>
         </button>
-        <Tooltip title={t('workspaces.newTooltip')}>
-          <button
-            type="button"
-            className="ml-sidebar-section-chrome__action"
-            aria-label={t('workspaces.new')}
-            onClick={openCreate}
-          >
-            <Icon icon={FolderPlus} variant="detail" />
-          </button>
-        </Tooltip>
-        <span className="ml-sidebar-section-chrome__count">{groups.length}</span>
+        <div className="ml-sidebar-section-chrome__actions">
+          {groups.length > 0 ? (
+            <Tooltip title={t('chrome.searchWorkspaces')}>
+              <button
+                type="button"
+                className={`ml-sidebar-section-chrome__action${searchOpen || query ? ' is-active' : ''}`}
+                aria-label={t('chrome.searchWorkspaces')}
+                aria-pressed={searchOpen}
+                onClick={() => setSearchOpen((v) => !v)}
+              >
+                <Icon icon={ListFilter} variant="detail" strokeWidth={1.5} />
+              </button>
+            </Tooltip>
+          ) : null}
+          <Tooltip title={t('workspaces.newTooltip')}>
+            <button
+              type="button"
+              className="ml-sidebar-section-chrome__action"
+              aria-label={t('workspaces.new')}
+              onClick={openCreate}
+            >
+              <Icon icon={FolderPlus} variant="detail" strokeWidth={1.5} />
+            </button>
+          </Tooltip>
+        </div>
       </div>
 
       {sectionExpanded ? (
         <>
-          {groups.length > 0 && (
+          {groups.length > 0 && (searchOpen || query) && (
             <div className="ml-sidebar-search">
               <ClusterSearchInput
                 value={query}
@@ -665,16 +680,6 @@ export function SidebarWorkspaces({
                   <div
                     key={group.id}
                     className={`ml-ws-group${isCollapsed ? ' is-collapsed' : ' is-expanded'}`}
-                    // Scoped custom property on the whole group, not just its header, so the
-                    // clusters nested inside inherit the workspace's colour for their selection
-                    // pill as well. Rules fall back to --ml-primary when it isn't set.
-                    style={
-                      workspaceAccentColor(group.accent)
-                        ? ({
-                            '--ml-ws-accent': workspaceAccentColor(group.accent)
-                          } as React.CSSProperties)
-                        : undefined
-                    }
                   >
                     <div className="ml-ws-group__head">
                       <button
@@ -683,16 +688,21 @@ export function SidebarWorkspaces({
                         onClick={() => void setCollapsed(group.id, !isCollapsed)}
                         aria-expanded={!isCollapsed}
                       >
-                        <span className="ml-ws-group__chevron" aria-hidden>
-                          <Icon icon={ChevronDown} variant="micro" />
-                        </span>
-                        <span className="ml-ws-group__avatar">
-                          <ClusterAvatar
-                            logoUrl={group.logoUrl}
-                            name={group.name}
-                            size={20}
-                            accentColor={workspaceAccentColor(group.accent) ?? undefined}
-                          />
+                        <span className="ml-ws-group__folder" aria-hidden>
+                          {showSidebarLogos ? (
+                            <ClusterAvatar
+                              logoUrl={group.logoUrl}
+                              name={group.name}
+                              size={15}
+                              accentColor={workspaceAccentColor(group.accent) ?? undefined}
+                            />
+                          ) : (
+                            <Icon
+                              icon={isCollapsed ? Folder : FolderOpen}
+                              variant="detail"
+                              strokeWidth={1.5}
+                            />
+                          )}
                         </span>
                         <span className="ml-ws-group__meta">
                           <span className="ml-ws-group__name">{group.name}</span>
@@ -711,7 +721,7 @@ export function SidebarWorkspaces({
                           className="ml-ws-group__menu"
                           aria-label={t('workspaces.edit')}
                         >
-                          <Icon icon={MoreHorizontal} variant="detail" />
+                          <Icon icon={MoreHorizontal} variant="detail" strokeWidth={1.5} />
                         </button>
                       </Dropdown>
                     </div>
@@ -722,25 +732,93 @@ export function SidebarWorkspaces({
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
                           style={{ overflow: 'hidden' }}
                         >
                           <div className="ml-ws-group__list">
                             {members.length === 0 ? (
                               <div className="ml-ws-group__empty">{t('workspaces.noClusters')}</div>
                             ) : (
-                              members.map((cluster) => (
-                                <FavoriteClusterBox
-                                  key={`${group.id}-${cluster.id}`}
-                                  cluster={cluster}
-                                  active={cluster.id === activeClusterId}
-                                  nested
-                                  accentColor={workspaceAccentColor(group.accent) ?? undefined}
-                                  fallbackLogoUrl={group.logoUrl}
-                                  onActivate={onNavigate}
-                                  onEdit={onEditCluster}
-                                />
-                              ))
+                              members.map((cluster) => {
+                                const active = cluster.id === activeClusterId
+                                const statusClass =
+                                  cluster.status === 'connected'
+                                    ? 'is-connected'
+                                    : cluster.status === 'connecting'
+                                      ? 'is-connecting'
+                                      : cluster.status === 'error'
+                                        ? 'is-error'
+                                        : ''
+                                const rowMenu: MenuProps = {
+                                  items: [
+                                    {
+                                      key: 'open',
+                                      label: t('clusterActions.open'),
+                                      onClick: () => {
+                                        openClusterTab(cluster.id)
+                                        onNavigate?.()
+                                      }
+                                    },
+                                    ...(onEditCluster
+                                      ? [
+                                          {
+                                            key: 'edit',
+                                            label: t('clusterActions.edit'),
+                                            icon: <Icon icon={Pencil} variant="detail" />,
+                                            onClick: () => onEditCluster(cluster)
+                                          }
+                                        ]
+                                      : [])
+                                  ]
+                                }
+                                return (
+                                  <div
+                                    key={`${group.id}-${cluster.id}`}
+                                    className={`ml-ws-row${active ? ' is-active' : ''}${statusClass ? ` ${statusClass}` : ''}${showSidebarLogos ? ' ml-ws-row--logos' : ''}`}
+                                  >
+                                    <button
+                                      type="button"
+                                      className="ml-ws-row__open"
+                                      onClick={() => {
+                                        openClusterTab(cluster.id)
+                                        onNavigate?.()
+                                      }}
+                                    >
+                                      {showSidebarLogos ? (
+                                        <span className="ml-ws-row__icon">
+                                          <ClusterAvatar
+                                            logoUrl={cluster.logoUrl}
+                                            fallbackLogoUrl={group.logoUrl}
+                                            name={cluster.customName}
+                                            size={15}
+                                            accentColor={
+                                              workspaceAccentColor(group.accent) ?? undefined
+                                            }
+                                            cloudIcon={false}
+                                          />
+                                          <span className="ml-ws-row__dot" aria-hidden />
+                                        </span>
+                                      ) : (
+                                        <span className="ml-ws-row__mark" aria-hidden />
+                                      )}
+                                      <span className="ml-ws-row__label">{cluster.customName}</span>
+                                    </button>
+                                    <Dropdown
+                                      menu={rowMenu}
+                                      trigger={['click', 'contextMenu']}
+                                    >
+                                      <button
+                                        type="button"
+                                        className="ml-ws-row__menu"
+                                        aria-label={t('clusterActions.edit')}
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <Icon icon={MoreHorizontal} variant="detail" strokeWidth={1.5} />
+                                      </button>
+                                    </Dropdown>
+                                  </div>
+                                )
+                              })
                             )}
                           </div>
                         </motion.div>

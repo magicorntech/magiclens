@@ -117,6 +117,14 @@ export const ko: TranslationOverrides = {
       showFavoritesHint: '켜면 왼쪽 사이드바의 Workspaces 위에 즐겨찾기가 표시됩니다. 제목을 클릭해 접거나 펼칠 수 있습니다.',
       showWorkspaces: 'Workspaces 섹션 표시',
       showWorkspacesHint: '켜면 왼쪽 사이드바에 Workspaces가 표시됩니다. 접힌 상태에서는 W 표시가 워크스페이스 클러스터 위에 나타납니다.',
+      workspaceOrderTitle: '워크스페이스 순서',
+      workspaceOrderHint: '드래그하여 왼쪽 사이드바의 워크스페이스 순서를 바꿉니다.',
+      workspaceOrderChooser: '드래그하여 사이드바 순서를 변경하세요.',
+      workspaceOrderEmpty: '워크스페이스가 없습니다 — 먼저 사이드바에서 만드세요.',
+      workspaceOrderClusters: '클러스터 {{count}}개',
+      showSidebarLogos: '사이드바에 로고 표시',
+      showSidebarLogosHint:
+        '켜면 워크스페이스·클러스터 행에 로고가 보입니다. 끄면 폴더와 상태 아이콘을 사용합니다.',
       tabIconsTitle: '탭 아이콘',
       showClusterLogos: '클러스터 탭에 로고 표시',
       showResourceIcons: '리소스 탭에 아이콘 표시',
@@ -126,6 +134,12 @@ export const ko: TranslationOverrides = {
         '상단 바 아이콘을 표시·숨기고 순서를 바꿉니다. 설정은 오른쪽에 고정되며 이동하거나 숨길 수 없습니다.',
       chromeToolbarChooser: '드래그로 순서를 바꾸고 표시를 전환합니다. 설정은 잠겨 있습니다.',
       chromeToolbarFixed: '고정',
+      resourceNavOrderTitle: '리소스 메뉴 순서',
+      resourceNavOrderHint:
+        '드래그하여 클러스터 리소스 사이드바 순서를 바꿉니다. 즐겨찾기가 있으면 항상 맨 위에 고정됩니다.',
+      resourceNavOrderChooser: '항목을 드래그해 리소스 메뉴 순서를 설정하세요.',
+      resourceNavOrderFixed: '항상 맨 위',
+      resourceNavOrderReset: '기본 순서로 재설정',
       detailMaskBlur: '세부 사항 뒤의 배경을 흐리게 합니다.',
       detailMaskBlurHint: '리소스 세부정보 서랍이 열리면 그 뒤의 목록을 흐리게 만듭니다. 기본적으로 꺼져 있으므로 테이블이 선명하게 유지됩니다.',
       panelTitle: '터미널 및 YAML 패널',
@@ -143,6 +157,26 @@ export const ko: TranslationOverrides = {
       fullscreen: '전체 화면',
       split: '클러스터 분할',
       settings: '설정'
+    },
+    resourceNavOrder: {
+      favorites: '즐겨찾기',
+      nodes: 'Nodes',
+      topology: 'Topology',
+      visualizer: 'Visualizer',
+      security: 'Security',
+      workloads: 'Workloads',
+      config: 'Config',
+      network: 'Network',
+      storage: 'Storage',
+      namespaces: 'Namespaces',
+      events: 'Events',
+      timeline: 'Timeline',
+      helm: 'Helm',
+      grafana: 'Grafana',
+      prometheus: 'Prometheus',
+      argocd: 'Argo CD',
+      'access-control': 'Access Control',
+      'custom-resources': 'Custom Resources'
     },
     nodesSections: {
       health: '클러스터 상태',
@@ -330,7 +364,16 @@ export const ko: TranslationOverrides = {
       resumeRefresh: '새로고침 재개',
       clearCache: '렌더러 캐시 지우기',
       cacheCleared: '렌더러 캐시가 지워졌습니다.',
-      openDevTools: 'DevTools 열기'
+      openDevTools: 'DevTools 열기',
+      diagnosticsTitle: '로컬 진단',
+      diagnosticsHint:
+        '앱이 멈추거나 렌더러/GPU가 충돌하면 MagicLens가 logs 폴더에 진단 JSON을 씁니다(Crashpad 덤프 별도). 업로드하지 않습니다 — 파일을 수동으로 공유하세요.',
+      saveDiagnostics: '진단 보고서 저장',
+      diagnosticsSaved: '진단이 저장되었습니다',
+      openLogsFolder: 'logs 폴더 열기',
+      openCrashDumpsFolder: 'crash dumps 폴더 열기',
+      diagnosticsShareHint:
+        '멈춤을 보고할 때 최신 diagnostics-*.json(및 필요 시 .dmp)을 첨부하세요.'
     }
   },
   vpn: {

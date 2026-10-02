@@ -128,6 +128,14 @@ export const de: TranslationOverrides = {
       showWorkspaces: 'Workspaces-Bereich anzeigen',
       showWorkspacesHint:
         'Wenn aktiv, erscheinen Workspaces in der linken Seitenleiste. In der eingeklappten Leiste markiert ein W die Workspace-Cluster.',
+      workspaceOrderTitle: 'Workspace-Reihenfolge',
+      workspaceOrderHint: 'Ziehen Sie, um Workspaces in der linken Seitenleiste neu anzuordnen.',
+      workspaceOrderChooser: 'Ziehen Sie Workspaces, um ihre Reihenfolge in der Seitenleiste zu ändern.',
+      workspaceOrderEmpty: 'Noch keine Workspaces — legen Sie zuerst einen in der Seitenleiste an.',
+      workspaceOrderClusters: '{{count}} Cluster',
+      showSidebarLogos: 'Logos in der Seitenleiste anzeigen',
+      showSidebarLogosHint:
+        'Wenn aktiv, zeigen Workspace- und Cluster-Zeilen ihre Logos. Wenn aus, werden Ordner- und Statussymbole verwendet.',
       tabIconsTitle: 'Tab-Symbole',
       showClusterLogos: 'Logos auf Cluster-Tabs anzeigen',
       showResourceIcons: 'Symbole auf Ressourcen-Tabs anzeigen',
@@ -139,6 +147,12 @@ export const de: TranslationOverrides = {
       chromeToolbarChooser:
         'Ziehen zum Neuordnen. Sichtbarkeit umschalten. Einstellungen bleibt gesperrt.',
       chromeToolbarFixed: 'Fixiert',
+      resourceNavOrderTitle: 'Reihenfolge des Ressourcenmenüs',
+      resourceNavOrderHint:
+        'Ziehen Sie, um die Cluster-Ressourcenleiste neu anzuordnen. Favoriten bleiben oben, sofern vorhanden.',
+      resourceNavOrderChooser: 'Ziehen Sie Einträge, um die Reihenfolge im Ressourcenmenü festzulegen.',
+      resourceNavOrderFixed: 'Immer zuerst',
+      resourceNavOrderReset: 'Standardreihenfolge wiederherstellen',
       detailMaskBlur: 'Verwischen Sie den Hintergrund hinter Details',
       detailMaskBlurHint:
         'Wenn eine Schublade mit Ressourcendetails geöffnet ist, verwischen Sie die Liste dahinter. Standardmäßig deaktiviert, damit der Tisch scharf bleibt.',
@@ -159,6 +173,26 @@ export const de: TranslationOverrides = {
       fullscreen: 'Vollbild',
       split: 'Cluster teilen',
       settings: 'Einstellungen'
+    },
+    resourceNavOrder: {
+      favorites: 'Favoriten',
+      nodes: 'Nodes',
+      topology: 'Topology',
+      visualizer: 'Visualizer',
+      security: 'Security',
+      workloads: 'Workloads',
+      config: 'Config',
+      network: 'Network',
+      storage: 'Storage',
+      namespaces: 'Namespaces',
+      events: 'Events',
+      timeline: 'Timeline',
+      helm: 'Helm',
+      grafana: 'Grafana',
+      prometheus: 'Prometheus',
+      argocd: 'Argo CD',
+      'access-control': 'Access Control',
+      'custom-resources': 'Custom Resources'
     },
     nodesSections: {
       health: 'Cluster-Gesundheit',
@@ -364,7 +398,16 @@ export const de: TranslationOverrides = {
       resumeRefresh: 'Aktualisierung fortsetzen',
       clearCache: 'Renderer-Cache leeren',
       cacheCleared: 'Renderer-Cache geleert',
-      openDevTools: 'Öffnen Sie DevTools'
+      openDevTools: 'Öffnen Sie DevTools',
+      diagnosticsTitle: 'Lokale Diagnose',
+      diagnosticsHint:
+        'Bei Hang oder Renderer-/GPU-Absturz schreibt MagicLens eine Diagnose-JSON in den Logs-Ordner (Crashpad-Dumps separat). Nichts wird hochgeladen — Dateien manuell teilen.',
+      saveDiagnostics: 'Diagnosebericht speichern',
+      diagnosticsSaved: 'Diagnose gespeichert',
+      openLogsFolder: 'Logs-Ordner öffnen',
+      openCrashDumpsFolder: 'Crash-Dumps-Ordner öffnen',
+      diagnosticsShareHint:
+        'Hängen Sie die neueste diagnostics-*.json (und ggf. .dmp-Dateien) an, wenn Sie einen Freeze melden.'
     }
   },
   vpn: {
