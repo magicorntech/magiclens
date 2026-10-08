@@ -9,6 +9,7 @@ import { useAuthStore } from './stores/authStore'
 import { useUpdateStore } from './stores/updateStore'
 import { useDisplaySettingsStore } from './stores/displaySettingsStore'
 import { useVpnStore } from './stores/vpnStore'
+import { useMollyStore, syncMollyWakeWord } from './stores/mollyStore'
 import { resolveUserScope, switchWorkspace, reconnectOpenedTabs } from './workspace'
 import { scheduleNetworkResumeRecovery } from './networkResume'
 import { AppLayout } from './components/Layout/AppLayout'
@@ -36,6 +37,26 @@ export function App(): React.JSX.Element {
   useEffect(() => {
     initUpdates()
   }, [])
+
+  useEffect(() => {
+    if (!ready) return
+    const unsubNav = window.api.molly.onNavigate((target) => {
+      useMollyStore.getState().applyNavigate(target)
+    })
+    const unsubShowHub = window.api.molly.onShowHub(() => {
+      useClusterStore.getState().setActiveView('molly')
+    })
+    // Restore floating Molly HUD if the user left it enabled (always-on-top overlay).
+    if (useMollyStore.getState().settings.backgroundHud) {
+      void window.api.molly.openHud()
+    }
+    // Arm wake word only when explicitly enabled (default off — avoids mic flicker).
+    window.setTimeout(() => syncMollyWakeWord(), 1500)
+    return () => {
+      unsubNav()
+      unsubShowHub()
+    }
+  }, [ready])
 
   // Lid-close / sleep / brief offline leave stale cluster sockets. Rebuild quietly on resume.
   useEffect(() => {

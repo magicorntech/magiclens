@@ -10,6 +10,7 @@ export type AiProviderId =
   | 'codex'
   | 'copilot'
   | 'gemini'
+  | 'gemini-cli'
 
 export interface AiProviderConfig {
   id: AiProviderId
@@ -51,6 +52,14 @@ export const DEFAULT_AI_PROVIDERS: AiProviderConfig[] = [
     enabled: false
   },
   {
+    id: 'gemini',
+    name: 'Google Gemini',
+    kind: 'API',
+    credential: '',
+    model: 'gemini-3.8-flash',
+    enabled: true
+  },
+  {
     id: 'ollama',
     name: 'Ollama',
     kind: 'LOCAL',
@@ -83,8 +92,8 @@ export const DEFAULT_AI_PROVIDERS: AiProviderConfig[] = [
     enabled: false
   },
   {
-    id: 'gemini',
-    name: 'Gemini CLI',
+    id: 'gemini-cli',
+    name: 'Gemini CLI (optional)',
     kind: 'CLI',
     credential: 'gemini',
     model: 'default',

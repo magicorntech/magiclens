@@ -15,6 +15,15 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.30': {
+    title: 'Molly, the read-only cluster assistant',
+    items: [
+      'Molly answers in chat and by voice. She reads any Kubernetes kind the cluster advertises, including CRDs, and never deletes or changes resources.',
+      'Answers show up as lists, charts, logs, and short recommendations. CPU is mCPU and memory is Mi or Gi.',
+      'The right-hand Molly panel shares the same chats and shows when she is listening or speaking.',
+      'Add a Google Gemini API key in Settings → AI Agent to talk with Molly.'
+    ]
+  },
   '0.1.29': {
     title: 'Update check polish',
     items: [

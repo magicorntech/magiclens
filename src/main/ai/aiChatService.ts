@@ -12,6 +12,7 @@ import type {
   AiChatTurn,
   AiProbeProviderResponse
 } from '@shared/types/aiChat'
+import { generateGeminiContent } from './geminiClient'
 
 function trimSlash(url: string): string {
   return url.replace(/\/+$/, '')
@@ -55,6 +56,7 @@ function cliBinaryNames(providerId: AiProviderId): string[] {
     case 'copilot':
       return ['gh']
     case 'gemini':
+    case 'gemini-cli':
       return ['gemini']
     default:
       return [providerId]
@@ -336,7 +338,7 @@ function runCli(
       args.push('--print', '--output-format', 'text', prompt)
     } else if (provider.id === 'codex') {
       args.push('exec', prompt)
-    } else if (provider.id === 'gemini') {
+    } else if (provider.id === 'gemini-cli') {
       if (model && model !== 'default') args.push('-m', model)
       args.push('-p', prompt)
     } else if (provider.id === 'copilot') {
@@ -408,6 +410,21 @@ function runCli(
   })
 }
 
+async function chatGeminiRest(
+  provider: AiProviderConfig,
+  messages: AiChatTurn[]
+): Promise<AiChatCompleteResponse> {
+  const result = await generateGeminiContent({
+    apiKey: provider.credential,
+    model: provider.model,
+    messages
+  })
+  if (!result.ok) {
+    return { ok: false, error: result.error, providerId: provider.id }
+  }
+  return { ok: true, content: result.content, providerId: provider.id, model: result.model }
+}
+
 export async function completeAiChat(req: AiChatCompleteRequest): Promise<AiChatCompleteResponse> {
   const { provider, messages, cliWorkdir } = req
   if (!messages.length) {
@@ -421,6 +438,9 @@ export async function completeAiChat(req: AiChatCompleteRequest): Promise<AiChat
   }
   if (provider.id === 'claude') {
     return chatClaude(provider, messages)
+  }
+  if (provider.id === 'gemini' && provider.kind === 'API') {
+    return chatGeminiRest(provider, messages)
   }
   if (provider.kind === 'CLI') {
     return runCli(provider, messages, cliWorkdir)
@@ -530,7 +550,7 @@ export function openProviderSetup(
   } else if (provider.id === 'copilot' && action === 'login') {
     const bin = resolved || 'gh'
     command = `${JSON.stringify(bin)} auth login`
-  } else if (provider.id === 'gemini' && action === 'login') {
+  } else if (provider.id === 'gemini-cli' && action === 'login') {
     const bin = resolved || 'gemini'
     command = JSON.stringify(bin)
   } else if (provider.id === 'ollama' && action === 'serve') {

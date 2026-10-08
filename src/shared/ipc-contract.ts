@@ -260,6 +260,21 @@ export const IPC = {
   AI_PROBE_PROVIDER: 'ai:probeProvider',
   AI_OPEN_CLI_LOGIN: 'ai:openCliLogin',
 
+  MOLLY_TURN: 'molly:turn',
+  MOLLY_STARTUP_CHECK: 'molly:startupCheck',
+  MOLLY_NAVIGATE: 'molly:navigate',
+  MOLLY_TRANSCRIBE: 'molly:transcribe',
+  MOLLY_RUN_TOOL: 'molly:runTool',
+  MOLLY_HUD_OPEN: 'molly:hudOpen',
+  MOLLY_HUD_CLOSE: 'molly:hudClose',
+  MOLLY_HUD_TOGGLE: 'molly:hudToggle',
+  MOLLY_HUD_IS_OPEN: 'molly:hudIsOpen',
+  MOLLY_HUD_FOCUS_MAIN: 'molly:hudFocusMain',
+  /** Save Molly chat transcript (markdown/json) via native save dialog. */
+  MOLLY_EXPORT_CHAT: 'molly:exportChat',
+  /** Main ← HUD: open the Molly hub view in the primary window. */
+  MOLLY_SHOW_HUB: 'molly:showHub',
+
   CLUSTER_APPS_DISCOVER: 'clusterApps:discover',
   CLUSTER_APPS_OPEN: 'clusterApps:open',
   CLUSTER_APPS_SAVE_MANUAL: 'clusterApps:saveManual',

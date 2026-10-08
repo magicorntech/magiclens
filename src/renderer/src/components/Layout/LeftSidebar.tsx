@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Empty, Tooltip } from 'antd'
-import { Box, ChevronDown, ChevronRight, Globe2, PanelLeft, Settings, Sparkles, Star } from 'lucide-react'
+import { Box, ChevronDown, ChevronRight, Globe2, PanelLeft, Settings, Sparkles, Star, Bot } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useClusterStore, type ClusterEntry } from '../../stores/clusterStore'
@@ -70,7 +70,6 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const clusters = useClusterStore((s) => s.clusters)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
   const activeView = useClusterStore((s) => s.activeView)
-  const openedTabs = useClusterStore((s) => s.openedTabs)
   const storedCollapsed = useClusterStore((s) => s.leftSidebarCollapsed)
   const setCollapsed = useClusterStore((s) => s.setLeftSidebarCollapsed)
   const setActiveView = useClusterStore((s) => s.setActiveView)
@@ -84,7 +83,7 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
   const collapsed = isDrawer ? false : storedCollapsed
   // Tab strip already clears traffic lights — skip the dead spacer so the hub
   // starts on the same horizontal line as the content under the tab divider.
-  const tabStripOwnsTop = activeView === 'tabs' && openedTabs.length > 0
+  const tabStripOwnsTop = true
   const showBrandSpacer = !isDrawer && !tabStripOwnsTop
   const { width: expandedWidth, resizing, handleProps } = useResizableDrawerWidth({
     storageKey: SIDEBAR_WIDTH_KEY,
@@ -335,6 +334,34 @@ export function LeftSidebar({ variant = 'inline', onNavigate }: LeftSidebarProps
               </Tooltip>
             ) : (
               notesBtn
+            )
+          })()}
+
+          {(() => {
+            const mollyBtn = (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeView === 'molly'}
+                className={`ml-sidebar-hub-btn${activeView === 'molly' ? ' ml-sidebar-hub-btn--active' : ''}`}
+                onClick={() => handleNavigate(() => setActiveView('molly'))}
+              >
+                <span className="ml-sidebar-hub-btn-icon">
+                  <Icon icon={Bot} size={14} strokeWidth={1.5} />
+                </span>
+                {!collapsed && (
+                  <span className="ml-sidebar-hub-btn-text">
+                    <span className="ml-sidebar-hub-btn-title">{t('common.molly')}</span>
+                  </span>
+                )}
+              </button>
+            )
+            return collapsed ? (
+              <Tooltip title={t('chrome.mollyTooltip')} placement="right" arrow={false}>
+                {mollyBtn}
+              </Tooltip>
+            ) : (
+              mollyBtn
             )
           })()}
         </div>

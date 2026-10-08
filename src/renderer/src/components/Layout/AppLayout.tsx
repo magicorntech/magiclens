@@ -11,12 +11,12 @@ import { usesOverlayNavigation, useLayoutMode } from '../../hooks/useLayoutMode'
 import { ClusterListPage } from '../../pages/ClusterListPage'
 import { VpnPage } from '../../pages/VpnPage'
 import { NotesPage } from '../../pages/NotesPage'
+import { MollyPage } from '../../pages/MollyPage'
 import { ClusterTabBar } from '../ClusterTabs/ClusterTabBar'
 import { ClusterTabStrip } from '../ClusterTabs/ClusterTabStrip'
 import { AddClusterModal } from '../ClusterTabs/AddClusterModal'
 import { LeftSidebar } from './LeftSidebar'
 import { MobileAppBar } from './MobileAppBar'
-import { AppTopBar } from './AppTopBar'
 import { SettingsModal } from './SettingsModal'
 import { NoteEditorModal } from '../Notes/NoteEditorModal'
 
@@ -70,6 +70,8 @@ export function AppLayout(): React.JSX.Element {
           <VpnPage />
         ) : activeView === 'notes' ? (
           <NotesPage />
+        ) : activeView === 'molly' ? (
+          <MollyPage />
         ) : (
           <ClusterTabBar />
         )}
@@ -107,7 +109,6 @@ export function AppLayout(): React.JSX.Element {
   return (
     <Layout className="app-layout app-layout--browser">
       <ClusterTabStrip />
-      <AppTopBar />
       <div className="app-layout-body">
         <LeftSidebar />
         {mainContent}

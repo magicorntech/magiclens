@@ -112,9 +112,11 @@
 
 .ml-workspace-with-assistant {
   display: flex;
+  flex: 1 1 auto;
   height: 100%;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 .ml-workspace-with-assistant__main {
@@ -126,11 +128,27 @@
   flex-direction: column;
 }
 
+/* Resource / overview roots must fill the flex column — height:100% alone collapses
+   to 0 when this parent is a flex item (Molly → cluster navigations looked blank). */
+.ml-workspace-with-assistant__main > .ml-workspace-main,
+.ml-workspace-with-assistant__main > .resource-kind-tabs-root,
+.ml-workspace-content-inner > .ml-workspace-main,
+.ml-workspace-content-inner > .resource-kind-tabs-root {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  height: auto;
+  align-self: stretch;
+}
+
 .ml-ai-assistant {
   position: relative;
   flex: 0 0 auto;
+  align-self: stretch;
   height: 100%;
+  max-height: 100%;
   min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--ml-border);
@@ -161,6 +179,33 @@
 .ml-ai-assistant__resize:hover,
 .ml-ai-assistant.is-resizing .ml-ai-assistant__resize {
   background: color-mix(in srgb, var(--ml-primary) 35%, transparent);
+}
+
+.ml-ai-assistant__header,
+.ml-ai-assistant__context,
+.ml-ai-assistant__provider,
+.ml-ai-assistant__chats,
+.ml-ai-assistant__stage,
+.ml-ai-assistant__composer {
+  flex-shrink: 0;
+}
+
+.ml-ai-assistant__chats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 0;
+  min-width: 0;
+}
+
+.ml-ai-assistant__chat-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ml-ai-assistant__chat-new {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .ml-ai-assistant__header {
@@ -260,11 +305,11 @@
 }
 
 .ml-ai-assistant__scroll {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   overflow: auto;
   padding: 14px;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 .ml-ai-assistant__empty {
@@ -450,7 +495,8 @@
 }
 
 .ml-ai-chat__bubble-body {
-  max-width: min(100%, 340px);
+  max-width: 100%;
+  min-width: 0;
   padding: 10px 12px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--ml-border) 80%, transparent);
@@ -482,8 +528,9 @@
   margin: 0;
   font-size: 12.5px;
   line-height: 1.55;
-  color: var(--ml-text);
+  color: var(--ml-text) !important;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .ml-ai-chat__checklist {
@@ -622,6 +669,18 @@
   }
 }
 
+.ml-ai-assistant__stage {
+  flex-shrink: 0;
+  padding: 2px 14px 0;
+  background: color-mix(in srgb, var(--ml-bg-elevated) 72%, transparent);
+}
+
+.ml-ai-assistant__stage .ml-molly-hud--dock {
+  min-height: 92px;
+  padding: 6px 0 2px;
+  gap: 12px;
+}
+
 .ml-ai-assistant__composer {
   display: flex;
   flex-direction: column;
@@ -664,6 +723,26 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.ml-ai-assistant__composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ml-ai-assistant .ml-btn,
+.ml-ai-assistant__live {
+  border-radius: 10px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ml-ai-assistant .ml-btn--primary,
+.ml-ai-assistant .ml-btn--primary:hover:not(:disabled) {
+  color: var(--ml-bg-layout) !important;
 }
 
 .ml-ai-assistant__composer-hint {

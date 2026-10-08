@@ -1,0 +1,93 @@
+html.ml-molly-hud-root,
+body.ml-molly-hud-root {
+  background: transparent !important;
+  overflow: hidden;
+}
+
+body.ml-molly-hud-root #root {
+  background: transparent;
+  min-height: 100vh;
+}
+
+.ml-molly-overlay {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100vh;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.ml-molly-overlay.is-dragging {
+  opacity: 0.92;
+}
+
+.ml-molly-overlay__chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 2px;
+  -webkit-app-region: drag;
+}
+
+.ml-molly-overlay__brand {
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--ml-text);
+}
+
+.ml-molly-overlay__chrome-actions {
+  display: flex;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.ml-molly-overlay__icon-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ml-text) 8%, transparent);
+  color: var(--ml-text-secondary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.ml-molly-overlay__icon-btn:hover {
+  background: color-mix(in srgb, var(--ml-text) 14%, transparent);
+  color: var(--ml-text);
+}
+
+.ml-molly-overlay .ml-molly-hud {
+  -webkit-app-region: no-drag;
+  width: 100%;
+  margin: 0;
+}
+
+.ml-molly-overlay__footer {
+  display: flex;
+  justify-content: center;
+  -webkit-app-region: no-drag;
+}
+
+.ml-molly-overlay__open {
+  border: 0;
+  background: transparent;
+  color: var(--ml-text-secondary);
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.ml-molly-overlay__open:hover {
+  color: var(--ml-text);
+  background: color-mix(in srgb, var(--ml-text) 8%, transparent);
+}

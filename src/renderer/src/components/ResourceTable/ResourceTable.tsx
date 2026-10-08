@@ -191,7 +191,7 @@ export function ResourceTable({
         )
       )
     }
-    for (const col of kindColumnDefs[kind]) {
+    for (const col of kindColumnDefs[kind] ?? []) {
       cols.push(
         applySortOrder(
           {

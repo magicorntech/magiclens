@@ -11,10 +11,11 @@ import { ClusterAvatar } from './ClusterAvatar'
 const DRAG_THRESHOLD_PX = 5
 
 /** Browser-style cluster tabs — closable, reorderable from anywhere on the tab. */
-export function ClusterHeaderTabs(): React.JSX.Element | null {
+export function ClusterHeaderTabs(): React.JSX.Element {
   const { t } = useTranslation()
   const clusters = useClusterStore((s) => s.clusters)
   const openedTabs = useClusterStore((s) => s.openedTabs)
+  const activeView = useClusterStore((s) => s.activeView)
   const activeClusterId = useClusterStore((s) => s.activeClusterId)
   const splitView = useClusterStore((s) => s.splitView)
   const splitLeftClusterId = useClusterStore((s) => s.splitLeftClusterId)
@@ -30,9 +31,14 @@ export function ClusterHeaderTabs(): React.JSX.Element | null {
   const lastOverIdRef = useRef<string | null>(null)
   const didDragRef = useRef(false)
 
-  const openClusters = openedTabs
-    .map((id) => clusters.find((c) => c.id === id))
-    .filter((c): c is ClusterEntry => !!c)
+  // Tabs only while working inside a cluster session — hide on Clusters / VPN / Sparks / Molly.
+  const showTabs = activeView === 'tabs'
+  const openClusters = showTabs
+    ? openedTabs
+        .map((id) => clusters.find((c) => c.id === id))
+        .filter((c): c is ClusterEntry => !!c)
+    : []
+  const showSplit = showTabs && openClusters.length >= 1
 
   useEffect(() => {
     if (!activeClusterId || !listRef.current) return
@@ -86,7 +92,16 @@ export function ClusterHeaderTabs(): React.JSX.Element | null {
     }
   }, [reorderOpenedTabs])
 
-  if (openClusters.length === 0) return null
+  if (openClusters.length === 0) {
+    return (
+      <div className="ml-browser-tabs titlebar-no-drag">
+        <div className="ml-browser-tabs__list" aria-hidden />
+        <div className="ml-browser-tabs__actions">
+          <ChromeActions showSplit={false} strip />
+        </div>
+      </div>
+    )
+  }
 
   function handleClose(e: React.MouseEvent, id: string): void {
     e.stopPropagation()
@@ -181,7 +196,7 @@ export function ClusterHeaderTabs(): React.JSX.Element | null {
       </div>
 
       <div className="ml-browser-tabs__actions">
-        <ChromeActions showSplit strip />
+        <ChromeActions showSplit={showSplit} strip />
       </div>
     </div>
   )

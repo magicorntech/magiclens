@@ -876,6 +876,53 @@ const api = {
     ): Promise<{ ok: true } | { ok: false; error: string }> =>
       ipcRenderer.invoke(IPC.AI_OPEN_CLI_LOGIN, req)
   },
+  molly: {
+    turn: (
+      req: import('@shared/types/molly').MollyTurnRequest
+    ): Promise<import('@shared/types/molly').MollyTurnResponse> =>
+      ipcRenderer.invoke(IPC.MOLLY_TURN, req),
+    startupCheck: (
+      req: import('@shared/types/molly').MollyStartupCheckRequest
+    ): Promise<import('@shared/types/molly').MollyStartupCheckResponse> =>
+      ipcRenderer.invoke(IPC.MOLLY_STARTUP_CHECK, req),
+    transcribe: (
+      req: import('@shared/types/molly').MollyTranscribeRequest
+    ): Promise<import('@shared/types/molly').MollyTranscribeResponse> =>
+      ipcRenderer.invoke(IPC.MOLLY_TRANSCRIBE, req),
+    runTool: (
+      req: import('@shared/types/molly').MollyRunToolRequest
+    ): Promise<import('@shared/types/molly').MollyRunToolResponse> =>
+      ipcRenderer.invoke(IPC.MOLLY_RUN_TOOL, req),
+    openHud: (): Promise<{ ok: true; windowId: number }> => ipcRenderer.invoke(IPC.MOLLY_HUD_OPEN),
+    closeHud: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.MOLLY_HUD_CLOSE),
+    toggleHud: (): Promise<{ ok: true; open: boolean; windowId?: number }> =>
+      ipcRenderer.invoke(IPC.MOLLY_HUD_TOGGLE),
+    isHudOpen: (): Promise<{ open: boolean }> => ipcRenderer.invoke(IPC.MOLLY_HUD_IS_OPEN),
+    focusMain: (): Promise<{ ok: true }> => ipcRenderer.invoke(IPC.MOLLY_HUD_FOCUS_MAIN),
+    exportChat: (
+      req: import('@shared/types/molly').MollyExportChatRequest
+    ): Promise<import('@shared/types/molly').MollyExportChatResponse> =>
+      ipcRenderer.invoke(IPC.MOLLY_EXPORT_CHAT, req),
+    onShowHub: (cb: () => void): (() => void) => {
+      const listener = (): void => {
+        cb()
+      }
+      ipcRenderer.on(IPC.MOLLY_SHOW_HUB, listener)
+      return () => ipcRenderer.removeListener(IPC.MOLLY_SHOW_HUB, listener)
+    },
+    onNavigate: (
+      cb: (target: import('@shared/types/molly').MollyNavigateTarget) => void
+    ): (() => void) => {
+      const listener = (
+        _e: Electron.IpcRendererEvent,
+        target: import('@shared/types/molly').MollyNavigateTarget
+      ): void => {
+        cb(target)
+      }
+      ipcRenderer.on(IPC.MOLLY_NAVIGATE, listener)
+      return () => ipcRenderer.removeListener(IPC.MOLLY_NAVIGATE, listener)
+    }
+  },
   clusterApps: {
     discover: (req: ClusterIdRequest): Promise<import('@shared/types/clusterApps').ClusterAppsDiscoverResponse> =>
       ipcRenderer.invoke(IPC.CLUSTER_APPS_DISCOVER, req),

@@ -16,6 +16,7 @@ import { fixShellPath } from './util/fixShellPath'
 import { createMainWindow } from './window'
 import { syncMenuBarWidget } from './menuBarWidget'
 import { vpnManager } from './vpn/vpnManager'
+import { installMediaPermissions } from './mediaPermissions'
 
 // As early as possible — before any other module has a chance to throw.
 installCrashLogging()
@@ -47,6 +48,7 @@ app.whenReady().then(() => {
   }
 
   registerIpcHandlers()
+  installMediaPermissions()
   const window = createMainWindow()
   scheduleDemoScreenshots(window)
   installReloadConfirm(window)

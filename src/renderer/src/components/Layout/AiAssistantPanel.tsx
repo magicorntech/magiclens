@@ -1,32 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Input, Select, Tag, Tooltip, message } from 'antd'
-import {
-  Bot,
-  CloudCog,
-  Code2,
-  Copy,
-  Gauge,
-  Minimize2,
-  Settings2,
-  ShieldCheck,
-  Trash2,
-  Wand2,
-  Send
-} from 'lucide-react'
+import { Button, Input, Select, Tooltip } from 'antd'
+import { Bot, Mic, Minimize2, Settings2, Sparkles, Square, Trash2, Send } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { VirtualPageKey } from '@shared/types/navigation'
 import { Icon } from '../ui/Icon'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useSettingsUiStore } from '../../stores/settingsUiStore'
 import { useResizableDrawerWidth } from '../../hooks/useResizableDrawerWidth'
-import {
-  resolveActiveProvider,
-  useAiAgentStore,
-  type AiChatBlock,
-  type AiChatContextSnapshot,
-  type AiChatMessage
-} from '../../stores/aiAgentStore'
-import { useBottomPanelOptional } from './BottomPanelContext'
+import { resolveActiveProvider, useAiAgentStore, type AiChatMessage } from '../../stores/aiAgentStore'
+import { selectActiveLines, useMollyStore, type MollyChatLine } from '../../stores/mollyStore'
+import { MollyToolCharts } from '../Molly/MollyToolCharts'
+import { MollyVoiceHud, orbStateToHudPhase } from '../Molly/MollyVoiceHud'
 import './aiAssistant.css'
 
 interface AiAssistantPanelProps {
@@ -37,122 +21,24 @@ interface AiAssistantPanelProps {
   selectedVirtualPage: VirtualPageKey | null
 }
 
-const WIDTH_KEY = 'ml.aiAssistantWidth'
-const FEATURES = [
-  { id: 'context', icon: CloudCog, titleKey: 'aiChat.featureContextTitle', bodyKey: 'aiChat.featureContextBody' },
-  { id: 'mcp', icon: Wand2, titleKey: 'aiChat.featureMcpTitle', bodyKey: 'aiChat.featureMcpBody' },
-  { id: 'review', icon: ShieldCheck, titleKey: 'aiChat.featureReviewTitle', bodyKey: 'aiChat.featureReviewBody' },
-  { id: 'privacy', icon: Gauge, titleKey: 'aiChat.featurePrivacyTitle', bodyKey: 'aiChat.featurePrivacyBody' },
-  { id: 'yaml', icon: Code2, titleKey: 'aiChat.featureYamlTitle', bodyKey: 'aiChat.featureYamlBody' }
-] as const
+const WIDTH_KEY = 'ml.aiAssistantWidth.v3'
+const PROMPTS = ['aiChat.promptExplain', 'aiChat.promptLogs', 'aiChat.promptMitigate'] as const
 
-const PROMPTS = [
-  'aiChat.promptMitigate',
-  'aiChat.promptExplain',
-  'aiChat.promptYaml',
-  'aiChat.promptLogs'
-] as const
-
-function checklistTone(status: string): string {
-  if (status === 'done') return 'done'
-  if (status === 'active') return 'active'
-  if (status === 'rbac') return 'rbac'
-  if (status === 'review') return 'review'
-  return 'none'
+function legacyMessageText(message: AiChatMessage): string {
+  return message.blocks
+    .map((block) => block.text || block.code || '')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join('\n')
 }
 
-function MessageBlocks({
-  blocks,
-  onAction
-}: {
-  blocks: AiChatBlock[]
-  onAction: (id: string, block: AiChatBlock) => void
-}): React.JSX.Element {
-  const { t } = useTranslation()
-  return (
-    <div className="ml-ai-chat__blocks">
-      {blocks.map((block, i) => {
-        if (block.type === 'text' && block.text) {
-          return (
-            <p key={i} className="ml-ai-chat__text">
-              {block.text}
-            </p>
-          )
-        }
-        if (block.type === 'checklist' && block.items) {
-          return (
-            <div key={i} className="ml-ai-chat__checklist">
-              {block.title ? <div className="ml-ai-chat__checklist-title">{block.title}</div> : null}
-              <ul>
-                {block.items.map((item) => (
-                  <li key={item.id} className={`is-${checklistTone(item.status)}`}>
-                    <span className="ml-ai-chat__check-dot" />
-                    <span className="ml-ai-chat__check-label">{item.label}</span>
-                    <Tag className="ml-ai-chat__check-tag">{item.status}</Tag>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )
-        }
-        if (block.type === 'yaml' && block.code) {
-          return (
-            <div key={i} className="ml-ai-chat__yaml">
-              <div className="ml-ai-chat__yaml-head">
-                <span>{block.title || 'YAML'}</span>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<Icon icon={Copy} variant="micro" />}
-                  onClick={() => {
-                    void navigator.clipboard.writeText(block.code || '')
-                    void message.success(t('aiChat.copied'))
-                  }}
-                />
-              </div>
-              <pre>
-                <code>{block.code}</code>
-              </pre>
-            </div>
-          )
-        }
-        if (block.type === 'actions' && block.actions) {
-          return (
-            <div key={i} className="ml-ai-chat__actions">
-              {block.actions.map((action) => (
-                <Button key={action.id} size="small" onClick={() => onAction(action.id, block)}>
-                  {action.label}
-                </Button>
-              ))}
-            </div>
-          )
-        }
-        return null
-      })}
-    </div>
-  )
-}
-
-function ChatBubble({
-  message,
-  onAction
-}: {
-  message: AiChatMessage
-  onAction: (id: string, block: AiChatBlock) => void
-}): React.JSX.Element {
-  const isUser = message.role === 'user'
-  return (
-    <div className={`ml-ai-chat__bubble${isUser ? ' is-user' : ' is-assistant'}`}>
-      {!isUser ? (
-        <span className="ml-ai-chat__avatar" aria-hidden>
-          <Icon icon={Bot} variant="micro" />
-        </span>
-      ) : null}
-      <div className="ml-ai-chat__bubble-body">
-        <MessageBlocks blocks={message.blocks} onAction={onAction} />
-      </div>
-    </div>
-  )
+function legacyToMollyLines(messages: AiChatMessage[]): MollyChatLine[] {
+  return messages.flatMap((message) => {
+    const text = legacyMessageText(message)
+    if (!text) return []
+    const role = message.role === 'user' || message.role === 'system' ? message.role : 'assistant'
+    return [{ id: `legacy-${message.id}`, role, text, at: message.createdAt }]
+  })
 }
 
 export function AiAssistantPanel({
@@ -163,17 +49,67 @@ export function AiAssistantPanel({
   selectedVirtualPage
 }: AiAssistantPanelProps): React.JSX.Element {
   const { t } = useTranslation()
-  const openVirtualPage = useClusterStore((s) => s.openVirtualPage)
   const resourceFocus = useClusterStore((s) => s.clusters.find((c) => c.id === clusterId)?.resourceFocus ?? null)
   const openSettings = useSettingsUiStore((s) => s.openSettings)
-  const bottom = useBottomPanelOptional()
   const hideAssistant = useAiAgentStore((s) => s.hideAssistant)
   const panelOpen = useAiAgentStore((s) => s.panelOpen)
   const setPanelOpen = useAiAgentStore((s) => s.setPanelOpen)
-  const messages = useAiAgentStore((s) => s.messages)
-  const sending = useAiAgentStore((s) => s.sending)
-  const clearMessages = useAiAgentStore((s) => s.clearMessages)
-  const sendUserMessage = useAiAgentStore((s) => s.sendUserMessage)
+  const chats = useMollyStore((s) => s.chats)
+  const activeChatId = useMollyStore((s) => s.activeChatId)
+  const adoptLinesIfEmpty = useMollyStore((s) => s.adoptLinesIfEmpty)
+  const legacyMessages = useAiAgentStore((s) => s.messages)
+  const lines = useMemo(
+    () => selectActiveLines({ chats, activeChatId }),
+    [chats, activeChatId]
+  )
+  const liveDraftUser = useMollyStore((s) => s.liveDraftUser)
+  const liveDraftAssistant = useMollyStore((s) => s.liveDraftAssistant)
+  const listening = useMollyStore((s) => s.listening)
+  const liveConnected = useMollyStore((s) => s.liveConnected)
+  const voiceActive = useMollyStore((s) => s.voiceActive)
+  const voiceRms = useMollyStore((s) => s.voiceRms)
+  const orbState = useMollyStore((s) => s.orbState)
+  const startListening = useMollyStore((s) => s.startListening)
+  const finishListening = useMollyStore((s) => s.finishListening)
+  const stopAll = useMollyStore((s) => s.stopAll)
+  const selectChat = useMollyStore((s) => s.selectChat)
+  const createChat = useMollyStore((s) => s.createChat)
+  const orderedChats = useMemo(
+    () => [...chats].sort((a, b) => b.updatedAt - a.updatedAt),
+    [chats]
+  )
+  const committedLines = lines.length > 0 ? lines : legacyToMollyLines(legacyMessages)
+  const visibleLines = [
+    ...committedLines,
+    ...(liveDraftUser.trim()
+      ? [{ id: 'live-draft-user', role: 'user' as const, text: liveDraftUser, at: Date.now() }]
+      : []),
+    ...(liveDraftAssistant.trim()
+      ? [{ id: 'live-draft-assistant', role: 'assistant' as const, text: liveDraftAssistant, at: Date.now() }]
+      : [])
+  ]
+  const sending = useMollyStore((s) => s.busy)
+  const lastSystem = useMemo(() => {
+    for (let i = committedLines.length - 1; i >= 0; i--) {
+      if (committedLines[i]?.role === 'system') return committedLines[i]!.text
+    }
+    return null
+  }, [committedLines])
+  const hudPhase = orbStateToHudPhase(orbState, {
+    listening,
+    rms: voiceRms,
+    busy: sending,
+    error: lastSystem && /error|başarısız|izin|denied|503|404/i.test(lastSystem) ? lastSystem : null
+  })
+  const statusHint =
+    orbState === 'speaking'
+      ? t('molly.voiceHintMollySpeaking')
+      : listening
+        ? t('molly.voiceHintListening')
+        : undefined
+
+  const clearTranscript = useMollyStore((s) => s.clearTranscript)
+  const sendText = useMollyStore((s) => s.sendText)
   const providers = useAiAgentStore((s) => s.providers)
   const defaultProviderId = useAiAgentStore((s) => s.defaultProviderId)
   const setDefaultProvider = useAiAgentStore((s) => s.setDefaultProvider)
@@ -182,10 +118,10 @@ export function AiAssistantPanel({
 
   const { width, resizing, handleProps } = useResizableDrawerWidth({
     storageKey: WIDTH_KEY,
-    defaultWidth: 380,
-    minWidth: 300,
-    maxWidth: 560,
-    maxRatio: 0.48,
+    defaultWidth: 560,
+    minWidth: 360,
+    maxWidth: 980,
+    maxRatio: 0.72,
     edge: 'right'
   })
 
@@ -196,52 +132,39 @@ export function AiAssistantPanel({
 
   const readyProviders = useMemo(() => providers, [providers])
 
-  const ctx: AiChatContextSnapshot = useMemo(
-    () => ({
-      clusterId,
-      clusterName,
-      namespace,
-      kind: selectedKind,
-      virtualPage: selectedVirtualPage,
-      resourceName: resourceFocus?.name ?? null
-    }),
-    [clusterId, clusterName, namespace, selectedKind, selectedVirtualPage, resourceFocus]
+  const contextHint = useMemo(
+    () =>
+      [
+        `clusterId=${clusterId}`,
+        clusterName ? `cluster=${clusterName}` : '',
+        namespace ? `namespace=${namespace}` : '',
+        selectedKind ? `kind=${selectedKind}` : '',
+        selectedVirtualPage ? `page=${selectedVirtualPage}` : '',
+        resourceFocus?.name ? `resource=${resourceFocus.name}` : ''
+      ]
+        .filter(Boolean)
+        .join(', '),
+    [clusterId, clusterName, namespace, selectedKind, selectedVirtualPage, resourceFocus?.name]
   )
+
+  useEffect(() => {
+    if (lines.length > 0) return
+    adoptLinesIfEmpty(legacyToMollyLines(legacyMessages))
+  }, [lines.length, legacyMessages, adoptLinesIfEmpty])
 
   useEffect(() => {
     const el = scrollerRef.current
     if (!el) return
     el.scrollTop = el.scrollHeight
-  }, [messages, sending])
+  }, [visibleLines, sending])
 
   if (hideAssistant || !panelOpen) return <></>
 
-  function handleAction(id: string, block: AiChatBlock): void {
-    if (id === 'settings') {
-      openSettings('aiAgent')
-      return
-    }
-    if (id === 'open-security') {
-      openVirtualPage(clusterId, 'security')
-      return
-    }
-    if (id === 'open-yaml' && block.type === 'yaml' && block.code && bottom) {
-      bottom.openYamlEditor({
-        title: block.title || t('aiChat.yamlDraft'),
-        clusterId,
-        mode: 'create',
-        namespace: namespace === 'ALL' ? 'default' : namespace,
-        initialYaml: block.code,
-        listQueryKey: ['ai-yaml', clusterId]
-      })
-    }
-  }
-
   async function submit(text?: string): Promise<void> {
     const value = (text ?? draft).trim()
-    if (!value) return
+    if (!value || sending) return
     setDraft('')
-    await sendUserMessage(value, ctx)
+    await sendText(value, { contextHint })
   }
 
   const contextChips = [
@@ -268,7 +191,7 @@ export function AiAssistantPanel({
       <header className="ml-ai-assistant__header">
         <div className="ml-ai-assistant__identity">
           <span className="ml-ai-assistant__mark">
-            <Icon icon={Bot} variant="action" />
+            <Icon icon={Sparkles} variant="action" />
           </span>
           <div>
             <div className="ml-ai-assistant__name">{t('aiChat.title')}</div>
@@ -277,7 +200,7 @@ export function AiAssistantPanel({
         </div>
         <div className="ml-ai-assistant__header-actions">
           <Tooltip title={t('aiChat.clear')}>
-            <button type="button" className="ml-icon-btn" onClick={clearMessages} aria-label={t('aiChat.clear')}>
+            <button type="button" className="ml-icon-btn" onClick={clearTranscript} aria-label={t('aiChat.clear')}>
               <Icon icon={Trash2} variant="micro" />
             </button>
           </Tooltip>
@@ -335,26 +258,33 @@ export function AiAssistantPanel({
         ) : null}
       </div>
 
+      <div className="ml-ai-assistant__chats" aria-label={t('molly.chats')}>
+        <Select
+          size="small"
+          className="ml-ai-assistant__chat-select"
+          showSearch
+          value={activeChatId}
+          popupMatchSelectWidth
+          optionFilterProp="label"
+          listHeight={320}
+          options={orderedChats.map((chat) => ({
+            value: chat.id,
+            label: `${chat.title} · ${chat.lines.length}`
+          }))}
+          onChange={(id) => selectChat(id)}
+        />
+        <button type="button" className="ml-btn ml-ai-assistant__chat-new" onClick={() => createChat()}>
+          {t('molly.newChat')}
+        </button>
+      </div>
+
       <div ref={scrollerRef} className="ml-ai-assistant__scroll">
-        {messages.length === 0 ? (
+        {visibleLines.length === 0 ? (
           <div className="ml-ai-assistant__empty">
             <div className="ml-ai-assistant__hero">
               <p className="ml-ai-assistant__badge">{t('aiChat.badge')}</p>
               <h2 className="ml-ai-assistant__headline">{t('aiChat.headline')}</h2>
               <p className="ml-ai-assistant__lead">{t('aiChat.lead')}</p>
-            </div>
-            <div className="ml-ai-assistant__features">
-              {FEATURES.map((feature) => (
-                <div key={feature.id} className="ml-ai-assistant__feature">
-                  <span className="ml-ai-assistant__feature-icon">
-                    <Icon icon={feature.icon} variant="action" />
-                  </span>
-                  <div>
-                    <div className="ml-ai-assistant__feature-title">{t(feature.titleKey)}</div>
-                    <div className="ml-ai-assistant__feature-body">{t(feature.bodyKey)}</div>
-                  </div>
-                </div>
-              ))}
             </div>
             <p className="ml-ai-assistant__prompts-label">{t('aiChat.tryPrompts')}</p>
             <div className="ml-ai-assistant__prompts">
@@ -367,8 +297,30 @@ export function AiAssistantPanel({
           </div>
         ) : (
           <div className="ml-ai-chat">
-            {messages.map((msg) => (
-              <ChatBubble key={msg.id} message={msg} onAction={handleAction} />
+            {visibleLines.map((line) => (
+              <div
+                key={line.id}
+                className={`ml-ai-chat__bubble${line.role === 'user' ? ' is-user' : ' is-assistant'}`}
+              >
+                {line.role !== 'user' ? (
+                  <span className="ml-ai-chat__avatar" aria-hidden>
+                    <Icon icon={line.role === 'assistant' ? Sparkles : Bot} variant="micro" />
+                  </span>
+                ) : null}
+                <div className="ml-ai-chat__bubble-body">
+                  <p className="ml-ai-chat__text">{line.text}</p>
+                  {line.tools && line.tools.length > 0 ? <MollyToolCharts tools={line.tools} /> : null}
+                  {line.tools && line.tools.length > 0 ? (
+                    <div className="ml-ai-chat__actions">
+                      {line.tools.map((tool, idx) => (
+                        <span key={`${line.id}-t-${idx}`} className="ml-ai-assistant__chip">
+                          {tool.name}: {tool.summary}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             ))}
             {sending ? (
               <div className="ml-ai-chat__bubble is-assistant is-typing">
@@ -388,6 +340,21 @@ export function AiAssistantPanel({
         )}
       </div>
 
+      <div className="ml-ai-assistant__stage">
+        <MollyVoiceHud
+          variant="dock"
+          phase={hudPhase}
+          rms={voiceRms}
+          caption={statusHint}
+          listening={listening}
+          voiceActive={voiceActive}
+          busy={sending}
+          onTalk={() => startListening()}
+          onSend={() => finishListening()}
+          onStop={() => stopAll()}
+        />
+      </div>
+
       <footer className="ml-ai-assistant__composer">
         <div className="ml-ai-assistant__composer-shell">
           <Input.TextArea
@@ -404,15 +371,46 @@ export function AiAssistantPanel({
           />
           <div className="ml-ai-assistant__composer-row">
             <span className="ml-ai-assistant__composer-hint">{t('aiChat.composerHint')}</span>
-            <Button
-              type="primary"
-              icon={<Icon icon={Send} variant="micro" />}
-              loading={sending}
-              disabled={!draft.trim()}
-              onClick={() => void submit()}
-            >
-              {t('aiChat.send')}
-            </Button>
+            <div className="ml-ai-assistant__composer-actions">
+              {!listening ? (
+                <button type="button" className="ml-btn" onClick={() => startListening()} disabled={sending}>
+                  <Icon icon={Mic} variant="micro" />
+                  <span>{t('molly.startListening')}</span>
+                </button>
+              ) : liveConnected ? (
+                <span className="ml-btn ml-btn--primary ml-ai-assistant__live">
+                  <Icon icon={Mic} variant="micro" />
+                  <span>
+                    {orbState === 'speaking'
+                      ? t('molly.hud.assistantStatus')
+                      : voiceRms > 0.05
+                        ? t('molly.hud.userSpeakingStatus')
+                        : t('molly.hud.listeningStatus')}
+                  </span>
+                </span>
+              ) : (
+                <button type="button" className="ml-btn ml-btn--primary" onClick={() => finishListening()}>
+                  <span>{t('molly.sendVoice')}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="ml-btn"
+                onClick={() => stopAll()}
+                disabled={!listening && !voiceActive && !sending && orbState !== 'speaking'}
+              >
+                <Icon icon={Square} variant="micro" />
+              </button>
+              <Button
+                type="primary"
+                icon={<Icon icon={Send} variant="micro" />}
+                loading={sending}
+                disabled={!draft.trim()}
+                onClick={() => void submit()}
+              >
+                {t('aiChat.send')}
+              </Button>
+            </div>
           </div>
         </div>
       </footer>

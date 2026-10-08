@@ -29,6 +29,7 @@ import { registerVisualizerHandlers } from './visualizer.handlers'
 import { registerClusterAppsHandlers } from './clusterApps.handlers'
 import { registerSecurityHandlers } from './security.handlers'
 import { registerAiHandlers } from './ai.handlers'
+import { registerMollyHandlers } from './molly.handlers'
 
 export function registerIpcHandlers(): void {
   registerSessionHandlers()
@@ -62,4 +63,5 @@ export function registerIpcHandlers(): void {
   registerClusterAppsHandlers()
   registerSecurityHandlers()
   registerAiHandlers()
+  registerMollyHandlers()
 }

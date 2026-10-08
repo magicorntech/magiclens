@@ -22,7 +22,7 @@
   align-items: center !important;
   gap: 2px !important;
   min-height: 24px !important;
-  margin: 6px 0 4px !important;
+  margin: 2px 0 4px !important;
   padding: 0 2px !important;
   border: none !important;
   background: transparent !important;
@@ -462,11 +462,11 @@
 
 /* —— Top hub: Clusters / VPN / Sparks in a themed capsule —— */
 .ml-sidebar-actions {
-  padding: 0 8px 10px !important;
+  padding: 0 8px 2px !important;
 }
 
 .ml-sidebar-actions--flush {
-  padding-top: 8px !important;
+  padding-top: 4px !important;
 }
 
 .ml-sidebar-hub {

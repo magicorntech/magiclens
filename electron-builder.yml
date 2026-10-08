@@ -55,6 +55,8 @@ mac:
   # means an abnormal quit is just a normal relaunch with no dialog.
   extendInfo:
     NSQuitAlwaysKeepsWindows: false
+    NSMicrophoneUsageDescription: MagicLens Molly needs the microphone for voice commands.
+    NSSpeechRecognitionUsageDescription: MagicLens Molly uses speech recognition to turn your voice into cluster questions.
   target:
     - target: dmg
       arch: [x64, arm64]

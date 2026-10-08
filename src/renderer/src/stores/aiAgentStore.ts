@@ -53,7 +53,10 @@ interface AiAgentState extends AiAgentSettings {
   setPulseChromeIcon: (pulse: boolean) => void
   setCliWorkdir: (dir: string) => void
   setDefaultProvider: (id: AiProviderId | null) => void
-  updateProvider: (id: AiProviderId, patch: Partial<Pick<AiProviderConfig, 'credential' | 'model' | 'enabled'>>) => void
+  updateProvider: (
+    id: AiProviderId,
+    patch: Partial<Pick<AiProviderConfig, 'credential' | 'model' | 'enabled' | 'kind' | 'name'>>
+  ) => void
   providerStatus: (id: AiProviderId) => AiProviderStatus
   readyCount: () => number
   setPanelOpen: (open: boolean) => void
@@ -62,15 +65,81 @@ interface AiAgentState extends AiAgentSettings {
   sendUserMessage: (text: string, ctx: AiChatContextSnapshot) => Promise<void>
 }
 
+function looksLikeCliBinaryCredential(credential: string): boolean {
+  const c = credential.trim()
+  if (!c) return false
+  if (c.startsWith('AIza')) return false
+  if (c === 'gemini' || c === 'claude' || c === 'codex' || c === 'gh' || c === 'ollama') return true
+  // Absolute / relative binary paths, not API keys
+  if (c.includes('/') || c.endsWith('.exe') || c.startsWith('~')) return true
+  return false
+}
+
+/** Resolve a Gemini model id that works with v1beta generateContent. */
+export function resolveGeminiModelId(model: string | undefined): string {
+  let m = (model || '').trim()
+  if (m.startsWith('models/')) m = m.slice('models/'.length)
+  if (!m || m === 'default') return 'gemini-3.8-flash'
+  // Retired / zero-quota eras → current best Flash with free-tier access.
+  if (
+    m.startsWith('gemini-1.') ||
+    m.startsWith('gemini-2.0') ||
+    m === 'gemini-pro' ||
+    m === 'gemini-flash' ||
+    m.includes('pro-preview') ||
+    m === 'gemini-3.1-pro-preview'
+  ) {
+    return 'gemini-3.8-flash'
+  }
+  return m
+}
+
 function mergeProviders(stored: AiProviderConfig[] | undefined): AiProviderConfig[] {
   const byId = new Map((stored ?? []).map((p) => [p.id, p]))
+  // Migrate legacy Gemini CLI rows (binary path) onto gemini-cli; Gemini is API-only now.
+  const legacyGemini = byId.get('gemini')
+  if (legacyGemini && (legacyGemini.kind === 'CLI' || looksLikeCliBinaryCredential(legacyGemini.credential))) {
+    const existingCli = byId.get('gemini-cli')
+    if (!existingCli || looksLikeCliBinaryCredential(legacyGemini.credential)) {
+      byId.set('gemini-cli', {
+        id: 'gemini-cli',
+        name: 'Gemini CLI (optional)',
+        kind: 'CLI',
+        credential: looksLikeCliBinaryCredential(legacyGemini.credential)
+          ? legacyGemini.credential
+          : existingCli?.credential || 'gemini',
+        model: resolveGeminiModelId(legacyGemini.model || existingCli?.model),
+        enabled: false
+      })
+    }
+    byId.set('gemini', {
+      id: 'gemini',
+      name: 'Google Gemini',
+      kind: 'API',
+      credential: legacyGemini.credential.startsWith('AIza') ? legacyGemini.credential : '',
+      model: resolveGeminiModelId(legacyGemini.model),
+      enabled: true
+    })
+  }
   return DEFAULT_AI_PROVIDERS.map((base) => {
     const prev = byId.get(base.id)
     if (!prev) return { ...base }
+    let credential = prev.credential ?? base.credential
+    // Never keep a CLI binary path in the Gemini API key field.
+    if (base.id === 'gemini' && looksLikeCliBinaryCredential(credential)) {
+      credential = ''
+    }
+    const model =
+      base.id === 'gemini' || base.id === 'gemini-cli'
+        ? resolveGeminiModelId(prev.model || base.model)
+        : prev.model || base.model
     return {
       ...base,
-      credential: prev.credential ?? base.credential,
-      model: prev.model || base.model,
+      // Always take kind/name from defaults so Gemini stays API (not CLI).
+      kind: base.kind,
+      name: base.name,
+      credential,
+      model,
       enabled: prev.enabled ?? base.enabled
     }
   })
@@ -291,7 +360,7 @@ export const useAiAgentStore = create<AiAgentState>()(
     }),
     {
       name: 'magiclens-ai-agent',
-      version: 3,
+      version: 4,
       partialize: (state) => ({
         defaultProviderId: state.defaultProviderId,
         hideAssistant: state.hideAssistant,
@@ -316,17 +385,28 @@ export const useAiAgentStore = create<AiAgentState>()(
             pulseChromeIcon: true
           }
         }
+        // v4: Gemini is API key (not CLI). Remerge happens in merge().
+        if (version < 4) {
+          return { ...raw }
+        }
         return raw
       },
       merge: (persisted, current) => {
         const raw = (persisted ?? {}) as Partial<AiAgentSettings> & { panelOpen?: boolean }
+        const providers = mergeProviders(raw.providers)
+        const defaultProviderId =
+          raw.defaultProviderId === 'gemini' || !raw.defaultProviderId
+            ? (providers.find((p) => p.id === 'gemini')?.credential.trim()
+                ? 'gemini'
+                : (raw.defaultProviderId ?? current.defaultProviderId))
+            : (raw.defaultProviderId ?? current.defaultProviderId)
         return {
           ...current,
-          defaultProviderId: raw.defaultProviderId ?? current.defaultProviderId,
+          defaultProviderId,
           hideAssistant: raw.hideAssistant ?? current.hideAssistant,
           pulseChromeIcon: raw.pulseChromeIcon ?? current.pulseChromeIcon,
           cliWorkdir: raw.cliWorkdir ?? current.cliWorkdir,
-          providers: mergeProviders(raw.providers),
+          providers,
           panelOpen: raw.hideAssistant ? false : (raw.panelOpen ?? current.panelOpen)
         }
       }
@@ -347,7 +427,18 @@ export const AI_MODEL_OPTIONS: Record<AiProviderId, string[]> = {
   'claude-cli': ['sonnet', 'opus', 'haiku'],
   codex: ['default'],
   copilot: ['default'],
-  gemini: ['default', 'gemini-2.5-pro', 'gemini-2.5-flash']
+  gemini: [
+    'gemini-3.8-flash',
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+    'gemini-3-flash-preview',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite'
+  ],
+  'gemini-cli': ['default', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-2.5-flash']
 }
 
 export function resolveActiveProvider(

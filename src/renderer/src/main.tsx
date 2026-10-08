@@ -16,6 +16,7 @@ import {
   TopologyPopoutApp
 } from './components/Topology/TopologyPopoutApp'
 import { MenuBarWidgetApp, isMenuBarWidgetRoute } from './components/MenuBarWidget/MenuBarWidgetApp'
+import { MollyHudOverlayApp, isMollyHudRoute } from './components/Molly/MollyHudOverlayApp'
 import { installDemoShot } from './demoShot'
 import './i18n'
 import '@fontsource-variable/inter'
@@ -47,6 +48,7 @@ function Root(): React.JSX.Element {
   const antdLocale = useMemo(() => getAntdLocale(i18n.language), [i18n.language])
   const topologyPopout = useMemo(() => parseTopologyPopoutRoute(), [])
   const menuBarWidget = useMemo(() => isMenuBarWidgetRoute(), [])
+  const mollyHud = useMemo(() => isMollyHudRoute(), [])
 
   useEffect(() => {
     syncDocumentTheme(isDark, colorScheme, customAccentColor, fontSans)
@@ -56,6 +58,8 @@ function Root(): React.JSX.Element {
     <ConfigProvider theme={antdTheme} locale={antdLocale}>
       {menuBarWidget ? (
         <MenuBarWidgetApp />
+      ) : mollyHud ? (
+        <MollyHudOverlayApp />
       ) : topologyPopout ? (
         <TopologyPopoutApp
           clusterId={topologyPopout.clusterId}

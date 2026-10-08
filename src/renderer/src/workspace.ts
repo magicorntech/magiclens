@@ -25,6 +25,7 @@ function normalizeUiStateForClusters(
   const activeView =
     uiState.activeView === 'vpn' ||
     uiState.activeView === 'notes' ||
+    uiState.activeView === 'molly' ||
     uiState.activeView === 'tabs' ||
     uiState.activeView === 'clusters'
       ? uiState.activeView

@@ -38,6 +38,7 @@ import { Icon } from '../ui/Icon'
 import { useResolvedDarkMode } from '../../stores/useResolvedDarkMode'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useAiAgentStore } from '../../stores/aiAgentStore'
+import { useMollyStore } from '../../stores/mollyStore'
 import { useSecurityStore } from '../../stores/securityStore'
 import {
   DEFAULT_TABLE_PAGE_SIZE,
@@ -207,7 +208,7 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
   const clearFocus = useSecurityStore((s) => s.clearFocus)
   const cluster = useClusterStore((s) => s.clusters.find((c) => c.id === clusterId))
   const setPanelOpen = useAiAgentStore((s) => s.setPanelOpen)
-  const sendUserMessage = useAiAgentStore((s) => s.sendUserMessage)
+  const sendText = useMollyStore((s) => s.sendText)
 
   const [report, setReport] = useState<SecurityReport | null>(null)
   const [loading, setLoading] = useState(true)
@@ -742,13 +743,8 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
       ``,
       `Give concrete YAML patches and verification steps.`
     ].join('\n')
-    void sendUserMessage(prompt, {
-      clusterId,
-      clusterName: cluster?.customName || cluster?.contextName || clusterId,
-      namespace: v.namespace,
-      kind: v.kind,
-      virtualPage: 'security',
-      resourceName: v.workload
+    void sendText(prompt, {
+      contextHint: `clusterId=${clusterId}, cluster=${cluster?.customName || cluster?.contextName || clusterId}, namespace=${v.namespace}, kind=${v.kind}, page=security, resource=${v.workload}`
     })
   }
 
@@ -765,13 +761,8 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
       ``,
       `Show a before/after YAML example and how to verify with kubectl.`
     ].join('\n')
-    void sendUserMessage(prompt, {
-      clusterId,
-      clusterName: cluster?.customName || cluster?.contextName || clusterId,
-      namespace: cluster?.selectedNamespace || 'ALL',
-      kind: null,
-      virtualPage: 'security',
-      resourceName: rule.id
+    void sendText(prompt, {
+      contextHint: `clusterId=${clusterId}, cluster=${cluster?.customName || cluster?.contextName || clusterId}, namespace=${cluster?.selectedNamespace || 'ALL'}, page=security, resource=${rule.id}`
     })
   }
 

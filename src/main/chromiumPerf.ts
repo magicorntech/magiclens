@@ -30,7 +30,7 @@ export function applyChromiumPerformanceFlags(): void {
   // app.getPath('crashDumps') that can be inspected without a remote crash-reporting service.
   app.commandLine.appendSwitch('disable-component-update')
   app.commandLine.appendSwitch('disable-domain-reliability')
-  app.commandLine.appendSwitch('disable-speech-api')
+  // Keep Web Speech API enabled — Molly voice (STT/TTS) depends on it.
   // Cap Chromium HTTP/disk cache growth (bytes).
   app.commandLine.appendSwitch('disk-cache-size', String(64 * 1024 * 1024))
 

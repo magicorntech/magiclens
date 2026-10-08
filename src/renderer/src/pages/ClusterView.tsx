@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Component, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react'
 import { Button, Result, Spin } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ResourceKind } from '@shared/resourceKinds'
@@ -30,6 +30,56 @@ import { NetworkOverviewPage } from '../components/Overview/NetworkOverviewPage'
 import { StorageOverviewPage } from '../components/Overview/StorageOverviewPage'
 import { OverviewDetailShell } from '../components/Overview/OverviewDetailShell'
 import type { VirtualPageKey } from '../resourceConfig/kinds.renderer'
+
+class ClusterContentErrorBoundary extends Component<
+  { children: ReactNode; onReset: () => void },
+  { error: Error | null }
+> {
+  state: { error: Error | null } = { error: null }
+
+  static getDerivedStateFromError(error: Error): { error: Error } {
+    return { error }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo): void {
+    console.error('[ClusterView] render crashed', error, info.componentStack)
+  }
+
+  render(): ReactNode {
+    if (this.state.error) {
+      return (
+        <div
+          className="ml-cluster-view__center"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 20,
+            background: 'var(--ml-bg-layout)',
+            padding: 24
+          }}
+        >
+          <Result
+            status="error"
+            title="This view crashed"
+            subTitle={this.state.error.message || 'Unknown render error'}
+            extra={
+              <Button
+                type="primary"
+                onClick={() => {
+                  this.setState({ error: null })
+                  this.props.onReset()
+                }}
+              >
+                Open Pods
+              </Button>
+            }
+          />
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 interface ClusterViewProps {
   clusterId: string
@@ -320,27 +370,44 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
             onReleaseFocusConsumed={() => setHelmReleaseFocus(null)}
           />
         )
+      default:
+        return (
+          <div className="ml-cluster-view__center">
+            <Result
+              status="warning"
+              title="Unknown page"
+              subTitle={`No view for “${String(page)}”. Open Pods or another resource from the sidebar.`}
+              extra={
+                <Button type="primary" onClick={() => handleOpenResourceKind('Pods')}>
+                  Open Pods
+                </Button>
+              }
+            />
+          </div>
+        )
     }
   }
 
   return wrapWithBackground(
-    <AppShell
-      cluster={cluster}
-      splitPane={splitPane}
-      onNamespaceChange={handleNamespaceChange}
-      onSelectKind={handleSelectKind}
-      selectedVirtualPage={cluster.selectedVirtualPage}
-      onSelectVirtualPage={handleSelectVirtualPage}
-    >
-      <ResourceKindTabs
-        clusterId={clusterId}
-        namespace={cluster.selectedNamespace}
-        openResourceKinds={cluster.openResourceKinds}
-        selectedResourceKind={cluster.selectedResourceKind}
-        openVirtualPages={cluster.openVirtualPages}
+    <ClusterContentErrorBoundary onReset={() => handleOpenResourceKind('Pods')}>
+      <AppShell
+        cluster={cluster}
+        splitPane={splitPane}
+        onNamespaceChange={handleNamespaceChange}
+        onSelectKind={handleSelectKind}
         selectedVirtualPage={cluster.selectedVirtualPage}
-        renderVirtualPage={renderVirtualPage}
-      />
-    </AppShell>
+        onSelectVirtualPage={handleSelectVirtualPage}
+      >
+        <ResourceKindTabs
+          clusterId={clusterId}
+          namespace={cluster.selectedNamespace}
+          openResourceKinds={cluster.openResourceKinds}
+          selectedResourceKind={cluster.selectedResourceKind}
+          openVirtualPages={cluster.openVirtualPages}
+          selectedVirtualPage={cluster.selectedVirtualPage}
+          renderVirtualPage={renderVirtualPage}
+        />
+      </AppShell>
+    </ClusterContentErrorBoundary>
   )
 }

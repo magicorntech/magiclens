@@ -4446,7 +4446,7 @@ body.ml-browser-tab-dragging {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 4px 10px 12px;
+  padding: 4px 10px 4px;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-actions {
@@ -6415,6 +6415,10 @@ html[data-theme='dark'] .ml-brand-img--helm {
 
 .ml-workspace-content-inner {
   position: relative;
+  /* Flex column so resource tabs / workspace main can flex:1 fill height
+     (percentage height:100% collapses under Ant Layout + Copilot). */
+  display: flex;
+  flex-direction: column;
   /* Let the + action menu paint outside its hub without clipping */
   overflow: visible;
 }
@@ -9867,7 +9871,7 @@ body.ml-detail-resizing * {
 .ml-sidebar-section--workspaces {
   flex: 1;
   min-height: 140px;
-  margin-top: 6px;
+  margin-top: 0;
   padding-bottom: 8px;
 }
 

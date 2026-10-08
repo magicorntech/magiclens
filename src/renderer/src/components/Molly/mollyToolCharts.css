@@ -1,0 +1,119 @@
+.ml-molly-line__charts {
+  margin-top: 10px;
+}
+
+.ml-molly-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.ml-molly-chart-card {
+  border: 1px solid color-mix(in srgb, var(--ml-border-secondary) 80%, transparent);
+  background: color-mix(in srgb, var(--ml-bg-elevated) 88%, #0f172a 12%);
+  border-radius: 10px;
+  padding: 10px 10px 6px;
+  min-width: 0;
+}
+
+.ml-molly-chart-card__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ml-text-secondary);
+  margin-bottom: 4px;
+}
+
+.ml-molly-doc {
+  grid-column: 1 / -1;
+}
+
+.ml-molly-doc__scroll {
+  max-height: 220px;
+  overflow: auto;
+}
+
+.ml-molly-doc__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  color: var(--ml-text);
+}
+
+.ml-molly-doc__table th,
+.ml-molly-doc__table td {
+  padding: 5px 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ml-border) 70%, transparent);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.ml-molly-doc__tips {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ml-text);
+}
+
+.ml-molly-doc__pre {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: var(--ml-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ml-text);
+}
+
+.ml-molly-doc__table th {
+  color: var(--ml-text-secondary);
+  font-weight: 650;
+  position: sticky;
+  top: 0;
+  background: var(--ml-bg-elevated);
+}
+
+.ml-molly-chart-card__meta {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.85;
+}
+
+.ml-molly-voice-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ml-text-secondary);
+  line-height: 1.4;
+}
+
+.ml-molly-voice-hint strong {
+  color: var(--ml-text);
+  font-weight: 600;
+}
+
+.ml-molly-mic-meter {
+  margin-top: 8px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ml-border-secondary) 70%, transparent);
+  overflow: hidden;
+}
+
+.ml-molly-mic-meter__fill {
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22d3ee, #67e8f9);
+  transition: width 80ms linear;
+}

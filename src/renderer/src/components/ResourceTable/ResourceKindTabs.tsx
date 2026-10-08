@@ -36,6 +36,7 @@ export function ResourceKindTabs({
   const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace)
   const closeResourceKind = useClusterStore((s) => s.closeResourceKind)
   const closeAllResourceKinds = useClusterStore((s) => s.closeAllResourceKinds)
+  const openResourceKind = useClusterStore((s) => s.openResourceKind)
   const openVirtualPage = useClusterStore((s) => s.openVirtualPage)
   const closeVirtualPage = useClusterStore((s) => s.closeVirtualPage)
   const reorderVirtualPages = useClusterStore((s) => s.reorderVirtualPages)
@@ -55,6 +56,38 @@ export function ResourceKindTabs({
   )
 
   const showingVirtual = selectedVirtualPage != null && openVirtualPages.includes(selectedVirtualPage)
+  // Heal desync: selected virtual page missing from open list → show empty / black content.
+  useEffect(() => {
+    if (selectedVirtualPage && !openVirtualPages.includes(selectedVirtualPage)) {
+      openVirtualPage(clusterId, selectedVirtualPage)
+    }
+  }, [clusterId, selectedVirtualPage, openVirtualPages, openVirtualPage])
+
+  // Heal: selected kind missing from open tabs, or nothing at all selected → never leave blank pane.
+  useEffect(() => {
+    if (showingVirtual) return
+    if (selectedResourceKind && !openResourceKinds.includes(selectedResourceKind)) {
+      openResourceKind(clusterId, selectedResourceKind)
+      return
+    }
+    if (
+      !selectedResourceKind &&
+      openResourceKinds.length === 0 &&
+      openVirtualPages.length === 0 &&
+      !selectedVirtualPage
+    ) {
+      openResourceKind(clusterId, 'Pods')
+    }
+  }, [
+    clusterId,
+    showingVirtual,
+    selectedResourceKind,
+    openResourceKinds,
+    openVirtualPages.length,
+    selectedVirtualPage,
+    openResourceKind
+  ])
+
   const activeKind = showingVirtual ? null : (selectedResourceKind ?? orderedKinds[0] ?? null)
   const keptAppPages = useMemo(
     () => CLUSTER_APP_PAGES.filter((page) => openVirtualPages.includes(page) || selectedVirtualPage === page),
@@ -481,43 +514,47 @@ export function ResourceKindTabs({
 
   function renderAppKeepAlive(): React.ReactNode {
     if (!renderVirtualPage || keptAppPages.length === 0) return null
-    const front = isClusterAppPage(selectedVirtualPage)
+    // Only mount the absolute host while an app page is actually front.
+    // Leaving an inset:0 / z-index:0 host mounted over Nodes/Pods paints a black
+    // layer in Electron even when visibility:hidden (webview / compositor quirk).
+    if (!isClusterAppPage(selectedVirtualPage)) return null
     return (
-      <div className={`ml-cluster-app-host${front ? ' is-front' : ''}`}>
-        {keptAppPages.map((page) => (
-          <div
-            key={page}
-            className={`ml-cluster-app-keep${selectedVirtualPage === page ? ' is-active' : ''}`}
-            aria-hidden={selectedVirtualPage !== page}
-          >
-            {renderVirtualPage(page)}
-          </div>
-        ))}
+      <div className="ml-cluster-app-host is-front">
+        {keptAppPages.map((page) =>
+          selectedVirtualPage === page ? (
+            <div key={page} className="ml-cluster-app-keep is-active">
+              {renderVirtualPage(page)}
+            </div>
+          ) : null
+        )}
       </div>
     )
   }
 
   function renderResourceContent(): React.ReactNode {
-    const apps = renderAppKeepAlive()
     if (showingVirtual && isClusterAppPage(selectedVirtualPage)) {
-      return apps
+      return renderAppKeepAlive()
+    }
+    if (showingVirtual && selectedVirtualPage && renderVirtualPage) {
+      return renderVirtualPage(selectedVirtualPage)
+    }
+    if (activeKind) {
+      return (
+        <ResourceTable
+          clusterId={clusterId}
+          namespace={namespace}
+          kind={activeKind}
+          isActive={isClusterActive}
+        />
+      )
     }
     return (
-      <>
-        {apps}
-        {showingVirtual && selectedVirtualPage && renderVirtualPage ? (
-          renderVirtualPage(selectedVirtualPage)
-        ) : activeKind ? (
-          <ResourceTable
-            clusterId={clusterId}
-            namespace={namespace}
-            kind={activeKind}
-            isActive={isClusterActive}
-          />
-        ) : (
-          <EmptyState />
-        )}
-      </>
+      <div className="ml-cluster-view__center" style={{ padding: 24 }}>
+        <EmptyState
+          title="Nothing open"
+          description="Opening Pods…"
+        />
+      </div>
     )
   }
 

@@ -51,7 +51,7 @@ interface ClusterStoreState {
   clusters: ClusterEntry[]
   openedTabs: string[]
   activeClusterId: string | null
-  activeView: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn' | 'notes'
+  activeView: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn' | 'notes' | 'molly'
   splitView: boolean
   splitLeftClusterId: string | null
   splitRightClusterId: string | null
@@ -66,7 +66,7 @@ interface ClusterStoreState {
   closeClusterTab: (id: string) => void
   reorderOpenedTabs: (fromId: string, toId: string) => void
   setActiveCluster: (id: string) => void
-  setActiveView: (view: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn' | 'notes') => void
+  setActiveView: (view: 'clusters' | 'tabs' | 'admin' | 'profile' | 'vpn' | 'notes' | 'molly') => void
   enableSplitView: () => void
   disableSplitView: () => void
   setFocusedSplitPane: (pane: 'left' | 'right') => void
@@ -110,6 +110,19 @@ interface ClusterStoreState {
     focus: import('@shared/types/navigation').DynamicResourceFocus
   ) => void
   navigateToCrd: (id: string, crdName: string) => void
+  /**
+   * Single atomic update for Molly/UI navigation so ClusterView never mounts
+   * with empty kinds/pages (intermediate empty/black content).
+   */
+  applyMollyClusterNav: (
+    id: string,
+    nav: {
+      namespace?: string
+      kind?: ResourceKind
+      name?: string
+      virtualPage?: VirtualPageKey
+    }
+  ) => void
   clearPendingNavigation: (id: string) => void
   clearResourceFocus: (id: string) => void
   reorderResourceKinds: (id: string, kinds: ResourceKind[]) => void
@@ -432,9 +445,11 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
     set((state) => {
       const cluster = state.clusters.find((c) => c.id === id)
       if (!cluster) return {}
-      const openResourceKinds = cluster.openResourceKinds.includes(focus.kind)
+      const prefs = loadResourceTabPreferences(id)
+      let openResourceKinds = cluster.openResourceKinds.includes(focus.kind)
         ? cluster.openResourceKinds
         : [...cluster.openResourceKinds, focus.kind]
+      openResourceKinds = sortResourceKinds(openResourceKinds, prefs.pinned)
       const selectedNamespace =
         isNamespaceScoped(focus.kind) && focus.namespace ? focus.namespace : cluster.selectedNamespace
       return {
@@ -449,6 +464,120 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
           resourceFocus: focus,
           pendingNavigation: null
         })
+      }
+    }),
+
+  applyMollyClusterNav: (id, nav) =>
+    set((state) => {
+      const cluster = state.clusters.find((c) => c.id === id)
+      if (!cluster) return {}
+      const prefs = loadResourceTabPreferences(id)
+      const openedTabs = state.openedTabs.includes(id) ? state.openedTabs : [...state.openedTabs, id]
+      const now = new Date().toISOString()
+
+      // Prefer concrete resource kind over virtualPage when both are present —
+      // LLMs often send both and virtualPage would win with an empty/wrong view.
+      if (nav.kind && nav.name) {
+        let openResourceKinds = cluster.openResourceKinds.includes(nav.kind)
+          ? cluster.openResourceKinds
+          : [...cluster.openResourceKinds, nav.kind]
+        openResourceKinds = sortResourceKinds(openResourceKinds, prefs.pinned)
+        const selectedNamespace =
+          isNamespaceScoped(nav.kind) && nav.namespace ? nav.namespace : cluster.selectedNamespace
+        return {
+          openedTabs,
+          activeClusterId: id,
+          activeView: 'tabs' as const,
+          clusters: updateCluster(state.clusters, id, {
+            lastOpenedAt: now,
+            openResourceKinds,
+            selectedResourceKind: nav.kind,
+            selectedVirtualPage: null,
+            selectedNamespace,
+            resourceFocus: {
+              kind: nav.kind,
+              namespace: isNamespaceScoped(nav.kind) ? nav.namespace || selectedNamespace || '' : '',
+              name: nav.name
+            },
+            pendingNavigation: null
+          })
+        }
+      }
+
+      if (nav.kind) {
+        let openResourceKinds = cluster.openResourceKinds.includes(nav.kind)
+          ? cluster.openResourceKinds
+          : [...cluster.openResourceKinds, nav.kind]
+        openResourceKinds = sortResourceKinds(openResourceKinds, prefs.pinned)
+        const patch: Partial<ClusterEntry> = {
+          lastOpenedAt: now,
+          openResourceKinds,
+          selectedResourceKind: nav.kind,
+          selectedVirtualPage: null,
+          resourceFocus: null,
+          pendingNavigation: null
+        }
+        if (nav.namespace) {
+          patch.selectedNamespace = nav.namespace
+        }
+        return {
+          openedTabs,
+          activeClusterId: id,
+          activeView: 'tabs' as const,
+          clusters: updateCluster(state.clusters, id, patch)
+        }
+      }
+
+      if (nav.virtualPage) {
+        const resolved =
+          nav.virtualPage === 'helmReleases'
+            ? 'helmCharts'
+            : nav.virtualPage === 'operatorResources'
+              ? 'dynamicCustomResources'
+              : nav.virtualPage
+        const remaining = cluster.openVirtualPages.filter(
+          (p) => p !== 'helmReleases' && p !== 'operatorResources'
+        )
+        const openVirtualPages = remaining.includes(resolved) ? remaining : [...remaining, resolved]
+        const patch: Partial<ClusterEntry> = {
+          lastOpenedAt: now,
+          openVirtualPages,
+          selectedVirtualPage: resolved,
+          resourceFocus: null,
+          pendingNavigation: null
+        }
+        if (nav.namespace) {
+          patch.selectedNamespace = nav.namespace
+        }
+        return {
+          openedTabs,
+          activeClusterId: id,
+          activeView: 'tabs' as const,
+          clusters: updateCluster(state.clusters, id, patch)
+        }
+      }
+
+      // Cluster tab only — always land on Pods so the content pane is never empty.
+      let openResourceKinds = cluster.openResourceKinds.includes('Pods')
+        ? cluster.openResourceKinds
+        : [...cluster.openResourceKinds, 'Pods']
+      openResourceKinds = sortResourceKinds(openResourceKinds, prefs.pinned)
+      const patch: Partial<ClusterEntry> = {
+        lastOpenedAt: now,
+        openResourceKinds,
+        selectedResourceKind: 'Pods',
+        selectedVirtualPage: null,
+        resourceFocus: null,
+        pendingNavigation: null
+      }
+      if (nav.namespace) {
+        patch.selectedNamespace = nav.namespace
+      }
+      return {
+        openedTabs,
+        activeClusterId: id,
+        activeView: 'tabs' as const,
+        clusters: updateCluster(state.clusters, id, patch)
       }
     }),
 

@@ -189,6 +189,23 @@ export const AI_PROVIDER_RUNBOOKS: Record<AiProviderId, AiProviderRunbook> = {
   },
   gemini: {
     id: 'gemini',
+    summary: 'Google Gemini API — create an API key in Google AI Studio, then paste it here for Molly and Copilot.',
+    credentialHint: 'Gemini API key (AIza…)',
+    steps: [
+      {
+        title: 'Create an API key',
+        detail: 'Open Google AI Studio and create a Gemini API key.',
+        action: 'docs',
+        href: 'https://aistudio.google.com/apikey'
+      },
+      {
+        title: 'Wire MagicLens',
+        detail: 'Paste the key into Credential, pick gemini-3.8-flash (or newer), Use as Default. Molly prefers Gemini when preferGemini is on.'
+      }
+    ]
+  },
+  'gemini-cli': {
+    id: 'gemini-cli',
     summary: 'Google Gemini CLI — install, authenticate, then select in MagicLens.',
     credentialHint: 'gemini binary path',
     steps: [

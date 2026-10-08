@@ -15,14 +15,14 @@ import { AiAssistantToggleButton } from './AiAssistantPanel'
 import logo from '../../assets/logo.png'
 
 interface ChromeActionsProps {
-  /** Include split-screen control (cluster tab strip). */
+  /** Include split-screen control when cluster tabs are open. */
   showSplit?: boolean
-  /** Compact search sizing for the tab strip. */
+  /** Compact search sizing for the shared browser strip. */
   strip?: boolean
   className?: string
 }
 
-/** Shared chrome controls: ordered/filterable icons + notification bell. */
+/** Shared chrome controls in the browser tab strip (same on hub + cluster views). */
 export function ChromeActions({
   showSplit = false,
   strip = false,

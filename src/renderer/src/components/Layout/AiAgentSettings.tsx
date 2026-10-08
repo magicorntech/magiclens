@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Input, Select, Tag, Typography, message } from 'antd'
+import { Button, Input, Select, message } from 'antd'
 import {
   BookOpen,
-  Bot,
   Check,
   Copy,
   ExternalLink,
@@ -15,20 +14,16 @@ import { useTranslation } from 'react-i18next'
 import type { AiProviderConfig, AiProviderId, AiProviderStatus } from '@shared/types/aiAgent'
 import type { AiRunbookAction, AiRunbookStep } from '@shared/aiProviderRunbook'
 import { runbookFor } from '@shared/aiProviderRunbook'
+import { MOLLY_LIVE_MODEL_AUTO, MOLLY_LIVE_MODEL_OPTIONS } from '@shared/mollyModels'
 import { Icon } from '../ui/Icon'
 import {
   AI_MODEL_OPTIONS,
   aiProviderCredentialLabel,
   useAiAgentStore
 } from '../../stores/aiAgentStore'
+import { useMollyStore } from '../../stores/mollyStore'
 import { SettingsRow, SettingsSection, SettingsToggleRow } from './SettingsPrimitives'
 import './aiAgentSettings.css'
-
-function statusColor(status: AiProviderStatus): string {
-  if (status === 'Ready') return 'success'
-  if (status === 'Needs key') return 'warning'
-  return 'default'
-}
 
 function actionIcon(action?: AiRunbookAction) {
   if (action === 'login') return LogIn
@@ -61,16 +56,20 @@ async function runSetup(
   }
 }
 
-function RunbookPanel({
-  provider,
-  expanded
-}: {
-  provider: AiProviderConfig
-  expanded: boolean
-}): React.JSX.Element | null {
-  const { t } = useTranslation()
-  if (!expanded) return null
+function statusTone(status: AiProviderStatus): 'ok' | 'warn' | 'off' {
+  if (status === 'Ready') return 'ok'
+  if (status === 'Needs key') return 'warn'
+  return 'off'
+}
 
+function statusLabelKey(status: AiProviderStatus): string {
+  if (status === 'Needs key') return 'settings.aiAgent.status.needsKey'
+  if (status === 'Not installed') return 'settings.aiAgent.status.notInstalled'
+  return 'settings.aiAgent.status.ready'
+}
+
+function RunbookPanel({ provider }: { provider: AiProviderConfig }): React.JSX.Element {
+  const { t } = useTranslation()
   const book = runbookFor(provider.id)
   const primaryActions = Array.from(
     new Set(book.steps.map((s) => s.action).filter(Boolean) as AiRunbookAction[])
@@ -78,17 +77,7 @@ function RunbookPanel({
 
   return (
     <div className="ml-ai-runbook">
-      <div className="ml-ai-runbook__summary">
-        <Icon icon={BookOpen} variant="micro" />
-        <div>
-          <div className="ml-ai-runbook__summary-title">{t('settings.aiAgent.runbook.title')}</div>
-          <p className="ml-ai-runbook__summary-body">{book.summary}</p>
-          <p className="ml-ai-runbook__credential-hint">
-            {t('settings.aiAgent.runbook.credential')}: {book.credentialHint}
-          </p>
-        </div>
-      </div>
-
+      <p className="ml-ai-runbook__lead">{book.summary}</p>
       {primaryActions.length > 0 ? (
         <div className="ml-ai-runbook__actions">
           {primaryActions.map((action) => (
@@ -104,7 +93,6 @@ function RunbookPanel({
           ))}
         </div>
       ) : null}
-
       <ol className="ml-ai-runbook__steps">
         {book.steps.map((step, index) => (
           <RunbookStepRow key={`${step.title}-${index}`} step={step} index={index} provider={provider} />
@@ -174,7 +162,7 @@ function RunbookStepRow({
   )
 }
 
-function ProviderRow({
+function ProviderCard({
   provider,
   liveStatus,
   liveModels,
@@ -193,7 +181,7 @@ function ProviderRow({
   const defaultProviderId = useAiAgentStore((s) => s.defaultProviderId)
   const setDefaultProvider = useAiAgentStore((s) => s.setDefaultProvider)
   const updateProvider = useAiAgentStore((s) => s.updateProvider)
-  const [runbookOpen, setRunbookOpen] = useState(liveStatus !== 'Ready')
+  const [setupOpen, setSetupOpen] = useState(false)
   const isDefault = defaultProviderId === provider.id
   const fallback = AI_MODEL_OPTIONS[provider.id]
   const models = liveModels.length ? liveModels : fallback
@@ -202,102 +190,109 @@ function ProviderRow({
     : [provider.model, ...models].filter(Boolean)
   const book = runbookFor(provider.id)
   const hasLogin = book.steps.some((s) => s.action === 'login')
-
-  useEffect(() => {
-    if (liveStatus !== 'Ready') setRunbookOpen(true)
-  }, [liveStatus])
+  const tone = statusTone(liveStatus)
 
   return (
-    <div className={`ml-ai-provider${isDefault ? ' is-default' : ''}${runbookOpen ? ' is-expanded' : ''}`}>
-      <div className="ml-ai-provider__main">
-        <div className="ml-ai-provider__identity">
-          <span className="ml-ai-provider__icon" aria-hidden>
-            <Icon icon={Bot} variant="micro" />
-          </span>
-          <div className="ml-ai-provider__names">
-            <div className="ml-ai-provider__title">
-              <span>{provider.name}</span>
-              <Tag className="ml-ai-provider__kind">{provider.kind}</Tag>
-            </div>
-            {liveDetail ? <span className="ml-ai-provider__hint">{liveDetail}</span> : null}
-            {provider.kind === 'CLI' && !provider.credential.trim() ? (
-              <span className="ml-ai-provider__hint">{t('settings.aiAgent.cliMissing')}</span>
-            ) : null}
-          </div>
+    <article className={`ml-ai-card${isDefault ? ' is-default' : ''}`}>
+      <header className="ml-ai-card__head">
+        <div className="ml-ai-card__identity">
+          <h3 className="ml-ai-card__name">{provider.name}</h3>
+          <span className="ml-ai-card__kind">{provider.kind}</span>
+          {isDefault ? <span className="ml-ai-card__default">{t('settings.aiAgent.default')}</span> : null}
         </div>
+        <div className={`ml-ai-card__status ml-ai-card__status--${tone}`} title={liveDetail}>
+          <span className="ml-ai-card__status-dot" aria-hidden />
+          <span>{t(statusLabelKey(liveStatus))}</span>
+        </div>
+      </header>
 
-        <div className="ml-ai-provider__fields">
-          <Input
-            size="small"
-            type={provider.kind === 'API' ? 'password' : 'text'}
-            placeholder={aiProviderCredentialLabel(provider.kind)}
-            value={provider.credential}
-            onChange={(e) => updateProvider(provider.id, { credential: e.target.value })}
-            onBlur={() => onProbe()}
-            className="ml-ai-provider__credential"
-          />
+      <div className="ml-ai-card__fields">
+        <label className="ml-ai-field">
+          <span className="ml-ai-field__label">
+            {provider.id === 'gemini'
+              ? t('settings.aiAgent.mollyGeminiKey')
+              : aiProviderCredentialLabel(provider.kind)}
+          </span>
+          {provider.kind === 'API' ? (
+            <Input.Password
+              size="middle"
+              placeholder={provider.id === 'gemini' ? 'AIza…' : aiProviderCredentialLabel(provider.kind)}
+              value={provider.credential}
+              onChange={(e) => updateProvider(provider.id, { credential: e.target.value })}
+              onBlur={() => onProbe()}
+              autoComplete="off"
+              visibilityToggle
+            />
+          ) : (
+            <Input
+              size="middle"
+              placeholder={aiProviderCredentialLabel(provider.kind)}
+              value={provider.credential}
+              onChange={(e) => updateProvider(provider.id, { credential: e.target.value })}
+              onBlur={() => onProbe()}
+              autoComplete="off"
+            />
+          )}
+          {provider.kind === 'CLI' && !provider.credential.trim() ? (
+            <span className="ml-ai-field__hint">{t('settings.aiAgent.cliMissing')}</span>
+          ) : liveDetail && liveStatus !== 'Ready' ? (
+            <span className="ml-ai-field__hint">{liveDetail}</span>
+          ) : null}
+        </label>
+
+        <label className="ml-ai-field">
+          <span className="ml-ai-field__label">{t('settings.aiAgent.model')}</span>
           <Select
-            size="small"
+            size="middle"
             value={provider.model}
             options={modelOptions.map((m) => ({ value: m, label: m }))}
             onChange={(model) => updateProvider(provider.id, { model })}
-            className="ml-ai-provider__model"
-            popupMatchSelectWidth={false}
             showSearch
+            style={{ width: '100%' }}
           />
-          <Tag color={statusColor(liveStatus)} className="ml-ai-provider__status">
-            {t(
-              `settings.aiAgent.status.${
-                liveStatus === 'Needs key'
-                  ? 'needsKey'
-                  : liveStatus === 'Not installed'
-                    ? 'notInstalled'
-                    : 'ready'
-              }`
-            )}
-          </Tag>
-          <Button
-            size="small"
-            loading={probing}
-            icon={<Icon icon={RefreshCw} variant="micro" />}
-            onClick={onProbe}
-            title={t('settings.aiAgent.probe')}
-          />
-          {hasLogin ? (
-            <Button
-              size="small"
-              icon={<Icon icon={LogIn} variant="micro" />}
-              onClick={() => void runSetup(provider, 'login', t)}
-              title={t('settings.aiAgent.login')}
-            >
-              {t('settings.aiAgent.login')}
-            </Button>
-          ) : null}
-          <Button
-            size="small"
-            type={isDefault ? 'primary' : 'default'}
-            icon={isDefault ? <Icon icon={Check} variant="micro" /> : undefined}
-            onClick={() => setDefaultProvider(isDefault ? null : provider.id)}
-          >
-            {isDefault ? t('settings.aiAgent.default') : t('settings.aiAgent.use')}
-          </Button>
-          <Button
-            size="small"
-            type={runbookOpen ? 'primary' : 'default'}
-            ghost={runbookOpen}
-            icon={<Icon icon={BookOpen} variant="micro" />}
-            onClick={() => setRunbookOpen((v) => !v)}
-            className={`ml-ai-provider__guide${runbookOpen ? ' is-open' : ''}`}
-            title={t('settings.aiAgent.runbook.toggle')}
-            aria-expanded={runbookOpen}
-          >
-            {t('settings.aiAgent.runbook.toggle')}
-          </Button>
-        </div>
+        </label>
       </div>
 
-      <RunbookPanel provider={provider} expanded={runbookOpen} />
-    </div>
+      <footer className="ml-ai-card__foot">
+        <Button
+          size="small"
+          loading={probing}
+          icon={<Icon icon={RefreshCw} variant="micro" />}
+          onClick={onProbe}
+        >
+          {t('settings.aiAgent.probe')}
+        </Button>
+        {hasLogin ? (
+          <Button
+            size="small"
+            icon={<Icon icon={LogIn} variant="micro" />}
+            onClick={() => void runSetup(provider, 'login', t)}
+          >
+            {t('settings.aiAgent.login')}
+          </Button>
+        ) : null}
+        <Button
+          size="small"
+          type={isDefault ? 'primary' : 'default'}
+          icon={isDefault ? <Icon icon={Check} variant="micro" /> : undefined}
+          onClick={() => setDefaultProvider(isDefault ? null : provider.id)}
+        >
+          {isDefault ? t('settings.aiAgent.default') : t('settings.aiAgent.use')}
+        </Button>
+        <Button
+          size="small"
+          type="text"
+          icon={<Icon icon={BookOpen} variant="micro" />}
+          className={setupOpen ? 'is-active' : undefined}
+          onClick={() => setSetupOpen((v) => !v)}
+          aria-expanded={setupOpen}
+        >
+          {t('settings.aiAgent.runbook.toggle')}
+        </Button>
+      </footer>
+
+      {setupOpen ? <RunbookPanel provider={provider} /> : null}
+    </article>
   )
 }
 
@@ -319,6 +314,33 @@ export function AiAgentSettings(): React.JSX.Element {
   const [probes, setProbes] = useState<Partial<Record<AiProviderId, ProbeState>>>({})
   const [probingId, setProbingId] = useState<AiProviderId | null>(null)
 
+  useEffect(() => {
+    const state = useAiAgentStore.getState()
+    const gemini = state.providers.find((p) => p.id === 'gemini')
+    if (!gemini) return
+    if (
+      gemini.kind !== 'API' ||
+      gemini.name !== 'Google Gemini' ||
+      gemini.model !== 'gemini-3.8-flash'
+    ) {
+      state.updateProvider('gemini', {
+        kind: 'API',
+        name: 'Google Gemini',
+        model: 'gemini-3.8-flash',
+        credential:
+          gemini.credential.startsWith('AIza') || gemini.credential.length > 24
+            ? gemini.credential
+            : gemini.credential === 'gemini' || gemini.credential.includes('/')
+              ? ''
+              : gemini.credential,
+        enabled: true
+      })
+    }
+    if (gemini.credential.trim()) {
+      state.setDefaultProvider('gemini')
+    }
+  }, [])
+
   const probeOne = useCallback(async (provider: AiProviderConfig) => {
     setProbingId(provider.id)
     try {
@@ -334,7 +356,11 @@ export function AiAgentSettings(): React.JSX.Element {
       if (res.models?.length && !res.models.includes(provider.model)) {
         useAiAgentStore.getState().updateProvider(provider.id, { model: res.models[0] })
       }
-      if (res.resolvedPath && provider.credential.trim() !== res.resolvedPath) {
+      if (
+        provider.kind === 'CLI' &&
+        res.resolvedPath &&
+        provider.credential.trim() !== res.resolvedPath
+      ) {
         useAiAgentStore.getState().updateProvider(provider.id, { credential: res.resolvedPath })
       }
     } catch (err) {
@@ -369,13 +395,8 @@ export function AiAgentSettings(): React.JSX.Element {
         title={t('settings.aiAgent.title')}
         description={t('settings.aiAgent.intro')}
       >
-        <Typography.Paragraph type="secondary" className="ml-ai-intro">
-          {t('settings.aiAgent.privacy')}
-        </Typography.Paragraph>
-        <div className="ml-ai-providers-head">
-          {t('settings.aiAgent.providersHead', { count: readyCount })}
-        </div>
-        <div className="ml-ai-providers">
+        <p className="ml-ai-meta">{t('settings.aiAgent.providersHead', { count: readyCount })}</p>
+        <div className="ml-ai-list">
           {providers.map((provider) => {
             const live = probes[provider.id]
             const fallbackStatus: AiProviderStatus =
@@ -387,7 +408,7 @@ export function AiAgentSettings(): React.JSX.Element {
                   ? 'Ready'
                   : 'Not installed'
             return (
-              <ProviderRow
+              <ProviderCard
                 key={provider.id}
                 provider={provider}
                 liveStatus={live?.status ?? fallbackStatus}
@@ -400,6 +421,8 @@ export function AiAgentSettings(): React.JSX.Element {
           })}
         </div>
       </SettingsSection>
+
+      <MollySettingsSection />
 
       <SettingsSection title={t('settings.aiAgent.optionsTitle')}>
         <SettingsRow
@@ -428,5 +451,58 @@ export function AiAgentSettings(): React.JSX.Element {
         />
       </SettingsSection>
     </>
+  )
+}
+
+function MollySettingsSection(): React.JSX.Element {
+  const { t } = useTranslation()
+  const settings = useMollyStore((s) => s.settings)
+  const patchSettings = useMollyStore((s) => s.patchSettings)
+
+  return (
+    <SettingsSection title={t('settings.aiAgent.mollyTitle')} description={t('settings.aiAgent.mollyIntro')}>
+      <SettingsToggleRow
+        title={t('settings.aiAgent.mollyGeminiLive')}
+        description={t('settings.aiAgent.mollyGeminiLiveHint')}
+        checked={settings.geminiLive !== false}
+        onChange={(geminiLive) => patchSettings({ geminiLive })}
+      />
+      <SettingsRow
+        title={t('settings.aiAgent.mollyLiveModel')}
+        description={t('settings.aiAgent.mollyLiveModelHint')}
+        stacked
+        control={
+          <Select
+            style={{ width: '100%', maxWidth: 420 }}
+            disabled={settings.geminiLive === false}
+            value={settings.liveModel || MOLLY_LIVE_MODEL_AUTO}
+            options={MOLLY_LIVE_MODEL_OPTIONS.map((o) => ({
+              value: o.id,
+              label:
+                o.id === MOLLY_LIVE_MODEL_AUTO
+                  ? t('settings.aiAgent.mollyLiveModelAuto')
+                  : o.label
+            }))}
+            onChange={(liveModel) => patchSettings({ liveModel })}
+          />
+        }
+      />
+      <SettingsToggleRow
+        title={t('settings.aiAgent.mollyWakeWord')}
+        description={t('settings.aiAgent.mollyWakeWordHint')}
+        checked={settings.wakeWord !== false}
+        onChange={(wakeWord) => patchSettings({ wakeWord })}
+      />
+      <SettingsToggleRow
+        title={t('settings.aiAgent.mollyBackgroundHud')}
+        description={t('settings.aiAgent.mollyBackgroundHudHint')}
+        checked={Boolean(settings.backgroundHud)}
+        onChange={(backgroundHud) => {
+          patchSettings({ backgroundHud })
+          if (backgroundHud) void window.api.molly.openHud()
+          else void window.api.molly.closeHud()
+        }}
+      />
+    </SettingsSection>
   )
 }
