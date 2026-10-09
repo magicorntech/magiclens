@@ -357,6 +357,10 @@ export class MollyLiveSession {
 
   private async startMic(): Promise<void> {
     this.teardownMic()
+    const gate = await window.api.molly.ensureMic()
+    if (!gate.granted) {
+      throw new Error('macOS mikrofon izni kapalı. Sistem Ayarları açıldı — Mikrofon listesinde MagicLens’i aç.')
+    }
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         channelCount: 1,

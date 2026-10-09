@@ -885,6 +885,8 @@ const api = {
       req: import('@shared/types/molly').MollyStartupCheckRequest
     ): Promise<import('@shared/types/molly').MollyStartupCheckResponse> =>
       ipcRenderer.invoke(IPC.MOLLY_STARTUP_CHECK, req),
+    ensureMic: (): Promise<{ granted: boolean; status: string }> =>
+      ipcRenderer.invoke(IPC.MOLLY_ENSURE_MIC),
     transcribe: (
       req: import('@shared/types/molly').MollyTranscribeRequest
     ): Promise<import('@shared/types/molly').MollyTranscribeResponse> =>

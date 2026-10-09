@@ -264,6 +264,7 @@ export const IPC = {
   MOLLY_STARTUP_CHECK: 'molly:startupCheck',
   MOLLY_NAVIGATE: 'molly:navigate',
   MOLLY_TRANSCRIBE: 'molly:transcribe',
+  MOLLY_ENSURE_MIC: 'molly:ensureMic',
   MOLLY_RUN_TOOL: 'molly:runTool',
   MOLLY_HUD_OPEN: 'molly:hudOpen',
   MOLLY_HUD_CLOSE: 'molly:hudClose',

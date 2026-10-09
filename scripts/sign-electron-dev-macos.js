@@ -24,6 +24,46 @@ if (!existsSync(electronApp)) {
   process.exit(0)
 }
 
+const plistBuddy = '/usr/libexec/PlistBuddy'
+function setPlist(plist, key, value) {
+  try {
+    execFileSync(plistBuddy, ['-c', `Set :${key} ${value}`, plist], { stdio: 'ignore' })
+  } catch {
+    execFileSync(plistBuddy, ['-c', `Add :${key} string ${value}`, plist], { stdio: 'ignore' })
+  }
+}
+// TCC shows CFBundleName for this bundle id. Dev Electron is com.github.Electron, so the
+// microphone row stays "Electron" even after app.setName. Use the packaged app id so the
+// privacy list says MagicLens.
+const mainPlist = path.join(electronApp, 'Contents', 'Info.plist')
+setPlist(mainPlist, 'CFBundleIdentifier', 'com.magiclens.app')
+setPlist(mainPlist, 'CFBundleName', 'MagicLens')
+setPlist(mainPlist, 'CFBundleDisplayName', 'MagicLens')
+setPlist(mainPlist, 'NSMicrophoneUsageDescription', 'MagicLens Molly needs the microphone for voice commands.')
+setPlist(
+  mainPlist,
+  'NSSpeechRecognitionUsageDescription',
+  'MagicLens Molly uses speech recognition to turn your voice into cluster questions.'
+)
+for (const helper of [
+  'Electron Helper',
+  'Electron Helper (GPU)',
+  'Electron Helper (Renderer)',
+  'Electron Helper (Plugin)'
+]) {
+  const helperPlist = path.join(
+    electronApp,
+    'Contents',
+    'Frameworks',
+    `${helper}.app`,
+    'Contents',
+    'Info.plist'
+  )
+  if (!existsSync(helperPlist)) continue
+  setPlist(helperPlist, 'CFBundleIdentifier', 'com.magiclens.app.helper')
+  setPlist(helperPlist, 'CFBundleName', helper.replace('Electron', 'MagicLens'))
+}
+
 try {
   execFileSync('codesign', ['--force', '--deep', '--sign', '-', electronApp], {
     stdio: 'inherit'

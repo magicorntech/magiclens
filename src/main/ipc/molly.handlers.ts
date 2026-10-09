@@ -18,6 +18,7 @@ import type {
 import { runMollyTurn, runMollyStartup } from '../ai/mollyAgentService'
 import { transcribeGeminiAudio } from '../ai/geminiClient'
 import { runMollyTool, MOLLY_TOOL_NAMES } from '../ai/mollyToolRunner'
+import { ensureMicrophoneAccess } from '../mediaPermissions'
 import {
   closeMollyHud,
   focusMainFromMollyHud,
@@ -38,6 +39,7 @@ function broadcastNavigate(target: MollyNavigateTarget): void {
 }
 
 export function registerMollyHandlers(): void {
+  ipcMain.handle(IPC.MOLLY_ENSURE_MIC, () => ensureMicrophoneAccess(true))
   ipcMain.handle(IPC.MOLLY_TURN, async (_e, req: MollyTurnRequest): Promise<MollyTurnResponse> => {
     try {
       if (!req?.text?.trim() || !req.provider) {

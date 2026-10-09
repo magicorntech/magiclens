@@ -317,10 +317,15 @@ function clipForSpeech(text: string, max = 320): string {
   return `${(lastStop > 80 ? cut.slice(0, lastStop + 1) : cut).trim()}…`
 }
 
+const MIC_DENIED =
+  'macOS mikrofon izni kapalı. Sistem Ayarları açıldı — Gizlilik ve Güvenlik → Mikrofon listesinde MagicLens’i aç.'
+
 async function ensureMicAccess(): Promise<MediaStream> {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error('Mikrofon API bu pencerede yok.')
   }
+  const gate = await window.api.molly.ensureMic()
+  if (!gate.granted) throw new Error(MIC_DENIED)
   if (micStream && micStream.active) return micStream
   micStream = await navigator.mediaDevices.getUserMedia({
     audio: {
@@ -821,6 +826,12 @@ export const useMollyStore = create<MollyState>()(
         const preferLive = get().settings.geminiLive !== false
 
         void (async () => {
+          const gate = await window.api.molly.ensureMic()
+          if (!gate.granted) {
+            pushSystem(set, MIC_DENIED)
+            set({ listening: false, voiceActive: false, orbState: 'idle' })
+            return
+          }
           if (preferLive) {
             try {
               stopLiveSession()

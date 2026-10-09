@@ -15,6 +15,13 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.31': {
+    title: 'Molly microphone permission',
+    items: [
+      'macOS asks for the microphone as MagicLens, so the Privacy list matches the app name.',
+      'If the microphone is off, Molly opens System Settings on the Microphone page so you can turn it on.'
+    ]
+  },
   '0.1.30': {
     title: 'Molly, the read-only cluster assistant',
     items: [
