@@ -48,6 +48,9 @@ mac:
   icon: build/icon.png
   hardenedRuntime: true
   gatekeeperAssess: false
+  # Hardened runtime hides the app from Privacy → Microphone unless this entitlement is present.
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
   # MagicLens has no multi-window state to restore, so macOS's "Resume" window-restoration
   # bookkeeping is pure downside for us: it's what produces the "The last time you opened
   # MagicLens, it was force quit while reopening windows" prompt some users (mostly on Apple
