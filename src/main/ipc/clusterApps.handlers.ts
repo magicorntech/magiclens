@@ -91,6 +91,23 @@ export function registerClusterAppsHandlers(): void {
     async (event, req: ClusterAppOpenRequest): Promise<ClusterAppOpenResponse> => {
       const manual = openManualIfSet(req.clusterId, req.kind)
       if (isDemoCluster(req.clusterId)) {
+        if (hasDemoCatalog(req.clusterId)) {
+          const demo = {
+            grafana: { port: 17376, service: 'prometheus-grafana', user: 'admin', name: 'Grafana' },
+            argocd: { port: 17091, service: 'argocd-server', user: 'admin', name: 'Argo CD' },
+            prometheus: { port: 17101, service: 'prometheus-stack-prometheus', user: '', name: 'Prometheus' }
+          }[req.kind]
+          return {
+            ok: true,
+            demo: true,
+            url: `http://127.0.0.1:${demo.port}`,
+            displayName: demo.name,
+            serviceName: demo.service,
+            username: demo.user || undefined,
+            password: demo.user ? 'demo-password' : undefined,
+            source: 'auto'
+          }
+        }
         return (
           manual ?? {
             ok: false,

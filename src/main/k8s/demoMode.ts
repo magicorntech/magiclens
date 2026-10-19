@@ -20,6 +20,8 @@ import { addCluster, listClusters, updateCluster } from '../persistence/clusterS
 import { saveClusterGroups } from '../persistence/clusterGroups'
 import { setHasSeenWelcome, setLastSeenSplashVersion } from '../persistence/appSettings'
 import { getUiState, setUiState } from '../persistence/uiState'
+import { upsertVpnProfile } from '../persistence/vpnStore'
+import { setClusterVpnLink } from '../persistence/clusterVpnLinks'
 import { isDemoMode } from '../demoUserData'
 import { K8S_KIND_NAME } from './resourceRegistry'
 import {
@@ -456,7 +458,7 @@ export function seedDemoWorkspace(): void {
       contextName: 'gke_aurora-staging',
       source: { type: 'raw', yaml: kubeconfig('gke_aurora-staging', 'https://container.googleapis.com/v1/projects/aurora/locations/europe-west4/clusters/staging') },
       endpoint: 'https://container.googleapis.com/v1/projects/aurora/locations/europe-west4/clusters/staging',
-      isFavorite: false,
+      isFavorite: true,
       selectedNamespace: 'ALL',
       selectedResourceKind: 'Deployments',
       environment: 'staging'
@@ -467,7 +469,7 @@ export function seedDemoWorkspace(): void {
       contextName: 'aurora-test',
       source: { type: 'raw', yaml: kubeconfig('aurora-test', 'https://aurora-test-a1b2c3d4.hcp.westeurope.azmk8s.io') },
       endpoint: 'https://aurora-test-a1b2c3d4.hcp.westeurope.azmk8s.io',
-      isFavorite: false,
+      isFavorite: true,
       selectedNamespace: 'ALL',
       selectedResourceKind: 'Pods',
       environment: 'test'
@@ -478,7 +480,7 @@ export function seedDemoWorkspace(): void {
       contextName: 'gke_platform-prod',
       source: { type: 'raw', yaml: kubeconfig('gke_platform-prod', 'https://container.googleapis.com/v1/projects/aurora/locations/europe-west1/clusters/platform') },
       endpoint: 'https://container.googleapis.com/v1/projects/aurora/locations/europe-west1/clusters/platform',
-      isFavorite: false,
+      isFavorite: true,
       selectedNamespace: 'ALL',
       selectedResourceKind: 'Nodes',
       environment: 'production'
@@ -489,7 +491,7 @@ export function seedDemoWorkspace(): void {
       contextName: 'payments-prod',
       source: { type: 'raw', yaml: kubeconfig('payments-prod', 'https://payments-a1b2c3d4.hcp.westeurope.azmk8s.io') },
       endpoint: 'https://payments-a1b2c3d4.hcp.westeurope.azmk8s.io',
-      isFavorite: false,
+      isFavorite: true,
       selectedNamespace: 'ALL',
       selectedResourceKind: 'Deployments',
       environment: 'production'
@@ -500,7 +502,7 @@ export function seedDemoWorkspace(): void {
       contextName: 'edge-eu',
       source: { type: 'raw', yaml: kubeconfig('edge-eu', 'https://E1F2G3H4.gr7.eu-central-1.eks.amazonaws.com') },
       endpoint: 'https://E1F2G3H4.gr7.eu-central-1.eks.amazonaws.com',
-      isFavorite: false,
+      isFavorite: true,
       selectedNamespace: 'ALL',
       selectedResourceKind: 'Nodes',
       environment: 'production'
@@ -582,4 +584,75 @@ export function seedDemoWorkspace(): void {
     activeClusterId: DEMO_CLUSTER_IDS.prod,
     activeView: 'tabs'
   })
+
+  seedDemoVpn()
+}
+
+const WG_CONFIG = (addr: string, endpoint: string): string =>
+  [
+    '[Interface]',
+    'PrivateKey = DEMO-NOT-A-REAL-KEY',
+    `Address = ${addr}`,
+    'DNS = 10.8.0.1',
+    '',
+    '[Peer]',
+    'PublicKey = DEMO-NOT-A-REAL-PEER',
+    'AllowedIPs = 10.0.0.0/8',
+    `Endpoint = ${endpoint}`
+  ].join('\n')
+
+const OVPN_CONFIG = (host: string): string =>
+  ['client', 'dev tun', 'proto udp', `remote ${host} 1194`, 'auth-user-pass', 'cipher AES-256-GCM'].join('\n')
+
+/** Fake VPN profiles (no real configs, keys or hosts) linked to demo clusters so the badges show. */
+function seedDemoVpn(): void {
+  const profiles = [
+    {
+      id: 'demo-vpn-aurora',
+      name: 'Aurora Corp',
+      provider: 'pritunl' as const,
+      organization: 'Aurora',
+      serverName: 'aurora-gateway',
+      serverHost: '203.0.113.10',
+      protocol: 'udp',
+      username: 'huseyin@aurora.dev',
+      config: OVPN_CONFIG('203.0.113.10')
+    },
+    {
+      id: 'demo-vpn-bastion',
+      name: 'EKS bastion',
+      provider: 'wireguard' as const,
+      organization: 'Aurora',
+      serverName: 'eks-bastion',
+      serverHost: '198.51.100.24',
+      protocol: 'udp',
+      config: WG_CONFIG('10.8.0.2/32', '198.51.100.24:51820')
+    },
+    {
+      id: 'demo-vpn-platform',
+      name: 'Platform GKE',
+      provider: 'pritunl' as const,
+      organization: 'Platform',
+      serverName: 'platform-gw',
+      serverHost: '203.0.113.77',
+      protocol: 'udp',
+      username: 'huseyin@platform.dev',
+      config: OVPN_CONFIG('203.0.113.77')
+    },
+    {
+      id: 'demo-vpn-edge-eu',
+      name: 'Edge EU',
+      provider: 'wireguard' as const,
+      organization: 'Edge',
+      serverName: 'edge-eu-hub',
+      serverHost: '198.51.100.88',
+      protocol: 'udp',
+      config: WG_CONFIG('10.9.0.2/32', '198.51.100.88:51820')
+    }
+  ]
+  for (const p of profiles) upsertVpnProfile({ ...p, origin: 'local' })
+  setClusterVpnLink(DEMO_CLUSTER_IDS.prod, 'demo-vpn-bastion')
+  setClusterVpnLink(DEMO_CLUSTER_IDS.staging, 'demo-vpn-bastion')
+  // Pritunl profiles stay unlinked: linking one would pop the PIN/MFA prompt whenever its cluster opens.
+  setClusterVpnLink(DEMO_EMPTY_CLUSTER_IDS.edgeEu, 'demo-vpn-edge-eu')
 }

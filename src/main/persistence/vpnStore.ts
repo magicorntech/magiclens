@@ -1,3 +1,4 @@
+import { isDemoMode } from '../demoUserData'
 import { safeStorage } from 'electron'
 import Store from 'electron-store'
 import { randomUUID } from 'crypto'
@@ -21,6 +22,8 @@ const store = new Store<StoreSchema>({
 let warnedAboutPlaintext = false
 
 function isEncryptionAvailable(): boolean {
+  // Demo profiles are fake: never touch the OS keychain (it would prompt during recordings).
+  if (isDemoMode()) return false
   const available = safeStorage.isEncryptionAvailable()
   if (!available && !warnedAboutPlaintext) {
     warnedAboutPlaintext = true

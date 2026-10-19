@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import type { ClusterAppKind, ClusterAppOpenResponse } from '@shared/types/clusterApps'
 import { mergeClusterSettings } from '@shared/types/clusterSettings'
 import { Icon } from '../ui/Icon'
+import { DemoAppFrame } from './DemoAppFrame'
 import { ArgoAppLogo, GrafanaLogo, PrometheusLogo } from '../../icons/AppsLogos'
 import { useClusterStore } from '../../stores/clusterStore'
 
@@ -225,7 +226,9 @@ export function ClusterAppPage({ clusterId, page }: ClusterAppPageProps): React.
         </div>
       </div>
       <div className="ml-cluster-app__frame">
-        {webviewSrc ? (
+        {opened.demo ? (
+          <DemoAppFrame kind={kind} />
+        ) : webviewSrc ? (
           <webview
             ref={(el) => {
               webviewRef.current = el

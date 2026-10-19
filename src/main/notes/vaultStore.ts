@@ -1,3 +1,4 @@
+import { isDemoMode } from '../demoUserData'
 import { randomUUID } from 'crypto'
 import {
   accessSync,
@@ -113,6 +114,7 @@ export function ensureVault(): string {
 }
 
 function seedStarterNotes(root: string): void {
+  if (isDemoMode()) return // demo vault is filled by seedDemoNotes() instead
   const stamp = nowIso()
   const starters: Array<{
     rel: string

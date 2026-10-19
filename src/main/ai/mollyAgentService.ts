@@ -11,6 +11,8 @@ import type {
   MollyStartupCheckResponse
 } from '@shared/types/molly'
 import { completeAiChat } from './aiChatService'
+import { isDemoMode } from '../demoUserData'
+import { demoMollyReply } from './demoMollyScript'
 import { generateGeminiContent } from './geminiClient'
 import { MOLLY_TOOL_NAMES, runMollyTool, runStartupChecks } from './mollyToolRunner'
 
@@ -84,6 +86,7 @@ async function chatOnce(
   messages: AiChatTurn[],
   cliWorkdir?: string
 ): Promise<{ ok: true; content: string } | { ok: false; error: string }> {
+  if (isDemoMode()) return { ok: true, content: demoMollyReply(messages) }
   // Gemini API key path: treat as Generative Language API when credential looks like a key.
   if (provider.id === 'gemini' && looksLikeGeminiApiKey(provider.credential)) {
     return chatGeminiApi(provider, messages)

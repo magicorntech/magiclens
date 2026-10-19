@@ -47,5 +47,7 @@ export type ClusterAppOpenResponse =
       username?: string
       password?: string
       source: Exclude<ClusterAppSource, 'none'>
+      /** Demo mode: the page is a still image instead of a live web view. */
+      demo?: true
     }
   | { ok: false; error: string; missing?: boolean }

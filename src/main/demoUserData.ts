@@ -15,4 +15,10 @@ if (isDemoMode() || process.env.MAGICLENS_USER_DATA) {
   const dir = process.env.MAGICLENS_USER_DATA || join(tmpdir(), 'magiclens-demo-profile')
   mkdirSync(dir, { recursive: true })
   app.setPath('userData', dir)
+  // Demo mode must never touch real files: Sparks keeps its vault under Documents.
+  if (isDemoMode()) {
+    const docs = join(dir, 'documents')
+    mkdirSync(docs, { recursive: true })
+    app.setPath('documents', docs)
+  }
 }

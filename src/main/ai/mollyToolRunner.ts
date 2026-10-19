@@ -1,3 +1,5 @@
+import { isDemoMode } from '../demoUserData'
+import { demoMollyTool } from './demoMollyTools'
 import type {
   MollyToolCall,
   MollyToolName,
@@ -1322,6 +1324,7 @@ export async function runMollyTool(call: MollyToolCall): Promise<MollyToolResult
         'Molly is read-only. Ask for a resource list, status, metrics, events, or logs — the answer stays in chat.'
     }
   }
+  if (isDemoMode()) return demoMollyTool(call)
   if (call.name !== 'listClusters' && args.clusterId != null) {
     // Normalize cluster references for every tool that needs live clients.
     const prepared = prepareCluster(asString(args.clusterId))

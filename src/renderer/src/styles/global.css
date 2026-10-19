@@ -4830,6 +4830,11 @@ button.ml-sidebar-section-chrome:hover {
   scrollbar-color: color-mix(in srgb, var(--ml-sidebar-muted) 35%, transparent) transparent;
 }
 
+/* Rows keep their height and the list scrolls; without this a tall list squeezes rows on top of each other. */
+.ml-sidebar-list > * {
+  flex-shrink: 0;
+}
+
 .ml-sidebar-list::-webkit-scrollbar,
 .ml-sidebar-workspaces::-webkit-scrollbar {
   width: 6px;
@@ -14436,6 +14441,10 @@ body.ml-vault--resizing .ml-vault__sidebar-resize::after {
   height: 100%;
 }
 
+.ml-sparks-rf .react-flow__node:not(.dragging) {
+  transition: transform 0.35s ease;
+}
+
 .ml-sparks-graph-node {
   display: flex;
   align-items: center;
@@ -15845,6 +15854,7 @@ body.ml-vault--resizing .ml-vault__sidebar-resize::after {
 }
 
 .ml-cluster-app__frame {
+  position: relative;
   flex: 1;
   min-height: 0;
 }
@@ -15888,3 +15898,30 @@ body.ml-vault--resizing .ml-vault__sidebar-resize::after {
   border-bottom: 1px solid var(--ml-border);
 }
 
+
+/* Demo mode: still image standing in for an embedded web UI. */
+.ml-cluster-app__demo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0b0c0f;
+}
+
+.ml-cluster-app__demo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  user-select: none;
+}
+
+/* Sparks graph: edges run centre to centre, like a network map, instead of looping out of the node sides. */
+.ml-sparks-rf .ml-sparks-rf-handle {
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  transform: translate(-50%, -50%) !important;
+  opacity: 0;
+  pointer-events: none;
+}

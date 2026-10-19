@@ -19,6 +19,7 @@ import {
   vpnRequiresAuth
 } from '@shared/types/vpn'
 import { getVpnProfile, listVpnProfiles } from '../persistence/vpnStore'
+import { isDemoMode } from '../demoUserData'
 
 const execFileAsync = promisify(execFile)
 
@@ -492,7 +493,98 @@ fi
     }
   }
 
+  // ---- Demo mode: believable tunnels with no processes, sudo or network access. ----
+  private demoRx = 0
+  private demoTx = 0
+
+  private demoTools(): VpnRuntimeStatus['tools'] {
+    return { openvpn: true, wireguard: true, tunnelblick: false, wireguardApp: false }
+  }
+
+  private demoIface(provider: VpnProvider): string {
+    return provider === 'wireguard' ? 'wg0' : 'utun4'
+  }
+
+  private async demoConnect(profileId: string, name: string, provider: VpnProvider): Promise<VpnConnectResult> {
+    if (this.sessions.has(profileId)) {
+      this.focusProfileId = profileId
+      this.setState('connected', `Already connected · ${name}`)
+      this.startStatsPolling()
+      return { ok: true, status: 'connected', method: 'cli' }
+    }
+    this.focusProfileId = profileId
+    this.setState('connecting', `Connecting ${name}…`)
+    await this.sleep(2200)
+    this.sessions.set(profileId, {
+      profileId,
+      provider,
+      process: null,
+      configPath: '',
+      interfaceName: this.demoIface(provider),
+      connectedAt: new Date().toISOString(),
+      method: 'cli'
+    })
+    this.demoRx = 0
+    this.demoTx = 0
+    this.setState('connected', `Connected · ${name}`)
+    this.startStatsPolling()
+    return { ok: true, status: 'connected', method: 'cli' }
+  }
+
+  private demoDisconnect(profileId?: string): { ok: boolean } {
+    const ids = profileId ? [profileId] : [...this.sessions.keys()]
+    for (const id of ids) this.sessions.delete(id)
+    const primary = this.primarySession()
+    if (primary) {
+      this.focusProfileId = primary.profileId
+      this.setState('connected', `Still connected · ${this.sessions.size} tunnel(s)`)
+      this.startStatsPolling()
+    } else {
+      this.focusProfileId = null
+      this.setState('disconnected', 'Disconnected')
+    }
+    return { ok: true }
+  }
+
+  private demoTick(): void {
+    const primary = this.primarySession()
+    if (!primary || this.status === 'connecting') return
+    const wobble = (base: number): number => Math.round(base * (0.75 + Math.random() * 0.5))
+    const rxRate = wobble(620_000)
+    const txRate = wobble(180_000)
+    this.demoRx += rxRate
+    this.demoTx += txRate
+    this.stats = {
+      interfaceName: primary.interfaceName ?? this.demoIface(primary.provider),
+      rxBytes: this.demoRx,
+      txBytes: this.demoTx,
+      rxRateBps: rxRate,
+      txRateBps: txRate,
+      updatedAt: new Date().toISOString()
+    }
+    this.broadcast()
+  }
+
   async getStatus(): Promise<VpnRuntimeStatus> {
+    if (isDemoMode()) {
+      const primary = this.primarySession()
+      const status: VpnConnectionStatus =
+        this.status === 'connecting' || this.status === 'error'
+          ? this.status
+          : this.sessions.size > 0
+            ? 'connected'
+            : 'disconnected'
+      return {
+        activeProfileId: primary?.profileId ?? null,
+        connectedProfileIds: [...this.sessions.keys()],
+        status,
+        provider: primary?.provider ?? null,
+        message: this.message,
+        connectedAt: primary?.connectedAt,
+        stats: status === 'connected' ? this.stats : null,
+        tools: this.demoTools()
+      }
+    }
     await this.recoverOrphanSessions()
     const tools = await this.detectTools()
     const primary = this.primarySession()
@@ -641,6 +733,7 @@ fi
 
   /** WireGuard ifaces need async checks — call from getStatus/connect. */
   async recoverOrphanSessions(): Promise<void> {
+    if (isDemoMode()) return
     this.syncSessionsWithOs()
     let changed = false
 
@@ -968,6 +1061,8 @@ fi
       }
     }
 
+    if (isDemoMode()) return this.demoConnect(profileId, profile.name, profile.provider)
+
     // Already connected — keep tunnel (Pritunl-style session). Just focus it.
     const existing = this.sessions.get(profileId)
     if (existing) {
@@ -1266,6 +1361,10 @@ fi
   }
 
   private async refreshStats(): Promise<void> {
+    if (isDemoMode()) {
+      this.demoTick()
+      return
+    }
     const primary = this.primarySession()
     if (!primary || this.status === 'connecting') return
     try {
@@ -1495,6 +1594,7 @@ fi
   }
 
   async disconnect(profileId?: string): Promise<{ ok: boolean; error?: string }> {
+    if (isDemoMode()) return this.demoDisconnect(profileId)
     await this.recoverOrphanSessions()
     const ids = profileId ? [profileId] : [...this.sessions.keys()]
 
@@ -1536,6 +1636,11 @@ fi
 
   /** Best-effort teardown used on app quit — never leave Magiclens tunnels running. */
   async disconnectAllForQuit(): Promise<void> {
+    if (isDemoMode()) {
+      this.sessions.clear()
+      this.stopStatsPolling()
+      return
+    }
     try {
       await this.recoverOrphanSessions()
       const ids = [...this.sessions.keys()]
@@ -1830,6 +1935,7 @@ end tell`
   async installTool(
     kind: 'openvpn' | 'wireguard'
   ): Promise<{ ok: boolean; error?: string; tools: VpnRuntimeStatus['tools'] }> {
+    if (isDemoMode()) return { ok: true, tools: this.demoTools() }
     const result = await this.installVpnTool(kind)
     const tools = (await this.detectTools())
     if (!result.ok) {

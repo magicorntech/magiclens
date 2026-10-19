@@ -18,7 +18,7 @@ export const DEMO_CLUSTER_IDS = {
   test: 'demo-aurora-test'
 } as const
 
-/** Sidebar-only clusters — connect as demo, but carry no catalog. */
+/** Sidebar clusters; platform and payments share the aurora catalog, the rest carry none. */
 export const DEMO_EMPTY_CLUSTER_IDS = {
   platform: 'demo-platform-prod',
   payments: 'demo-payments-prod',
@@ -27,7 +27,12 @@ export const DEMO_EMPTY_CLUSTER_IDS = {
   obs: 'demo-obs-central'
 } as const
 
-const CATALOG_IDS = new Set<string>(Object.values(DEMO_CLUSTER_IDS))
+// platform-prod and payments-prod reuse the aurora dataset so more than one cluster has real-looking content.
+const CATALOG_IDS = new Set<string>([
+  ...Object.values(DEMO_CLUSTER_IDS),
+  DEMO_EMPTY_CLUSTER_IDS.platform,
+  DEMO_EMPTY_CLUSTER_IDS.payments
+])
 
 export function hasDemoCatalog(clusterId: string): boolean {
   return CATALOG_IDS.has(clusterId)

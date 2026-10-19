@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import { app, BrowserWindow, crashReporter, powerMonitor } from 'electron'
 import { applyChromiumPerformanceFlags } from './chromiumPerf'
 import { registerIpcHandlers } from './ipc/register'
-import { scheduleDemoScreenshots } from './demoScreenshots'
+import { applyDemoCaptureSwitches, scheduleDemoScreenshots } from './demoScreenshots'
+import { seedDemoNotes } from './notes/demoNotes'
 import { seedDemoWorkspace } from './k8s/demoMode'
 import { installSparksMediaProtocol, registerSparksMediaScheme } from './notes/mediaProtocol'
 import { startNotesReminderScheduler } from './notes/reminderScheduler'
@@ -27,6 +28,7 @@ crashReporter.start({ uploadToServer: false, compress: true })
 
 // Must run before ready — Chromium ignores most switches after initialization.
 applyChromiumPerformanceFlags()
+applyDemoCaptureSwitches()
 registerSparksMediaScheme()
 
 // In dev, Electron doesn't reliably pick up package.json's `name`, so the app menu, Dock,
@@ -50,6 +52,7 @@ app.whenReady().then(() => {
   registerIpcHandlers()
   installMediaPermissions()
   const window = createMainWindow()
+  seedDemoNotes()
   scheduleDemoScreenshots(window)
   installReloadConfirm(window)
   if (!isDemoMode()) initAutoUpdater(window)

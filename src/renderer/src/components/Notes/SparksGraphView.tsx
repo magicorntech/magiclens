@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Background,
   Controls,
@@ -48,9 +48,38 @@ interface SparksGraphViewProps {
   onSelectNote: (id: string) => void
 }
 
-function layoutPosition(index: number, total: number): { x: number; y: number } {
-  const cols = Math.max(3, Math.ceil(Math.sqrt(Math.max(total, 1))))
-  return { x: (index % cols) * 200, y: Math.floor(index / cols) * 110 }
+const NODE_W = 168
+const NODE_H = 40
+
+/**
+ * Radial layout: the most-linked note sits in the middle, the rest on concentric rings ordered by
+ * how connected they are, so related notes end up close together instead of in arbitrary grid cells.
+ */
+function radialPositions(ids: string[], degree: Map<string, number>): Map<string, { x: number; y: number }> {
+  const ordered = [...ids].sort((a, b) => (degree.get(b) ?? 0) - (degree.get(a) ?? 0))
+  const out = new Map<string, { x: number; y: number }>()
+  const place = (id: string, x: number, y: number): void => {
+    out.set(id, { x: x - NODE_W / 2, y: y - NODE_H / 2 })
+  }
+  const [hub, ...rest] = ordered
+  if (!hub) return out
+  place(hub, 0, 0)
+  let index = 0
+  let ring = 1
+  while (index < rest.length) {
+    const radius = 250 * ring
+    // ~one node per 190px of circumference keeps labels from touching.
+    const capacity = Math.max(6, Math.floor((2 * Math.PI * radius) / 190))
+    const count = Math.min(capacity, rest.length - index)
+    const offset = ring % 2 === 0 ? Math.PI / count : 0
+    for (let i = 0; i < count; i++) {
+      const angle = offset + (2 * Math.PI * i) / count - Math.PI / 2
+      place(rest[index + i]!, Math.cos(angle) * radius * 1.35, Math.sin(angle) * radius)
+    }
+    index += count
+    ring += 1
+  }
+  return out
 }
 
 function buildGraphElements(notes: ResourceNote[]): { nodes: Node[]; edges: Edge[] } {
@@ -64,10 +93,18 @@ function buildGraphElements(notes: ResourceNote[]): { nodes: Node[]; edges: Edge
     if (!missing.has(id)) missing.set(id, edge.toTitle)
   }
 
-  const realNodes: Node[] = graph.nodes.map((n, i) => ({
+  const degree = new Map<string, number>()
+  for (const e of graph.edges) {
+    const target = e.toId ?? `missing:${normalizeWikiTarget(e.toTitle) || e.toTitle}`
+    degree.set(e.fromId, (degree.get(e.fromId) ?? 0) + 1)
+    degree.set(target, (degree.get(target) ?? 0) + 1)
+  }
+  const positions = radialPositions([...graph.nodes.map((n) => n.id), ...missing.keys()], degree)
+
+  const realNodes: Node[] = graph.nodes.map((n) => ({
     id: n.id,
     type: 'sparkNote',
-    position: layoutPosition(i, graph.nodes.length + missing.size),
+    position: positions.get(n.id) ?? { x: 0, y: 0 },
     data: {
       title: n.title,
       pinned: n.pinned,
@@ -76,10 +113,10 @@ function buildGraphElements(notes: ResourceNote[]): { nodes: Node[]; edges: Edge
     }
   }))
 
-  const ghostNodes: Node[] = [...missing.entries()].map(([id, title], i) => ({
+  const ghostNodes: Node[] = [...missing.entries()].map(([id, title]) => ({
     id,
     type: 'sparkNote',
-    position: layoutPosition(graph.nodes.length + i, graph.nodes.length + missing.size),
+    position: positions.get(id) ?? { x: 0, y: 0 },
     data: {
       title,
       pinned: false,
@@ -97,6 +134,7 @@ function buildGraphElements(notes: ResourceNote[]): { nodes: Node[]; edges: Edge
       source: e.fromId,
       target,
       animated: false,
+      type: 'straight',
       className: e.unresolved ? 'ml-sparks-rf-edge is-missing' : 'ml-sparks-rf-edge'
     }
   })
@@ -104,47 +142,103 @@ function buildGraphElements(notes: ResourceNote[]): { nodes: Node[]; edges: Edge
   return { nodes: [...realNodes, ...ghostNodes], edges }
 }
 
-function SparksGraphInner({ notes, selectedId, onSelectNote }: SparksGraphViewProps): React.JSX.Element {
-  const { t } = useTranslation()
-  const structureKey = useMemo(() => {
-    const graph = buildNoteGraph(notes)
-    const unresolved = graph.edges
-      .filter((e) => !e.toId)
-      .map((e) => normalizeWikiTarget(e.toTitle) || e.toTitle)
-      .sort()
-      .join('|')
-    return `${notes.map((n) => `${n.id}:${n.title}:${n.pinned ? 1 : 0}:${n.body.length}`).join(';')}#${unresolved}`
-  }, [notes])
+function noteStructureKey(notes: ResourceNote[]): string {
+  const graph = buildNoteGraph(notes)
+  const unresolved = graph.edges
+    .filter((e) => !e.toId)
+    .map((e) => normalizeWikiTarget(e.toTitle) || e.toTitle)
+    .sort()
+    .join('|')
+  return `${notes.map((n) => `${n.id}:${n.title}:${n.pinned ? 1 : 0}:${n.body.length}`).join(';')}#${unresolved}`
+}
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
-  const positionsRef = useRef(new Map<string, { x: number; y: number }>())
-
-  useEffect(() => {
-    for (const n of nodes) {
-      positionsRef.current.set(n.id, n.position)
+/**
+ * Scales the laid-out map so it fits the stage at zoom 1 and centres it. Done on the node positions rather
+ * than through React Flow's viewport, whose programmatic fit/setViewport calls do not take effect here.
+ */
+function fitToStage(nodes: Node[], stage: { w: number; h: number }): Node[] {
+  if (nodes.length === 0) return nodes
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const n of nodes) {
+    minX = Math.min(minX, n.position.x)
+    minY = Math.min(minY, n.position.y)
+    maxX = Math.max(maxX, n.position.x)
+    maxY = Math.max(maxY, n.position.y)
+  }
+  const margin = 56
+  const spanX = Math.max(1, maxX - minX)
+  const spanY = Math.max(1, maxY - minY)
+  const scale = Math.min(1, (stage.w - NODE_W - margin * 2) / spanX, (stage.h - NODE_H - margin * 2) / spanY)
+  const cx = (minX + maxX) / 2
+  const cy = (minY + maxY) / 2
+  return nodes.map((n) => ({
+    ...n,
+    position: {
+      x: stage.w / 2 + (n.position.x - cx) * scale - NODE_W / 2,
+      y: stage.h / 2 + (n.position.y - cy) * scale - NODE_H / 2
     }
-  }, [nodes])
+  }))
+}
 
+function GraphCanvas({
+  notes,
+  stage,
+  selectedId,
+  onSelectNote
+}: SparksGraphViewProps & { stage: { w: number; h: number } }): React.JSX.Element {
+  const initial = useMemo(() => {
+    const built = buildGraphElements(notes)
+    return { nodes: fitToStage(built.nodes, stage), edges: built.edges }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(
+    initial.nodes.map((n) => ({ ...n, data: { ...(n.data as Record<string, unknown>), active: n.id === selectedId } }))
+  )
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
+    initial.edges.map((e) => ({ ...e, animated: e.source === selectedId || e.target === selectedId }))
+  )
+
+  // Selecting a note only highlights it; the layout stays where the user left it.
   useEffect(() => {
-    const next = buildGraphElements(notes)
-    setNodes(
-      next.nodes.map((n) => ({
-        ...n,
-        position: positionsRef.current.get(n.id) ?? n.position,
-        data: {
-          ...(n.data as Record<string, unknown>),
-          active: n.id === selectedId
-        }
-      }))
+    setNodes((prev) =>
+      prev.map((n) => ({ ...n, data: { ...(n.data as Record<string, unknown>), active: n.id === selectedId } }))
     )
-    setEdges(
-      next.edges.map((e) => ({
-        ...e,
-        animated: e.source === selectedId || e.target === selectedId
-      }))
-    )
-  }, [structureKey, selectedId, notes, setNodes, setEdges])
+    setEdges((prev) => prev.map((e) => ({ ...e, animated: e.source === selectedId || e.target === selectedId })))
+  }, [selectedId, setNodes, setEdges])
+
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      nodeTypes={nodeTypes}
+      minZoom={0.2}
+      onNodeClick={(_, node) => {
+        if (String(node.id).startsWith('missing:')) return
+        onSelectNote(node.id)
+      }}
+      proOptions={{ hideAttribution: true }}
+      className="ml-sparks-rf"
+    >
+      <Background gap={20} size={1} color="var(--spark-border)" />
+      <MiniMap pannable zoomable className="ml-sparks-rf-minimap" />
+      <Controls showInteractive={false} className="ml-sparks-rf-controls" />
+    </ReactFlow>
+  )
+}
+
+function SparksGraphInner(props: SparksGraphViewProps): React.JSX.Element {
+  const { t } = useTranslation()
+  const { notes } = props
+  const stageRef = useRef<HTMLDivElement>(null)
+  const [stage, setStage] = useState<{ w: number; h: number } | null>(null)
+  useLayoutEffect(() => {
+    const el = stageRef.current
+    if (el && el.clientWidth > 0) setStage({ w: el.clientWidth, h: el.clientHeight })
+  }, [notes.length])
 
   if (notes.length === 0) {
     return (
@@ -172,35 +266,17 @@ function SparksGraphInner({ notes, selectedId, onSelectNote }: SparksGraphViewPr
           <span className="ml-sparks-panel__hint">{t('notes.graph.count', { count: notes.length })}</span>
         </div>
       </header>
-      <div className="ml-sparks-panel__stage">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          nodeTypes={nodeTypes}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
-          minZoom={0.2}
-          onNodeClick={(_, node) => {
-            if (String(node.id).startsWith('missing:')) return
-            onSelectNote(node.id)
-          }}
-          proOptions={{ hideAttribution: true }}
-          className="ml-sparks-rf"
-        >
-          <Background gap={20} size={1} color="var(--spark-border)" />
-          <MiniMap pannable zoomable className="ml-sparks-rf-minimap" />
-          <Controls showInteractive={false} className="ml-sparks-rf-controls" />
-        </ReactFlow>
+      <div className="ml-sparks-panel__stage" ref={stageRef}>
+        {stage ? <GraphCanvas {...props} stage={stage} /> : null}
       </div>
     </div>
   )
 }
 
 export function SparksGraphView(props: SparksGraphViewProps): React.JSX.Element {
+  // A new link structure remounts the graph, which lays it out afresh and centred on the stage.
   return (
-    <ReactFlowProvider>
+    <ReactFlowProvider key={noteStructureKey(props.notes)}>
       <SparksGraphInner {...props} />
     </ReactFlowProvider>
   )
