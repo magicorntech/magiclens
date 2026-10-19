@@ -121,6 +121,28 @@ export function ResourceMenu({
   const [dragKind, setDragKind] = useState<ResourceKind | null>(null)
   const navRef = useRef<HTMLElement>(null)
   const [focusIndex, setFocusIndex] = useState(-1)
+  const [railWidth, setRailWidth] = useState(0)
+
+  // An open flyout is positioned once. Collapsing the left rail moves this menu
+  // but leaves the flyout where it was, in the middle of the page.
+  useEffect(() => {
+    const rail = document.querySelector('.ml-sidebar')
+    if (!rail) return
+    let width = rail.getBoundingClientRect().width
+    let timer = 0
+    const ro = new ResizeObserver(() => {
+      const next = rail.getBoundingClientRect().width
+      if (Math.abs(next - width) < 8) return
+      width = next
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => setRailWidth(Math.round(width)), 80)
+    })
+    ro.observe(rail)
+    return () => {
+      ro.disconnect()
+      window.clearTimeout(timer)
+    }
+  }, [])
 
   const prefs = getResourceTabPrefs(clusterId)
   const favoriteKinds = prefs.favorites
@@ -630,7 +652,7 @@ export function ResourceMenu({
 
     return (
       <Popover
-        key={key}
+        key={`${key}-${railWidth}`}
         content={content}
         trigger={['hover']}
         placement="rightTop"

@@ -4,10 +4,12 @@ import { ExternalLink, X } from 'lucide-react'
 import { Icon } from '../ui/Icon'
 import type { ColumnsType } from 'antd/es/table'
 import type { HelmManifestResource, HelmRelease } from '@shared/types/helm'
+import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
 import type { ResourceFocus } from '@shared/types/navigation'
 import { useHelmReleaseDetail } from '../../queries/useHelm'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { compareText } from '../../utils/tableSort'
 import { HelmReleaseHistoryTab } from './HelmReleaseHistoryTab'
 
 export type HelmDetailTab = 'overview' | 'history'
@@ -44,9 +46,9 @@ export function HelmReleaseDetailPanel({
   const error = data && 'error' in data ? data.error : null
 
   const resourceColumns: ColumnsType<HelmManifestResource> = [
-    { title: 'Kind', dataIndex: 'kind', key: 'kind', width: 140 },
-    { title: 'Name', dataIndex: 'name', key: 'name', ellipsis: true },
-    { title: 'Namespace', dataIndex: 'namespace', key: 'namespace', width: 140, ellipsis: true },
+    { title: 'Kind', dataIndex: 'kind', key: 'kind', width: 140, sorter: (a, b) => compareText(a.kind, b.kind) },
+    { title: 'Name', dataIndex: 'name', key: 'name', ellipsis: true, sorter: (a, b) => compareText(a.name, b.name) },
+    { title: 'Namespace', dataIndex: 'namespace', key: 'namespace', width: 140, ellipsis: true, sorter: (a, b) => compareText(a.namespace, b.namespace) },
     {
       title: '',
       key: 'open',
@@ -78,6 +80,22 @@ export function HelmReleaseDetailPanel({
           </Button>
         )
       }
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: 48,
+      render: (_, resource) =>
+        resource.resourceKind ? (
+          <ResourceRowActions
+            clusterId={clusterId}
+            target={{ type: 'builtin', kind: resource.resourceKind }}
+            namespace={resource.namespace}
+            name={resource.name}
+            itemId={resource.id}
+            listQueryKey={['helm-release-detail', clusterId, release.namespace, release.name]}
+          />
+        ) : null
     }
   ]
 

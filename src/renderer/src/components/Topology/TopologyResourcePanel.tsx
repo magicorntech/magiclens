@@ -4,8 +4,12 @@ import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import type { TopologyGraphResponse, TopologyHealth, TopologyNode, TopologyNodeKind } from '@shared/types/topology'
 import { topologyNodeAge } from './topologyInsights'
+import { topologyToResourceKind } from './topologyResource'
+import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
+import { compareAgeTimestamps, compareText } from '../../utils/tableSort'
 
 interface TopologyResourcePanelProps {
+  clusterId: string
   graph: TopologyGraphResponse
   onSelectNode: (node: TopologyNode) => void
 }
@@ -13,6 +17,7 @@ interface TopologyResourcePanelProps {
 const PANEL_KINDS: TopologyNodeKind[] = ['Deployment', 'StatefulSet', 'Service', 'Ingress', 'ConfigMap']
 
 export function TopologyResourcePanel({
+  clusterId,
   graph,
   onSelectNode
 }: TopologyResourcePanelProps): React.JSX.Element {
@@ -52,6 +57,7 @@ export function TopologyResourcePanel({
       title: t('topology.sortName'),
       dataIndex: 'name',
       key: 'name',
+      sorter: (a, b) => compareText(a.name, b.name),
       render: (name: string, row) => (
         <Space orientation="vertical" size={0}>
           <Typography.Link onClick={() => onSelectNode(row)}>{name}</Typography.Link>
@@ -65,19 +71,22 @@ export function TopologyResourcePanel({
       title: t('topology.filterKind'),
       dataIndex: 'kind',
       key: 'kind',
-      width: 120
+      width: 120,
+      sorter: (a, b) => compareText(a.kind, b.kind)
     },
     {
       title: t('topology.filterHealth'),
       dataIndex: 'status',
       key: 'status',
       width: 120,
+      sorter: (a, b) => compareText(a.status, b.status),
       render: (status: TopologyHealth) => <Tag>{t(`topology.health.${status}`)}</Tag>
     },
     {
       title: t('topology.apps.replicas'),
       key: 'replicas',
       width: 100,
+      sorter: (a, b) => (a.replicasReady ?? -1) - (b.replicasReady ?? -1),
       render: (_, row) =>
         row.replicasDesired !== undefined ? `${row.replicasReady ?? 0}/${row.replicasDesired}` : '—'
     },
@@ -85,7 +94,27 @@ export function TopologyResourcePanel({
       title: t('topology.apps.uptime'),
       key: 'age',
       width: 80,
+      sorter: (a, b) => compareAgeTimestamps(a.ageTimestamp, b.ageTimestamp),
       render: (_, row) => topologyNodeAge(row)
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: 48,
+      render: (_, row) => {
+        const kind = topologyToResourceKind(row.kind)
+        if (!kind) return null
+        return (
+          <ResourceRowActions
+            clusterId={clusterId}
+            target={{ type: 'builtin', kind }}
+            namespace={row.namespace}
+            name={row.name}
+            itemId={row.id}
+            listQueryKey={['topology', clusterId]}
+          />
+        )
+      }
     }
   ]
 

@@ -2,9 +2,12 @@ import { Button, Drawer, Empty, Modal, Spin, Tooltip, message } from 'antd'
 import { Pencil, RefreshCw, RotateCw, Trash2, X } from 'lucide-react'
 import type { ColumnsType } from 'antd/es/table'
 import type { ArgoHistoryEntry, ArgoManagedResource } from '@shared/types/argocd'
+import { apiKindToResourceKind } from '@shared/resourceKinds'
 import { useArgoApplicationDetail, useArgoRefresh, useArgoSync } from '../../queries/useArgoCd'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
 import { AgeCell } from '../ResourceTable/AgeCell'
+import { compareAgeTimestamps, compareText } from '../../utils/tableSort'
 import { DetailChips, DetailFactGrid, DetailSection } from '../Detail/detailPrimitives'
 import { Icon } from '../ui/Icon'
 import { ArgoHealthTag, ArgoSyncTag } from './argoStatus'
@@ -134,13 +137,14 @@ export function ArgoApplicationDrawer({
   }
 
   const resourceColumns: ColumnsType<ArgoManagedResource> = [
-    { title: 'Kind', dataIndex: 'kind', key: 'kind', width: 150, ellipsis: true },
-    { title: 'Name', dataIndex: 'name', key: 'name', width: 200, ellipsis: true },
-    { title: 'Namespace', dataIndex: 'namespace', key: 'namespace', width: 170, ellipsis: true },
+    { title: 'Kind', dataIndex: 'kind', key: 'kind', width: 150, ellipsis: true, sorter: (a, b) => compareText(a.kind, b.kind) },
+    { title: 'Name', dataIndex: 'name', key: 'name', width: 200, ellipsis: true, sorter: (a, b) => compareText(a.name, b.name) },
+    { title: 'Namespace', dataIndex: 'namespace', key: 'namespace', width: 170, ellipsis: true, sorter: (a, b) => compareText(a.namespace, b.namespace) },
     {
       title: 'Sync',
       key: 'sync',
       width: 110,
+      sorter: (a, b) => compareText(a.syncStatus, b.syncStatus),
       render: (_v, r) => r.syncStatus || '—'
     },
     {
@@ -148,17 +152,38 @@ export function ArgoApplicationDrawer({
       title: 'Health',
       key: 'health',
       width: 110,
+      sorter: (a, b) => compareText(a.healthStatus, b.healthStatus),
       render: (_v, r) => r.healthStatus || '—'
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: 48,
+      render: (_, resource) => {
+        const kind = apiKindToResourceKind(resource.kind)
+        if (!kind || !target) return null
+        return (
+          <ResourceRowActions
+            clusterId={clusterId}
+            target={{ type: 'builtin', kind }}
+            namespace={resource.namespace}
+            name={resource.name}
+            itemId={resource.id}
+            listQueryKey={['argocd-application-detail', clusterId, target.namespace, target.name]}
+          />
+        )
+      }
     }
   ]
 
   const historyColumns: ColumnsType<ArgoHistoryEntry> = [
-    { title: 'Revision', dataIndex: 'revision', key: 'revision', width: 120 },
-    { title: 'Source', dataIndex: 'source', key: 'source', ellipsis: true },
+    { title: 'Revision', dataIndex: 'revision', key: 'revision', width: 120, sorter: (a, b) => compareText(a.revision, b.revision) },
+    { title: 'Source', dataIndex: 'source', key: 'source', ellipsis: true, sorter: (a, b) => compareText(a.source, b.source) },
     {
       title: 'Deployed',
       key: 'deployedAt',
       width: 120,
+      sorter: (a, b) => compareAgeTimestamps(a.deployedAt, b.deployedAt),
       render: (_v, r) => <AgeCell timestamp={r.deployedAt} />
     }
   ]

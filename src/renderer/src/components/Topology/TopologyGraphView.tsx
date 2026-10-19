@@ -107,6 +107,32 @@ function FitOnLoad({ structure }: { structure: string }): null {
   return null
 }
 
+/** Sidebar collapse changes the canvas width without changing the graph. Refit once the width settles. */
+function FitOnResize(): null {
+  const { fitView } = useReactFlow()
+  useEffect(() => {
+    const el = document.querySelector('.ml-topo-canvas')
+    if (!el) return
+    let width = el.clientWidth
+    let timer = 0
+    const ro = new ResizeObserver(() => {
+      const next = el.clientWidth
+      if (Math.abs(next - width) < 24) return
+      width = next
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        void fitView({ padding: 0.2, duration: 200 })
+      }, 80)
+    })
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      window.clearTimeout(timer)
+    }
+  }, [fitView])
+  return null
+}
+
 class TopologyGraphErrorBoundary extends Component<
   { children: ReactNode; fallback: ReactNode },
   { error: Error | null }
@@ -234,6 +260,7 @@ function TopologyGraphCanvas({
       >
         <Background gap={18} size={1} color="var(--ml-border-secondary)" />
         <FitOnLoad structure={key} />
+        <FitOnResize />
         {/* MiniMap only for mid-size graphs — large maps re-render every frame. */}
         {graph.nodes.length > 0 && graph.nodes.length <= 80 ? (
           <MiniMap

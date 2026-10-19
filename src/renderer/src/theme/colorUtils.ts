@@ -1,5 +1,6 @@
 export function normalizeHex(hex: string): string {
   const h = hex.trim()
+  if (/^#[0-9a-fA-F]{8}$/.test(h)) return h.slice(0, 7).toLowerCase()
   if (/^#[0-9a-fA-F]{6}$/.test(h)) return h.toLowerCase()
   if (/^#[0-9a-fA-F]{3}$/.test(h)) {
     const [, r, g, b] = h
@@ -70,5 +71,81 @@ export function deriveSchemeFromAccent(accent: string): DerivedSchemeColors {
     spotlightDark: mixHex(darken(base, 0.62), '#0a0a0f', 0.55),
     layoutLight: lighten(base, 0.96),
     layoutDark: mixHex(darken(base, 0.82), '#050508', 0.45)
+  }
+}
+
+/** Colors the custom theme editor lets you pick. */
+export interface CustomThemeColors {
+  accent: string
+  background: string
+  surface: string
+  sidebar: string
+}
+
+export const DEFAULT_CUSTOM_LIGHT: CustomThemeColors = {
+  accent: '#e11d48',
+  background: '#f8f5f6',
+  surface: '#ffffff',
+  sidebar: '#3f1520'
+}
+
+export const DEFAULT_CUSTOM_DARK: CustomThemeColors = {
+  accent: '#ff5f6d',
+  background: '#120d10',
+  surface: '#22181c',
+  sidebar: '#1a1014'
+}
+
+export function schemeFromCustomPalette(palette: CustomThemeColors, isDark: boolean): DerivedSchemeColors {
+  const accent = normalizeHex(palette.accent)
+  const background = normalizeHex(palette.background)
+  const surface = normalizeHex(palette.surface)
+  const sidebar = normalizeHex(palette.sidebar)
+  const derived = deriveSchemeFromAccent(accent)
+  if (isDark) {
+    return {
+      ...derived,
+      primaryDark: accent,
+      primaryDarkHover: lighten(accent, 0.18),
+      layoutDark: background,
+      spotlightDark: surface,
+      resourceSiderDark: sidebar
+    }
+  }
+  return {
+    ...derived,
+    primaryLight: accent,
+    primaryLightHover: darken(accent, 0.12),
+    layoutLight: background,
+    spotlightLight: surface,
+    resourceSiderLight: sidebar
+  }
+}
+
+export function hydrateCustomPalette(
+  accent: string | undefined,
+  partial: Partial<CustomThemeColors> | undefined,
+  isDark: boolean
+): CustomThemeColors {
+  const fallback = isDark ? DEFAULT_CUSTOM_DARK : DEFAULT_CUSTOM_LIGHT
+  const baseAccent = normalizeHex(accent || partial?.accent || fallback.accent)
+  const derived = deriveSchemeFromAccent(baseAccent)
+  return {
+    accent: baseAccent,
+    background: partial?.background
+      ? normalizeHex(partial.background)
+      : isDark
+        ? derived.layoutDark
+        : derived.layoutLight,
+    surface: partial?.surface
+      ? normalizeHex(partial.surface)
+      : isDark
+        ? derived.spotlightDark
+        : derived.spotlightLight,
+    sidebar: partial?.sidebar
+      ? normalizeHex(partial.sidebar)
+      : isDark
+        ? derived.resourceSiderDark
+        : derived.resourceSiderLight
   }
 }

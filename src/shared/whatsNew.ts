@@ -15,6 +15,17 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.34': {
+    title: 'Detail tables, node charts, and themes',
+    items: [
+      'Detail tables sort by column. Pod and child-resource rows include Edit YAML and Delete.',
+      'The Nodes page charts CPU, memory, pod status, and disk for the cluster’s nodes.',
+      'Security tables sort and filter, and the risk score fits inside its card.',
+      'In Workspaces, the open cluster is green, other connected clusters are yellow, problems are red, and clusters you have not opened stay empty.',
+      'Custom themes set accent, background, surface, and sidebar, and you can name them. Studio palettes sit beside the refreshed presets.',
+      'The first launch asks you to choose a theme after your language.'
+    ]
+  },
   '0.1.33': {
     title: 'Settings, search, and resource shortcuts',
     items: [

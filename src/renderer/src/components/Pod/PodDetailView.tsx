@@ -8,6 +8,7 @@ import {
   Eye,
   EyeOff,
   FileCode2,
+  Pencil,
   RotateCw,
   ScrollText,
   TerminalSquare,
@@ -29,9 +30,11 @@ import { usePodDetail } from '../../queries/usePodDetail'
 import { usePodMetricsRange } from '../../queries/useMetricsRange'
 import { useResourceManifest } from '../../queries/useResourceManifest'
 import { formatBytes } from '../../format'
+import { compareText } from '../../utils/tableSort'
 import { AgeCell } from '../ResourceTable/AgeCell'
 import { StatusTag } from '../ResourceTable/StatusTag'
 import { ResourceEventsPanel } from '../ResourceTable/ResourceEventsPanel'
+import { useBottomPanelOptional } from '../Layout/BottomPanelContext'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { latestDiskSnapshots } from '../Metrics/DiskUsageSummary'
 import { PodMetricsPanel } from './PodMetricsPanel'
@@ -359,6 +362,7 @@ export function PodDetailView({
 }: PodDetailViewProps): React.JSX.Element {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const openYamlEditor = useBottomPanelOptional()?.openYamlEditor
   const [activeTab, setActiveTab] = useState('overview')
   const namespace = item.namespace
   const podName = item.name
@@ -413,6 +417,20 @@ export function PodDetailView({
     } catch (err) {
       message.error(t('podDetail.actions.deleteFailed', { error: err instanceof Error ? err.message : String(err) }))
     }
+  }
+
+  function openEditor(): void {
+    if (!listQueryKey || !openYamlEditor) return
+    openYamlEditor({
+      title: `Edit: ${podName}`,
+      clusterId,
+      mode: 'edit',
+      target,
+      namespace,
+      name: podName,
+      initialYaml: '',
+      listQueryKey
+    })
   }
 
   function confirmDelete(): void {
@@ -484,6 +502,12 @@ export function PodDetailView({
         <Icon icon={FileCode2} variant="detail" />
         {t('podDetail.tabs.yaml')}
       </button>
+      {listQueryKey && openYamlEditor ? (
+        <button type="button" className="ml-pod-tool" onClick={openEditor}>
+          <Icon icon={Pencil} variant="detail" />
+          {t('podDetail.actions.editYaml')}
+        </button>
+      ) : null}
       <Dropdown
         menu={{ items: kubectlItems, onClick: ({ key }) => onKubectlClick(key) }}
         trigger={['click']}
@@ -506,18 +530,24 @@ export function PodDetailView({
   )
 
   const volumeColumns: ColumnsType<PodVolumeInfo> = [
-    { title: t('podDetail.storage.volume'), dataIndex: 'name', key: 'name' },
-    { title: t('podDetail.storage.type'), dataIndex: 'type', key: 'type', width: 160 },
+    { title: t('podDetail.storage.volume'), dataIndex: 'name', key: 'name', sorter: (a, b) => compareText(a.name, b.name) },
+    { title: t('podDetail.storage.type'), dataIndex: 'type', key: 'type', width: 160, sorter: (a, b) => compareText(a.type, b.type) },
     {
       title: t('podDetail.storage.source'),
       dataIndex: 'detail',
       key: 'detail',
+      sorter: (a, b) => compareText(a.detail, b.detail),
       render: (v: string | undefined) => (v ? <span className="ml-pod-mono">{v}</span> : '—')
     },
     {
       title: t('podDetail.storage.usage'),
       key: 'usage',
       width: 180,
+      sorter: (a, b) => {
+        const pa = a.type === 'PersistentVolumeClaim' && a.detail ? volumeByPvc.get(a.detail)?.percent ?? -1 : -1
+        const pb = b.type === 'PersistentVolumeClaim' && b.detail ? volumeByPvc.get(b.detail)?.percent ?? -1 : -1
+        return pa - pb
+      },
       render: (_, vol) => {
         if (vol.type !== 'PersistentVolumeClaim' || !vol.detail) return '—'
         const snap = volumeByPvc.get(vol.detail)

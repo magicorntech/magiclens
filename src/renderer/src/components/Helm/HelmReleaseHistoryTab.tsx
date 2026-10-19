@@ -8,6 +8,7 @@ import type { HelmReleaseHistoryEntry } from '@shared/types/helm'
 import { useHelmHistory } from '../../queries/useHelm'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { compareAgeTimestamps, compareText } from '../../utils/tableSort'
 
 interface HelmReleaseHistoryTabProps {
   clusterId: string
@@ -73,29 +74,45 @@ export function HelmReleaseHistoryTab({
   }
 
   const columns: ColumnsType<HelmReleaseHistoryEntry> = [
-    { title: 'Revision', dataIndex: 'revision', key: 'revision', width: 90 },
+    { title: 'Revision', dataIndex: 'revision', key: 'revision', width: 90, sorter: (a, b) => a.revision - b.revision },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       width: 110,
+      sorter: (a, b) => compareText(a.status, b.status),
       render: (v: string) => <Tag color={statusColor(v)}>{v}</Tag>
     },
     {
       title: 'Chart',
       key: 'chart',
       ellipsis: true,
+      sorter: (a, b) => compareText(`${a.chartName}-${a.chartVersion}`, `${b.chartName}-${b.chartVersion}`),
       render: (_, r) => `${r.chartName}-${r.chartVersion}`
     },
-    { title: 'App version', dataIndex: 'appVersion', key: 'appVersion', width: 110, ellipsis: true },
+    {
+      title: 'App version',
+      dataIndex: 'appVersion',
+      key: 'appVersion',
+      width: 110,
+      ellipsis: true,
+      sorter: (a, b) => compareText(a.appVersion, b.appVersion)
+    },
     {
       title: 'Updated',
       dataIndex: 'updated',
       key: 'updated',
       width: 160,
+      sorter: (a, b) => compareAgeTimestamps(a.updated, b.updated),
       render: (v: string | null) => (v ? new Date(v).toLocaleString() : '-')
     },
-    { title: 'Description', dataIndex: 'description', key: 'description', ellipsis: true },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      ellipsis: true,
+      sorter: (a, b) => compareText(a.description, b.description)
+    },
     {
       title: '',
       key: 'actions',

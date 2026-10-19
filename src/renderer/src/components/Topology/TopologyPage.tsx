@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Alert, Button, Segmented, Spin, Splitter, Tooltip, Typography, message } from 'antd'
-import { AppWindow, ChevronLeft, ChevronRight, RefreshCw, Waypoints } from 'lucide-react'
+import { AppWindow, ChevronDown, ChevronUp, RefreshCw, Waypoints } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { isAllNamespaces, isNoNamespaceSelection } from '@shared/namespaceSelection'
 import type { TopologyApplication, TopologyNode } from '@shared/types/topology'
@@ -23,15 +23,13 @@ import './topology.css'
 
 type Mode = 'graph' | 'apps' | 'resources'
 
-const INSIGHTS_OPEN_KEY = 'ml-topology-insights-open'
+const INSIGHTS_OPEN_KEY = 'ml-topology-insights-open.v2'
 
 function loadInsightsOpen(): boolean {
   try {
-    const raw = localStorage.getItem(INSIGHTS_OPEN_KEY)
-    if (raw === null) return true
-    return raw === '1'
+    return localStorage.getItem(INSIGHTS_OPEN_KEY) === '1'
   } catch {
-    return true
+    return false
   }
 }
 
@@ -143,7 +141,7 @@ export function TopologyPage({
             )}
             {mode === 'apps' && <TopologyAppsView graph={data} onSelectApp={handleSelectApp} />}
             {mode === 'resources' && (
-              <TopologyResourcePanel graph={data} onSelectNode={selectNode} />
+              <TopologyResourcePanel clusterId={clusterId} graph={data} onSelectNode={selectNode} />
             )}
           </>
         ) : (
@@ -157,16 +155,12 @@ export function TopologyPage({
           aria-label={t('topology.insights')}
         >
           <div className="ml-topo-page__insights-head">
-            {insightsOpen ? (
-              <Typography.Text strong className="ml-topo-page__insights-title">
-                {t('topology.insights')}
-                {insights.length > 0 ? (
-                  <span className="ml-topo-page__insights-count">{insights.length}</span>
-                ) : null}
-              </Typography.Text>
-            ) : (
-              <span className="ml-topo-page__insights-rail-label">{t('topology.insights')}</span>
-            )}
+            <Typography.Text strong className="ml-topo-page__insights-title">
+              {t('topology.insights')}
+              {insights.length > 0 ? (
+                <span className="ml-topo-page__insights-count">{insights.length}</span>
+              ) : null}
+            </Typography.Text>
             <Tooltip title={insightsOpen ? t('topology.hideInsights') : t('topology.showInsights')}>
               <button
                 type="button"
@@ -175,7 +169,7 @@ export function TopologyPage({
                 aria-label={insightsOpen ? t('topology.hideInsights') : t('topology.showInsights')}
                 onClick={toggleInsights}
               >
-                <Icon icon={insightsOpen ? ChevronRight : ChevronLeft} variant="toolbar" />
+                <Icon icon={insightsOpen ? ChevronDown : ChevronUp} variant="toolbar" />
               </button>
             </Tooltip>
           </div>

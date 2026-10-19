@@ -6,7 +6,7 @@ import { useResourceEvents } from '../../queries/useResourceEvents'
 import { readPaginationChange, embeddedTablePagination, EMBEDDED_TABLE_PAGE_SIZE, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from './AgeCell'
-import { compareAgeTimestamps } from '../../utils/tableSort'
+import { compareAgeTimestamps, compareNumericStrings } from '../../utils/tableSort'
 
 interface ResourceEventsPanelProps {
   clusterId: string
@@ -23,11 +23,31 @@ const columns: ColumnsType<ResourceEventItem> = [
     dataIndex: 'type',
     key: 'type',
     width: 90,
+    sorter: (a, b) => a.type.localeCompare(b.type),
     render: (v: string) => <Tag color={v === 'Warning' ? 'gold' : 'blue'}>{v}</Tag>
   },
-  { title: 'Reason', dataIndex: 'reason', key: 'reason', width: 160, ellipsis: true },
-  { title: 'Message', dataIndex: 'message', key: 'message', ellipsis: true },
-  { title: 'Count', dataIndex: 'count', key: 'count', width: 70 },
+  {
+    title: 'Reason',
+    dataIndex: 'reason',
+    key: 'reason',
+    width: 160,
+    ellipsis: true,
+    sorter: (a, b) => a.reason.localeCompare(b.reason, undefined, { sensitivity: 'base' })
+  },
+  {
+    title: 'Message',
+    dataIndex: 'message',
+    key: 'message',
+    ellipsis: true,
+    sorter: (a, b) => a.message.localeCompare(b.message, undefined, { sensitivity: 'base' })
+  },
+  {
+    title: 'Count',
+    dataIndex: 'count',
+    key: 'count',
+    width: 70,
+    sorter: (a, b) => compareNumericStrings(String(a.count), String(b.count))
+  },
   {
     title: 'Last seen',
     dataIndex: 'lastTimestamp',
@@ -36,7 +56,14 @@ const columns: ColumnsType<ResourceEventItem> = [
     sorter: (a, b) => compareAgeTimestamps(a.lastTimestamp, b.lastTimestamp),
     render: (v: string | null) => <AgeCell timestamp={v} />
   },
-  { title: 'Source', dataIndex: 'source', key: 'source', width: 140, ellipsis: true }
+  {
+    title: 'Source',
+    dataIndex: 'source',
+    key: 'source',
+    width: 140,
+    ellipsis: true,
+    sorter: (a, b) => a.source.localeCompare(b.source, undefined, { sensitivity: 'base' })
+  }
 ]
 
 export function ResourceEventsPanel({

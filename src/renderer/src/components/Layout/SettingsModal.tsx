@@ -48,7 +48,7 @@ import logo from '../../assets/logo.png'
 import { refreshIntervalOptions, useLiveRefreshStore } from '../../stores/liveRefreshStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useUpdateStore } from '../../stores/updateStore'
-import { useThemeStore, type ThemeFamily } from '../../stores/themeStore'
+import { useThemeStore, type CustomColorSlot, type ThemeFamily } from '../../stores/themeStore'
 import { useResolvedDarkMode } from '../../stores/useResolvedDarkMode'
 import { COLOR_SCHEME_DEFINITIONS } from '../../theme/schemes'
 import type { AppInfoResponse } from '@shared/types/app'
@@ -103,19 +103,26 @@ function AppearanceSettings({
   const family: ThemeFamily = isDark ? 'dark' : 'light'
   const scheme = useThemeStore((s) => (isDark ? s.darkScheme : s.lightScheme))
   const setScheme = useThemeStore((s) => (isDark ? s.setDarkScheme : s.setLightScheme))
-  const customAccent = useThemeStore((s) => (isDark ? s.customAccentDark : s.customAccentLight))
-  const setCustomAccent = useThemeStore((s) => (isDark ? s.setCustomAccentDark : s.setCustomAccentLight))
+  const customPalette = useThemeStore((s) => (isDark ? s.customPaletteDark : s.customPaletteLight))
+  const setCustomColor = useThemeStore((s) => s.setCustomColor)
   const customThemes = useThemeStore((s) => (isDark ? s.customThemesDark : s.customThemesLight))
   const activeCustomThemeId = useThemeStore((s) =>
     isDark ? s.activeCustomThemeIdDark : s.activeCustomThemeIdLight
   )
   const saveCustomTheme = useThemeStore((s) => s.saveCustomTheme)
+  const renameCustomTheme = useThemeStore((s) => s.renameCustomTheme)
   const selectCustomTheme = useThemeStore((s) => s.selectCustomTheme)
   const deleteCustomTheme = useThemeStore((s) => s.deleteCustomTheme)
+  const beginCustomDraft = useThemeStore((s) => s.beginCustomDraft)
   const uiTypography = useDisplaySettingsStore((s) => s.uiTypography)
   const setUiTypography = useDisplaySettingsStore((s) => s.setUiTypography)
   const [newThemeName, setNewThemeName] = useState('')
   const customSelected = scheme === 'custom'
+  const activeThemeName = customThemes.find((theme) => theme.id === activeCustomThemeId)?.name ?? ''
+
+  useEffect(() => {
+    setNewThemeName(activeThemeName)
+  }, [activeCustomThemeId, activeThemeName])
 
   return (
     <>
@@ -189,66 +196,99 @@ function AppearanceSettings({
               key={item.id}
               name={item.name}
               color={schemeChipColor(item.id, item.swatches)}
+              colors={[...item.swatches]}
               selected={scheme === item.id}
               onSelect={() => setScheme(item.id)}
             />
           ))}
           <ThemeSwatch
             name={t('common.custom')}
-            color={customAccent}
+            color={customPalette.accent}
+            colors={[customPalette.accent, customPalette.sidebar, customPalette.background]}
             selected={customSelected && activeCustomThemeId === null}
-            onSelect={() => setScheme('custom')}
+            onSelect={() => beginCustomDraft(family)}
           />
           {customThemes.map((theme) => (
             <ThemeSwatch
               key={theme.id}
               name={theme.name}
               color={theme.accentColor}
+              colors={[theme.accentColor, theme.sidebar, theme.background]}
               selected={customSelected && activeCustomThemeId === theme.id}
               onSelect={() => selectCustomTheme(theme.id, family)}
             />
           ))}
         </div>
         {customSelected ? (
-          <div className="ml-settings-theme-custom">
-            <ColorPicker
-              value={customAccent}
-              showText
-              onChange={(color: AggregationColor) => setCustomAccent(color.toHexString())}
-            />
-            {activeCustomThemeId ? (
-              <Button
-                danger
-                icon={<Icon icon={Trash2} variant="detail" />}
-                onClick={() => deleteCustomTheme(activeCustomThemeId, family)}
-              >
-                {t('settings.appearance.deleteCustomTheme')}
-              </Button>
-            ) : (
-              <Space.Compact style={{ flex: 1, minWidth: 180, maxWidth: 320 }}>
-                <Input
-                  value={newThemeName}
-                  placeholder={t('settings.appearance.saveCustomThemePlaceholder')}
-                  onChange={(e) => setNewThemeName(e.target.value)}
-                  onPressEnter={() => {
-                    if (!newThemeName.trim()) return
+          <div className="ml-settings-theme-editor">
+            <div className="ml-settings-theme-colors">
+              {(
+                [
+                  ['accent', 'settings.appearance.customAccent'],
+                  ['background', 'settings.appearance.customBackground'],
+                  ['surface', 'settings.appearance.customSurface'],
+                  ['sidebar', 'settings.appearance.customSidebar']
+                ] as const
+              ).map(([slot, label]) => (
+                <label key={slot} className="ml-settings-theme-color">
+                  <ColorPicker
+                    value={customPalette[slot]}
+                    onChange={(color: AggregationColor) =>
+                      setCustomColor(slot as CustomColorSlot, color.toHexString(), family)
+                    }
+                  />
+                  <span>{t(label)}</span>
+                </label>
+              ))}
+            </div>
+            <div className="ml-settings-theme-custom">
+              <Input
+                value={newThemeName}
+                placeholder={t('settings.appearance.saveCustomThemePlaceholder')}
+                onChange={(e) => setNewThemeName(e.target.value)}
+                onPressEnter={() => {
+                  if (!newThemeName.trim()) return
+                  if (activeCustomThemeId) renameCustomTheme(newThemeName, family)
+                  else {
                     saveCustomTheme(newThemeName, family)
                     setNewThemeName('')
-                  }}
-                />
+                  }
+                }}
+                style={{ flex: 1, minWidth: 140, maxWidth: 240 }}
+              />
+              {activeCustomThemeId ? (
                 <Button
                   type="primary"
                   icon={<Icon icon={Save} variant="detail" />}
                   disabled={!newThemeName.trim()}
+                  onClick={() => renameCustomTheme(newThemeName, family)}
+                >
+                  {t('settings.appearance.updateCustomTheme')}
+                </Button>
+              ) : null}
+              <Button
+                icon={<Icon icon={Save} variant="detail" />}
+                disabled={!newThemeName.trim()}
+                onClick={() => {
+                  saveCustomTheme(newThemeName, family)
+                  setNewThemeName('')
+                }}
+              >
+                {t(activeCustomThemeId ? 'settings.appearance.saveCustomThemeAsNew' : 'settings.appearance.save')}
+              </Button>
+              {activeCustomThemeId ? (
+                <Button
+                  danger
+                  icon={<Icon icon={Trash2} variant="detail" />}
                   onClick={() => {
-                    saveCustomTheme(newThemeName, family)
+                    deleteCustomTheme(activeCustomThemeId, family)
                     setNewThemeName('')
                   }}
                 >
-                  {t('settings.appearance.save')}
+                  {t('settings.appearance.deleteCustomTheme')}
                 </Button>
-              </Space.Compact>
-            )}
+              ) : null}
+            </div>
           </div>
         ) : null}
       </SettingsSection>

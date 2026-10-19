@@ -493,14 +493,18 @@ export const tr: TranslationOverrides = {
       groupBase: 'Taban',
       groupClassic: 'Klasik',
       groupWorlds: 'Dünyalar — anime & kahramanlar',
+      groupStudio: 'Stüdyo',
       lightThemes: 'Açık tema',
       lightThemesHint: 'Uygulama açık moddayken kullanılır — sade görünüm için White, renkli bir preset de seçebilirsin.',
       darkThemes: 'Koyu tema',
       darkThemesHint: 'Uygulama koyu moddayken kullanılır — tam siyah için Black, renkli bir preset de seçebilirsin.',
-      customAccent: 'Özel vurgu',
+      customAccent: 'Vurgu',
+      customBackground: 'Arka plan',
+      customSurface: 'Yüzey',
+      customSidebar: 'Kenar çubuğu',
       customAccentLight: 'Özel açık vurgu',
       customAccentDark: 'Özel koyu vurgu',
-      customAccentHint: 'Bu moddaki kenar çubukları, düğmeler, vurgular ve grafik tonlarına uygulanır.',
+      customAccentHint: 'Bu mod için vurgu, arka plan, yüzey ve kenar çubuğu. Paleti saklamak için bir isim ver.',
       customSwatch: 'Kendi vurgu rengin',
       typographyTitle: 'Yazı',
       typographyHint: 'Font ve okunabilirlik. Renk teması aynı kalır.',
@@ -525,7 +529,9 @@ export const tr: TranslationOverrides = {
       activeCustomTheme: 'Aktif temanız: "{{name}}"',
       deleteCustomTheme: 'Sil',
       saveCustomTheme: 'Yeni tema olarak kaydet',
-      saveCustomThemeHint: 'Bu rengi daha sonra tekrar seçebilmek için bir isim verin.',
+      saveCustomThemeHint: 'Bu paleti daha sonra seçebilmek için bir isim verin.',
+      updateCustomTheme: 'Yeniden adlandır',
+      saveCustomThemeAsNew: 'Yeni olarak kaydet',
       saveCustomThemePlaceholder: 'Tema adı',
       save: 'Kaydet'
     },
@@ -887,6 +893,10 @@ export const tr: TranslationOverrides = {
     chooseLanguage: 'Dilinizi seçin',
     languageHint:
       'Bunu istediğiniz zaman Ayarlar’dan değiştirebilirsiniz. Özellik kartları seçtiğiniz dilde açılır.',
+    themeEyebrow: 'Görünüm',
+    chooseTheme: 'Tema seçin',
+    themeHint:
+      'Açık veya koyu modu, sonra bir paleti seçin. Uygulama bu görünümle açılır; sonra Ayarlar’dan değiştirebilirsiniz.',
     slidesAria: 'Özellik slaytları',
     slides: {
       welcome: {
@@ -1244,14 +1254,34 @@ export const tr: TranslationOverrides = {
       running: '{{count}} çalışıyor',
       pending: '{{count}} bekliyor',
       failed: '{{count}} başarısız'
+    },
+    charts: {
+      cpu: 'Node başına CPU',
+      memory: 'Node başına bellek',
+      pods: 'Pod durumu',
+      running: 'Çalışıyor',
+      disk: 'Node başına disk',
+      pending: 'Bekleyen',
+      failed: 'Başarısız',
+      unknown: 'bilinmiyor',
+      empty: 'Henüz veri yok',
+      noMetrics: 'Bu node’lar için metrik yok',
+      noDisk: 'Kök disk metriği yok (node-exporter gerekir)'
     }
   },
   nodePods: {
     name: 'Ad',
     namespace: 'Namespace',
     status: 'Durum',
+    ready: 'Hazır',
+    cpu: 'CPU',
     memory: 'Bellek',
     restarts: 'Yeniden başlatma',
+    age: 'Yaş',
+    filter: 'Pod ara',
+    running: '{{count}} çalışıyor',
+    pending: '{{count}} diğer',
+    failed: '{{count}} başarısız',
     empty: 'Bu node üzerinde planlanmış pod yok'
   },
   metricsCharts: {
@@ -1683,6 +1713,7 @@ export const tr: TranslationOverrides = {
     },
     actions: {
       kubectl: 'kubectl kopyala',
+      editYaml: 'YAML düzenle',
       copyGet: 'kubectl get -o yaml',
       copyDescribe: 'kubectl describe',
       copyLogs: 'kubectl logs',

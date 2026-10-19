@@ -126,6 +126,8 @@ export interface NodeMetricEntry {
   memoryAllocatableBytes: number
   cpuUsageCores?: number
   memoryUsageBytes?: number
+  /** Root filesystem fullness, 0–100, when node-exporter reports it. */
+  diskUsagePercent?: number
 }
 
 export interface NodeMetricsResponse {

@@ -21,9 +21,9 @@ import {
   FolderOpen,
   FolderPlus,
   GripVertical,
-  ListFilter,
   MoreHorizontal,
   Pencil,
+  Search,
   Trash2,
   Upload
 } from 'lucide-react'
@@ -37,7 +37,7 @@ import {
 import { useClusterStore, type ClusterEntry } from '../../stores/clusterStore'
 import { useClusterGroupsStore } from '../../stores/clusterGroupsStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
-import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
+import { ClusterSearchInput, HighlightText } from '../ClusterTabs/ClusterSearchInput'
 import { ClusterAvatar } from '../ClusterTabs/ClusterAvatar'
 import {
   WORKSPACE_ACCENTS,
@@ -109,7 +109,6 @@ export function SidebarWorkspaces({
   const setGroupAccent = useClusterGroupsStore((s) => s.setGroupAccent)
 
   const [query, setQuery] = useState('')
-  const [searchOpen, setSearchOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
@@ -136,6 +135,10 @@ export function SidebarWorkspaces({
       if (dockRafRef.current !== null) cancelAnimationFrame(dockRafRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    setOpenFlyoutId(null)
+  }, [collapsed])
 
   function onDockPointerMove(e: React.PointerEvent<HTMLDivElement>): void {
     if (!dockEnabled) return
@@ -188,7 +191,10 @@ export function SidebarWorkspaces({
 
         const nameHit = matchesQuery(group.name, q)
         const matchedMembers = members.filter(
-          (c) => matchesQuery(c.customName, q) || matchesQuery(c.contextName, q)
+          (c) =>
+            matchesQuery(c.customName, q) ||
+            matchesQuery(c.contextName, q) ||
+            matchesQuery(c.endpoint, q)
         )
 
         if (!nameHit && matchedMembers.length === 0) return null
@@ -493,10 +499,7 @@ export function SidebarWorkspaces({
               onPointerMove={onDockPointerMove}
               onPointerLeave={onDockPointerLeave}
             >
-              {groups.map((group) => {
-                const members = group.clusterIds
-                  .map((id) => clusters.find((c) => c.id === id))
-                  .filter((c): c is ClusterEntry => !!c)
+              {filteredGroups.map(({ group, members }) => {
                 const hasActive = members.some((c) => c.id === activeClusterId)
                 const hasLive = members.some(
                   (c) =>
@@ -506,7 +509,9 @@ export function SidebarWorkspaces({
                 const scale = dockEnabled ? (dockScales[group.id] ?? 1) : 1
                 const flyout = (
                   <div className="ml-resource-nav-flyout ml-ws-flyout">
-                    <div className="ml-resource-nav-flyout-title">{group.name}</div>
+                    <div className="ml-resource-nav-flyout-title">
+                      <HighlightText text={group.name} query={query} />
+                    </div>
                     <div className="ml-resource-nav-flyout-list" role="menu">
                       {members.length === 0 ? (
                         <div className="ml-ws-flyout-empty">{t('workspaces.noClusters')}</div>
@@ -538,7 +543,10 @@ export function SidebarWorkspaces({
                                 />
                               </span>
                               <span className="ml-resource-nav-flyout-item-label">
-                                {cluster.customName || cluster.contextName}
+                                <HighlightText
+                                  text={cluster.customName || cluster.contextName}
+                                  query={query}
+                                />
                               </span>
                             </button>
                           )
@@ -616,6 +624,31 @@ export function SidebarWorkspaces({
                 )
               })}
             </div>
+            <Popover
+              content={
+                <div className="ml-ws-rail-search">
+                  <ClusterSearchInput
+                    value={query}
+                    onChange={setQuery}
+                    placeholder={t('chrome.searchWorkspaces')}
+                    size="small"
+                  />
+                </div>
+              }
+              trigger="click"
+              placement="right"
+              arrow={false}
+            >
+              <Tooltip title={t('chrome.searchWorkspaces')} placement="right" arrow={false}>
+                <button
+                  type="button"
+                  className={`ml-nav-fab${query ? ' is-active' : ''}`}
+                  aria-label={t('chrome.searchWorkspaces')}
+                >
+                  <Icon icon={Search} variant="action" />
+                </button>
+              </Tooltip>
+            </Popover>
             <Tooltip title={t('workspaces.newTooltip')} placement="right" arrow={false}>
               <button
                 type="button"
@@ -651,19 +684,6 @@ export function SidebarWorkspaces({
           </span>
         </button>
         <div className="ml-sidebar-section-chrome__actions">
-          {groups.length > 0 ? (
-            <Tooltip title={t('chrome.searchWorkspaces')}>
-              <button
-                type="button"
-                className={`ml-sidebar-section-chrome__action${searchOpen || query ? ' is-active' : ''}`}
-                aria-label={t('chrome.searchWorkspaces')}
-                aria-pressed={searchOpen}
-                onClick={() => setSearchOpen((v) => !v)}
-              >
-                <Icon icon={ListFilter} variant="detail" strokeWidth={1.5} />
-              </button>
-            </Tooltip>
-          ) : null}
           <Tooltip title={t('workspaces.newTooltip')}>
             <button
               type="button"
@@ -679,7 +699,7 @@ export function SidebarWorkspaces({
 
       {sectionExpanded ? (
         <>
-          {groups.length > 0 && (searchOpen || query) && (
+          {groups.length > 0 && (
             <div className="ml-sidebar-search">
               <ClusterSearchInput
                 value={query}
@@ -751,7 +771,9 @@ export function SidebarWorkspaces({
                           )}
                         </span>
                         <span className="ml-ws-group__meta">
-                          <span className="ml-ws-group__name">{group.name}</span>
+                          <span className="ml-ws-group__name">
+                            <HighlightText text={group.name} query={query} />
+                          </span>
                           <span className="ml-ws-group__meta-trail">
                             {group.shortcut ? (
                               <span className="ml-ws-group__shortcut">
@@ -884,7 +906,9 @@ export function SidebarWorkspaces({
                                       ) : (
                                         <span className="ml-ws-row__mark" aria-hidden />
                                       )}
-                                      <span className="ml-ws-row__label">{cluster.customName}</span>
+                                      <span className="ml-ws-row__label">
+                                        <HighlightText text={cluster.customName} query={query} />
+                                      </span>
                                     </button>
                                     <Dropdown
                                       menu={rowMenu}

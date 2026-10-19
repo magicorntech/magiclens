@@ -10,4 +10,4 @@ export {
   type ColorSchemeId,
   type ColorSchemeGroup
 } from './schemes'
-export { deriveSchemeFromAccent, normalizeHex } from './colorUtils'
+export { deriveSchemeFromAccent, normalizeHex, type CustomThemeColors } from './colorUtils'

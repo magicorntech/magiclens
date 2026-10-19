@@ -13,6 +13,7 @@ import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useClusterStore } from '../../stores/clusterStore'
 import { NodesHealthBanner } from './NodesHealthBanner'
 import { NodesResourceGrid } from './NodesResourceGrid'
+import { NodesFleetCharts } from './NodesFleetCharts'
 import { NodesQuickInsights, NodesTopConsumers } from './NodesQuickInsights'
 import { NodesEventsStrip } from './NodesEventsStrip'
 import {
@@ -28,7 +29,6 @@ import { DetailOverview, DetailSection } from '../Detail/detailPrimitives'
 import { OverviewGrid, OverviewPage, OverviewStat } from '../Overview/OverviewPage'
 import { Icon } from '../ui/Icon'
 import { ChevronDown, ChevronRight, Minus, Plus } from 'lucide-react'
-import { formatBytes, formatCores } from '../../format'
 import {
   aggregatePodStatsByNode,
   buildQuickInsights,
@@ -522,41 +522,13 @@ export function NodesOverviewPage({
               ) : (
                 <>
                   <NodesResourceGrid clusterId={clusterId} data={clusterMetrics} isActive={isActive} />
-                  {/* Same fact-cell treatment as the Capacity Headroom widget below, instead of
-                      DetailFactGrid's plain floating label/value pairs — reads as a set of
-                      small stat chips rather than a form. */}
-                  <div className="ml-nodes-capacity-grid">
-                    <div className="ml-nodes-capacity-cell">
-                      <span className="ml-nodes-capacity-cell__label">{t('clusterOverview.cpuCapacity')}</span>
-                      <span className="ml-nodes-capacity-cell__value">
-                        {formatCores(clusterMetrics.cpuCapacityCores)}
-                      </span>
-                      <span className="ml-nodes-capacity-cell__hint">
-                        {formatCores(clusterMetrics.cpuAllocatableCores)} {t('clusterOverview.cpuAlloc').toLowerCase()}
-                      </span>
-                    </div>
-                    <div className="ml-nodes-capacity-cell">
-                      <span className="ml-nodes-capacity-cell__label">{t('clusterOverview.memCapacity')}</span>
-                      <span className="ml-nodes-capacity-cell__value">
-                        {formatBytes(clusterMetrics.memoryCapacityBytes)}
-                      </span>
-                      <span className="ml-nodes-capacity-cell__hint">
-                        {formatBytes(clusterMetrics.memoryAllocatableBytes)}{' '}
-                        {t('clusterOverview.memAlloc').toLowerCase()}
-                      </span>
-                    </div>
-                    <div className="ml-nodes-capacity-cell">
-                      <span className="ml-nodes-capacity-cell__label">{t('nodesOverview.health.nodes')}</span>
-                      <span className="ml-nodes-capacity-cell__value">
-                        {clusterMetrics.readyNodes} / {clusterMetrics.totalNodes}
-                      </span>
-                      <span className="ml-nodes-capacity-cell__hint">
-                        {clusterMetrics.notReadyNodes > 0
-                          ? t('nodesOverview.health.notReady', { count: clusterMetrics.notReadyNodes })
-                          : t('nodesOverview.health.ready', { count: clusterMetrics.readyNodes })}
-                      </span>
-                    </div>
-                  </div>
+                  <NodesFleetCharts
+                    clusterId={clusterId}
+                    isActive={isActive}
+                    nodes={filtered}
+                    metrics={nodeMetrics?.nodes ?? []}
+                    summary={clusterMetrics}
+                  />
                 </>
               )}
             </DetailSection>

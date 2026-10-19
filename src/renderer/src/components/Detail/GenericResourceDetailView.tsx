@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Alert, Dropdown, Modal, Tabs, Tag, message } from 'antd'
 import type { MenuProps } from 'antd'
 import { useQueryClient } from '@tanstack/react-query'
@@ -108,10 +108,15 @@ export function GenericResourceDetailView({
   const queryClient = useQueryClient()
   const bottomPanel = useBottomPanelOptional()
   const openYamlEditor = bottomPanel?.openYamlEditor
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState(kind === 'Nodes' ? 'pods' : 'overview')
   const target = { type: 'builtin' as const, kind }
   const namespace = item.namespace
   const name = item.name
+
+  // A node opens on its pods. Switching nodes returns there; other resources stay on Overview.
+  useEffect(() => {
+    if (kind === 'Nodes') setActiveTab('pods')
+  }, [kind, name])
 
   const yamlEnabled = isActive && (activeTab === 'yaml' || activeTab === 'overview' || activeTab === 'spec')
   const { data: manifest, isLoading: manifestLoading, error: manifestError } = useResourceManifest(

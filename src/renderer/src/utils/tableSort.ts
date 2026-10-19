@@ -49,6 +49,10 @@ export function compareFractionStrings(a: string, b: string): number {
   return fa.den - fb.den
 }
 
+export function compareText(a: string | null | undefined, b: string | null | undefined): number {
+  return (a ?? '').localeCompare(b ?? '', undefined, { numeric: true, sensitivity: 'base' })
+}
+
 export function compareNumericStrings(a: string, b: string): number {
   const na = Number.parseFloat(a.replace(/[^\d.-]/g, ''))
   const nb = Number.parseFloat(b.replace(/[^\d.-]/g, ''))

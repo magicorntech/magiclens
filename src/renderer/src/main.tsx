@@ -35,15 +35,15 @@ function Root(): React.JSX.Element {
   const isDark = useResolvedDarkMode()
   const lightScheme = useThemeStore((s) => s.lightScheme)
   const darkScheme = useThemeStore((s) => s.darkScheme)
-  const customAccentLight = useThemeStore((s) => s.customAccentLight)
-  const customAccentDark = useThemeStore((s) => s.customAccentDark)
+  const customPaletteLight = useThemeStore((s) => s.customPaletteLight)
+  const customPaletteDark = useThemeStore((s) => s.customPaletteDark)
   const uiFont = useDisplaySettingsStore((s) => s.uiTypography.font)
   const fontSans = UI_FONT_STACKS[uiFont]
   const colorScheme = isDark ? darkScheme : lightScheme
-  const customAccentColor = isDark ? customAccentDark : customAccentLight
+  const customPalette = isDark ? customPaletteDark : customPaletteLight
   const antdTheme = useMemo(
-    () => buildAntdTheme(isDark, colorScheme, customAccentColor, fontSans),
-    [isDark, colorScheme, customAccentColor, fontSans]
+    () => buildAntdTheme(isDark, colorScheme, customPalette, fontSans),
+    [isDark, colorScheme, customPalette, fontSans]
   )
   const antdLocale = useMemo(() => getAntdLocale(i18n.language), [i18n.language])
   const topologyPopout = useMemo(() => parseTopologyPopoutRoute(), [])
@@ -51,8 +51,8 @@ function Root(): React.JSX.Element {
   const mollyHud = useMemo(() => isMollyHudRoute(), [])
 
   useEffect(() => {
-    syncDocumentTheme(isDark, colorScheme, customAccentColor, fontSans)
-  }, [isDark, colorScheme, customAccentColor, fontSans])
+    syncDocumentTheme(isDark, colorScheme, customPalette, fontSans)
+  }, [isDark, colorScheme, customPalette, fontSans])
 
   return (
     <ConfigProvider theme={antdTheme} locale={antdLocale}>

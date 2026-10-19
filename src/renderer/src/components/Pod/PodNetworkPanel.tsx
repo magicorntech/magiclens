@@ -6,6 +6,7 @@ import { usePodNetwork } from '../../queries/usePodNetwork'
 import { usePodDetail } from '../../queries/usePodDetail'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { compareText } from '../../utils/tableSort'
 import { PortForwardControl } from './PortForwardControl'
 
 interface PodNetworkPanelProps {
@@ -34,9 +35,9 @@ export function PodNetworkPanel({ clusterId, namespace, podName, isActive }: Pod
   const containers = isPodDetailData(detail) ? detail.containers : []
 
   const serviceColumns: ColumnsType<PodServiceBinding> = [
-    { title: 'Service', dataIndex: 'name', key: 'name' },
-    { title: 'Type', dataIndex: 'type', key: 'type', render: (v) => <Tag color="blue">{v}</Tag> },
-    { title: 'Cluster IP', dataIndex: 'clusterIP', key: 'clusterIP' },
+    { title: 'Service', dataIndex: 'name', key: 'name', sorter: (a, b) => compareText(a.name, b.name) },
+    { title: 'Type', dataIndex: 'type', key: 'type', sorter: (a, b) => compareText(a.type, b.type), render: (v) => <Tag color="blue">{v}</Tag> },
+    { title: 'Cluster IP', dataIndex: 'clusterIP', key: 'clusterIP', sorter: (a, b) => compareText(a.clusterIP, b.clusterIP) },
     {
       title: 'Ports',
       key: 'ports',
@@ -91,10 +92,10 @@ export function PodNetworkPanel({ clusterId, namespace, podName, isActive }: Pod
           tableKey="pod-network-ports"
           rowKey={(row) => `${row.container}-${row.containerPort}-${row.protocol}`}
           columns={[
-            { title: 'Container', dataIndex: 'container', key: 'container' },
-            { title: 'Name', dataIndex: 'name', key: 'name', render: (v) => v ?? '-' },
-            { title: 'Port', dataIndex: 'containerPort', key: 'containerPort' },
-            { title: 'Protocol', dataIndex: 'protocol', key: 'protocol' },
+            { title: 'Container', dataIndex: 'container', key: 'container', sorter: (a, b) => compareText(a.container, b.container) },
+            { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => compareText(a.name, b.name), render: (v) => v ?? '-' },
+            { title: 'Port', dataIndex: 'containerPort', key: 'containerPort', sorter: (a, b) => a.containerPort - b.containerPort },
+            { title: 'Protocol', dataIndex: 'protocol', key: 'protocol', sorter: (a, b) => compareText(a.protocol, b.protocol) },
             {
               title: 'Forward',
               key: 'forward',

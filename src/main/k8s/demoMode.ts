@@ -275,7 +275,8 @@ export function demoNodeMetrics(clusterId = DEMO_CLUSTER_ID): NodeMetricsRespons
       cpuAllocatableCores: node.columns.roles === 'control-plane' ? 3.5 : 7.5,
       memoryAllocatableBytes: (node.columns.roles === 'control-plane' ? 14 : 30) * 1024 ** 3,
       cpuUsageCores: cpu[i],
-      memoryUsageBytes: mem[i] * 1024 ** 3
+      memoryUsageBytes: mem[i] * 1024 ** 3,
+      diskUsagePercent: [42, 38, 71, 55, 48, 63, 22][i]
     }))
   }
 }

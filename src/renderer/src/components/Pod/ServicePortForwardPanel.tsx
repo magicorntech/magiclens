@@ -4,6 +4,7 @@ import type { ServicePortInfo } from '@shared/types/service'
 import { useServiceDetail } from '../../queries/useServiceDetail'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { compareText } from '../../utils/tableSort'
 import { PortForwardControl } from './PortForwardControl'
 
 interface ServicePortForwardPanelProps {
@@ -28,10 +29,10 @@ export function ServicePortForwardPanel({
   }
 
   const columns: ColumnsType<ServicePortInfo> = [
-    { title: 'Name', dataIndex: 'name', key: 'name', render: (v) => v ?? '-' },
-    { title: 'Port', dataIndex: 'port', key: 'port' },
-    { title: 'Target', dataIndex: 'targetPort', key: 'targetPort' },
-    { title: 'Protocol', dataIndex: 'protocol', key: 'protocol', render: (v) => <Tag>{v}</Tag> },
+    { title: 'Name', dataIndex: 'name', key: 'name', sorter: (a, b) => compareText(a.name, b.name), render: (v) => v ?? '-' },
+    { title: 'Port', dataIndex: 'port', key: 'port', sorter: (a, b) => a.port - b.port },
+    { title: 'Target', dataIndex: 'targetPort', key: 'targetPort', sorter: (a, b) => compareText(a.targetPort, b.targetPort) },
+    { title: 'Protocol', dataIndex: 'protocol', key: 'protocol', sorter: (a, b) => compareText(a.protocol, b.protocol), render: (v) => <Tag>{v}</Tag> },
     {
       title: 'Forward',
       key: 'forward',

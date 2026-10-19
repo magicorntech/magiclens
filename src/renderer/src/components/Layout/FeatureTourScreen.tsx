@@ -11,6 +11,7 @@ import {
   Globe,
   Layers,
   Network,
+  Palette,
   Search,
   ShieldCheck,
   Sparkles,
@@ -22,12 +23,16 @@ import { Icon } from '../ui/Icon'
 import logo from '../../assets/logo.png'
 import { APP_LOCALES, APP_LOCALE_LABELS, type AppLocale } from '@shared/types/locale'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
+import { useThemeStore } from '../../stores/themeStore'
+import { useResolvedDarkMode } from '../../stores/useResolvedDarkMode'
+import { COLOR_SCHEME_DEFINITIONS, type ColorSchemeId } from '../../theme/schemes'
+import { ThemeToggle } from './ThemeToggle'
 
 interface FeatureTourScreenProps {
   onFinish: () => void
 }
 
-type TourPhase = 'language' | 'slides'
+type TourPhase = 'language' | 'theme' | 'slides'
 
 type SlideMeta = {
   id:
@@ -63,14 +68,16 @@ const SLIDES: SlideMeta[] = [
 ]
 
 /**
- * Full-screen feature card slider shown on first launch and again after an app update
- * (same timing as the previous splash intro). Language is chosen first, then slides
- * render in that locale.
+ * Full-screen setup shown on first launch. Language, then theme, then feature slides.
  */
 export function FeatureTourScreen({ onFinish }: FeatureTourScreenProps): React.JSX.Element {
   const { t } = useTranslation()
   const locale = useDisplaySettingsStore((s) => s.locale)
   const setLocale = useDisplaySettingsStore((s) => s.setLocale)
+  const isDark = useResolvedDarkMode()
+  const scheme = useThemeStore((s) => (isDark ? s.darkScheme : s.lightScheme))
+  const setLightScheme = useThemeStore((s) => s.setLightScheme)
+  const setDarkScheme = useThemeStore((s) => s.setDarkScheme)
   const [phase, setPhase] = useState<TourPhase>('language')
   const [draftLocale, setDraftLocale] = useState<AppLocale>(locale)
   const [index, setIndex] = useState(0)
@@ -86,6 +93,16 @@ export function FeatureTourScreen({ onFinish }: FeatureTourScreenProps): React.J
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
       if (phase === 'language') {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          void goToTheme()
+        } else if (e.key === 'Escape') {
+          onFinish()
+        }
+        return
+      }
+
+      if (phase === 'theme') {
         if (e.key === 'Enter') {
           e.preventDefault()
           void goToSlides()
@@ -111,10 +128,19 @@ export function FeatureTourScreen({ onFinish }: FeatureTourScreenProps): React.J
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, isLast, onFinish, draftLocale])
 
-  async function goToSlides(): Promise<void> {
+  async function goToTheme(): Promise<void> {
     if (draftLocale !== locale) {
       await setLocale(draftLocale)
     }
+    setPhase('theme')
+  }
+
+  function pickScheme(id: ColorSchemeId): void {
+    setLightScheme(id)
+    setDarkScheme(id)
+  }
+
+  async function goToSlides(): Promise<void> {
     setIndex(0)
     setPhase('slides')
   }
@@ -128,7 +154,7 @@ export function FeatureTourScreen({ onFinish }: FeatureTourScreenProps): React.J
       <div className="splash-blob splash-blob-5" />
       <div className="splash-noise" />
 
-      <div className="ml-feature-tour__inner splash-content">
+      <div className={`ml-feature-tour__inner splash-content${phase === 'theme' ? ' ml-feature-tour__inner--wide' : ''}`}>
         <div className="ml-feature-tour__brand">
           <img src={logo} alt="" className="ml-feature-tour__logo" />
           <Typography.Text className="ml-feature-tour__brand-name">MagicLens</Typography.Text>
@@ -181,6 +207,56 @@ export function FeatureTourScreen({ onFinish }: FeatureTourScreenProps): React.J
                       >
                         <span className="ml-feature-tour__lang-code">{code.toUpperCase()}</span>
                         <span className="ml-feature-tour__lang-label">{APP_LOCALE_LABELS[code]}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </motion.article>
+            ) : phase === 'theme' ? (
+              <motion.article
+                key="theme"
+                className="ml-feature-tour__card"
+                initial={{ opacity: 0, x: 36, scale: 0.98 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -36, scale: 0.98 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div
+                  className="ml-feature-tour__icon"
+                  style={{
+                    background: 'color-mix(in srgb, #c4b5fd 22%, transparent)',
+                    color: '#c4b5fd',
+                    boxShadow: '0 0 0 1px color-mix(in srgb, #c4b5fd 35%, transparent)'
+                  }}
+                >
+                  <Icon icon={Palette} variant="action" />
+                </div>
+                <Typography.Text className="ml-feature-tour__eyebrow">{t('tour.themeEyebrow')}</Typography.Text>
+                <Typography.Title level={2} className="ml-feature-tour__title">
+                  {t('tour.chooseTheme')}
+                </Typography.Title>
+                <Typography.Paragraph className="ml-feature-tour__body">{t('tour.themeHint')}</Typography.Paragraph>
+                <div className="ml-feature-tour__mode">
+                  <ThemeToggle labeled />
+                </div>
+                <div className="ml-feature-tour__themes" role="listbox" aria-label={t('tour.chooseTheme')}>
+                  {COLOR_SCHEME_DEFINITIONS.map((item) => {
+                    const selected = scheme === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        className={`ml-feature-tour__theme${selected ? ' ml-feature-tour__theme--selected' : ''}`}
+                        onClick={() => pickScheme(item.id)}
+                      >
+                        <span className="ml-feature-tour__theme-dots" aria-hidden>
+                          {item.swatches.map((color) => (
+                            <span key={color} style={{ background: color }} />
+                          ))}
+                        </span>
+                        <span className="ml-feature-tour__theme-name">{item.name}</span>
                       </button>
                     )
                   })}
@@ -248,16 +324,32 @@ export function FeatureTourScreen({ onFinish }: FeatureTourScreenProps): React.J
                 shape="round"
                 icon={<Icon icon={ArrowRight} variant="action" />}
                 iconPosition="end"
-                onClick={() => void goToSlides()}
+                onClick={() => void goToTheme()}
               >
                 {t('tour.continue')}
               </Button>
+            ) : phase === 'theme' ? (
+              <>
+                <Button icon={<Icon icon={ArrowLeft} variant="action" />} onClick={() => setPhase('language')}>
+                  {t('tour.back')}
+                </Button>
+                <Button
+                  type="primary"
+                  size="large"
+                  shape="round"
+                  icon={<Icon icon={ArrowRight} variant="action" />}
+                  iconPosition="end"
+                  onClick={() => void goToSlides()}
+                >
+                  {t('tour.continue')}
+                </Button>
+              </>
             ) : (
               <>
                 <Button
                   icon={<Icon icon={ArrowLeft} variant="action" />}
                   onClick={() => {
-                    if (isFirst) setPhase('language')
+                    if (isFirst) setPhase('theme')
                     else setIndex((i) => Math.max(0, i - 1))
                   }}
                 >

@@ -12,6 +12,8 @@ import { NodeMetricsPanel } from '../Metrics/NodeMetricsPanel'
 import { NodePressurePanel } from '../Metrics/NodePressurePanel'
 import { NodeExecPanel } from '../Node/NodeExecPanel'
 import { ResizableTable } from '../../utils/ResizableTable'
+import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
+import { compareColumnValues, compareText, statusSorter } from '../../utils/tableSort'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 
 interface NodeInspectorDrawerProps {
@@ -150,10 +152,25 @@ export function NodeInspectorDrawer({
                   pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ['10','20','50'] }}
                   dataSource={nodePods}
                   columns={[
-                    { title: 'Name', dataIndex: 'name', key: 'name', ellipsis: true },
-                    { title: 'Namespace', dataIndex: 'namespace', key: 'namespace', width: 130, ellipsis: true },
-                    { title: 'Status', key: 'status', width: 110, render: (_, r) => <StatusTag text={r.statusText} color={r.statusColor} /> },
-                    { title: 'Restarts', key: 'restarts', width: 80, render: (_, r) => r.columns.restarts ?? '0' }
+                    { title: 'Name', dataIndex: 'name', key: 'name', ellipsis: true, sorter: (a, b) => compareText(a.name, b.name) },
+                    { title: 'Namespace', dataIndex: 'namespace', key: 'namespace', width: 130, ellipsis: true, sorter: (a, b) => compareText(a.namespace, b.namespace) },
+                    { title: 'Status', key: 'status', width: 110, sorter: statusSorter, render: (_, r) => <StatusTag text={r.statusText} color={r.statusColor} /> },
+                    { title: 'Restarts', key: 'restarts', width: 80, sorter: (a, b) => compareColumnValues('restarts', a.columns.restarts ?? '0', b.columns.restarts ?? '0'), render: (_, r) => r.columns.restarts ?? '0' },
+                    {
+                      title: '',
+                      key: 'actions',
+                      width: 48,
+                      render: (_, r) => (
+                        <ResourceRowActions
+                          clusterId={clusterId}
+                          target={{ type: 'builtin', kind: 'Pods' }}
+                          namespace={r.namespace}
+                          name={r.name}
+                          itemId={r.id}
+                          listQueryKey={['resource-list', clusterId, 'ALL', 'Pods']}
+                        />
+                      )
+                    }
                   ]}
                 />
               )}

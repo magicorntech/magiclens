@@ -399,6 +399,10 @@ html[data-ui-contrast='bright'] #root {
   gap: 22px;
 }
 
+.ml-feature-tour__inner--wide {
+  width: min(100%, 760px);
+}
+
 .ml-feature-tour__brand {
   display: flex;
   align-items: center;
@@ -521,6 +525,66 @@ html[data-ui-contrast='bright'] #root {
 .ml-feature-tour__lang-label {
   font-size: 14px;
   font-weight: 500;
+}
+
+.ml-feature-tour__mode {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.ml-feature-tour__themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 8px;
+  width: 100%;
+  max-height: min(42vh, 340px);
+  overflow: auto;
+  margin-top: 4px;
+}
+
+.ml-feature-tour__theme {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+}
+
+.ml-feature-tour__theme:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ml-feature-tour__theme--selected {
+  border-color: rgba(196, 181, 253, 0.8);
+  box-shadow: 0 0 0 1px rgba(196, 181, 253, 0.35);
+  background: rgba(196, 181, 253, 0.14);
+}
+
+.ml-feature-tour__theme-dots {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+.ml-feature-tour__theme-dots span {
+  width: 8px;
+  height: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ml-feature-tour__theme-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .ml-feature-tour__dots {
@@ -3234,11 +3298,18 @@ html[data-ui-contrast='bright'] #root {
   background: color-mix(in srgb, var(--ml-primary) 8%, var(--ml-bg-container));
 }
 
-.ml-settings-swatch__dot {
+.ml-settings-swatch__dot,
+.ml-settings-swatch__dots span {
   width: 12px;
   height: 12px;
   flex: none;
   border: 1px solid color-mix(in srgb, var(--ml-text) 14%, transparent);
+}
+
+.ml-settings-swatch__dots {
+  display: flex;
+  flex: none;
+  gap: 2px;
 }
 
 .ml-settings-swatch__name {
@@ -3254,14 +3325,39 @@ html[data-ui-contrast='bright'] #root {
   flex: none;
 }
 
+.ml-settings-theme-editor {
+  margin: 0 14px 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ml-border-secondary);
+}
+
+.ml-settings-theme-colors {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ml-settings-theme-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--ml-border-secondary);
+  background: var(--ml-bg-container);
+  color: var(--ml-text);
+  font-size: 12px;
+}
+
 .ml-settings-theme-custom {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin: 0 14px 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--ml-border-secondary);
+  margin: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .ml-settings-theme-preview {
@@ -8031,6 +8127,18 @@ html[data-theme='dark'] .ml-brand-img--helm {
   box-shadow: var(--ml-shadow-md, 0 8px 24px rgba(0, 0, 0, 0.18));
 }
 
+/* Ant Design transitions every property on the wrapper, so a drag eases toward
+   each pointer update and the edge lags. Follow the pointer while resizing. */
+.ml-resource-detail-drawer--resizing .ant-drawer-content-wrapper,
+.ml-node-inspector-drawer--resizing .ant-drawer-content-wrapper {
+  transition: none !important;
+}
+
+.ml-resource-detail-drawer--resizing .ant-drawer-section,
+.ml-node-inspector-drawer--resizing .ant-drawer-section {
+  pointer-events: none;
+}
+
 /*
  * Drag-to-resize handle on the drawer's leading (left) edge. A hit target wider than the
  * visible line — the line alone is too thin to reliably grab. The line itself stays faintly
@@ -8832,6 +8940,42 @@ body.ml-detail-resizing * {
   background: var(--ml-status-danger-bg);
 }
 
+.ml-nodes-charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ml-nodes-chart {
+  min-width: 0;
+  min-height: 196px;
+  padding: 10px 10px 4px;
+  border: 1px solid var(--ml-border-secondary);
+  background: var(--ml-bg-container);
+}
+
+.ml-nodes-chart__title {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ml-text-tertiary);
+}
+
+.ml-nodes-chart__empty {
+  margin: 28px 0 0;
+  font-size: 12px;
+  color: var(--ml-text-secondary);
+}
+
+@media (max-width: 1100px) {
+  .ml-nodes-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Nodes fleet widgets (version skew / roles / capacity) ── */
 /* Card shell mirrors .ml-detail-section (overview pages) — border/radius/background on the
    card, a spotlight header strip, and the body padded separately. */
@@ -9232,6 +9376,63 @@ body.ml-detail-resizing * {
 }
 
 .ml-nodes-table-row--selected > td {
+  background: color-mix(in srgb, var(--ml-primary) 8%, var(--ml-bg-container)) !important;
+  box-shadow: inset 2px 0 0 var(--ml-primary);
+}
+
+.ml-node-pods {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  height: 100%;
+}
+
+.ml-node-pods__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ml-node-pods__stats {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ml-node-pods__stat {
+  font-size: 11px;
+  line-height: 1;
+  padding: 5px 8px;
+  background: var(--ml-bg-spotlight);
+  color: var(--ml-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ml-node-pods__stat--ok {
+  color: var(--ml-success, #3dd68c);
+}
+
+.ml-node-pods__stat--warn {
+  color: var(--ml-warning, #e8b84a);
+}
+
+.ml-node-pods__stat--bad {
+  color: var(--ml-error, #f07178);
+}
+
+.ml-node-pods__filter {
+  margin-left: auto;
+  width: 180px;
+  max-width: 100%;
+}
+
+.ml-node-pods .ant-table-tbody > tr.ant-table-row {
+  cursor: pointer;
+}
+
+.ml-node-pods-row--selected > td {
   background: color-mix(in srgb, var(--ml-primary) 8%, var(--ml-bg-container)) !important;
   box-shadow: inset 2px 0 0 var(--ml-primary);
 }
@@ -10066,8 +10267,15 @@ body.ml-detail-resizing * {
   flex: 1;
   min-height: 0;
   align-items: center;
+  justify-content: flex-start;
   padding: 8px 0 4px;
   gap: 4px;
+}
+
+/* Favorites is also a flex:1 section. When the rail collapses that split
+   pushes Workspaces into the vertical middle of the sidebar. */
+.ml-sidebar--collapsed .ml-sidebar-section--favorites {
+  flex: none;
 }
 
 .ml-sidebar-section--workspaces-collapsed {

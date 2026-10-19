@@ -66,7 +66,15 @@ export function useResizableDrawerWidth({
 
   const [width, setWidth] = useState(() => clamp(readStoredWidth(storageKey) ?? defaultWidth))
   const [resizing, setResizing] = useState(false)
-  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
+  const widthRef = useRef(width)
+  widthRef.current = width
+  const dragRef = useRef<{
+    startX: number
+    startWidth: number
+    latest: number
+    wrapper: HTMLElement | null
+    frame: number
+  } | null>(null)
 
   useEffect(() => {
     const onWindowResize = (): void => setWidth((w) => clamp(w))
@@ -74,17 +82,24 @@ export function useResizableDrawerWidth({
     return () => window.removeEventListener('resize', onWindowResize)
   }, [clamp])
 
-  const persist = useCallback(
+  const writeStored = useCallback(
     (px: number): void => {
-      const next = clamp(px)
-      setWidth(next)
       try {
-        localStorage.setItem(storageKey, String(next))
+        localStorage.setItem(storageKey, String(px))
       } catch {
         /* ignore quota / private mode */
       }
     },
-    [clamp, storageKey]
+    [storageKey]
+  )
+
+  const persist = useCallback(
+    (px: number): void => {
+      const next = clamp(px)
+      setWidth(next)
+      writeStored(next)
+    },
+    [clamp, writeStored]
   )
 
   const onPointerDown = useCallback(
@@ -93,11 +108,23 @@ export function useResizableDrawerWidth({
       e.preventDefault()
       e.stopPropagation()
       e.currentTarget.setPointerCapture(e.pointerId)
-      dragRef.current = { startX: e.clientX, startWidth: width }
+      const wrapper = e.currentTarget.closest('.ant-drawer')?.querySelector<HTMLElement>(
+        '.ant-drawer-content-wrapper'
+      )
+      // Ant Design animates every width change. Follow the pointer on the element
+      // itself so the panel does not ease toward each update.
+      if (wrapper) wrapper.style.transition = 'none'
+      dragRef.current = {
+        startX: e.clientX,
+        startWidth: widthRef.current,
+        latest: widthRef.current,
+        wrapper: wrapper ?? null,
+        frame: 0
+      }
       setResizing(true)
       document.body.classList.add('ml-detail-resizing')
     },
-    [width]
+    []
   )
 
   const onPointerMove = useCallback(
@@ -105,22 +132,43 @@ export function useResizableDrawerWidth({
       const drag = dragRef.current
       if (!drag) return
       const delta = edge === 'left' ? e.clientX - drag.startX : drag.startX - e.clientX
-      persist(drag.startWidth + delta)
+      const next = clamp(drag.startWidth + delta)
+      drag.latest = next
+      if (drag.wrapper) {
+        drag.wrapper.style.width = `${next}px`
+        return
+      }
+      if (drag.frame) return
+      drag.frame = window.requestAnimationFrame(() => {
+        const current = dragRef.current
+        if (!current) return
+        current.frame = 0
+        setWidth(current.latest)
+      })
     },
-    [persist, edge]
+    [clamp, edge]
   )
 
-  const endResize = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!dragRef.current) return
-    dragRef.current = null
-    setResizing(false)
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId)
-    } catch {
-      /* already released */
-    }
-    document.body.classList.remove('ml-detail-resizing')
-  }, [])
+  const endResize = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      const drag = dragRef.current
+      if (!drag) return
+      if (drag.frame) window.cancelAnimationFrame(drag.frame)
+      dragRef.current = null
+      if (drag.wrapper) drag.wrapper.style.transition = ''
+      setResizing(false)
+      const next = clamp(drag.latest)
+      setWidth(next)
+      writeStored(next)
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      } catch {
+        /* already released */
+      }
+      document.body.classList.remove('ml-detail-resizing')
+    },
+    [clamp, writeStored]
+  )
 
   useEffect(() => () => document.body.classList.remove('ml-detail-resizing'), [])
 

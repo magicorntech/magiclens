@@ -4,7 +4,9 @@ import {
   deriveSchemeFromAccent,
   lighten,
   mixHex,
+  schemeFromCustomPalette,
   withAlpha,
+  type CustomThemeColors,
   type DerivedSchemeColors
 } from './colorUtils'
 
@@ -25,9 +27,15 @@ export type ColorSchemeId =
   | 'shadowflame'
   | 'leafstorm'
   | 'nebula'
+  | 'lagoon'
+  | 'ember'
+  | 'ink'
+  | 'matcha'
+  | 'dune'
+  | 'orchid'
   | 'custom'
 
-export type ColorSchemeGroup = 'base' | 'classic' | 'worlds'
+export type ColorSchemeGroup = 'base' | 'classic' | 'worlds' | 'studio'
 
 export interface ColorSchemeDefinition {
   id: Exclude<ColorSchemeId, 'custom'>
@@ -56,6 +64,12 @@ const VALID_SCHEMES = new Set<ColorSchemeId>([
   'shadowflame',
   'leafstorm',
   'nebula',
+  'lagoon',
+  'ember',
+  'ink',
+  'matcha',
+  'dune',
+  'orchid',
   'custom'
 ])
 
@@ -179,174 +193,246 @@ const SCHEME_COLORS: Record<Exclude<ColorSchemeId, 'custom'>, SchemeColors> = {
 
   /* —— Classic —— */
   violet: {
-    primaryLight: '#6d28d9',
-    primaryLightHover: '#5b21b6',
+    primaryLight: '#7c3aed',
+    primaryLightHover: '#6d28d9',
     primaryDark: '#c4b5fd',
     primaryDarkHover: '#ddd6fe',
     resourceSiderLight: '#2e1065',
-    resourceSiderDark: '#0d0618',
+    resourceSiderDark: '#16082a',
     spotlightLight: '#f5f3ff',
-    spotlightDark: '#1a122c',
-    layoutLight: '#f3f0ff',
-    layoutDark: '#090611'
+    spotlightDark: '#1c1230',
+    layoutLight: '#f4f0ff',
+    layoutDark: '#0c0618'
   },
   ocean: {
-    primaryLight: '#0e7490',
-    primaryLightHover: '#155e75',
-    primaryDark: '#22d3ee',
-    primaryDarkHover: '#67e8f9',
-    resourceSiderLight: '#164e63',
-    resourceSiderDark: '#031018',
-    spotlightLight: '#ecfeff',
-    spotlightDark: '#0c1e28',
-    layoutLight: '#f0f9ff',
-    layoutDark: '#040c12'
+    primaryLight: '#1d4ed8',
+    primaryLightHover: '#1e40af',
+    primaryDark: '#60a5fa',
+    primaryDarkHover: '#93c5fd',
+    resourceSiderLight: '#1e3a8a',
+    resourceSiderDark: '#07101f',
+    spotlightLight: '#eff6ff',
+    spotlightDark: '#101828',
+    layoutLight: '#f3f7ff',
+    layoutDark: '#070d18'
   },
   forest: {
-    primaryLight: '#15803d',
-    primaryLightHover: '#166534',
+    primaryLight: '#166534',
+    primaryLightHover: '#14532d',
     primaryDark: '#4ade80',
     primaryDarkHover: '#86efac',
     resourceSiderLight: '#14532d',
-    resourceSiderDark: '#03120a',
+    resourceSiderDark: '#052e16',
     spotlightLight: '#f0fdf4',
-    spotlightDark: '#0d1c14',
-    layoutLight: '#f4fbf6',
-    layoutDark: '#050d08'
+    spotlightDark: '#0c1f14',
+    layoutLight: '#f3faf5',
+    layoutDark: '#04110a'
   },
   sunset: {
     primaryLight: '#ea580c',
     primaryLightHover: '#c2410c',
-    primaryDark: '#fb923c',
-    primaryDarkHover: '#fdba74',
-    resourceSiderLight: '#7c2d12',
-    resourceSiderDark: '#160804',
+    primaryDark: '#fdba74',
+    primaryDarkHover: '#fed7aa',
+    resourceSiderLight: '#9a3412',
+    resourceSiderDark: '#1c0a04',
     spotlightLight: '#fff7ed',
-    spotlightDark: '#241610',
-    layoutLight: '#fffaf5',
-    layoutDark: '#0e0704'
+    spotlightDark: '#2a160c',
+    layoutLight: '#fff8f1',
+    layoutDark: '#140904'
   },
   slate: {
-    primaryLight: '#334155',
-    primaryLightHover: '#1e293b',
-    primaryDark: '#94a3b8',
-    primaryDarkHover: '#cbd5e1',
+    primaryLight: '#475569',
+    primaryLightHover: '#334155',
+    primaryDark: '#cbd5e1',
+    primaryDarkHover: '#e2e8f0',
     resourceSiderLight: '#1e293b',
-    resourceSiderDark: '#080c12',
-    spotlightLight: '#f1f5f9',
-    spotlightDark: '#151b22',
-    layoutLight: '#f8fafc',
-    layoutDark: '#080b10'
+    resourceSiderDark: '#0b1220',
+    spotlightLight: '#f8fafc',
+    spotlightDark: '#151c27',
+    layoutLight: '#f1f5f9',
+    layoutDark: '#0b1120'
   },
   rose: {
-    primaryLight: '#e84d5c',
-    primaryLightHover: '#d64555',
-    primaryDark: '#FF5F6D',
-    primaryDarkHover: '#ff7a85',
-    resourceSiderLight: '#1a1520',
-    resourceSiderDark: '#0a0c10',
-    spotlightLight: '#f7f8fa',
-    spotlightDark: '#14181f',
-    layoutLight: '#f4f5f7',
-    layoutDark: '#0b0d11'
+    primaryLight: '#e11d48',
+    primaryLightHover: '#be123c',
+    primaryDark: '#fb7185',
+    primaryDarkHover: '#fda4af',
+    resourceSiderLight: '#881337',
+    resourceSiderDark: '#1a0a10',
+    spotlightLight: '#fff1f2',
+    spotlightDark: '#241018',
+    layoutLight: '#fff5f6',
+    layoutDark: '#12080c'
   },
 
   /* —— Worlds —— */
   skywings: {
-    primaryLight: '#2563eb',
-    primaryLightHover: '#1d4ed8',
-    primaryDark: '#60a5fa',
-    primaryDarkHover: '#93c5fd',
-    resourceSiderLight: '#1e3a5f',
-    resourceSiderDark: '#050c16',
-    spotlightLight: '#eff6ff',
-    spotlightDark: '#121c2c',
-    layoutLight: '#f4f8ff',
-    layoutDark: '#060a12'
-  },
-  moonprism: {
-    primaryLight: '#db2777',
-    primaryLightHover: '#be185d',
-    primaryDark: '#f472b6',
-    primaryDarkHover: '#f9a8d4',
-    resourceSiderLight: '#831843',
-    resourceSiderDark: '#14050e',
-    spotlightLight: '#fdf2f8',
-    spotlightDark: '#241018',
-    layoutLight: '#fff4fa',
-    layoutDark: '#0e050a'
-  },
-  webstrike: {
-    primaryLight: '#dc2626',
-    primaryLightHover: '#b91c1c',
-    primaryDark: '#f87171',
-    primaryDarkHover: '#fca5a5',
-    resourceSiderLight: '#1e3a8a',
-    resourceSiderDark: '#070a16',
-    spotlightLight: '#fef2f2',
-    spotlightDark: '#1a1018',
-    layoutLight: '#fff5f5',
-    layoutDark: '#0b0506'
-  },
-  nightcape: {
     primaryLight: '#ca8a04',
     primaryLightHover: '#a16207',
     primaryDark: '#facc15',
     primaryDarkHover: '#fde047',
-    resourceSiderLight: '#1c1917',
-    resourceSiderDark: '#070605',
+    resourceSiderLight: '#1e40af',
+    resourceSiderDark: '#0b1b3a',
+    spotlightLight: '#eff6ff',
+    spotlightDark: '#121a2e',
+    layoutLight: '#f7f9ff',
+    layoutDark: '#070d18'
+  },
+  moonprism: {
+    primaryLight: '#ec4899',
+    primaryLightHover: '#db2777',
+    primaryDark: '#f9a8d4',
+    primaryDarkHover: '#fbcfe8',
+    resourceSiderLight: '#6b21a8',
+    resourceSiderDark: '#1a0a24',
+    spotlightLight: '#fdf2f8',
+    spotlightDark: '#24101c',
+    layoutLight: '#fff5fb',
+    layoutDark: '#120812'
+  },
+  webstrike: {
+    primaryLight: '#ef4444',
+    primaryLightHover: '#dc2626',
+    primaryDark: '#fca5a5',
+    primaryDarkHover: '#fecaca',
+    resourceSiderLight: '#1d4ed8',
+    resourceSiderDark: '#0b1228',
+    spotlightLight: '#fef2f2',
+    spotlightDark: '#1a1014',
+    layoutLight: '#fff6f6',
+    layoutDark: '#12080a'
+  },
+  nightcape: {
+    primaryLight: '#eab308',
+    primaryLightHover: '#ca8a04',
+    primaryDark: '#fde047',
+    primaryDarkHover: '#fef08a',
+    resourceSiderLight: '#292524',
+    resourceSiderDark: '#0c0a09',
     spotlightLight: '#fafaf9',
     spotlightDark: '#1c1917',
     layoutLight: '#f5f5f4',
-    layoutDark: '#080807'
+    layoutDark: '#0a0908'
   },
   arcforge: {
-    primaryLight: '#b91c1c',
-    primaryLightHover: '#991b1b',
-    primaryDark: '#f59e0b',
-    primaryDarkHover: '#fbbf24',
-    resourceSiderLight: '#450a0a',
-    resourceSiderDark: '#100505',
-    spotlightLight: '#fef2f2',
-    spotlightDark: '#1c1008',
-    layoutLight: '#fff7f0',
-    layoutDark: '#0c0604'
+    primaryLight: '#dc2626',
+    primaryLightHover: '#b91c1c',
+    primaryDark: '#fbbf24',
+    primaryDarkHover: '#fcd34d',
+    resourceSiderLight: '#7f1d1d',
+    resourceSiderDark: '#1a0a06',
+    spotlightLight: '#fff7ed',
+    spotlightDark: '#1c120c',
+    layoutLight: '#fff8f3',
+    layoutDark: '#100806'
   },
   shadowflame: {
-    primaryLight: '#7c3aed',
-    primaryLightHover: '#6d28d9',
+    primaryLight: '#6d28d9',
+    primaryLightHover: '#5b21b6',
     primaryDark: '#2dd4bf',
     primaryDarkHover: '#5eead4',
     resourceSiderLight: '#312e81',
-    resourceSiderDark: '#080616',
+    resourceSiderDark: '#0b1020',
     spotlightLight: '#f5f3ff',
-    spotlightDark: '#14141f',
+    spotlightDark: '#12141f',
     layoutLight: '#f6f5ff',
-    layoutDark: '#07050e'
+    layoutDark: '#070814'
   },
   leafstorm: {
-    primaryLight: '#ea580c',
-    primaryLightHover: '#c2410c',
-    primaryDark: '#fb923c',
-    primaryDarkHover: '#fdba74',
+    primaryLight: '#65a30d',
+    primaryLightHover: '#4d7c0f',
+    primaryDark: '#bef264',
+    primaryDarkHover: '#d9f99d',
     resourceSiderLight: '#1e3a5f',
-    resourceSiderDark: '#050a14',
-    spotlightLight: '#fff7ed',
-    spotlightDark: '#1a1410',
-    layoutLight: '#fffaf5',
-    layoutDark: '#090806'
+    resourceSiderDark: '#071018',
+    spotlightLight: '#f7fee7',
+    spotlightDark: '#12180e',
+    layoutLight: '#f9fbea',
+    layoutDark: '#0a0e06'
   },
   nebula: {
     primaryLight: '#c026d3',
     primaryLightHover: '#a21caf',
-    primaryDark: '#e879f9',
-    primaryDarkHover: '#f0abfc',
+    primaryDark: '#22d3ee',
+    primaryDarkHover: '#67e8f9',
     resourceSiderLight: '#4c1d95',
-    resourceSiderDark: '#0c0516',
+    resourceSiderDark: '#100818',
     spotlightLight: '#fdf4ff',
     spotlightDark: '#1a1024',
     layoutLight: '#faf5ff',
-    layoutDark: '#090510'
+    layoutDark: '#0c0614'
+  },
+  lagoon: {
+    primaryLight: '#0f766e',
+    primaryLightHover: '#115e59',
+    primaryDark: '#2dd4bf',
+    primaryDarkHover: '#5eead4',
+    resourceSiderLight: '#134e4a',
+    resourceSiderDark: '#042f2e',
+    spotlightLight: '#f0fdfa',
+    spotlightDark: '#0c1f1e',
+    layoutLight: '#f3fbfa',
+    layoutDark: '#041614'
+  },
+  ember: {
+    primaryLight: '#ff3b30',
+    primaryLightHover: '#e11d18',
+    primaryDark: '#ff6b4a',
+    primaryDarkHover: '#ff8a6a',
+    resourceSiderLight: '#7f1d1d',
+    resourceSiderDark: '#2a0a08',
+    spotlightLight: '#fff1f0',
+    spotlightDark: '#241210',
+    layoutLight: '#fff6f4',
+    layoutDark: '#160806'
+  },
+  ink: {
+    primaryLight: '#1e3a8a',
+    primaryLightHover: '#172554',
+    primaryDark: '#7dd3fc',
+    primaryDarkHover: '#bae6fd',
+    resourceSiderLight: '#172554',
+    resourceSiderDark: '#020617',
+    spotlightLight: '#e0f2fe',
+    spotlightDark: '#0f172a',
+    layoutLight: '#f0f9ff',
+    layoutDark: '#020617'
+  },
+  matcha: {
+    primaryLight: '#3f6212',
+    primaryLightHover: '#365314',
+    primaryDark: '#a3e635',
+    primaryDarkHover: '#bef264',
+    resourceSiderLight: '#365314',
+    resourceSiderDark: '#142006',
+    spotlightLight: '#f7fee7',
+    spotlightDark: '#17210c',
+    layoutLight: '#f8fcec',
+    layoutDark: '#0c1206'
+  },
+  dune: {
+    primaryLight: '#b45309',
+    primaryLightHover: '#92400e',
+    primaryDark: '#fcd34d',
+    primaryDarkHover: '#fde68a',
+    resourceSiderLight: '#78350f',
+    resourceSiderDark: '#1c1410',
+    spotlightLight: '#faf6ef',
+    spotlightDark: '#241c16',
+    layoutLight: '#f8f1e7',
+    layoutDark: '#14100c'
+  },
+  orchid: {
+    primaryLight: '#9333ea',
+    primaryLightHover: '#7e22ce',
+    primaryDark: '#e9d5ff',
+    primaryDarkHover: '#f3e8ff',
+    resourceSiderLight: '#581c87',
+    resourceSiderDark: '#1a0a28',
+    spotlightLight: '#faf5ff',
+    spotlightDark: '#1e1030',
+    layoutLight: '#f7f2ff',
+    layoutDark: '#100818'
   }
 }
 
@@ -370,115 +456,160 @@ export const COLOR_SCHEME_DEFINITIONS: ColorSchemeDefinition[] = [
     name: 'Violet',
     description: 'MagicLens signature purple',
     group: 'classic',
-    swatches: ['#6d28d9', '#c4b5fd', '#f5f3ff']
+    swatches: ['#7c3aed', '#c4b5fd', '#f4f0ff']
   },
   {
     id: 'ocean',
     name: 'Ocean',
-    description: 'Cyan tide and deep water',
+    description: 'Cobalt water and pale sky',
     group: 'classic',
-    swatches: ['#0e7490', '#22d3ee', '#ecfeff']
+    swatches: ['#1d4ed8', '#60a5fa', '#f3f7ff']
   },
   {
     id: 'forest',
     name: 'Forest',
-    description: 'Moss green and leaf light',
+    description: 'Pine green and leaf light',
     group: 'classic',
-    swatches: ['#15803d', '#4ade80', '#f0fdf4']
+    swatches: ['#166534', '#4ade80', '#f3faf5']
   },
   {
     id: 'sunset',
     name: 'Sunset',
-    description: 'Warm orange dusk glow',
+    description: 'Amber dusk on warm paper',
     group: 'classic',
-    swatches: ['#ea580c', '#fb923c', '#fff7ed']
+    swatches: ['#ea580c', '#fdba74', '#fff8f1']
   },
   {
     id: 'slate',
     name: 'Slate',
-    description: 'Cool professional gray',
+    description: 'Steel gray and cool paper',
     group: 'classic',
-    swatches: ['#334155', '#94a3b8', '#f1f5f9']
+    swatches: ['#475569', '#cbd5e1', '#f1f5f9']
   },
   {
     id: 'rose',
-    name: 'Coral',
-    description: 'MagicLens coral accent (#FF5F6D)',
+    name: 'Rose',
+    description: 'Hot rose on blush paper',
     group: 'classic',
-    swatches: ['#FF5F6D', '#ff7a85', '#f7f8fa']
+    swatches: ['#e11d48', '#fb7185', '#fff5f6']
   },
   {
     id: 'skywings',
     name: 'Sky Wings',
     description: 'Winged journey skies & gold',
     group: 'worlds',
-    swatches: ['#2563eb', '#fbbf24', '#eff6ff']
+    swatches: ['#ca8a04', '#1e40af', '#f7f9ff']
   },
   {
     id: 'moonprism',
     name: 'Moon Prism',
     description: 'Magical-girl pink prism',
     group: 'worlds',
-    swatches: ['#db2777', '#f9a8d4', '#fdf2f8']
+    swatches: ['#ec4899', '#6b21a8', '#fff5fb']
   },
   {
     id: 'webstrike',
     name: 'Web Strike',
     description: 'Crimson & blue street hero',
     group: 'worlds',
-    swatches: ['#dc2626', '#2563eb', '#fef2f2']
+    swatches: ['#ef4444', '#1d4ed8', '#fff6f6']
   },
   {
     id: 'nightcape',
     name: 'Night Cape',
     description: 'Midnight charcoal & signal gold',
     group: 'worlds',
-    swatches: ['#eab308', '#1c1917', '#fafaf9']
+    swatches: ['#eab308', '#292524', '#f5f5f4']
   },
   {
     id: 'arcforge',
     name: 'Arc Forge',
     description: 'Armored crimson & forge gold',
     group: 'worlds',
-    swatches: ['#b91c1c', '#f59e0b', '#fff8f0']
+    swatches: ['#dc2626', '#fbbf24', '#fff8f3']
   },
   {
     id: 'shadowflame',
     name: 'Shadow Flame',
     description: 'Plum blade with teal edge',
     group: 'worlds',
-    swatches: ['#7c3aed', '#2dd4bf', '#f5f3ff']
+    swatches: ['#6d28d9', '#2dd4bf', '#f6f5ff']
   },
   {
     id: 'leafstorm',
     name: 'Leaf Storm',
     description: 'Hot orange over deep navy',
     group: 'worlds',
-    swatches: ['#f97316', '#1e3a5f', '#fff7ed']
+    swatches: ['#65a30d', '#1e3a5f', '#f9fbea']
   },
   {
     id: 'nebula',
     name: 'Nebula',
     description: 'Cosmic magenta starfield',
     group: 'worlds',
-    swatches: ['#c026d3', '#22d3ee', '#fdf4ff']
+    swatches: ['#c026d3', '#22d3ee', '#faf5ff']
+  },
+  {
+    id: 'lagoon',
+    name: 'Lagoon',
+    description: 'Turquoise tide and deep teal',
+    group: 'studio',
+    swatches: ['#0f766e', '#2dd4bf', '#f3fbfa']
+  },
+  {
+    id: 'ember',
+    name: 'Ember',
+    description: 'Vermillion heat on charcoal',
+    group: 'studio',
+    swatches: ['#ff3b30', '#ff6b4a', '#fff6f4']
+  },
+  {
+    id: 'ink',
+    name: 'Ink',
+    description: 'Navy ink with ice highlight',
+    group: 'studio',
+    swatches: ['#1e3a8a', '#7dd3fc', '#f0f9ff']
+  },
+  {
+    id: 'matcha',
+    name: 'Matcha',
+    description: 'Olive tea and lime foam',
+    group: 'studio',
+    swatches: ['#3f6212', '#a3e635', '#f8fcec']
+  },
+  {
+    id: 'dune',
+    name: 'Dune',
+    description: 'Copper on warm sand',
+    group: 'studio',
+    swatches: ['#b45309', '#fcd34d', '#f8f1e7']
+  },
+  {
+    id: 'orchid',
+    name: 'Orchid',
+    description: 'Soft violet bloom',
+    group: 'studio',
+    swatches: ['#9333ea', '#e9d5ff', '#f7f2ff']
   }
 ]
 
 export const COLOR_SCHEME_GROUPS: { id: ColorSchemeGroup; labelKey: string }[] = [
   { id: 'base', labelKey: 'settings.appearance.groupBase' },
   { id: 'classic', labelKey: 'settings.appearance.groupClassic' },
-  { id: 'worlds', labelKey: 'settings.appearance.groupWorlds' }
+  { id: 'worlds', labelKey: 'settings.appearance.groupWorlds' },
+  { id: 'studio', labelKey: 'settings.appearance.groupStudio' }
 ]
 
 export function getSchemePalette(
   scheme: ColorSchemeId,
   isDark: boolean,
-  customAccent?: string
+  custom?: string | CustomThemeColors
 ): AppPalette {
   const colors =
     scheme === 'custom'
-      ? deriveSchemeFromAccent(customAccent ?? '#FF5F6D')
+      ? typeof custom === 'object' && custom
+        ? schemeFromCustomPalette(custom, isDark)
+        : deriveSchemeFromAccent(typeof custom === 'string' ? custom : '#FF5F6D')
       : (SCHEME_COLORS[scheme] ?? SCHEME_COLORS.rose)
   return buildPalette(colors, isDark)
 }
@@ -487,10 +618,10 @@ export function getModePalette(
   isDark: boolean,
   lightScheme: ColorSchemeId,
   darkScheme: ColorSchemeId,
-  customAccentLight?: string,
-  customAccentDark?: string
+  customLight?: string | CustomThemeColors,
+  customDark?: string | CustomThemeColors
 ): AppPalette {
   return isDark
-    ? getSchemePalette(darkScheme, true, customAccentDark)
-    : getSchemePalette(lightScheme, false, customAccentLight)
+    ? getSchemePalette(darkScheme, true, customDark)
+    : getSchemePalette(lightScheme, false, customLight)
 }

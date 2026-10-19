@@ -84,6 +84,27 @@ async function nodeUsageFromPrometheus(clusterId: string): Promise<Map<string, {
   return usage
 }
 
+/** Fullest real filesystem (0–100) per node — same node-exporter series as the node detail charts. */
+async function nodeDiskFromPrometheus(clusterId: string): Promise<Map<string, number> | null> {
+  const status = await ensurePrometheusDiscovered(clusterId)
+  if (!status.available) return null
+  const fs = 'fstype!~"tmpfs|overlay|squashfs|nsfs|aufs|iso9660"'
+  const ratio = `100 * (1 - node_filesystem_avail_bytes{${fs}} / node_filesystem_size_bytes{${fs}})`
+  const joined = await prometheusQuery({
+    clusterId,
+    query: `max by (nodename) ((${ratio}) * on(instance) group_left(nodename) node_uname_info)`
+  })
+  let map = mapFromVector(joined.data, 'nodename')
+  if (map.size === 0) {
+    const fallback = await prometheusQuery({
+      clusterId,
+      query: `max by (node) (${ratio})`
+    })
+    map = mapFromVector(fallback.data, 'node')
+  }
+  return map.size > 0 ? map : null
+}
+
 export async function getClusterMetricsSummary(
   clients: ClusterClients,
   clusterId: string
@@ -158,7 +179,10 @@ export async function getNodeMetricsTable(
   clients: ClusterClients,
   clusterId: string
 ): Promise<NodeMetricsResponse> {
-  const nodesRes = await clients.core.listNode()
+  const [nodesRes, diskByNode] = await Promise.all([
+    clients.core.listNode(),
+    nodeDiskFromPrometheus(clusterId)
+  ])
 
   let usageByName = new Map<string, { cpu: number; memory: number }>()
   let metricsAvailable = true
@@ -192,7 +216,11 @@ export async function getNodeMetricsTable(
       cpuAllocatableCores: parseCpuQuantity(node.status?.allocatable?.cpu),
       memoryAllocatableBytes: parseMemoryQuantity(node.status?.allocatable?.memory),
       cpuUsageCores: usage?.cpu,
-      memoryUsageBytes: usage?.memory
+      memoryUsageBytes: usage?.memory,
+      diskUsagePercent: (() => {
+        const pct = diskByNode?.get(name)
+        return pct === undefined ? undefined : Math.max(0, Math.min(100, pct))
+      })()
     }
   })
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Drawer, Empty, Input, Modal, Progress, Select, Table, Tabs, Tag, Tooltip, message } from 'antd'
+import { Button, Drawer, Empty, Input, Modal, Progress, Select, Tabs, Tag, Tooltip, message } from 'antd'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import {
   Bar,
@@ -35,6 +35,9 @@ import {
   type SecurityRuleBookEntry
 } from '@shared/securityCatalog'
 import { Icon } from '../ui/Icon'
+import { AgeCell } from '../ResourceTable/AgeCell'
+import { ResizableTable } from '../../utils/ResizableTable'
+import { compareAgeTimestamps, compareText } from '../../utils/tableSort'
 import { useResolvedDarkMode } from '../../stores/useResolvedDarkMode'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useAiAgentStore } from '../../stores/aiAgentStore'
@@ -518,7 +521,13 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
     })
   }, [report, namespaceFilter, search])
 
-  const filteredBook = useMemo(() => searchSecurityRuleBook(search), [search])
+  const filteredBook = useMemo(() => {
+    return searchSecurityRuleBook(search).filter((rule) => {
+      if (severityFilter.length && !severityFilter.includes(rule.severity)) return false
+      if (sourceFilter.length && !sourceFilter.includes(rule.source)) return false
+      return true
+    })
+  }, [search, severityFilter, sourceFilter])
 
   const typeData = useMemo(
     () => (report?.typeCounts ?? []).map((row) => ({ axis: row.axis, count: row.count })),
@@ -581,6 +590,7 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
         dataIndex: 'severity',
         key: 'severity',
         width: 88,
+        defaultSortOrder: 'ascend',
         sorter: (a, b) => ALL_SEVERITIES.indexOf(a.severity) - ALL_SEVERITIES.indexOf(b.severity),
         render: (sev: SecuritySeverity) => (
           <span className={`ml-security-sev is-${sev.toLowerCase()}`}>{sev}</span>
@@ -598,7 +608,8 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
         title: t('security.colTitle'),
         dataIndex: 'title',
         key: 'title',
-        ellipsis: true
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.title, b.title)
       },
       {
         title: t('security.colNamespace'),
@@ -614,14 +625,24 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
         key: 'rule',
         width: 100,
         ellipsis: true,
+        sorter: (a, b) => compareText(a.rule, b.rule),
         render: (rule: string) => <code className="ml-security-rule">{rule}</code>
       },
       {
         title: t('security.colSource'),
         dataIndex: 'source',
         key: 'source',
+        width: 120,
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.source, b.source)
+      },
+      {
+        title: t('security.colPolicy'),
+        dataIndex: 'policy',
+        key: 'policy',
         width: 110,
-        ellipsis: true
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.policy, b.policy)
       }
     ],
     [t]
@@ -629,30 +650,54 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
 
   const entryColumns: ColumnsType<SecurityEntryPoint> = useMemo(
     () => [
-      { title: t('security.colName'), dataIndex: 'name', key: 'name', ellipsis: true },
+      {
+        title: t('security.colName'),
+        dataIndex: 'name',
+        key: 'name',
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.name, b.name)
+      },
       {
         title: t('security.colNamespace'),
         dataIndex: 'namespace',
         key: 'namespace',
-        width: 120,
-        ellipsis: true
+        width: 140,
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.namespace, b.namespace)
       },
       {
         title: t('security.colType'),
         dataIndex: 'type',
         key: 'type',
-        width: 100,
+        width: 120,
+        sorter: (a, b) => compareText(a.type, b.type),
         render: (type: string) => <Tag>{type}</Tag>
       },
-      { title: t('security.colPorts'), dataIndex: 'ports', key: 'ports', width: 140, ellipsis: true },
+      {
+        title: t('security.colPorts'),
+        dataIndex: 'ports',
+        key: 'ports',
+        width: 160,
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.ports, b.ports)
+      },
       {
         title: t('security.colStatus'),
         dataIndex: 'status',
         key: 'status',
-        width: 90,
+        width: 100,
+        sorter: (a, b) => compareText(a.status, b.status),
         render: (status: string) => (
           <Tag color={status === 'Active' ? 'success' : 'warning'}>{status}</Tag>
         )
+      },
+      {
+        title: t('security.colAge'),
+        dataIndex: 'age',
+        key: 'age',
+        width: 90,
+        sorter: (a, b) => compareAgeTimestamps(a.age, b.age),
+        render: (age: string | null) => <AgeCell timestamp={age} />
       }
     ],
     [t]
@@ -660,26 +705,43 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
 
   const vectorColumns: ColumnsType<SecurityVector> = useMemo(
     () => [
-      { title: t('security.colFrom'), dataIndex: 'from', key: 'from', width: 130, ellipsis: true },
+      {
+        title: t('security.colFrom'),
+        dataIndex: 'from',
+        key: 'from',
+        width: 140,
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.from, b.from)
+      },
       {
         title: t('security.colFromDetail'),
         dataIndex: 'fromDetail',
         key: 'fromDetail',
-        ellipsis: true
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.fromDetail, b.fromDetail)
       },
-      { title: t('security.colTo'), dataIndex: 'to', key: 'to', width: 130, ellipsis: true },
+      {
+        title: t('security.colTo'),
+        dataIndex: 'to',
+        key: 'to',
+        width: 140,
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.to, b.to)
+      },
       {
         title: t('security.colToDetail'),
         dataIndex: 'toDetail',
         key: 'toDetail',
-        ellipsis: true
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.toDetail, b.toDetail)
       },
       {
         title: t('security.colNamespace'),
         dataIndex: 'namespace',
         key: 'namespace',
-        width: 110,
-        ellipsis: true
+        width: 130,
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.namespace, b.namespace)
       }
     ],
     [t]
@@ -692,26 +754,43 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
         dataIndex: 'id',
         key: 'id',
         width: 110,
+        sorter: (a, b) => compareText(a.id, b.id),
         render: (id: string) => <code className="ml-security-rule">{id}</code>
       },
       {
         title: t('security.colSeverity'),
         dataIndex: 'severity',
         key: 'severity',
-        width: 88,
+        width: 100,
+        defaultSortOrder: 'ascend',
+        sorter: (a, b) => ALL_SEVERITIES.indexOf(a.severity) - ALL_SEVERITIES.indexOf(b.severity),
         render: (sev: SecuritySeverity) => (
           <span className={`ml-security-sev is-${sev.toLowerCase()}`}>{sev}</span>
         )
       },
-      { title: t('security.colTitle'), dataIndex: 'title', key: 'title', width: 180, ellipsis: true },
+      {
+        title: t('security.colTitle'),
+        dataIndex: 'title',
+        key: 'title',
+        width: 200,
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.title, b.title)
+      },
       {
         title: t('security.colSource'),
         dataIndex: 'source',
         key: 'source',
-        width: 110,
-        ellipsis: true
+        width: 130,
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.source, b.source)
       },
-      { title: t('security.bookSummary'), dataIndex: 'summary', key: 'summary', ellipsis: true }
+      {
+        title: t('security.bookSummary'),
+        dataIndex: 'summary',
+        key: 'summary',
+        ellipsis: true,
+        sorter: (a, b) => compareText(a.summary, b.summary)
+      }
     ],
     [t]
   )
@@ -1051,8 +1130,9 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
           <div className="ml-security-score">
             <i className="ml-security-score__dot" />
             <span className="ml-security-score__label">
-              {t(`security.risk.${tone}`, { defaultValue: report.riskLabel })} ({report.score})
+              {t(`security.risk.${tone}`, { defaultValue: report.riskLabel })}
             </span>
+            <span className="ml-security-score__value">{report.score}</span>
           </div>
           <div className="ml-security-flags">
             {report.flags.length === 0 ? (
@@ -1256,20 +1336,24 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
 
         {tab === 'vulnerabilities' ? (
           <div className="ml-security-table-wrap">
-            <Table
+            <ResizableTable
+              tableKey="security-vulnerabilities"
               size="small"
               rowKey="id"
               columns={vulnColumns}
               dataSource={filteredVulns}
               pagination={tablePagination}
-              scroll={{ x: 720 }}
+              fitPageSize
               className="ml-security-table"
               onRow={(record) => ({
                 onClick: () => {
                   setSelectedVuln(record)
                   setSelectedRule(null)
                 },
-                className: 'ml-security-table__row'
+                className:
+                  record.id === selectedVuln?.id
+                    ? 'ml-security-table__row is-selected'
+                    : 'ml-security-table__row'
               })}
               locale={{ emptyText: t('security.noFilterMatches') }}
             />
@@ -1277,13 +1361,14 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
         ) : null}
         {tab === 'entryPoints' ? (
           <div className="ml-security-table-wrap">
-            <Table
+            <ResizableTable
+              tableKey="security-entry-points"
               size="small"
               rowKey={(row) => `${row.namespace}/${row.name}`}
               columns={entryColumns}
               dataSource={filteredEntries}
               pagination={tablePagination}
-              scroll={{ x: 640 }}
+              fitPageSize
               className="ml-security-table"
               locale={{ emptyText: t('security.noFilterMatches') }}
             />
@@ -1291,13 +1376,14 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
         ) : null}
         {tab === 'vectors' ? (
           <div className="ml-security-table-wrap">
-            <Table
+            <ResizableTable
+              tableKey="security-vectors"
               size="small"
               rowKey="id"
               columns={vectorColumns}
               dataSource={filteredVectors}
               pagination={tablePagination}
-              scroll={{ x: 720 }}
+              fitPageSize
               className="ml-security-table"
               locale={{ emptyText: t('security.noFilterMatches') }}
             />
@@ -1305,28 +1391,24 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
         ) : null}
         {tab === 'book' ? (
           <div className="ml-security-table-wrap">
-            <Table
+            <ResizableTable
+              tableKey="security-book"
               size="small"
               rowKey="id"
               columns={bookColumns}
-              dataSource={
-                severityFilter.length || sourceFilter.length
-                  ? filteredBook.filter(
-                      (r) =>
-                        (!severityFilter.length || severityFilter.includes(r.severity)) &&
-                        (!sourceFilter.length || sourceFilter.includes(r.source))
-                    )
-                  : filteredBook
-              }
+              dataSource={filteredBook}
               pagination={tablePagination}
-              scroll={{ x: 720 }}
+              fitPageSize
               className="ml-security-table"
               onRow={(record) => ({
                 onClick: () => {
                   setSelectedRule(record)
                   setSelectedVuln(null)
                 },
-                className: 'ml-security-table__row'
+                className:
+                  record.id === selectedRule?.id
+                    ? 'ml-security-table__row is-selected'
+                    : 'ml-security-table__row'
               })}
               locale={{ emptyText: t('security.noFilterMatches') }}
             />

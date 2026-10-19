@@ -7,10 +7,10 @@ export function useAppPalette() {
   const isDark = useResolvedDarkMode()
   const lightScheme = useThemeStore((s) => s.lightScheme)
   const darkScheme = useThemeStore((s) => s.darkScheme)
-  const customAccentLight = useThemeStore((s) => s.customAccentLight)
-  const customAccentDark = useThemeStore((s) => s.customAccentDark)
+  const customPaletteLight = useThemeStore((s) => s.customPaletteLight)
+  const customPaletteDark = useThemeStore((s) => s.customPaletteDark)
   return useMemo(
-    () => getModePalette(isDark, lightScheme, darkScheme, customAccentLight, customAccentDark),
-    [isDark, lightScheme, darkScheme, customAccentLight, customAccentDark]
+    () => getModePalette(isDark, lightScheme, darkScheme, customPaletteLight, customPaletteDark),
+    [isDark, lightScheme, darkScheme, customPaletteLight, customPaletteDark]
   )
 }

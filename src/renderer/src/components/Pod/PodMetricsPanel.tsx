@@ -109,15 +109,17 @@ export function PodMetricsPanel({
   }
 
   const columns: ColumnsType<PodContainerMetric> = [
-    { title: 'Container', dataIndex: 'name', key: 'name' },
+    { title: 'Container', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
     {
       title: 'CPU usage',
       key: 'cpu',
+      sorter: (a, b) => a.cpuUsageCores - b.cpuUsageCores,
       render: (_, c) => <Typography.Text>{formatCores(c.cpuUsageCores)}</Typography.Text>
     },
     {
       title: 'Memory usage',
       key: 'memory',
+      sorter: (a, b) => a.memoryUsageBytes - b.memoryUsageBytes,
       render: (_, c) => <Typography.Text>{formatBytes(c.memoryUsageBytes)}</Typography.Text>
     }
   ]

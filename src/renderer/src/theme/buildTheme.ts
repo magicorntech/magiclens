@@ -1,5 +1,6 @@
 import { theme as antdThemeApi } from 'antd'
 import type { ThemeConfig } from 'antd'
+import type { CustomThemeColors } from './colorUtils'
 import type { ColorSchemeId } from './schemes'
 import { getSchemePalette } from './schemes'
 import { withAlpha } from './colorUtils'
@@ -8,7 +9,7 @@ import { typography, radius } from '../design-system/tokens'
 export function buildAntdTheme(
   isDark: boolean,
   colorScheme: ColorSchemeId = 'rose',
-  customAccent?: string,
+  customAccent?: string | CustomThemeColors,
   fontSans?: string
 ): ThemeConfig {
   const p = getSchemePalette(colorScheme, isDark, customAccent)
@@ -136,7 +137,7 @@ export function buildAntdTheme(
 export function syncDocumentTheme(
   isDark: boolean,
   colorScheme: ColorSchemeId = 'rose',
-  customAccent?: string,
+  customAccent?: string | CustomThemeColors,
   fontSans?: string
 ): void {
   const p = getSchemePalette(colorScheme, isDark, customAccent)

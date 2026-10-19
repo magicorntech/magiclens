@@ -146,8 +146,10 @@
 .ml-security-score {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .ml-security-score__dot {
@@ -158,17 +160,34 @@
 }
 
 .ml-security-score__label {
-  font-size: 17px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 15px;
   font-weight: 650;
+  line-height: 1.2;
   letter-spacing: -0.02em;
+  color: var(--ml-text);
+  overflow-wrap: anywhere;
+}
+
+.ml-security-score__value {
+  flex: 0 0 auto;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
   color: var(--ml-text);
 }
 
 .ml-security-flags {
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   gap: 6px;
   margin-top: auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .ml-security-flags__empty {
@@ -198,7 +217,7 @@
   background: var(--ml-bg-elevated);
   padding: 4px 12px 10px;
   flex: 1 1 auto;
-  min-height: 280px;
+  min-height: 360px;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -209,9 +228,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
   flex-shrink: 0;
+  min-height: 46px;
 }
 
 .ml-security__tabs {
@@ -238,9 +258,15 @@
 
 .ml-security-table-wrap {
   flex: 1 1 auto;
-  min-height: 240px;
+  min-height: 280px;
   min-width: 0;
   width: 100%;
+}
+
+.ml-security-table-wrap .ml-table-wrap {
+  height: auto;
+  min-height: 240px;
+  background: transparent;
 }
 
 .ml-security-table.ant-table-wrapper,
@@ -276,19 +302,32 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 0 0 10px;
+  padding: 8px 0 12px;
   flex-shrink: 0;
 }
 
 .ml-security__search {
-  flex: 1 1 200px;
-  min-width: 160px;
-  max-width: 320px;
+  flex: 1.4 1 220px;
+  min-width: 180px;
+  max-width: none;
 }
 
 .ml-security__filter-select {
+  flex: 1 1 160px;
+  width: auto;
   min-width: 140px;
-  max-width: 220px;
+  max-width: 240px;
+}
+
+.ml-security__filters .ant-input-affix-wrapper,
+.ml-security__filters .ant-select-selector {
+  min-height: 32px !important;
+  height: 32px !important;
+  align-items: center;
+}
+
+.ml-security__filters .ant-select-selection-overflow {
+  flex-wrap: nowrap;
 }
 
 .ml-security__tab-with-icon {

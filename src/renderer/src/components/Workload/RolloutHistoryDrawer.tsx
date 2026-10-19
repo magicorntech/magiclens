@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table'
 import type { RolloutRevision, WorkloadKind } from '@shared/types/workload'
 import { KubectlCommandPreview } from './KubectlCommandPreview'
 import { kubectlRollbackCommand } from '@shared/workloadKubectl'
+import { compareText } from '../../utils/tableSort'
 
 interface RolloutHistoryDrawerProps {
   open: boolean
@@ -51,22 +52,26 @@ export function RolloutHistoryDrawer({
   }, [open, clusterId, kind, namespace, name])
 
   const columns: ColumnsType<RolloutRevision> = [
-    { title: 'Revision', dataIndex: 'revision', width: 90 },
+    { title: 'Revision', dataIndex: 'revision', key: 'revision', width: 90, sorter: (a, b) => a.revision - b.revision },
     {
       title: 'ReplicaSet',
       dataIndex: 'replicaSetName',
-      ellipsis: true
+      key: 'replicaSetName',
+      ellipsis: true,
+      sorter: (a, b) => compareText(a.replicaSetName, b.replicaSetName)
     },
     {
       title: 'Ready',
       key: 'ready',
       width: 80,
+      sorter: (a, b) => a.readyReplicas / Math.max(a.replicas, 1) - b.readyReplicas / Math.max(b.replicas, 1),
       render: (_, r) => `${r.readyReplicas}/${r.replicas}`
     },
     {
       title: 'Images',
       key: 'images',
       ellipsis: true,
+      sorter: (a, b) => compareText(a.images.join(', '), b.images.join(', ')),
       render: (_, r) => r.images.join(', ')
     },
     {

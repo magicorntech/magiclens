@@ -6,8 +6,8 @@ import { useResizableDrawerWidth } from '../../hooks/useResizableDrawerWidth'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { ResourceDetailPanel } from '../ResourceTable/ResourceDetailPanel'
 
-const DETAIL_WIDTH_KEY = 'ml.resourceDetailDrawerWidth'
-const DETAIL_MIN_WIDTH = 380
+const DETAIL_WIDTH_KEY = 'ml.resourceDetailDrawerWidth.v2'
+const DETAIL_MIN_WIDTH = 420
 
 interface ResourceDetailDrawerProps {
   open: boolean
@@ -32,11 +32,12 @@ export function ResourceDetailDrawer({
   const maskBlur = useDisplaySettingsStore((s) => s.resourceDetailMaskBlur)
   // Keep the panel inside the resource page (not the full app chrome). Pods need a
   // bit more width for logs / exec / metrics tabs.
-  const defaultWidth = layoutMode === 'compact' ? 440 : kind === 'Pods' ? 640 : 520
+  const defaultWidth = layoutMode === 'compact' ? 560 : kind === 'Pods' || kind === 'Nodes' ? 880 : 760
   const { width, resizing, handleProps } = useResizableDrawerWidth({
     storageKey: DETAIL_WIDTH_KEY,
     defaultWidth,
-    minWidth: DETAIL_MIN_WIDTH
+    minWidth: DETAIL_MIN_WIDTH,
+    maxRatio: 0.82
   })
   const isMobile = layoutMode === 'mobile'
   const size = isMobile ? '100%' : width

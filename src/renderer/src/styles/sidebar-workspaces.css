@@ -83,7 +83,25 @@
   height: 12px !important;
 }
 
-/* Quiet inline search when filter is open */
+.ml-ws-group__name mark,
+.ml-ws-row__label mark,
+.ml-resource-nav-flyout-item-label mark,
+.ml-resource-nav-flyout-title mark {
+  background: color-mix(in srgb, var(--ml-primary) 22%, transparent);
+  color: inherit;
+  padding: 0 1px;
+}
+
+.ml-ws-rail-search {
+  width: 220px;
+  padding: 8px;
+}
+
+.ml-nav-fab.is-active {
+  color: var(--ml-primary);
+}
+
+/* Quiet inline search */
 .ml-sidebar-section--workspaces .ml-sidebar-search {
   margin: 0 0 6px !important;
 }
@@ -355,16 +373,13 @@
   background: transparent !important;
 }
 
-.ml-ws-row.is-active .ml-ws-row__mark {
-  border-color: transparent !important;
-  background: color-mix(in srgb, var(--ml-primary, #60a5fa) 90%, white) !important;
-}
-
-.ml-ws-row.is-connected:not(.is-active) .ml-ws-row__mark {
+/* Never connected stays hollow. The open connection is green; other live connections are yellow. */
+.ml-ws-row.is-active.is-connected .ml-ws-row__mark {
   border-color: transparent !important;
   background: var(--ml-success, #22c55e) !important;
 }
 
+.ml-ws-row.is-connected:not(.is-active) .ml-ws-row__mark,
 .ml-ws-row.is-connecting .ml-ws-row__mark {
   border-color: transparent !important;
   background: #eab308 !important;
@@ -412,10 +427,11 @@
   z-index: 1 !important;
 }
 
-.ml-ws-row.is-connected .ml-ws-row__dot {
+.ml-ws-row.is-active.is-connected .ml-ws-row__dot {
   background: var(--ml-success, #22c55e) !important;
 }
 
+.ml-ws-row.is-connected:not(.is-active) .ml-ws-row__dot,
 .ml-ws-row.is-connecting .ml-ws-row__dot {
   background: #eab308 !important;
 }
