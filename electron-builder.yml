@@ -23,6 +23,9 @@ asarUnpack:
 
 # electron-updater reads this at runtime to know where to look for new releases.
 #
+# Installers are published to a separate, public releases-only repository so that the source repository
+# can stay private. Publishing there needs a token with Contents: write on it (RELEASES_TOKEN in CI).
+#
 # releaseType is "draft", not "release": the three platform builds run in parallel and macOS
 # (slower, due to notarization) finishes well after Windows/Linux. If each platform published
 # straight to a public release, there'd be a multi-minute window where the release exists with
@@ -34,7 +37,7 @@ asarUnpack:
 publish:
   provider: github
   owner: magicorntech
-  repo: magiclens
+  repo: magiclens-releases
   releaseType: draft
 
 # Auto-update on macOS requires the app (and the downloaded update) to be code-signed.
@@ -67,7 +70,8 @@ mac:
       arch: [x64, arm64]
 
 dmg:
-  writeUpdateInfo: true
+  # Updates on macOS come from the zip target; a dmg blockmap is never used, so do not publish one.
+  writeUpdateInfo: false
 
 win:
   icon: build/icon.png

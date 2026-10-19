@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
-const API = 'https://api.github.com/repos/magicorntech/magiclens/releases?per_page=30'
-const RELEASES_PAGE = 'https://github.com/magicorntech/magiclens/releases'
+const API = 'https://api.github.com/repos/magicorntech/magiclens-releases/releases?per_page=30'
+const RELEASES_PAGE = 'https://github.com/magicorntech/magiclens-releases/releases'
 const CACHE_KEY = 'ml-releases-v1'
 const CACHE_MS = 10 * 60 * 1000
 

@@ -1,9 +1,17 @@
 name: Release
 
 # Triggered whenever a semantic version tag (v1.0.0, v1.0.1, v1.1.0, v2.0.0, ...) is pushed.
-# Builds desktop installers for macOS (dmg, arm64 + x64), Windows (nsis exe) and Linux
-# (AppImage + deb), uploads them all to a single GitHub Release for the tag, and writes an
-# auto-generated changelog into the release notes.
+# Builds desktop installers for macOS (dmg + the zip the updater needs, arm64 + x64), Windows (nsis exe)
+# and Linux (AppImage + deb).
+#
+# This repository holds the source and stays private. Installers are published to the public,
+# releases-only repository (RELEASES_REPO) with RELEASES_TOKEN — a fine-grained token that has
+# Contents: read/write on that repository only. The notes come from src/shared/whatsNew.ts, never from
+# commit subjects.
+#
+# Bridge: apps older than the move still look for updates in THIS repository. While the repository
+# variable LEGACY_MIRROR is 'true', each release is also copied here so those apps can reach the first
+# build that knows the new location. Turn the variable off and make this repository private afterwards.
 on:
   push:
     tags:
@@ -11,6 +19,9 @@ on:
 
 permissions:
   contents: write
+
+env:
+  RELEASES_REPO: magicorntech/magiclens-releases
 
 jobs:
   verify-version:
@@ -109,7 +120,7 @@ jobs:
       - name: Build & publish (macOS)
         if: matrix.platform == 'mac'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -127,7 +138,7 @@ jobs:
       - name: Build & publish (Windows)
         if: matrix.platform == 'win'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         shell: bash
@@ -144,51 +155,67 @@ jobs:
       - name: Build & publish (Linux)
         if: matrix.platform == 'linux'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: npx electron-builder --publish always --linux
 
-  changelog:
-    name: Generate changelog & finalize release
+  publish-notes:
+    name: Publish release notes
     needs: [verify-version, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
         with:
-          fetch-depth: 0
+          node-version: 20
+          cache: npm
 
-      - name: Build changelog from git history
-        id: changelog
-        run: |
-          CURRENT_TAG="${GITHUB_REF_NAME}"
-          PREV_TAG="$(git tag --sort=-creatordate | grep -A1 "^${CURRENT_TAG}$" | tail -n1)"
-          if [ "$PREV_TAG" == "$CURRENT_TAG" ] || [ -z "$PREV_TAG" ]; then
-            RANGE="$CURRENT_TAG"
-            echo "No previous tag found, using full history up to $CURRENT_TAG"
-          else
-            RANGE="$PREV_TAG..$CURRENT_TAG"
-            echo "Changelog range: $RANGE"
-          fi
+      - name: Install dependencies (typescript, for the notes script)
+        run: npm ci --ignore-scripts
 
-          {
-            echo "## What's changed"
-            echo ""
-            git log "$RANGE" --no-merges --pretty=format:"- %s (%h)"
-            echo ""
-            echo ""
-            if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$CURRENT_TAG" ]; then
-              echo "**Full changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${CURRENT_TAG}"
-            fi
-          } > CHANGELOG_RELEASE.md
+      - name: Build release notes from whatsNew.ts
+        run: node scripts/release-notes.mjs "${{ needs.verify-version.outputs.version }}" > RELEASE_NOTES.md
 
-          cat CHANGELOG_RELEASE.md
-
-      - name: Update GitHub Release with changelog
+      - name: Publish the release in the releases repository
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           gh release edit "${GITHUB_REF_NAME}" \
-            --repo "${GITHUB_REPOSITORY}" \
+            --repo "$RELEASES_REPO" \
             --title "MagicLens ${GITHUB_REF_NAME}" \
-            --notes-file CHANGELOG_RELEASE.md \
+            --notes-file RELEASE_NOTES.md \
             --draft=false \
             --latest
+
+      - name: Keep the notes for the legacy mirror
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: RELEASE_NOTES.md
+
+  legacy-mirror:
+    name: Copy release to this repository (bridge for older apps)
+    needs: [publish-notes]
+    if: ${{ vars.LEGACY_MIRROR == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - name: Mirror assets
+        env:
+          SRC_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir assets
+          GH_TOKEN="$SRC_TOKEN" gh release download "${GITHUB_REF_NAME}" --repo "$RELEASES_REPO" --dir assets
+          if gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" assets/* --repo "${GITHUB_REPOSITORY}" --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" assets/* \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "MagicLens ${GITHUB_REF_NAME}" \
+              --notes-file RELEASE_NOTES.md \
+              --latest
+          fi
