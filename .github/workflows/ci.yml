@@ -1,11 +1,12 @@
 name: CI
 
+# Pull requests and master only. A release tag runs tests inside Release,
+# then the installers, so a version push is one pipeline.
 on:
   pull_request:
   push:
     branches:
       - master
-      - 'release/**'
 
 jobs:
   test:

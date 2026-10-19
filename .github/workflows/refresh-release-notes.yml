@@ -2,9 +2,8 @@ name: Refresh release notes
 
 # Rewrites an already published release body from src/shared/whatsNew.ts.
 # No commit hashes and no compare URL.
-# The tag push that starts Release also changes this file's default in older
-# copies; do not run on that change. The Release workflow writes the notes
-# after the installers exist. This job only refreshes a release that is already up.
+# Manual only. The Release workflow already writes these notes after the
+# installers upload, so a version push stays a single pipeline.
 on:
   workflow_dispatch:
     inputs:
@@ -12,12 +11,6 @@ on:
         description: Release tag to update. Empty uses package.json.
         required: false
         default: ''
-  push:
-    branches:
-      - 'release/**'
-    paths:
-      - scripts/release-notes.mjs
-      - src/shared/whatsNew.ts
 
 permissions:
   contents: write

@@ -1,8 +1,9 @@
 name: Release
 
+# One pipeline per version tag: lint and tests, then macOS and Windows installers.
+# A failed test job skips the builds.
 # Triggered whenever a semantic version tag (v1.0.0, v1.0.1, v1.1.0, v2.0.0, ...) is pushed.
-# Builds desktop installers for macOS (dmg to download, zip for the auto-updater, arm64 + x64)
-# and Windows (nsis exe),
+# macOS produces a dmg to download and a zip for the auto-updater. Windows produces an nsis exe.
 # uploads them to a single GitHub Release for the tag, and writes the curated
 # What's New notes (no commit hashes or compare links).
 on:
@@ -14,16 +15,13 @@ permissions:
   contents: write
 
 jobs:
-  verify-version:
-    name: Verify tag matches package.json version
+  test:
+    name: Lint and tests
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.check.outputs.version }}
     steps:
       - uses: actions/checkout@v7
 
       - name: Compare tag with package.json version
-        id: check
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           PKG_VERSION="$(node -p "require('./package.json').version")"
@@ -33,11 +31,24 @@ jobs:
             echo "::error::Git tag ${GITHUB_REF_NAME} does not match package.json version ${PKG_VERSION}. Update package.json before tagging."
             exit 1
           fi
-          echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint shared code
+        run: npm run lint
+
+      - name: Unit and page tests
+        run: npm test
 
   build:
     name: Build (${{ matrix.os }})
-    needs: verify-version
+    needs: test
     strategy:
       fail-fast: false
       matrix:
@@ -57,9 +68,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Lint and tests
-        run: npm run lint && npm test
 
       - name: Build renderer/main bundles
         run: npm run build
@@ -141,7 +149,7 @@ jobs:
 
   changelog:
     name: Generate changelog & finalize release
-    needs: [verify-version, build]
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
