@@ -1,28 +1,32 @@
 .ml-ai-meta {
-  margin: 0 0 14px;
+  margin: 0;
+  padding: 10px 14px;
   font-size: 12px;
-  color: var(--ant-color-text-secondary);
+  color: var(--ml-text-tertiary);
+  border-bottom: 1px solid var(--ml-border-secondary);
 }
 
 .ml-ai-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
 .ml-ai-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--ant-color-fill-quaternary) 65%, transparent);
-  border: 1px solid transparent;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 0;
+  background: transparent;
+  border-top: 1px solid var(--ml-border-secondary);
+}
+
+.ml-ai-list > .ml-ai-card:first-child {
+  border-top: none;
 }
 
 .ml-ai-card.is-default {
-  border-color: color-mix(in srgb, var(--ant-color-primary) 40%, transparent);
-  background: color-mix(in srgb, var(--ant-color-primary) 6%, var(--ant-color-fill-quaternary));
+  background: color-mix(in srgb, var(--ml-primary) 7%, transparent);
 }
 
 .ml-ai-card__head {
@@ -43,9 +47,9 @@
 
 .ml-ai-card__name {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ant-color-text);
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ml-text);
   line-height: 1.2;
 }
 
@@ -53,15 +57,17 @@
 .ml-ai-card__default {
   font-size: 11px;
   line-height: 1;
-  padding: 4px 7px;
-  border-radius: 6px;
-  color: var(--ant-color-text-secondary);
-  background: color-mix(in srgb, var(--ant-color-fill-secondary) 80%, transparent);
+  padding: 3px 6px;
+  border-radius: 0;
+  color: var(--ml-text-secondary);
+  background: color-mix(in srgb, var(--ml-bg-spotlight) 80%, transparent);
+  border: 1px solid var(--ml-border-secondary);
 }
 
 .ml-ai-card__default {
-  color: var(--ant-color-primary);
-  background: color-mix(in srgb, var(--ant-color-primary) 14%, transparent);
+  color: var(--ml-text);
+  border-color: color-mix(in srgb, var(--ml-primary) 45%, var(--ml-border-secondary));
+  background: color-mix(in srgb, var(--ml-primary) 14%, transparent);
 }
 
 .ml-ai-card__status {
@@ -69,31 +75,31 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--ant-color-text-secondary);
+  color: var(--ml-text-secondary);
   flex-shrink: 0;
 }
 
 .ml-ai-card__status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ant-color-text-quaternary);
+  width: 6px;
+  height: 6px;
+  border-radius: 0;
+  background: var(--ml-text-tertiary);
 }
 
 .ml-ai-card__status--ok {
-  color: var(--ant-color-success);
+  color: var(--ml-success, #3dd68c);
 }
 
 .ml-ai-card__status--ok .ml-ai-card__status-dot {
-  background: var(--ant-color-success);
+  background: currentColor;
 }
 
 .ml-ai-card__status--warn {
-  color: var(--ant-color-warning);
+  color: var(--ml-warning, #e6b450);
 }
 
 .ml-ai-card__status--warn .ml-ai-card__status-dot {
-  background: var(--ant-color-warning);
+  background: currentColor;
 }
 
 .ml-ai-card__fields {
@@ -111,14 +117,14 @@
 
 .ml-ai-field__label {
   font-size: 12px;
-  font-weight: 500;
-  color: var(--ant-color-text-secondary);
+  font-weight: 550;
+  color: var(--ml-text-secondary);
 }
 
 .ml-ai-field__hint {
   font-size: 11px;
   line-height: 1.35;
-  color: var(--ant-color-text-tertiary);
+  color: var(--ml-text-tertiary);
 }
 
 .ml-ai-card__foot {
@@ -129,14 +135,13 @@
 }
 
 .ml-ai-card__foot .ant-btn.is-active {
-  color: var(--ant-color-primary);
+  color: var(--ml-text);
 }
 
-/* ── Runbook (collapsed by default) ── */
 .ml-ai-runbook {
   margin-top: 2px;
   padding-top: 12px;
-  border-top: 1px solid color-mix(in srgb, var(--ant-color-border) 55%, transparent);
+  border-top: 1px solid var(--ml-border-secondary);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -146,7 +151,7 @@
   margin: 0;
   font-size: 12px;
   line-height: 1.45;
-  color: var(--ant-color-text-secondary);
+  color: var(--ml-text-secondary);
 }
 
 .ml-ai-runbook__actions {
@@ -177,24 +182,25 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 50%;
+  border-radius: 0;
   font-size: 11px;
   font-weight: 650;
-  background: color-mix(in srgb, var(--ant-color-fill-secondary) 90%, transparent);
-  color: var(--ant-color-text-secondary);
+  background: color-mix(in srgb, var(--ml-bg-spotlight) 80%, transparent);
+  color: var(--ml-text-secondary);
+  border: 1px solid var(--ml-border-secondary);
 }
 
 .ml-ai-runbook__step-title {
   font-size: 12px;
-  font-weight: 600;
-  color: var(--ant-color-text);
+  font-weight: 650;
+  color: var(--ml-text);
 }
 
 .ml-ai-runbook__step-detail {
   margin: 2px 0 0;
   font-size: 11px;
   line-height: 1.45;
-  color: var(--ant-color-text-secondary);
+  color: var(--ml-text-secondary);
 }
 
 .ml-ai-runbook__cmd {
@@ -203,8 +209,9 @@
   gap: 4px;
   margin-top: 6px;
   padding: 6px 8px;
-  border-radius: 8px;
-  background: var(--ant-color-bg-container);
+  border-radius: 0;
+  background: var(--ml-bg-layout);
+  border: 1px solid var(--ml-border-secondary);
   overflow: hidden;
 }
 
@@ -216,6 +223,7 @@
   line-height: 1.4;
   overflow-x: auto;
   white-space: pre;
+  color: var(--ml-text);
 }
 
 .ml-ai-runbook__step-actions {

@@ -1,4 +1,5 @@
-import { spawn, execFileSync } from 'node:child_process'
+import { spawn, execFile, execFileSync } from 'node:child_process'
+import { promisify } from 'node:util'
 import { accessSync, constants } from 'node:fs'
 import { homedir } from 'node:os'
 import { delimiter, isAbsolute, join } from 'node:path'
@@ -13,6 +14,8 @@ import type {
   AiProbeProviderResponse
 } from '@shared/types/aiChat'
 import { generateGeminiContent } from './geminiClient'
+
+const execFileAsync = promisify(execFile)
 
 function trimSlash(url: string): string {
   return url.replace(/\/+$/, '')
@@ -112,6 +115,36 @@ export function resolveCliBinary(provider: AiProviderConfig): string | null {
     }
   }
   return null
+}
+
+/** PATH lookup that does not block the Electron main thread. */
+async function whichBinary(name: string): Promise<string | null> {
+  try {
+    const { stdout } = await execFileAsync('/usr/bin/which', [name], {
+      env: cliEnv(),
+      encoding: 'utf8',
+      timeout: 1500
+    })
+    const found = String(stdout).trim().split('\n')[0]
+    return found && isExecutable(found) ? found : null
+  } catch {
+    return null
+  }
+}
+
+async function resolveCliBinaryAsync(provider: AiProviderConfig): Promise<string | null> {
+  const tried = new Set<string>()
+  let bare: string | null = null
+  for (const candidate of cliCandidatePaths(provider.id, provider.credential)) {
+    if (!candidate || tried.has(candidate)) continue
+    tried.add(candidate)
+    if (isAbsolute(candidate)) {
+      if (isExecutable(candidate)) return candidate
+      continue
+    }
+    bare ??= candidate
+  }
+  return bare ? whichBinary(bare) : null
 }
 
 async function readErrorBody(res: Response): Promise<string> {
@@ -459,7 +492,7 @@ export async function probeAiProvider(provider: AiProviderConfig): Promise<AiPro
   if (provider.kind === 'LOCAL' || provider.id === 'ollama') {
     const base = trimSlash(provider.credential.trim() || 'http://localhost:11434')
     try {
-      const res = await fetch(`${base}/api/tags`)
+      const res = await fetch(`${base}/api/tags`, { signal: AbortSignal.timeout(2000) })
       if (!res.ok) {
         return { ok: false, status: 'Not installed', detail: `Ollama ${res.status}` }
       }
@@ -475,7 +508,7 @@ export async function probeAiProvider(provider: AiProviderConfig): Promise<AiPro
     }
   }
 
-  const resolved = resolveCliBinary(provider)
+  const resolved = await resolveCliBinaryAsync(provider)
   if (!resolved) {
     return {
       ok: false,
@@ -489,12 +522,12 @@ export async function probeAiProvider(provider: AiProviderConfig): Promise<AiPro
 
   if (provider.id === 'claude-cli') {
     try {
-      const statusRaw = execFileSync(resolved, ['auth', 'status'], {
+      const { stdout: statusRaw } = await execFileAsync(resolved, ['auth', 'status'], {
         env: cliEnv(),
         encoding: 'utf8',
-        timeout: 8_000
+        timeout: 2500
       })
-      const status = JSON.parse(statusRaw) as { loggedIn?: boolean; authMethod?: string }
+      const status = JSON.parse(String(statusRaw)) as { loggedIn?: boolean; authMethod?: string }
       if (status.loggedIn === false) {
         return {
           ok: false,

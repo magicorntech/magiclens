@@ -24,6 +24,7 @@ interface ClusterGroupsStoreState {
   setGroupAccent: (id: string, accent: WorkspaceAccentId | null) => Promise<void>
   addClusterToGroup: (groupId: string, clusterId: string) => Promise<void>
   removeClusterFromGroup: (groupId: string, clusterId: string) => Promise<void>
+  reorderClusters: (groupId: string, fromId: string, toId: string) => Promise<void>
   /** Expand workspace and open its clusters (focus first). */
   activateWorkspace: (id: string) => Promise<void>
 }
@@ -118,6 +119,19 @@ export const useClusterGroupsStore = create<ClusterGroupsStoreState>()((set, get
     const groups = await window.api.clusterGroups.update(groupId, {
       clusterIds: group.clusterIds.filter((cid) => cid !== clusterId)
     })
+    set({ groups })
+  },
+  reorderClusters: async (groupId, fromId, toId) => {
+    const group = get().groups.find((g) => g.id === groupId)
+    if (!group || fromId === toId) return
+    const clusterIds = [...group.clusterIds]
+    const from = clusterIds.indexOf(fromId)
+    const to = clusterIds.indexOf(toId)
+    if (from < 0 || to < 0) return
+    const [moved] = clusterIds.splice(from, 1)
+    if (!moved) return
+    clusterIds.splice(to, 0, moved)
+    const groups = await window.api.clusterGroups.update(groupId, { clusterIds })
     set({ groups })
   },
   activateWorkspace: async (id) => {

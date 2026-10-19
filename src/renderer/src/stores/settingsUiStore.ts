@@ -6,6 +6,7 @@ export type SettingsSection =
   | 'display'
   | 'widget'
   | 'keyboard'
+  | 'search'
   | 'appearance'
   | 'sparks'
   | 'aiAgent'

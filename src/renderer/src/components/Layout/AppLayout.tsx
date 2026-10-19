@@ -42,6 +42,14 @@ export function AppLayout(): React.JSX.Element {
   }, [])
 
   useEffect(() => {
+    const apply = (fullscreen: boolean): void => {
+      document.documentElement.classList.toggle('ml-fullscreen', fullscreen)
+    }
+    void window.api.app.getFullscreen().then((res) => apply(res.fullscreen))
+    return window.api.app.onFullscreenChanged((payload) => apply(payload.fullscreen))
+  }, [])
+
+  useEffect(() => {
     void useNotesStore.getState().hydrate()
     return useNotesStore.getState().subscribeReminders()
   }, [])

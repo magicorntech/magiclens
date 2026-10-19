@@ -115,7 +115,26 @@ export const tr: TranslationOverrides = {
   },
   settings: {
     title: 'Ayarlar',
+    searchPlaceholder: 'Ayarlarda ara',
+    searchEmpty: 'Eşleşen ayar yok',
     subtitle: 'MagicLens tercihleri',
+    panes: {
+      app: 'Uygulama',
+      clusters: 'Kümeler',
+      theme: 'Tema',
+      type: 'Yazı',
+      layout: 'Yerleşim',
+      sidebar: 'Kenar çubuğu',
+      order: 'Sıra',
+      nodes: 'Düğümler',
+      status: 'Durum',
+      preferences: 'Tercihler',
+      behavior: 'Davranış',
+      sources: 'Kaynaklar',
+      molly: 'Molly',
+      providers: 'Sağlayıcılar',
+      options: 'Seçenekler'
+    },
     navGroups: {
       preferences: 'Tercihler',
       system: 'Sistem'
@@ -128,6 +147,7 @@ export const tr: TranslationOverrides = {
       vpnExtensions: 'VPN Eklentileri',
       portForwarding: 'Port Yönlendirme',
       keyboard: 'Klavye',
+      search: 'Arama',
       appearance: 'Tema',
       sparks: 'Sparks',
       aiAgent: 'AI Agent',
@@ -142,11 +162,49 @@ export const tr: TranslationOverrides = {
       vpnExtensions: 'VPN profilleri için OpenVPN ve WireGuard yardımcılarını kurun veya onarın.',
       portForwarding: 'Tüm kümelerdeki açık port yönlendirmelerini görün, boşta kalanların ne zaman kapanacağını ayarlayın.',
       keyboard: 'Genel kısayolları özelleştirin. Çakışan bağlar otomatik yer değiştirir.',
+      search: 'Global aramanın hangi kaynaklara bakacağını, kaç sonuç tutacağını ve son sorguları hatırlayıp hatırlamayacağını seçin.',
       appearance: 'Açık/koyu mod ve tüm uygulama için renk temaları.',
       sparks: 'Sparks not defteri temaları ve yerel eklenti modülleri.',
       aiAgent: 'Uygulama içi asistan için yerel veya uzak LLM sağlayıcılarını seçin.',
       developer: 'Hata ayıklama için makine özellikleri ve canlı süreç kullanımı.',
       about: 'Bu MagicLens kurulumunun sürüm ve çalışma zamanı bilgileri.'
+    },
+    search: {
+      behaviorTitle: 'Arama nasıl çalışsın',
+      behaviorHint: 'Global arama paletine uygulanır.',
+      limitTitle: 'Tür başına sonuç',
+      limitHint: 'Her kaynak türü için tutulan en fazla eşleşme.',
+      allClusters: 'Bağlı tüm kümelerde ara',
+      allClustersHint: 'Kapalıyken yalnızca açık küme aranır.',
+      recentTitle: 'Son aramaları hatırla',
+      recentHint: 'Palet boşken son sorguları göster.',
+      clearRecent: 'Son aramaları sil',
+      typesTitle: 'Kaynaklar',
+      typesHint: 'Kapatılan türler paletten ve sonuçlardan çıkar.',
+      enableAll: 'Tümünü aç',
+      disableAll: 'Tümünü kapat',
+      types: {
+        clusters: 'Kümeler',
+        sparks: 'Sparks',
+        security: 'Güvenlik',
+        namespaces: 'Namespace',
+        pods: 'Pod',
+        deployments: 'Deployment',
+        statefulsets: 'StatefulSet',
+        daemonsets: 'DaemonSet',
+        replicasets: 'ReplicaSet',
+        services: 'Service',
+        ingresses: 'Ingress',
+        configmaps: 'ConfigMap',
+        secrets: 'Secret',
+        pvc: 'PVC',
+        pv: 'PV',
+        nodes: 'Düğüm',
+        events: 'Event',
+        helmReleases: 'Helm release',
+        crds: 'CRD',
+        customResources: 'Özel kaynak'
+      }
     },
     widget: {
       title: 'Menü çubuğu widget’ı',
@@ -408,6 +466,18 @@ export const tr: TranslationOverrides = {
           label: 'Ayarları aç',
           description: 'Ayarlar penceresini aç'
         }
+      },
+      chords: {
+        title: 'Kaynak sekmesi kısayolları',
+        hint: '2 veya 3 tuşluk bir dizi, aktif kümede o Kubernetes kaynağını sekme olarak açar. Sen oluştur bir şablon doldurur; kendin de ekleyip düzenleyebilirsin.',
+        generate: 'Sen oluştur',
+        add: 'Kendin ekle',
+        empty: 'Henüz kaynak kısayolu yok. Şablon oluştur veya kendin ekle.',
+        length: 'Tuş sayısı',
+        press: '{{count}} tuşa basın…',
+        recordError: '⌘/Ctrl olmadan harf veya rakam kullanın. Esc iptal eder.',
+        conflict: 'Bu dizi kullanılıyor veya başka bir kısayolla çakışıyor.',
+        remove: 'Kısayolu sil'
       }
     },
     appearance: {
@@ -914,6 +984,10 @@ export const tr: TranslationOverrides = {
     removeLogo: 'Kaldır',
     clusters: 'Kümeler',
     selectClusters: 'Bu workspace için küme seçin',
+    reorderHint: 'Kümenin yerini değiştirmek için sürükleyin veya workspace’ten kaldırın.',
+    removeCluster: 'Workspace’ten kaldır',
+    moveUp: 'Yukarı al',
+    moveDown: 'Aşağı al',
     shortcut: 'Klavye kısayolu',
     shortcutHint: 'Bu workspace’i ve kümelerini açar. ⌘/Ctrl (veya Alt) ile bir tuş kullanın.',
     shortcutAssign: 'Kısayol ata',
@@ -1988,6 +2062,7 @@ export const tr: TranslationOverrides = {
     filterAria: 'Kaynak türüne göre filtrele',
     searchingIn: 'Kaynaklar aranıyor: {{cluster}}',
     recent: 'Son',
+    recentHint: 'Son aramalar',
     clusters: 'Kümeler',
     resources: 'Kaynaklar',
     hint: '↑↓ gezin · Enter aç · Esc kapat'

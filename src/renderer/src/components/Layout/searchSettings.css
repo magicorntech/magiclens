@@ -1,0 +1,45 @@
+.ml-search-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 14px;
+}
+
+.ml-search-types__chip {
+  border: 1px solid var(--ml-border-secondary);
+  background: transparent;
+  color: var(--ml-text-secondary);
+  padding: 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.ml-search-types__chip.is-on {
+  color: var(--ml-text);
+  border-color: color-mix(in srgb, var(--ml-primary) 50%, var(--ml-border-secondary));
+  background: color-mix(in srgb, var(--ml-primary) 12%, transparent);
+}
+
+.ml-search-recent {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--ml-border-secondary);
+}
+
+.ml-search-recent__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ml-search-recent__item {
+  font-size: 12px;
+  color: var(--ml-text-secondary);
+  border: 1px solid var(--ml-border-secondary);
+  padding: 3px 6px;
+}

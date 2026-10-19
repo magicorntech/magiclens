@@ -34,6 +34,7 @@ import {
   Palette,
   RefreshCw,
   Save,
+  Search,
   Settings2,
   Sparkles,
   Trash2
@@ -64,16 +65,19 @@ import { VpnExtensionsSettings } from './VpnExtensionsSettings'
 import { PortForwardingSettings } from './PortForwardingSettings'
 import { SparksSettings } from './SparksSettings'
 import { AiAgentSettings } from './AiAgentSettings'
+import { SearchSettings } from './SearchSettings'
 import { DeveloperSettings } from './DeveloperSettings'
 import { ThemeToggle } from './ThemeToggle'
 import {
   SettingsRow,
+  SettingsPaneTabs,
   SettingsSection,
   SettingsToggleRow,
   SettingsSelectRow,
   ThemeSwatch
 } from './SettingsPrimitives'
 import { type SettingsSection as SettingsSectionId, useSettingsUiStore } from '../../stores/settingsUiStore'
+import { SETTINGS_SEARCH } from './settingsSearchCatalog'
 
 interface SettingsModalProps {
   open: boolean
@@ -87,7 +91,13 @@ function schemeChipColor(id: string, swatches: readonly string[]): string {
   return swatches[0]
 }
 
-function AppearanceSettings(): React.JSX.Element {
+function AppearanceSettings({
+  pane,
+  onPaneChange
+}: {
+  pane: string
+  onPaneChange: (pane: string) => void
+}): React.JSX.Element {
   const { t } = useTranslation()
   const isDark = useResolvedDarkMode()
   const family: ThemeFamily = isDark ? 'dark' : 'light'
@@ -109,6 +119,55 @@ function AppearanceSettings(): React.JSX.Element {
 
   return (
     <>
+      <SettingsPaneTabs
+        value={pane}
+        onChange={onPaneChange}
+        options={[
+          { value: 'theme', label: t('settings.panes.theme') },
+          { value: 'type', label: t('settings.panes.type') }
+        ]}
+      />
+      {pane === 'type' ? (
+      <SettingsSection
+        title={t('settings.appearance.typographyTitle')}
+        description={t('settings.appearance.typographyHint')}
+      >
+        <SettingsSelectRow
+          title={t('settings.appearance.font')}
+          value={uiTypography.font}
+          onChange={(value: UiFontId) => void setUiTypography({ font: value })}
+          options={FONT_OPTION_IDS.map((id) => ({
+            value: id,
+            label: (
+              <span style={{ fontFamily: UI_FONT_STACKS[id] }}>
+                {t(`settings.appearance.font_${id}`)}
+              </span>
+            )
+          }))}
+        />
+        <SettingsSelectRow
+          title={t('settings.appearance.weight')}
+          value={uiTypography.weight}
+          onChange={(value: UiFontWeightId) => void setUiTypography({ weight: value })}
+          options={[
+            { value: 'regular', label: t('settings.appearance.weightRegular') },
+            { value: 'medium', label: t('settings.appearance.weightMedium') },
+            { value: 'semibold', label: t('settings.appearance.weightSemibold') }
+          ]}
+        />
+        <SettingsSelectRow
+          title={t('settings.appearance.contrast')}
+          value={uiTypography.contrast}
+          onChange={(value: UiTextContrastId) => void setUiTypography({ contrast: value })}
+          options={[
+            { value: 'soft', label: t('settings.appearance.contrastSoft') },
+            { value: 'normal', label: t('settings.appearance.contrastNormal') },
+            { value: 'bright', label: t('settings.appearance.contrastBright') }
+          ]}
+        />
+      </SettingsSection>
+      ) : (
+      <>
       <SettingsSection
         title={t('settings.appearance.modeTitle')}
         description={t('settings.appearance.modeHint')}
@@ -193,45 +252,8 @@ function AppearanceSettings(): React.JSX.Element {
           </div>
         ) : null}
       </SettingsSection>
-
-      <SettingsSection
-        title={t('settings.appearance.typographyTitle')}
-        description={t('settings.appearance.typographyHint')}
-      >
-        <SettingsSelectRow
-          title={t('settings.appearance.font')}
-          value={uiTypography.font}
-          onChange={(value: UiFontId) => void setUiTypography({ font: value })}
-          options={FONT_OPTION_IDS.map((id) => ({
-            value: id,
-            label: (
-              <span style={{ fontFamily: UI_FONT_STACKS[id] }}>
-                {t(`settings.appearance.font_${id}`)}
-              </span>
-            )
-          }))}
-        />
-        <SettingsSelectRow
-          title={t('settings.appearance.weight')}
-          value={uiTypography.weight}
-          onChange={(value: UiFontWeightId) => void setUiTypography({ weight: value })}
-          options={[
-            { value: 'regular', label: t('settings.appearance.weightRegular') },
-            { value: 'medium', label: t('settings.appearance.weightMedium') },
-            { value: 'semibold', label: t('settings.appearance.weightSemibold') }
-          ]}
-        />
-        <SettingsSelectRow
-          title={t('settings.appearance.contrast')}
-          value={uiTypography.contrast}
-          onChange={(value: UiTextContrastId) => void setUiTypography({ contrast: value })}
-          options={[
-            { value: 'soft', label: t('settings.appearance.contrastSoft') },
-            { value: 'normal', label: t('settings.appearance.contrastNormal') },
-            { value: 'bright', label: t('settings.appearance.contrastBright') }
-          ]}
-        />
-      </SettingsSection>
+      </>
+      )}
     </>
   )
 }
@@ -256,6 +278,53 @@ const UPDATE_PHASE_COLOR: Record<UpdatePhase, string> = {
   error: 'red'
 }
 
+function paneForSettingsKey(key: string): string | null {
+  if (key.includes('typography') || key.includes('.font') || key.includes('weight') || key.includes('contrast')) {
+    return 'type'
+  }
+  if (key.startsWith('settings.appearance')) return 'theme'
+  if (key.includes('kubeconfig') || key.includes('dedupe')) return 'clusters'
+  if (key.startsWith('settings.language') || key.startsWith('settings.general') || key.includes('sectionHints.general')) {
+    return 'app'
+  }
+  if (
+    key.includes('preferencesTitle') ||
+    key.includes('checkAutomatically') ||
+    key.includes('checkOnStartup') ||
+    key.includes('includePrerelease') ||
+    key.includes('autoDownload') ||
+    key.includes('askBeforeInstall')
+  ) {
+    return 'preferences'
+  }
+  if (key.includes('updates')) return 'status'
+  if (key.includes('nodes')) return 'nodes'
+  if (key.includes('workspaceOrder') || key.includes('resourceNav')) return 'order'
+  if (
+    key.includes('sidebar') ||
+    key.includes('showFavorites') ||
+    key.includes('showWorkspaces') ||
+    key.includes('showSidebarLogos') ||
+    key.includes('workspaceDock') ||
+    key.includes('showClusterNamespace') ||
+    key.includes('tabIcons') ||
+    key.includes('showClusterLogos') ||
+    key.includes('showResourceIcons') ||
+    key.includes('chromeToolbar')
+  ) {
+    return 'sidebar'
+  }
+  if (key.startsWith('settings.display')) return 'layout'
+  if (key.includes('molly')) return 'molly'
+  if (key.includes('cliWorkdir') || key.includes('hideAssistant') || key.includes('pulseChrome') || key.includes('optionsTitle')) {
+    return 'options'
+  }
+  if (key.startsWith('settings.aiAgent')) return 'providers'
+  if (key.includes('search.types') || key.includes('typesTitle')) return 'sources'
+  if (key.startsWith('settings.search') || key.includes('sections.search')) return 'behavior'
+  return null
+}
+
 interface NavItem {
   key: SettingsSectionId
   icon: LucideIcon
@@ -270,6 +339,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'display', icon: LayoutDashboard, group: 'preferences' },
   { key: 'widget', icon: Gauge, group: 'preferences' },
   { key: 'keyboard', icon: Keyboard, group: 'preferences' },
+  { key: 'search', icon: Search, group: 'preferences' },
   { key: 'updates', icon: CloudDownload, group: 'system' },
   { key: 'vpnExtensions', icon: Network, group: 'system' },
   { key: 'portForwarding', icon: Link, group: 'system' },
@@ -339,6 +409,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const setUiTypography = useDisplaySettingsStore((s) => s.setUiTypography)
   const [kubePathDraft, setKubePathDraft] = useState(kubeconfigScanPath)
   const [deduping, setDeduping] = useState(false)
+  const [settingsQuery, setSettingsQuery] = useState('')
+  const [settingsJump, setSettingsJump] = useState<string | null>(null)
+  const [paneBySection, setPaneBySection] = useState<Partial<Record<SettingsSectionId, string>>>({})
 
   useEffect(() => {
     if (open) setKubePathDraft(kubeconfigScanPath)
@@ -400,6 +473,37 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
     []
   )
 
+  const settingsHits = useMemo(() => {
+    const q = settingsQuery.trim().toLowerCase()
+    if (!q) return []
+    const hits: Array<{ section: SettingsSectionId; label: string; key: string }> = []
+    for (const group of SETTINGS_SEARCH) {
+      for (const key of group.keys) {
+        const label = t(key)
+        if (label.toLowerCase().includes(q) || key.toLowerCase().includes(q)) {
+          hits.push({ section: group.section, label, key })
+        }
+      }
+    }
+    return hits.slice(0, 24)
+  }, [settingsQuery, t])
+
+  useEffect(() => {
+    if (!settingsJump) return
+    const needle = settingsJump.toLowerCase()
+    const root = document.querySelector('.ml-settings-main')
+    const nodes = root?.querySelectorAll<HTMLElement>('.ml-settings-section__title, .ml-settings-row__title')
+    if (nodes) {
+      for (const node of nodes) {
+        if ((node.textContent || '').toLowerCase().includes(needle)) {
+          node.closest('section, .ml-settings-row')?.scrollIntoView({ block: 'start' })
+          break
+        }
+      }
+    }
+    setSettingsJump(null)
+  }, [settingsJump, section])
+
   const preferenceNav = NAV_ITEMS.filter((i) => i.group === 'preferences')
   const systemNav = NAV_ITEMS.filter((i) => i.group === 'system')
 
@@ -434,6 +538,16 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
       case 'general':
         return (
           <>
+            <SettingsPaneTabs
+              value={paneBySection.general ?? 'app'}
+              onChange={(pane) => setPaneBySection((current) => ({ ...current, general: pane }))}
+              options={[
+                { value: 'app', label: t('settings.panes.app') },
+                { value: 'clusters', label: t('settings.panes.clusters') }
+              ]}
+            />
+            {(paneBySection.general ?? 'app') === 'clusters' ? null : (
+            <>
             <SettingsSection title={t('settings.language.title')} description={t('settings.language.hint')}>
               <div className="ml-settings-segmented-wrap">
                 <Select
@@ -458,7 +572,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 />
               </div>
             </SettingsSection>
-
+            </>
+            )}
+            {(paneBySection.general ?? 'app') === 'clusters' ? (
+            <>
             <SettingsSection
               title={t('settings.general.kubeconfigPathTitle')}
               description={t('settings.general.kubeconfigPathHint')}
@@ -527,6 +644,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 {t('settings.general.dedupeConfirmBody')}
               </Typography.Text>
             </SettingsSection>
+            </>
+            ) : null}
           </>
         )
 
@@ -534,8 +653,18 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
         const updatePhase = updateState?.phase ?? 'idle'
         const isUpdateSkipped = !!updateState?.latestVersion && updateState.latestVersion === updateState.skippedVersion
         const isUpdateSpinning = updatePhase === 'checking' || updatePhase === 'downloading'
+        const updatesPane = paneBySection.updates ?? 'status'
         return (
           <>
+            <SettingsPaneTabs
+              value={updatesPane}
+              onChange={(pane) => setPaneBySection((current) => ({ ...current, updates: pane }))}
+              options={[
+                { value: 'status', label: t('settings.panes.status') },
+                { value: 'preferences', label: t('settings.panes.preferences') }
+              ]}
+            />
+            {updatesPane === 'preferences' ? null : (
             <SettingsSection
               title={t('settings.sections.updates')}
               description={t('settings.sectionHints.updates')}
@@ -639,7 +768,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 )}
               </Space>
             </SettingsSection>
-
+            )}
+            {updatesPane === 'preferences' ? (
             <SettingsSection
               title={t('settings.updates.preferencesTitle')}
               description={t('settings.updates.preferencesHint')}
@@ -670,13 +800,27 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 onChange={(checked) => void saveUpdateSettings({ askBeforeInstall: checked })}
               />
             </SettingsSection>
+            ) : null}
           </>
         )
       }
 
-      case 'display':
+      case 'display': {
+        const displayPane = paneBySection.display ?? 'layout'
         return (
           <>
+            <SettingsPaneTabs
+              value={displayPane}
+              onChange={(pane) => setPaneBySection((current) => ({ ...current, display: pane }))}
+              options={[
+                { value: 'layout', label: t('settings.panes.layout') },
+                { value: 'sidebar', label: t('settings.panes.sidebar') },
+                { value: 'order', label: t('settings.panes.order') },
+                { value: 'nodes', label: t('settings.panes.nodes') }
+              ]}
+            />
+            {displayPane === 'layout' ? (
+            <>
             <SettingsSection
               title={t('settings.display.detailsTitle')}
               description={t('settings.display.detailsHint')}
@@ -759,7 +903,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 })}
               </div>
             </SettingsSection>
-
+            </>
+            ) : null}
+            {displayPane === 'sidebar' ? (
+            <>
             <SettingsSection
               title={t('settings.display.sidebarTitle')}
               description={t('settings.display.showFavoritesHint')}
@@ -797,13 +944,6 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             </SettingsSection>
 
             <SettingsSection
-              title={t('settings.display.workspaceOrderTitle')}
-              description={t('settings.display.workspaceOrderHint')}
-            >
-              <WorkspaceOrderSettings />
-            </SettingsSection>
-
-            <SettingsSection
               title={t('settings.display.tabIconsTitle')}
               description={t('settings.display.tabIconsHint')}
             >
@@ -825,22 +965,35 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             >
               <ChromeToolbarSettings />
             </SettingsSection>
-
+            </>
+            ) : null}
+            {displayPane === 'order' ? (
+            <>
+            <SettingsSection
+              title={t('settings.display.workspaceOrderTitle')}
+              description={t('settings.display.workspaceOrderHint')}
+            >
+              <WorkspaceOrderSettings />
+            </SettingsSection>
             <SettingsSection
               title={t('settings.display.resourceNavOrderTitle')}
               description={t('settings.display.resourceNavOrderHint')}
             >
               <ResourceNavOrderSettings />
             </SettingsSection>
-
+            </>
+            ) : null}
+            {displayPane === 'nodes' ? (
             <SettingsSection
               title={t('settings.display.nodesTitle')}
               description={t('settings.display.nodesHint')}
             >
               <NodesDashboardSettings />
             </SettingsSection>
+            ) : null}
           </>
         )
+      }
 
       case 'widget':
         return <MenuBarWidgetSettings />
@@ -848,14 +1001,32 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
       case 'keyboard':
         return <KeyboardShortcutsSettings />
 
+      case 'search':
+        return (
+          <SearchSettings
+            pane={paneBySection.search ?? 'behavior'}
+            onPaneChange={(pane) => setPaneBySection((current) => ({ ...current, search: pane }))}
+          />
+        )
+
       case 'appearance':
-        return <AppearanceSettings />
+        return (
+          <AppearanceSettings
+            pane={paneBySection.appearance ?? 'theme'}
+            onPaneChange={(pane) => setPaneBySection((current) => ({ ...current, appearance: pane }))}
+          />
+        )
 
       case 'sparks':
         return <SparksSettings />
 
       case 'aiAgent':
-        return <AiAgentSettings />
+        return (
+          <AiAgentSettings
+            pane={paneBySection.aiAgent ?? 'molly'}
+            onPaneChange={(pane) => setPaneBySection((current) => ({ ...current, aiAgent: pane }))}
+          />
+        )
 
       case 'vpnExtensions':
         return <VpnExtensionsSettings />
@@ -946,8 +1117,44 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
               ) : null}
             </div>
           </div>
-          {renderNavGroup(preferenceNav, t('settings.navGroups.preferences'))}
-          {renderNavGroup(systemNav, t('settings.navGroups.system'))}
+          <div className="ml-settings-nav__search">
+            <Input
+              allowClear
+              prefix={<Icon icon={Search} variant="micro" />}
+              value={settingsQuery}
+              placeholder={t('settings.searchPlaceholder')}
+              onChange={(e) => setSettingsQuery(e.target.value)}
+            />
+          </div>
+          {settingsQuery.trim() ? (
+            <div className="ml-settings-nav__results" role="listbox" aria-label={t('settings.searchPlaceholder')}>
+              {settingsHits.length === 0 ? (
+                <p className="ml-settings-nav__empty">{t('settings.searchEmpty')}</p>
+              ) : (
+                settingsHits.map((hit) => (
+                  <button
+                    key={`${hit.section}-${hit.label}`}
+                    type="button"
+                    className="ml-settings-nav__result"
+                    onClick={() => {
+                      const pane = paneForSettingsKey(hit.key)
+                      if (pane) setPaneBySection((current) => ({ ...current, [hit.section]: pane }))
+                      setSection(hit.section)
+                      setSettingsJump(hit.label)
+                    }}
+                  >
+                    <span className="ml-settings-nav__result-label">{hit.label}</span>
+                    <span className="ml-settings-nav__result-section">{t(`settings.sections.${hit.section}`)}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          ) : (
+            <>
+              {renderNavGroup(preferenceNav, t('settings.navGroups.preferences'))}
+              {renderNavGroup(systemNav, t('settings.navGroups.system'))}
+            </>
+          )}
         </aside>
 
         <div className="ml-settings-main">

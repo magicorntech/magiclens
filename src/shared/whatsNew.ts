@@ -15,6 +15,17 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.33': {
+    title: 'Settings, search, and resource shortcuts',
+    items: [
+      'Settings groups crowded pages into tabs, and search jumps straight to the matching setting.',
+      'Search has its own preferences: which sources to include, how many results, every connected cluster, and recent queries.',
+      'AI Agent settings match the rest of Settings and open without freezing.',
+      'Remove a cluster from a workspace or drag to reorder it. A cluster with no default namespace opens on All namespaces.',
+      'In fullscreen, Clusters, VPN, Sparks, and Molly line up with the tabs.',
+      'Resource tab shortcuts: press a 2- or 3-key sequence to open that Kubernetes resource. Create a template or edit your own in Settings → Keyboard.'
+    ]
+  },
   '0.1.32': {
     title: 'Microphone access on macOS',
     items: [

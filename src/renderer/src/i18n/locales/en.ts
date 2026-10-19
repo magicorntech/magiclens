@@ -60,7 +60,26 @@ export const en = {
   },
   settings: {
     title: 'Settings',
+    searchPlaceholder: 'Search settings',
+    searchEmpty: 'No matching setting',
     subtitle: 'Preferences for MagicLens',
+    panes: {
+      app: 'App',
+      clusters: 'Clusters',
+      theme: 'Theme',
+      type: 'Type',
+      layout: 'Layout',
+      sidebar: 'Sidebar',
+      order: 'Order',
+      nodes: 'Nodes',
+      status: 'Status',
+      preferences: 'Preferences',
+      behavior: 'Behavior',
+      sources: 'Sources',
+      molly: 'Molly',
+      providers: 'Providers',
+      options: 'Options'
+    },
     navGroups: {
       preferences: 'Preferences',
       system: 'System'
@@ -73,6 +92,7 @@ export const en = {
       vpnExtensions: 'VPN Extensions',
       portForwarding: 'Port Forwarding',
       keyboard: 'Keyboard',
+      search: 'Search',
       appearance: 'Appearance',
       sparks: 'Sparks',
       aiAgent: 'AI Agent',
@@ -87,11 +107,49 @@ export const en = {
       vpnExtensions: 'Install or repair OpenVPN and WireGuard helpers used by VPN profiles.',
       portForwarding: 'See every open port forward across clusters and set how long an idle one stays open.',
       keyboard: 'Customize global shortcuts. Conflicting bindings swap automatically.',
+      search: 'Choose what global search looks through, how many results it keeps, and whether recent queries stay.',
       appearance: 'Light/dark mode and color themes for the whole app.',
       sparks: 'Vault themes and built-in modules for your local Sparks notebook.',
       aiAgent: 'Choose local or remote LLM providers for the in-app assistant.',
       developer: 'Host specs and live process usage for debugging.',
       about: 'Version and runtime information for this MagicLens build.'
+    },
+    search: {
+      behaviorTitle: 'How search runs',
+      behaviorHint: 'These apply to the global search palette.',
+      limitTitle: 'Results per type',
+      limitHint: 'Maximum matches kept for each resource type.',
+      allClusters: 'Search every connected cluster',
+      allClustersHint: 'When off, only the active cluster is searched.',
+      recentTitle: 'Remember recent searches',
+      recentHint: 'Show the last queries when the palette is empty.',
+      clearRecent: 'Clear recent',
+      typesTitle: 'Sources',
+      typesHint: 'Turned-off types disappear from the palette and from results.',
+      enableAll: 'Turn all on',
+      disableAll: 'Turn all off',
+      types: {
+        clusters: 'Clusters',
+        sparks: 'Sparks',
+        security: 'Security',
+        namespaces: 'Namespaces',
+        pods: 'Pods',
+        deployments: 'Deployments',
+        statefulsets: 'StatefulSets',
+        daemonsets: 'DaemonSets',
+        replicasets: 'ReplicaSets',
+        services: 'Services',
+        ingresses: 'Ingresses',
+        configmaps: 'ConfigMaps',
+        secrets: 'Secrets',
+        pvc: 'PVCs',
+        pv: 'PVs',
+        nodes: 'Nodes',
+        events: 'Events',
+        helmReleases: 'Helm releases',
+        crds: 'CRDs',
+        customResources: 'Custom resources'
+      }
     },
     widget: {
       title: 'Menu bar widget',
@@ -351,6 +409,18 @@ export const en = {
           label: 'Open settings',
           description: 'Open the settings window'
         }
+      },
+      chords: {
+        title: 'Resource tab shortcuts',
+        hint: 'A 2- or 3-key sequence opens that Kubernetes resource as a tab on the active cluster. Create for me fills a template you can edit, or add your own.',
+        generate: 'Create for me',
+        add: 'Add your own',
+        empty: 'No resource shortcuts yet. Create a template or add one yourself.',
+        length: 'Sequence length',
+        press: 'Press {{count}} keys…',
+        recordError: 'Use letters or digits, without ⌘/Ctrl. Esc cancels.',
+        conflict: 'That sequence is already used, or it overlaps another shortcut.',
+        remove: 'Remove shortcut'
       }
     },
     appearance: {
@@ -843,6 +913,10 @@ export const en = {
     removeLogo: 'Remove',
     clusters: 'Clusters',
     selectClusters: 'Select clusters for this workspace',
+    reorderHint: 'Drag a cluster to change its place, or remove it from this workspace.',
+    removeCluster: 'Remove from workspace',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
     shortcut: 'Keyboard shortcut',
     shortcutHint: 'Opens this workspace and its clusters. Use ⌘/Ctrl (or Alt) with a key.',
     shortcutAssign: 'Assign shortcut',
@@ -1785,6 +1859,7 @@ export const en = {
     filterAria: 'Filter by resource type',
     searchingIn: 'Searching resources in: {{cluster}}',
     recent: 'Recent',
+    recentHint: 'Recent searches',
     clusters: 'Clusters',
     resources: 'Resources',
     hint: '↑↓ navigate · Enter open · Esc close'

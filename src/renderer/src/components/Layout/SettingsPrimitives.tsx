@@ -10,6 +10,36 @@ interface SettingsSectionProps {
   actions?: ReactNode
 }
 
+export function SettingsPaneTabs({
+  value,
+  onChange,
+  options
+}: {
+  value: string
+  onChange: (value: string) => void
+  options: Array<{ value: string; label: string }>
+}): React.JSX.Element {
+  return (
+    <div className="ml-settings-panes" role="tablist">
+      {options.map((option) => {
+        const active = option.value === value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            className={`ml-settings-panes__tab${active ? ' is-active' : ''}`}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 /** Card block with a heading for a group of related settings. */
 export function SettingsSection({
   title,

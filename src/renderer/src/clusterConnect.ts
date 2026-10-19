@@ -1,6 +1,7 @@
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import { queryClient } from './queries/queryClient'
 import { cancelClusterQueries } from './queries/cancelClusterQueries'
+import { mergeClusterSettings } from '@shared/types/clusterSettings'
 import { useClusterStore } from './stores/clusterStore'
 import { usePodMetricsHistoryStore } from './stores/podMetricsHistoryStore'
 import { useNodeMetricsHistoryStore } from './stores/nodeMetricsHistoryStore'
@@ -13,6 +14,13 @@ export async function connectCluster(clusterId: string, source: KubeconfigSource
     if (result.ok) {
       const namespacesRes = await window.api.cluster.listNamespaces({ clusterId })
       setClusterConnected(clusterId, result.serverVersion, namespacesRes.namespaces, result.endpoint)
+      const connected = useClusterStore.getState().clusters.find((c) => c.id === clusterId)
+      const configured = mergeClusterSettings(connected?.settings).namespaces.defaultNamespace.trim()
+      if (!configured) {
+        useClusterStore.getState().setSelectedNamespace(clusterId, 'ALL')
+      } else if (!connected?.selectedNamespace?.trim()) {
+        useClusterStore.getState().setSelectedNamespace(clusterId, configured)
+      }
       const cluster = useClusterStore.getState().clusters.find((c) => c.id === clusterId)
       const manualUrl =
         cluster?.prometheusUrl?.trim() || cluster?.settings?.metrics?.endpointUrl?.trim() || undefined

@@ -22,7 +22,7 @@ import {
   useAiAgentStore
 } from '../../stores/aiAgentStore'
 import { useMollyStore } from '../../stores/mollyStore'
-import { SettingsRow, SettingsSection, SettingsToggleRow } from './SettingsPrimitives'
+import { SettingsPaneTabs, SettingsRow, SettingsSection, SettingsToggleRow } from './SettingsPrimitives'
 import './aiAgentSettings.css'
 
 function actionIcon(action?: AiRunbookAction) {
@@ -219,7 +219,6 @@ function ProviderCard({
               placeholder={provider.id === 'gemini' ? 'AIza…' : aiProviderCredentialLabel(provider.kind)}
               value={provider.credential}
               onChange={(e) => updateProvider(provider.id, { credential: e.target.value })}
-              onBlur={() => onProbe()}
               autoComplete="off"
               visibilityToggle
             />
@@ -229,7 +228,6 @@ function ProviderCard({
               placeholder={aiProviderCredentialLabel(provider.kind)}
               value={provider.credential}
               onChange={(e) => updateProvider(provider.id, { credential: e.target.value })}
-              onBlur={() => onProbe()}
               autoComplete="off"
             />
           )}
@@ -302,7 +300,13 @@ interface ProbeState {
   detail?: string
 }
 
-export function AiAgentSettings(): React.JSX.Element {
+export function AiAgentSettings({
+  pane,
+  onPaneChange
+}: {
+  pane: string
+  onPaneChange: (pane: string) => void
+}): React.JSX.Element {
   const { t } = useTranslation()
   const providers = useAiAgentStore((s) => s.providers)
   const hideAssistant = useAiAgentStore((s) => s.hideAssistant)
@@ -377,11 +381,6 @@ export function AiAgentSettings(): React.JSX.Element {
     }
   }, [])
 
-  useEffect(() => {
-    void Promise.all(providers.map((p) => probeOne(p)))
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- probe once when settings section mounts
-  }, [])
-
   const readyCount = providers.filter((p) => {
     const live = probes[p.id]?.status
     if (live) return live === 'Ready'
@@ -391,6 +390,16 @@ export function AiAgentSettings(): React.JSX.Element {
 
   return (
     <>
+      <SettingsPaneTabs
+        value={pane}
+        onChange={onPaneChange}
+        options={[
+          { value: 'molly', label: t('settings.panes.molly') },
+          { value: 'providers', label: t('settings.panes.providers') },
+          { value: 'options', label: t('settings.panes.options') }
+        ]}
+      />
+      {pane === 'providers' ? (
       <SettingsSection
         title={t('settings.aiAgent.title')}
         description={t('settings.aiAgent.intro')}
@@ -421,9 +430,11 @@ export function AiAgentSettings(): React.JSX.Element {
           })}
         </div>
       </SettingsSection>
+      ) : null}
 
-      <MollySettingsSection />
+      {pane === 'molly' ? <MollySettingsSection /> : null}
 
+      {pane === 'options' ? (
       <SettingsSection title={t('settings.aiAgent.optionsTitle')}>
         <SettingsRow
           title={t('settings.aiAgent.cliWorkdir')}
@@ -450,6 +461,7 @@ export function AiAgentSettings(): React.JSX.Element {
           onChange={setHideAssistant}
         />
       </SettingsSection>
+      ) : null}
     </>
   )
 }

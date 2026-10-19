@@ -2306,6 +2306,53 @@ html[data-ui-contrast='bright'] #root {
   line-height: 1.2;
 }
 
+.ml-settings-nav__search {
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.ml-settings-nav__results {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.ml-settings-nav__empty {
+  margin: 8px 10px;
+  color: var(--ml-text-tertiary);
+  font-size: 12px;
+}
+
+.ml-settings-nav__result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--ml-text);
+  text-align: left;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.ml-settings-nav__result:hover {
+  background: var(--ml-bg-spotlight);
+}
+
+.ml-settings-nav__result-label {
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.ml-settings-nav__result-section {
+  font-size: 11px;
+  color: var(--ml-text-tertiary);
+}
+
 .ml-settings-nav__brand-hint {
   margin-top: 2px;
   font-size: 11px;
@@ -2411,6 +2458,41 @@ html[data-ui-contrast='bright'] #root {
   line-height: 1.45;
   max-width: 54ch;
   min-height: 1.45em;
+}
+
+.ml-settings-panes {
+  position: sticky;
+  top: -16px;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  margin: -16px -28px 4px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--ml-border-secondary);
+  background: var(--ml-bg-container);
+}
+
+.ml-settings--mobile .ml-settings-panes {
+  margin-left: -14px;
+  margin-right: -14px;
+  overflow-x: auto;
+}
+
+.ml-settings-panes__tab {
+  border: none;
+  background: transparent;
+  color: var(--ml-text-secondary);
+  padding: 10px 12px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.ml-settings-panes__tab.is-active {
+  color: var(--ml-text);
+  border-bottom-color: var(--ml-primary);
+  font-weight: 650;
 }
 
 .ml-settings-main__body {
@@ -2592,6 +2674,68 @@ html[data-ui-contrast='bright'] #root {
 
 .ml-shortcut-row.is-listening {
   background: color-mix(in srgb, var(--ant-color-primary) 8%, transparent);
+}
+
+.ml-chord-row {
+  gap: 10px;
+}
+
+.ml-chord-kind {
+  width: 190px;
+  flex: 0 1 190px;
+}
+
+.ml-chord-length {
+  display: inline-flex;
+  border: 1px solid var(--ml-border-secondary);
+  flex-shrink: 0;
+}
+
+.ml-chord-length__btn {
+  border: none;
+  background: transparent;
+  color: var(--ml-text-secondary);
+  min-width: 26px;
+  height: 26px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.ml-chord-length__btn.is-active {
+  color: var(--ml-text);
+  background: color-mix(in srgb, var(--ml-primary) 16%, transparent);
+}
+
+.ml-chord-keys {
+  flex-shrink: 0;
+}
+
+.ml-shortcut-kbd.is-empty {
+  opacity: 0.35;
+}
+
+.ml-chord-remove {
+  border: none;
+  background: transparent;
+  color: var(--ml-text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  padding: 4px;
+}
+
+.ml-chord-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 80;
+  padding: 6px 10px;
+  border: 1px solid var(--ml-border-secondary);
+  background: var(--ml-bg-elevated);
+  color: var(--ml-text);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  pointer-events: none;
 }
 
 .ml-shortcut-row__identity {
@@ -3454,6 +3598,20 @@ html[data-ui-contrast='bright'] #root {
   font-size: 11px;
 }
 
+.global-search-recent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.global-search-recent__label {
+  font-size: 11px;
+  color: var(--ml-text-tertiary);
+  margin-right: 2px;
+}
+
 .global-search-hint__meta {
   margin: 12px 0 0;
   font-size: 12px;
@@ -3635,6 +3793,30 @@ html[data-ui-contrast='bright'] #root {
   min-height: 0;
   display: flex;
   flex-direction: row;
+}
+
+/* Fullscreen hides the macOS traffic lights, so the hub can sit in the tab
+   strip's left gutter and line up with the cluster tabs. */
+html.ml-fullscreen .app-layout--browser .ml-cluster-tab-strip {
+  z-index: 1;
+}
+
+html.ml-fullscreen .app-layout--browser .ml-cluster-tab-strip--browser::before {
+  opacity: 0;
+}
+
+html.ml-fullscreen .app-layout--browser .app-layout-body {
+  position: relative;
+  z-index: 2;
+}
+
+html.ml-fullscreen .app-layout--browser .app-layout-body > .ml-sidebar {
+  margin-top: -52px;
+  height: calc(100% + 52px);
+}
+
+html.ml-fullscreen .app-layout--browser .ml-sidebar-actions--flush {
+  padding-top: 12px !important;
 }
 
 /* Compact/mobile overlay shell: same flex contract as .app-layout-body so the

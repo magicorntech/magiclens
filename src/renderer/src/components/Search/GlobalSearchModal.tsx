@@ -18,6 +18,7 @@ import { matchesSearch } from '../../clusterFilter'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useGlobalSearchStore } from '../../stores/globalSearchStore'
+import { useSearchSettingsStore } from '../../stores/searchSettingsStore'
 import { useNotesStore } from '../../stores/notesStore'
 import { useSecurityStore } from '../../stores/securityStore'
 import { shortcutParts } from '@shared/types/keyboardShortcuts'
@@ -56,6 +57,25 @@ function sparkSnippet(body: string, query: string): string | undefined {
   const start = Math.max(0, idx - 28)
   const end = Math.min(plain.length, idx + needle.length + 72)
   return `${start > 0 ? '…' : ''}${plain.slice(start, end)}${end < plain.length ? '…' : ''}`
+}
+
+function mergeSearchGroups(groups: GlobalSearchGroup[], limit: number): GlobalSearchGroup[] {
+  const byType = new Map<GlobalSearchType, GlobalSearchResult[]>()
+  const labels = new Map<GlobalSearchType, string>()
+  for (const group of groups) {
+    labels.set(group.type, group.label)
+    const current = byType.get(group.type) ?? []
+    for (const result of group.results) {
+      if (current.length >= limit) break
+      const key = resultKey(result)
+      if (current.some((item) => resultKey(item) === key)) continue
+      current.push(result)
+    }
+    byType.set(group.type, current)
+  }
+  return [...byType.entries()]
+    .filter(([, results]) => results.length > 0)
+    .map(([type, results]) => ({ type, label: labels.get(type) || type, results }))
 }
 
 function resultKey(result: GlobalSearchResult): string {
@@ -127,6 +147,12 @@ export function GlobalSearchModal(): React.JSX.Element {
   const setQuery = useGlobalSearchStore((s) => s.setQuery)
   const typeFilter = useGlobalSearchStore((s) => s.typeFilter)
   const toggleTypeFilter = useGlobalSearchStore((s) => s.toggleTypeFilter)
+  const enabledTypes = useSearchSettingsStore((s) => s.enabledTypes)
+  const limitPerType = useSearchSettingsStore((s) => s.limitPerType)
+  const searchAllConnected = useSearchSettingsStore((s) => s.searchAllConnected)
+  const recent = useSearchSettingsStore((s) => s.recent)
+  const pushRecent = useSearchSettingsStore((s) => s.pushRecent)
+  const enabledSet = useMemo(() => new Set(enabledTypes), [enabledTypes])
   const searchShortcut = useDisplaySettingsStore((s) => s.keyboardShortcuts.globalSearch)
   const isMac = navigator.platform.includes('Mac')
   const searchShortcutParts = shortcutParts(searchShortcut, isMac)
@@ -159,24 +185,27 @@ export function GlobalSearchModal(): React.JSX.Element {
 
   const searchTypes = useMemo(() => {
     const source = parsed.types ?? (typeFilter ? [typeFilter] : GLOBAL_SEARCH_TYPES)
-    return source.filter((t) => !LOCAL_SEARCH_TYPES.has(t))
-  }, [parsed.types, typeFilter])
+    return source.filter((type) => enabledSet.has(type) && !LOCAL_SEARCH_TYPES.has(type))
+  }, [enabledSet, parsed.types, typeFilter])
 
   const includeClusters =
-    !typeFilter || typeFilter === 'clusters' || parsed.types?.includes('clusters') || !parsed.types
+    enabledSet.has('clusters') &&
+    (!typeFilter || typeFilter === 'clusters' || parsed.types?.includes('clusters') || !parsed.types)
 
   const includeSparks =
-    !typeFilter || typeFilter === 'sparks' || parsed.types?.includes('sparks') || !parsed.types
+    enabledSet.has('sparks') &&
+    (!typeFilter || typeFilter === 'sparks' || parsed.types?.includes('sparks') || !parsed.types)
 
   const includeSecurity =
-    !typeFilter || typeFilter === 'security' || parsed.types?.includes('security') || !parsed.types
+    enabledSet.has('security') &&
+    (!typeFilter || typeFilter === 'security' || parsed.types?.includes('security') || !parsed.types)
 
   const clusterGroups = useMemo((): GlobalSearchGroup[] => {
     if (!includeClusters || (parsed.types && !parsed.types.includes('clusters'))) return []
     const text = parsed.text
     const results: GlobalSearchResult[] = clusters
       .filter((c) => matchesSearch(c, text))
-      .slice(0, 15)
+      .slice(0, limitPerType)
       .map((c) => ({
         type: 'cluster' as const,
         clusterId: c.id,
@@ -187,7 +216,7 @@ export function GlobalSearchModal(): React.JSX.Element {
     return results.length > 0
       ? [{ type: 'clusters' as const, label: GLOBAL_SEARCH_TYPE_LABELS.clusters, results }]
       : []
-  }, [clusters, includeClusters, parsed.text, parsed.types])
+  }, [clusters, includeClusters, limitPerType, parsed.text, parsed.types])
 
   const sparkGroups = useMemo((): GlobalSearchGroup[] => {
     if (!includeSparks || (parsed.types && !parsed.types.includes('sparks'))) return []
@@ -205,12 +234,12 @@ export function GlobalSearchModal(): React.JSX.Element {
         path: note.path,
         snippet: sparkSnippet(note.body, text)
       })
-      if (results.length >= 15) break
+      if (results.length >= limitPerType) break
     }
     return results.length > 0
       ? [{ type: 'sparks' as const, label: GLOBAL_SEARCH_TYPE_LABELS.sparks, results }]
       : []
-  }, [includeSparks, notes, parsed.text, parsed.types, typeFilter])
+  }, [includeSparks, limitPerType, notes, parsed.text, parsed.types, typeFilter])
 
   const securityGroups = useMemo((): GlobalSearchGroup[] => {
     if (!includeSecurity || (parsed.types && !parsed.types.includes('security'))) return []
@@ -253,11 +282,11 @@ export function GlobalSearchModal(): React.JSX.Element {
           kind: 'finding',
           snippet: `${v.severity} · ${v.rule} · ${v.namespace}/${v.workload}`
         })
-        if (results.length >= 12) break
+        if (results.length >= limitPerType) break
       }
     }
 
-    if (results.length < 15) {
+    if (results.length < limitPerType) {
       for (const rule of searchSecurityRuleBook(text)) {
         if (results.some((r) => r.type === 'security' && r.kind === 'rule' && r.ruleId === rule.id)) {
           continue
@@ -272,7 +301,7 @@ export function GlobalSearchModal(): React.JSX.Element {
           kind: 'rule',
           snippet: `${rule.id} · ${rule.summary}`
         })
-        if (results.length >= 15) break
+        if (results.length >= limitPerType) break
       }
     }
 
@@ -285,6 +314,7 @@ export function GlobalSearchModal(): React.JSX.Element {
     includeSecurity,
     parsed.text,
     parsed.types,
+    limitPerType,
     reportsByCluster,
     typeFilter
   ])
@@ -312,7 +342,13 @@ export function GlobalSearchModal(): React.JSX.Element {
       return
     }
 
-    if (!targetCluster || searchTypes.length === 0) {
+    const targets = searchAllConnected
+      ? clusters.filter((cluster) => cluster.status === 'connected').slice(0, 6)
+      : targetCluster
+        ? [targetCluster]
+        : []
+
+    if (targets.length === 0 || searchTypes.length === 0) {
       setApiGroups([])
       return
     }
@@ -327,22 +363,27 @@ export function GlobalSearchModal(): React.JSX.Element {
     const timer = window.setTimeout(() => {
       setLoading(true)
       setError(null)
-      void window.api.search
-        .resources({
-          clusterId: targetCluster.id,
-          clusterName: targetCluster.customName,
-          query: parsed.text,
-          types: searchTypes,
-          limitPerType: 15
-        })
-        .then((res) => {
+      void Promise.all(
+        targets.map((cluster) =>
+          window.api.search.resources({
+            clusterId: cluster.id,
+            clusterName: cluster.customName,
+            query: parsed.text,
+            types: searchTypes,
+            limitPerType
+          })
+        )
+      )
+        .then((responses) => {
           if (cancelled) return
-          if ('error' in res) {
-            setError(res.error)
-            setApiGroups([])
-          } else {
-            setApiGroups(res.groups)
+          const groups: GlobalSearchGroup[] = []
+          const errors: string[] = []
+          for (const res of responses) {
+            if ('error' in res) errors.push(res.error)
+            else groups.push(...res.groups)
           }
+          setError(groups.length === 0 && errors[0] ? errors[0] : null)
+          setApiGroups(mergeSearchGroups(groups, limitPerType))
         })
         .finally(() => {
           if (!cancelled) setLoading(false)
@@ -353,7 +394,7 @@ export function GlobalSearchModal(): React.JSX.Element {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [open, targetCluster, parsed.text, searchTypes, typeFilter])
+  }, [clusters, limitPerType, open, parsed.text, searchAllConnected, searchTypes, targetCluster, typeFilter])
 
   const allGroups = useMemo(
     () => [...clusterGroups, ...sparkGroups, ...securityGroups, ...apiGroups],
@@ -368,6 +409,7 @@ export function GlobalSearchModal(): React.JSX.Element {
 
   const executeResult = useCallback(
     (result: GlobalSearchResult): void => {
+      pushRecent(parsed.text)
       closeSearch()
       switch (result.type) {
         case 'cluster':
@@ -433,6 +475,8 @@ export function GlobalSearchModal(): React.JSX.Element {
       openClusterTab,
       openResourceKind,
       openVirtualPage,
+      parsed.text,
+      pushRecent,
       selectNote,
       setActiveView,
       setSelectedNamespace,
@@ -488,7 +532,7 @@ export function GlobalSearchModal(): React.JSX.Element {
       </div>
 
       <div className="global-search-filters" role="listbox" aria-label={t('search.filterAria')}>
-        {GLOBAL_SEARCH_TYPES.map((type) => {
+        {GLOBAL_SEARCH_TYPES.filter((type) => enabledSet.has(type)).map((type) => {
           const active = typeFilter === type
           const primaryKw = GLOBAL_SEARCH_TYPE_KEYWORDS[type][0]
           return (
@@ -528,6 +572,16 @@ export function GlobalSearchModal(): React.JSX.Element {
               <code>@deploy api</code>
               <code>spark:todo</code>
             </p>
+            {recent.length > 0 ? (
+              <div className="global-search-recent">
+                <span className="global-search-recent__label">{t('search.recentHint')}</span>
+                {recent.map((item) => (
+                  <button key={item} type="button" className="global-search-filter-chip" onClick={() => setQuery(item)}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+            ) : null}
             {targetCluster ? (
               <p className="global-search-hint__meta">
                 {t('search.searchingIn', { cluster: shortDisplayName(targetCluster.customName) })}

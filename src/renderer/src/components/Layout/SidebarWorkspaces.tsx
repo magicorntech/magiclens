@@ -20,6 +20,7 @@ import {
   Folder,
   FolderOpen,
   FolderPlus,
+  GripVertical,
   ListFilter,
   MoreHorizontal,
   Pencil,
@@ -36,7 +37,6 @@ import {
 import { useClusterStore, type ClusterEntry } from '../../stores/clusterStore'
 import { useClusterGroupsStore } from '../../stores/clusterGroupsStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
-import { sortClustersByConnection } from '../../clusterFilter'
 import { ClusterSearchInput } from '../ClusterTabs/ClusterSearchInput'
 import { ClusterAvatar } from '../ClusterTabs/ClusterAvatar'
 import {
@@ -102,6 +102,8 @@ export function SidebarWorkspaces({
   const removeGroup = useClusterGroupsStore((s) => s.removeGroup)
   const setCollapsed = useClusterGroupsStore((s) => s.setCollapsed)
   const setGroupClusters = useClusterGroupsStore((s) => s.setGroupClusters)
+  const removeClusterFromGroup = useClusterGroupsStore((s) => s.removeClusterFromGroup)
+  const reorderClusters = useClusterGroupsStore((s) => s.reorderClusters)
   const setGroupShortcut = useClusterGroupsStore((s) => s.setGroupShortcut)
   const setGroupLogo = useClusterGroupsStore((s) => s.setGroupLogo)
   const setGroupAccent = useClusterGroupsStore((s) => s.setGroupAccent)
@@ -123,6 +125,7 @@ export function SidebarWorkspaces({
   const dockRailRef = useRef<HTMLDivElement>(null)
   const dockRafRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const clusterDragRef = useRef<{ groupId: string; clusterId: string } | null>(null)
   const isMac = navigator.platform.includes('Mac')
 
   const dockVisual = collapsed && workspaceDockMagnification
@@ -175,11 +178,9 @@ export function SidebarWorkspaces({
     const q = query.trim().toLowerCase()
     return groups
       .map((group) => {
-        const members = sortClustersByConnection(
-          group.clusterIds
-            .map((id) => clusters.find((c) => c.id === id))
-            .filter((c): c is ClusterEntry => !!c)
-        )
+        const members = group.clusterIds
+          .map((id) => clusters.find((c) => c.id === id))
+          .filter((c): c is ClusterEntry => !!c)
 
         if (!q) {
           return { group, members, forceOpen: false }
@@ -357,13 +358,60 @@ export function SidebarWorkspaces({
         <Select
           mode="multiple"
           allowClear
-          style={{ width: '100%', marginTop: 8, marginBottom: 16 }}
+          style={{ width: '100%', marginTop: 8 }}
           placeholder={t('workspaces.selectClusters')}
           value={draftClusterIds}
           options={clusterOptions}
           onChange={setDraftClusterIds}
           optionFilterProp="label"
         />
+        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 8, marginBottom: 8 }}>
+          {t('workspaces.reorderHint')}
+        </Typography.Paragraph>
+        <div className="ml-ws-order" style={{ marginBottom: 16 }}>
+          {draftClusterIds.map((id) => {
+            const cluster = clusters.find((c) => c.id === id)
+            const label = cluster?.customName || cluster?.contextName || id
+            return (
+              <div
+                key={id}
+                className="ml-ws-order__row"
+                draggable
+                onDragStart={() => {
+                  clusterDragRef.current = { groupId: 'draft', clusterId: id }
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  const from = clusterDragRef.current?.clusterId
+                  clusterDragRef.current = null
+                  if (!from || from === id) return
+                  setDraftClusterIds((current) => {
+                    const next = [...current]
+                    const fromIndex = next.indexOf(from)
+                    const toIndex = next.indexOf(id)
+                    if (fromIndex < 0 || toIndex < 0) return current
+                    const [moved] = next.splice(fromIndex, 1)
+                    if (!moved) return current
+                    next.splice(toIndex, 0, moved)
+                    return next
+                  })
+                }}
+              >
+                <Icon icon={GripVertical} variant="micro" />
+                <span className="ml-ws-order__label">{label}</span>
+                <button
+                  type="button"
+                  className="ml-ws-order__remove"
+                  aria-label={t('workspaces.removeCluster')}
+                  onClick={() => setDraftClusterIds((current) => current.filter((cid) => cid !== id))}
+                >
+                  <Icon icon={Trash2} variant="micro" />
+                </button>
+              </div>
+            )
+          })}
+        </div>
         <Typography.Text strong>{t('workspaces.shortcut')}</Typography.Text>
         <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 4, marginBottom: 8 }}>
           {t('workspaces.shortcutHint')}
@@ -446,11 +494,9 @@ export function SidebarWorkspaces({
               onPointerLeave={onDockPointerLeave}
             >
               {groups.map((group) => {
-                const members = sortClustersByConnection(
-                  group.clusterIds
-                    .map((id) => clusters.find((c) => c.id === id))
-                    .filter((c): c is ClusterEntry => !!c)
-                )
+                const members = group.clusterIds
+                  .map((id) => clusters.find((c) => c.id === id))
+                  .filter((c): c is ClusterEntry => !!c)
                 const hasActive = members.some((c) => c.id === activeClusterId)
                 const hasLive = members.some(
                   (c) =>
@@ -749,6 +795,7 @@ export function SidebarWorkspaces({
                                       : cluster.status === 'error'
                                         ? 'is-error'
                                         : ''
+                                const memberIndex = group.clusterIds.indexOf(cluster.id)
                                 const rowMenu: MenuProps = {
                                   items: [
                                     {
@@ -758,6 +805,30 @@ export function SidebarWorkspaces({
                                         openClusterTab(cluster.id)
                                         onNavigate?.()
                                       }
+                                    },
+                                    {
+                                      key: 'up',
+                                      label: t('workspaces.moveUp'),
+                                      disabled: memberIndex <= 0,
+                                      onClick: () => {
+                                        const prev = group.clusterIds[memberIndex - 1]
+                                        if (prev) void reorderClusters(group.id, cluster.id, prev)
+                                      }
+                                    },
+                                    {
+                                      key: 'down',
+                                      label: t('workspaces.moveDown'),
+                                      disabled: memberIndex < 0 || memberIndex >= group.clusterIds.length - 1,
+                                      onClick: () => {
+                                        const next = group.clusterIds[memberIndex + 1]
+                                        if (next) void reorderClusters(group.id, cluster.id, next)
+                                      }
+                                    },
+                                    {
+                                      key: 'remove',
+                                      danger: true,
+                                      label: t('workspaces.removeCluster'),
+                                      onClick: () => void removeClusterFromGroup(group.id, cluster.id)
                                     },
                                     ...(onEditCluster
                                       ? [
@@ -775,6 +846,18 @@ export function SidebarWorkspaces({
                                   <div
                                     key={`${group.id}-${cluster.id}`}
                                     className={`ml-ws-row${active ? ' is-active' : ''}${statusClass ? ` ${statusClass}` : ''}${showSidebarLogos ? ' ml-ws-row--logos' : ''}`}
+                                    draggable
+                                    onDragStart={() => {
+                                      clusterDragRef.current = { groupId: group.id, clusterId: cluster.id }
+                                    }}
+                                    onDragOver={(e) => e.preventDefault()}
+                                    onDrop={(e) => {
+                                      e.preventDefault()
+                                      const drag = clusterDragRef.current
+                                      clusterDragRef.current = null
+                                      if (!drag || drag.groupId !== group.id || drag.clusterId === cluster.id) return
+                                      void reorderClusters(group.id, drag.clusterId, cluster.id)
+                                    }}
                                   >
                                     <button
                                       type="button"

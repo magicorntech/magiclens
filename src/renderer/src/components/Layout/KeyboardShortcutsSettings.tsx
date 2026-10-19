@@ -13,6 +13,7 @@ import { useClusterGroupsStore } from '../../stores/clusterGroupsStore'
 import { ClusterAvatar } from '../ClusterTabs/ClusterAvatar'
 import { Icon } from '../ui/Icon'
 import { SettingsSection } from './SettingsPrimitives'
+import { ResourceChordSettings } from './ResourceChordSettings'
 
 const ACTION_ORDER: ShortcutActionId[] = [
   'globalSearch',
@@ -213,6 +214,8 @@ export function KeyboardShortcutsSettings(): React.JSX.Element {
           </div>
         )}
       </SettingsSection>
+
+      <ResourceChordSettings />
     </>
   )
 }

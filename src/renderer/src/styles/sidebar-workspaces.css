@@ -231,6 +231,44 @@
   background: transparent !important;
 }
 
+.ml-ws-order {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ml-ws-order__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--ml-border-secondary);
+  background: var(--ml-bg-container);
+  cursor: grab;
+}
+
+.ml-ws-order__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.ml-ws-order__remove {
+  display: inline-flex;
+  border: none;
+  background: transparent;
+  color: var(--ml-text-tertiary);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.ml-ws-order__remove:hover {
+  color: var(--ml-error, #f87171);
+}
+
 .ml-ws-row {
   display: flex !important;
   align-items: center !important;

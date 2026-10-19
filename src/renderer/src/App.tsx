@@ -19,7 +19,18 @@ import { UpdateNotificationBanner } from './components/Update/UpdateNotification
 import { GlobalSearchModal } from './components/Search/GlobalSearchModal'
 import { VpnSessionPromptModal } from './components/Vpn/VpnSessionPromptModal'
 import { useAppShortcuts } from './hooks/useAppShortcuts'
+import { useResourceChordStore } from './stores/resourceChordStore'
 import { useSettingsUiStore, type SettingsSection } from './stores/settingsUiStore'
+
+function ResourceChordHint(): React.JSX.Element | null {
+  const pending = useResourceChordStore((s) => s.pending)
+  if (pending.length === 0) return null
+  return (
+    <div className="ml-chord-hint" role="status">
+      {pending.map((key) => key.toUpperCase()).join(' ')}
+    </div>
+  )
+}
 
 export function App(): React.JSX.Element {
   const { t } = useTranslation()
@@ -198,6 +209,7 @@ export function App(): React.JSX.Element {
       <UpdateNotificationBanner />
       <GlobalSearchModal />
       <VpnSessionPromptModal />
+      <ResourceChordHint />
     </MotionConfig>
   )
 }
