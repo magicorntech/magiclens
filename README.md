@@ -4,9 +4,9 @@
 
 # MagicLens
 
-**A native Kubernetes desktop for macOS, Windows, and Linux.**
+**Kubernetes, without the noise.**
 
-Every cluster in one window — browse, debug, and operate without leaving the desktop.
+A native desktop for macOS, Windows, and Linux — every cluster in one calm window, with a built-in VPN, **Molly** (a read-only AI assistant) and **Sparks** (linked runbook notes).
 
 <br>
 
@@ -15,27 +15,30 @@ Every cluster in one window — browse, debug, and operate without leaving the d
 [![Windows](https://img.shields.io/badge/Windows-x64-555?style=for-the-badge)](https://github.com/magicorntech/magiclens/releases/latest)
 [![Linux](https://img.shields.io/badge/Linux-AppImage%20%7C%20deb-555?style=for-the-badge)](https://github.com/magicorntech/magiclens/releases/latest)
 
+[Website](https://magiclens-website.vercel.app) ·
 [Latest release](https://github.com/magicorntech/magiclens/releases/latest) ·
+[Release notes](https://magiclens-website.vercel.app/#/releases) ·
 [All versions](https://github.com/magicorntech/magiclens/releases) ·
 [Support](mailto:support@magicorn.co)
 
 </div>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-nodes.png" alt="MagicLens nodes overview" width="920">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/readme/tour-dark.gif">
+    <img src="docs/screenshots/readme/tour.gif" alt="MagicLens: pages, menus and three clusters in a few seconds" width="920">
+  </picture>
 </p>
 
-<p align="center">
-  <img src="docs/screenshots/magiclens-clusters.png" alt="MagicLens cluster list" width="920">
-</p>
+<p align="center"><sub>Pages, menus and clusters — a few seconds of real use, recorded with demo data.</sub></p>
 
 ---
 
 ## Download
 
-MagicLens ships as **signed desktop installers**. Get the app from a **GitHub Release** — each version is a tag (`v0.1.25`, …). There is no source checkout and nothing to build.
+MagicLens ships as **signed desktop installers**. Get the app from a **GitHub Release** — each version is a tag (`v0.1.27`, …). There is no source checkout and nothing to build.
 
-**[Download the latest release →](https://github.com/magicorntech/magiclens/releases/latest)**
+**[Download the latest release →](https://github.com/magicorntech/magiclens/releases/latest)** · or pick your system and version on the [website](https://magiclens-website.vercel.app).
 
 | You use | Install this file |
 | --- | --- |
@@ -53,15 +56,19 @@ macOS builds are Developer ID signed and notarized. Windows installers are Authe
 1. Open MagicLens and add a kubeconfig (file or folder). The default scan path is `~/.kube`; you can point it at any file or directory.
 2. Connect a cluster and open it as a tab.
 3. Use the sidebar — Nodes, Workloads, Storage, Helm, Argo CD, Visualizer, Timeline, and the rest of the cluster.
+4. Optional: link a VPN profile to a cluster, add a model key for Molly, and open Sparks for your runbooks.
 
 ---
 
 ## Why MagicLens
 
-- **Local-first** — Talks to the Kubernetes API with your existing kubeconfig. Cluster data stays on your machine. Nothing is uploaded unless you opt into a hosted account feature.
+- **Local-first** — Talks to the Kubernetes API with your existing kubeconfig. Nothing is uploaded to Magicorn unless you opt into a hosted account feature. Molly sends questions only to the model provider you choose (Ollama keeps everything on your machine).
 - **Multi-cluster, one window** — Several contexts as tabs. Workspaces with names, logos, and accents. Split view for staging vs production. Cloud provider logos (AWS, GCP, Azure, Huawei) when the kubeconfig gives them away.
 - **Operate, don’t just watch** — Scale, restart, roll back, change images, exec, tail logs, forward ports, sync Argo apps, install or roll back Helm — from the same UI.
 - **See the shape of the cluster** — Nodes overview, Visualizer map, Topology graph, and an event Timeline sit next to the live tables.
+- **Private networks, built in** — OpenVPN, Pritunl and WireGuard profiles live next to the clusters that need them, with PIN + MFA and live traffic.
+- **Ask, don’t type commands** — Molly reads the cluster for you and answers with charts, tables and recommendations. She is read-only by design.
+- **Notes next to the cluster** — Sparks keeps Markdown runbooks, links them in a graph and attaches them to the resource they describe.
 
 ---
 
@@ -72,7 +79,7 @@ Scan a kubeconfig file or a folder of configs. The default path is `~/.kube`; Se
 Cluster avatars use your custom logo when you set one. Otherwise MagicLens reads the kubeconfig (server URL, context name, exec plugin) and shows AWS, Google Cloud, Azure, or Huawei when it can tell.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-clusters.png" alt="MagicLens cluster list" width="920">
+  <img src="docs/screenshots/readme/pods.jpg" alt="MagicLens with three clusters open, workspaces and favorites in the sidebar" width="920">
 </p>
 
 ### Cluster settings
@@ -138,7 +145,17 @@ Workspaces group clusters the way your org actually works — production vs labs
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-workspaces.png" alt="MagicLens workspaces and nodes overview" width="920">
+  <img src="docs/screenshots/readme/feat-favorites-open.jpg" alt="Favorites and workspaces in the sidebar" width="920">
+</p>
+
+**Collapse what you do not need.** Favorites, workspaces, each resource group, the whole resource menu and the sidebar itself fold away — down to icons — so the cluster gets the room.
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-menu-collapsed.jpg" alt="Resource menu collapsed to icons" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-sidebar-collapsed.jpg" alt="Sidebar collapsed to icons" width="920">
 </p>
 
 ---
@@ -150,7 +167,11 @@ The Nodes page is a fleet dashboard, not only a table. Kubelet versions, roles, 
 You can hide or reorder those sections and switch them between full and half width. One not-ready node turns the health strip to Degraded so you see it before you scroll.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-nodes.png" alt="MagicLens nodes overview" width="920">
+  <img src="docs/screenshots/readme/feat-nodes-inspector.jpg" alt="Node inspector with conditions and pods" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-nodes-metrics.jpg" alt="Node CPU and memory over time" width="920">
 </p>
 
 ---
@@ -174,11 +195,19 @@ Live-watched tables for the Kubernetes objects you work with every day. Namespac
 Global search (`⌘K` / `Ctrl+K`) jumps to clusters, namespaces, and resources. Bindings are editable in Settings → Keyboard; conflicting shortcuts swap automatically.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-pods.png" alt="MagicLens pods table" width="920">
+  <img src="docs/screenshots/readme/pods.jpg" alt="Pods table" width="920">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-ingress.png" alt="MagicLens Ingresses" width="920">
+  <img src="docs/screenshots/readme/deployments.jpg" alt="Deployments table" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/services.jpg" alt="Services table" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/ingresses.jpg" alt="Ingresses table" width="920">
 </p>
 
 ---
@@ -190,7 +219,15 @@ Scale a Deployment or StatefulSet, restart a rollout, pause or resume it, roll b
 Open a pod and you get overview, containers, metrics, network (services and ports), logs, exec, events, Sparks notes, and YAML in one place. The overview shows phase, ready, restarts, node, IPs, QoS, owner, conditions, and scheduling.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-pod-detail.png" alt="MagicLens pod detail" width="920">
+  <img src="docs/screenshots/readme/feat-deployment-detail.jpg" alt="Deployment detail panel" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-deployment-scale.jpg" alt="Scale replicas dialog" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-pod-detail.jpg" alt="Pod detail with findings and containers" width="920">
 </p>
 
 ---
@@ -202,11 +239,11 @@ Open Logs on a Pod or on a Deployment. A workload view merges every replica into
 Tail length (100 / 500 / …), timestamps, previous instance, wrap, follow, filter, and download. Restart the stream without leaving the panel. The same toolbar sits on the resource detail drawer and in split view.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-workload-logs.png" alt="MagicLens merged deployment logs" width="920">
+  <img src="docs/screenshots/readme/feat-deployment-logs.jpg" alt="Merged deployment logs, one colour per pod" width="920">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-logs.png" alt="MagicLens workload log stream" width="920">
+  <img src="docs/screenshots/readme/feat-pod-logs.jpg" alt="Single pod log stream" width="920">
 </p>
 
 ## Exec & terminals
@@ -258,19 +295,23 @@ Three modes:
 Pick a concrete namespace (`shop`, `payments`, `data`). All namespaces is disabled — the graph would be too large. Open the graph in a separate window if you want it on a second display.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-visualizer.png" alt="MagicLens Visualizer map" width="920">
+  <img src="docs/screenshots/readme/feat-visualizer-map.jpg" alt="Visualizer: namespaces and Helm releases as a map" width="920">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-topology.png" alt="MagicLens topology map" width="920">
+  <img src="docs/screenshots/readme/feat-topology-graph.jpg" alt="Topology graph for one namespace" width="920">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-topology-graph.png" alt="MagicLens topology graph detail" width="920">
+  <img src="docs/screenshots/readme/feat-topology-selected.jpg" alt="Topology with a selected pod and its detail panel" width="920">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-topology-resources.png" alt="MagicLens topology resources" width="920">
+  <img src="docs/screenshots/readme/feat-topology-apps.jpg" alt="Topology, Applications view" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-topology-resources.jpg" alt="Topology, Resources view" width="920">
 </p>
 
 ---
@@ -280,7 +321,7 @@ Pick a concrete namespace (`shop`, `payments`, `data`). All namespaces is disabl
 Recent namespaced events as a Gantt, grouped by the object they belong to (Deployment, Pod, Job). Filter by namespace, kind, warning vs normal, and a search over reason / message. The density strip on top shows when the cluster was noisy. Hover a bar for reason, message, and count — the same stream as `kubectl get events`, laid out in time instead of a dump. A 30-minute window is the default; zoom the axis when you need a longer stretch.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-timeline.png" alt="MagicLens event timeline" width="920">
+  <img src="docs/screenshots/readme/timeline.jpg" alt="Event timeline" width="920">
 </p>
 
 ---
@@ -294,11 +335,11 @@ The catalog searches known repos. Open a chart for description, versions, prereq
 A release opens notes, owned resources (Deployment / Service / ConfigMap), history, values, rollback, upgrade, and uninstall. Demo and live clusters use the same editor so a values tweak and a rollback stay in one place.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-helm.png" alt="MagicLens Helm chart catalog" width="920">
+  <img src="docs/screenshots/readme/helm.jpg" alt="Helm chart catalog" width="920">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-helm-releases.png" alt="MagicLens Helm release detail" width="920">
+  <img src="docs/screenshots/readme/helm-releases.jpg" alt="Helm releases" width="920">
 </p>
 
 ---
@@ -312,15 +353,33 @@ Argo CD is first-class in the sidebar: dashboard, Applications, ApplicationSets,
 If the Service is missing, Edit Cluster → Integrations lets you save an external URL and try again.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-grafana.png" alt="MagicLens Grafana cluster app" width="920">
+  <img src="docs/screenshots/readme/feat-webapp-argocd.jpg" alt="Argo CD web UI inside MagicLens" width="920">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-prometheus.png" alt="MagicLens Prometheus cluster app" width="920">
+  <img src="docs/screenshots/readme/feat-webapp-grafana.jpg" alt="Grafana inside MagicLens" width="920">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-argocd.png" alt="MagicLens Argo CD web UI" width="920">
+  <img src="docs/screenshots/readme/feat-webapp-prometheus.jpg" alt="Prometheus inside MagicLens" width="920">
+</p>
+
+---
+
+## Security
+
+A read-only scan of the cluster for common misconfigurations — privileged containers, root users, dangerous bindings, missing network policies, host mounts, exposed entry points — mapped to a rule book. Scans show animated progress and stay in a history you can reopen; filters, search and a detail drawer explain each finding and can ask Molly about it. Nothing is changed in the cluster.
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-security-results.jpg" alt="Security scan results" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-security-scanning.jpg" alt="A scan in progress" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-security-finding.jpg" alt="A finding in detail, with an Ask Molly button" width="920">
 </p>
 
 ---
@@ -335,14 +394,53 @@ Idle forwards can close themselves after 15 minutes, 30 minutes, 1 hour, 2 hours
 
 ## Split view
 
-Keep two cluster tabs side by side: Visualizer vs Nodes, Deployments vs Pods, staging vs production. Each pane has its own resource, namespace filter, and detail drawer. Focus follows the pane you click. Toggle with `⌘\` / `Ctrl+\` (configurable). Exit split to return to a single tab strip.
+Two ways to split the window. **Between clusters:** staging and production side by side, each pane with its own menu, tabs, namespace filter and detail drawer — swap either pane to another open cluster with one click. **Inside a cluster:** two resource windows next to each other (Pods vs Deployments, Deployments vs Events). Focus follows the pane you click. Toggle with `⌘\` / `Ctrl+\` (configurable). Exit split to return to a single tab strip.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-split.png" alt="MagicLens split view" width="920">
+  <img src="docs/screenshots/readme/feat-split-clusters.jpg" alt="Two clusters side by side, each on its own page" width="920">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-split-visualizer.png" alt="MagicLens split Visualizer and nodes" width="920">
+  <img src="docs/screenshots/readme/feat-split-inner.jpg" alt="Pods and Deployments side by side inside one cluster" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-split-inner-events.jpg" alt="Deployments and Events side by side" width="920">
+</p>
+
+---
+
+## Molly — a read-only AI assistant
+
+Ask the cluster instead of typing commands. Molly reads the cluster you are looking at — nodes, events, logs, metrics, security findings, and any Kubernetes kind it advertises (CRDs included) — and answers in chat or by voice with a short summary, recommendations and the chart, table or log behind it. CPU is always mCPU, memory Mi or Gi.
+
+- **Nine read-only tools:** cluster health, node metrics, pod metrics, events, logs, list any resource, inspect a resource, usage, and security. A summary tool combines health, events and metrics into a short list of what looks wrong.
+- **Read-only by design.** There is no tool that creates, changes or deletes anything, and any tool name that looks like a mutation is refused before it runs. Molly never navigates your tabs on her own and never scans clusters unless you turn startup checks on.
+- **Beside the page.** Open her panel next to any page; “Explain this page” answers about exactly what is on screen, in the same conversation as the Molly page.
+- **Your model.** Local Ollama for fully offline use, or OpenAI, Claude, Google Gemini or a local CLI. Each provider has a setup runbook in Settings → AI Agent, and keys stay on the device. Voice chat uses Google Gemini.
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-molly-health.jpg" alt="Molly summarising what is wrong with a cluster" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-molly-events.jpg" alt="Warning events as a table" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-molly-nodes.jpg" alt="The busiest nodes as charts" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-molly-panel.jpg" alt="Molly’s panel beside the Pods page" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-ai-settings.jpg" alt="AI settings: choose your provider" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-molly-preferences.jpg" alt="Molly preferences" width="920">
 </p>
 
 ---
@@ -354,7 +452,19 @@ Sparks is a **local Markdown notebook** inside MagicLens — runbooks, incident 
 Every note can attach to **global**, a **workspace**, a **cluster**, or a **resource** (kind + namespace + name). Open a Deployment and the Sparks tab already shows the notes that belong to it. The sidebar also lists resource **alarms** so an overdue PVC note is one click from the object.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-sparks.png" alt="MagicLens Sparks notes vault" width="920">
+  <img src="docs/screenshots/readme/feat-sparks-start.jpg" alt="A hub note in Sparks" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-sparks-runbook.jpg" alt="A runbook with gates and a checklist" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-sparks-incident.jpg" alt="An incident note attached to a deployment" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-sparks-attached.jpg" alt="The same note inside the deployment’s Sparks tab" width="920">
 </p>
 
 **Write like a notebook.** Three modes: Write (editor only), Split (editor + live preview), Read (rendered page — click `[[wiki links]]` to jump). Title, body, pin, and optional reminder sit on the note. Tabs stay open; pin a tab, drag to reorder. Search covers titles, tags, and paths.
@@ -364,7 +474,11 @@ Every note can attach to **global**, a **workspace**, a **cluster**, or a **reso
 **Wiki links & graph.** `[[Note title]]` creates an outgoing link. Missing links can create the note. The links panel shows outbound links and backlinks. **Graph** maps every note as a node — click a node to open it. Empty graph copy tells you to add `[[links]]` to grow the map.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-sparks-graph.png" alt="MagicLens Sparks note graph" width="920">
+  <img src="docs/screenshots/readme/feat-sparks-split-graph.jpg" alt="Editor and link graph side by side" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-sparks-graph.jpg" alt="The note link graph, centred and draggable" width="920">
 </p>
 
 **Canvas.** A free board: drop note cards, stickies, and connections. Arrange incident timelines or architecture sketches spatially. Clear the board with a confirm.
@@ -387,17 +501,48 @@ Every note can attach to **global**, a **workspace**, a **cluster**, or a **reso
 
 ## VPN
 
-Attach OpenVPN, Pritunl, or WireGuard profiles and link them to a cluster so connecting can bring the tunnel up. MagicLens can install or repair the OpenVPN Community CLI and WireGuard helpers (macOS uses Homebrew; OpenVPN Connect is not supported). PIN and MFA prompts stay in the app.
+MagicLens has its own VPN client. Keep **OpenVPN**, **Pritunl** and **WireGuard** profiles next to the clusters that need them and connect with one click. An animated map walks you through the tunnel — MagicLens, tunnel interface, VPN server, private network — with live download and upload rates and a health checklist.
+
+- **Link a profile to a cluster.** Opening the cluster brings its tunnel up; a badge in the sidebar shows when it is connected.
+- **PIN and MFA** are asked for in a small dialog for profiles that need them. The PIN is remembered on this device for a few hours.
+- **Several tunnels at once.** Connect a bastion and a corporate gateway together and switch which one is in focus; disconnect one without touching the others.
+- **Tools handled for you.** MagicLens can install or repair the OpenVPN Community CLI and WireGuard helpers (macOS uses Homebrew; OpenVPN Connect is not supported).
+- **Safe by default.** Profile configs are stored encrypted by your operating system, and tunnels MagicLens opened are closed when you quit.
 
 <p align="center">
-  <img src="docs/screenshots/magiclens-vpn.png" alt="MagicLens VPN extensions" width="920">
+  <img src="docs/screenshots/readme/feat-vpn-profiles.jpg" alt="VPN profiles" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-vpn-connected.jpg" alt="A WireGuard tunnel connected, with live traffic" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-vpn-mfa.jpg" alt="A profile that needs a PIN and an MFA code" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-vpn-multi.jpg" alt="Two tunnels connected at once" width="920">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/readme/feat-vpn-badge.jpg" alt="VPN badges beside linked clusters" width="920">
 </p>
 
 ---
 
 ## Appearance & settings
 
-Light, dark, or system theme. Built-in accents (White, Violet, Ocean, Forest, Sunset, …) plus named custom colours. UI fonts include Inter, Manrope, Plus Jakarta Sans, Outfit, and Sora.
+Light, dark, or system theme. Built-in accents (White, Black, Violet, Ocean, Forest, Sunset, Coral, Slate and more) plus named custom colours. UI fonts include Inter, Manrope, Plus Jakarta Sans, Outfit, and Sora.
+
+<p align="center">
+  <img src="docs/screenshots/readme/themes.gif" alt="Switching between colour themes" width="920">
+</p>
+
+| Violet | Ocean | Forest | Sunset |
+| --- | --- | --- | --- |
+| <img src="docs/screenshots/readme/theme-violet-light.jpg" width="220"> | <img src="docs/screenshots/readme/theme-ocean-light.jpg" width="220"> | <img src="docs/screenshots/readme/theme-forest-light.jpg" width="220"> | <img src="docs/screenshots/readme/theme-sunset-light.jpg" width="220"> |
+| <img src="docs/screenshots/readme/theme-violet-dark.jpg" width="220"> | <img src="docs/screenshots/readme/theme-ocean-dark.jpg" width="220"> | <img src="docs/screenshots/readme/theme-forest-dark.jpg" width="220"> | <img src="docs/screenshots/readme/theme-sunset-dark.jpg" width="220"> |
 
 Resource detail: right drawer, split panel, or bottom tab. Optional blur behind the drawer. Sidebar can hide Favorites or Workspaces. Language: English, Türkçe, Deutsch, Français, 日本語, 한국어, 中文.
 
@@ -455,6 +600,7 @@ A menu-bar icon opens a live panel for the clusters you pin. Each card can show 
 | metrics-server | Live CPU / memory on nodes and pods |
 | Prometheus *(optional)* | History, node disks, PVC fullness (`kubelet_volume_stats_*`) |
 | OpenVPN Community CLI or WireGuard *(optional)* | PIN + MFA tunnels — OpenVPN Connect is not supported |
+| Ollama, or an OpenAI / Claude / Gemini key *(optional)* | Molly, the read-only assistant |
 
 UI languages: English, Türkçe, Deutsch, Français, 日本語, 한국어, 中文.
 
@@ -464,6 +610,8 @@ UI languages: English, Türkçe, Deutsch, Français, 日本語, 한국어, 中�
 
 MagicLens uses your existing kubeconfig credentials against the cluster API. It does not upload cluster data to Magicorn unless you opt into a hosted account feature. Sparks notes stay in a folder on your disk.
 
+If you connect a cloud model for Molly, her questions — and the cluster data she reads to answer them — go to that provider. Use Ollama to keep everything on your machine. Provider keys stay on the device.
+
 ---
 
 ## Support
@@ -471,3 +619,5 @@ MagicLens uses your existing kubeconfig credentials against the cluster API. It 
 Questions and issues: [support@magicorn.co](mailto:support@magicorn.co)
 
 Installers and past versions: [github.com/magicorntech/magiclens/releases](https://github.com/magicorntech/magiclens/releases)
+
+Built by [Magicorn](https://magicorn.co/). Screenshots in this README use demo data.
