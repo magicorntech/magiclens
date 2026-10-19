@@ -1,401 +1,197 @@
-import { useEffect, useState } from 'react'
-import { LiveApp, type LiveMode } from './live/LiveApp'
+import { useEffect, useMemo, useState } from 'react'
+import { COPY, THEMES } from './copy'
+import { Explore } from './pages/Explore'
+import { Home } from './pages/Home'
+import { Molly } from './pages/Molly'
+import { Releases } from './pages/Releases'
+import { Sparks } from './pages/Sparks'
+import { Vpn } from './pages/Vpn'
+import { DownloadModal, detectOs, type Os } from './Download'
+import { SiteCtx, shot, type Mode } from './ui'
 
-type Lang = 'en' | 'tr'
+const GITHUB = 'https://github.com/magicorntech/magiclens'
+const MAGICORN = 'https://magicorn.co/'
 
-const COPY = {
-  en: {
-    product: 'Product',
-    download: 'Download',
-    cta: 'Get the app',
-    badge: 'Live demo',
-    eyebrow: 'Native desktop · macOS, Windows, Linux',
-    title: 'Every cluster.<br><em>One window.</em>',
-    lede: 'Same MagicLens chrome — cluster tabs, resource menu, split panes — filled with demo data. Scroll the sections and try each feature.',
-    try: 'Try it below',
-    signed: 'Signed & notarized installers',
-    local: 'Cluster data stays on your machine',
-    sections: [
-      {
-        id: 'product',
-        mode: 'app' as LiveMode,
-        kicker: 'Multi-cluster',
-        title: 'Tabs + split view.',
-        copy: 'Open aurora-prod and aurora-staging side by side. Left pane Visualizer, right pane Topology — each pane keeps its own page.',
-        theme: false,
-        tall: false
-      },
-      {
-        id: 'clusters',
-        mode: 'clusters' as LiveMode,
-        kicker: 'Clusters',
-        title: 'Hub, favorites, workspaces.',
-        copy: 'Scan kubeconfigs, pin favorites, group by workspace. Connection state and endpoints stay visible.',
-        theme: false,
-        tall: false
-      },
-      {
-        id: 'nodes',
-        mode: 'nodes' as LiveMode,
-        kicker: 'Nodes',
-        title: 'Fleet overview, not only a table.',
-        copy: 'Kubelet versions, roles, health strip, CPU / memory / pod capacity, then the node list — same layout as the desktop Nodes page.',
-        theme: false,
-        tall: true
-      },
-      {
-        id: 'workloads',
-        mode: 'pods' as LiveMode,
-        kicker: 'Workloads',
-        title: 'Pods table → detail → logs / exec.',
-        copy: 'Live-style columns (CPU, memory, containers, controlled-by). Click a row for Overview, Logs, or Exec.',
-        theme: true,
-        tall: true
-      },
-      {
-        id: 'visualizer',
-        mode: 'visualizer' as LiveMode,
-        kicker: 'Visualizer',
-        title: 'Namespaces as maps.',
-        copy: 'Service cards, ingress/egress chips, workload logos, replica squares — grouped by namespace the way the app draws them.',
-        theme: false,
-        tall: true
-      },
-      {
-        id: 'topology',
-        mode: 'topology' as LiveMode,
-        kicker: 'Topology',
-        title: 'Owns, selects, mounts.',
-        copy: 'One namespace graph: Deployment → ReplicaSet → Pod, plus Service and ConfigMap. Switch namespace or Applications.',
-        theme: false,
-        tall: true
-      },
-      {
-        id: 'helm',
-        mode: 'helm' as LiveMode,
-        kicker: 'Helm',
-        title: 'Charts and Releases.',
-        copy: 'Catalog search, chart README, values.yaml, Deploy — then flip to installed releases with revision history.',
-        theme: false,
-        tall: true
-      },
-      {
-        id: 'storage',
-        mode: 'storage' as LiveMode,
-        kicker: 'Storage',
-        title: 'PVCs with fullness bars.',
-        copy: 'Capacity, used bytes, percent full. Amber when a volume is filling up — catalog-idx at 78%.',
-        theme: false,
-        tall: false
-      },
-      {
-        id: 'network',
-        mode: 'ingress' as LiveMode,
-        kicker: 'Network',
-        title: 'Ingress hosts, clipped clean.',
-        copy: 'First host plus +N when there are more — no overflow into Status or Age.',
-        theme: false,
-        tall: false
-      },
-      {
-        id: 'timeline',
-        mode: 'timeline' as LiveMode,
-        kicker: 'Timeline',
-        title: 'Events as a Gantt.',
-        copy: 'Namespaced events grouped by object. Density strip, Warning vs Normal, hover for reason and count.',
-        theme: false,
-        tall: true
-      },
-      {
-        id: 'argo',
-        mode: 'argocd' as LiveMode,
-        kicker: 'Argo CD',
-        title: 'Sync status in the sidebar.',
-        copy: 'Applications with Sync / Health from argoproj CRDs — Sync and Refresh without a separate Argo token.',
-        theme: false,
-        tall: false
-      }
-    ],
-    operate: 'Operate',
-    ot: 'Scale, exec, tail, <em>ship.</em>',
-    oc: 'The desktop app goes further — Helm deploy, Argo sync, Grafana port-forward, Sparks notes — on your kubeconfig.',
-    dl: 'Download',
-    dlt: 'Get the latest <em>signed</em> build.',
-    dlc: 'Installers live on GitHub Releases. There is nothing to clone or compile.',
-    mac: 'Apple Silicon and Intel. Developer ID signed and notarized.',
-    win: 'x64 installer. Authenticode-signed.',
-    linux: 'AppImage or .deb for x64.',
-    all: 'All versions',
-    support: 'Support',
-    hint: 'Every frame is interactive demo data. Nothing is uploaded.'
-  },
-  tr: {
-    product: 'Ürün',
-    download: 'İndir',
-    cta: 'Uygulamayı al',
-    badge: 'Canlı demo',
-    eyebrow: 'Yerel masaüstü · macOS, Windows, Linux',
-    title: 'Tüm cluster’lar.<br><em>Tek pencere.</em>',
-    lede: 'Aynı MagicLens chrome — cluster sekmeleri, resource menü, split — demo veriyle. Bölümleri kaydır, her özelliği dene.',
-    try: 'Aşağıda dene',
-    signed: 'İmzalı ve noter onaylı kurulumlar',
-    local: 'Cluster verisi makinede kalır',
-    sections: [
-      {
-        id: 'product',
-        mode: 'app' as LiveMode,
-        kicker: 'Multi-cluster',
-        title: 'Sekme + split view.',
-        copy: 'aurora-prod ve aurora-staging yan yana. Solda Visualizer, sağda Topology — her panel kendi sayfasını tutar.',
-        theme: false,
-        tall: false
-      },
-      {
-        id: 'clusters',
-        mode: 'clusters' as LiveMode,
-        kicker: 'Cluster’lar',
-        title: 'Hub, favori, workspace.',
-        copy: 'Kubeconfig tara, favori sabitle, workspace ile grupla. Bağlantı durumu ve endpoint görünür kalır.',
-        theme: false,
-        tall: false
-      },
-      {
-        id: 'nodes',
-        mode: 'nodes' as LiveMode,
-        kicker: 'Nodes',
-        title: 'Filo özeti, sadece tablo değil.',
-        copy: 'Kubelet sürümleri, roller, health strip, CPU / bellek / pod kapasitesi, sonra node listesi — masaüstü Nodes sayfası.',
-        theme: false,
-        tall: true
-      },
-      {
-        id: 'workloads',
-        mode: 'pods' as LiveMode,
-        kicker: 'Workloads',
-        title: 'Pod tablosu → detay → logs / exec.',
-        copy: 'Canlı kolonlar (CPU, bellek, container, controlled-by). Satıra tıkla: Overview, Logs veya Exec.',
-        theme: true,
-        tall: true
-      },
-      {
-        id: 'visualizer',
-        mode: 'visualizer' as LiveMode,
-        kicker: 'Visualizer',
-        title: 'Namespace’ler harita.',
-        copy: 'Service kartı, ingress/egress, workload logosu, replica kareleri — uygulamanın çizdiği gibi.',
-        theme: false,
-        tall: true
-      },
-      {
-        id: 'topology',
-        mode: 'topology' as LiveMode,
-        kicker: 'Topology',
-        title: 'Owns, selects, mounts.',
-        copy: 'Tek namespace grafiği: Deployment → ReplicaSet → Pod; Service ve ConfigMap. Namespace veya Applications.',
-        theme: false,
-        tall: true
-      },
-      {
-        id: 'helm',
-        mode: 'helm' as LiveMode,
-        kicker: 'Helm',
-        title: 'Charts ve Releases.',
-        copy: 'Katalog araması, chart README, values.yaml, Deploy — sonra kurulu release’ler ve revision.',
-        theme: false,
-        tall: true
-      },
-      {
-        id: 'storage',
-        mode: 'storage' as LiveMode,
-        kicker: 'Storage',
-        title: 'PVC doluluk çubukları.',
-        copy: 'Kapasite, kullanılan, yüzde. Dolunca amber — catalog-idx %78.',
-        theme: false,
-        tall: false
-      },
-      {
-        id: 'network',
-        mode: 'ingress' as LiveMode,
-        kicker: 'Network',
-        title: 'Ingress host’ları temiz.',
-        copy: 'İlk host +N — Status / Age’e taşma yok.',
-        theme: false,
-        tall: false
-      },
-      {
-        id: 'timeline',
-        mode: 'timeline' as LiveMode,
-        kicker: 'Timeline',
-        title: 'Event’ler Gantt.',
-        copy: 'Namespaced event’ler objeye göre. Density strip, Warning / Normal, hover ile reason.',
-        theme: false,
-        tall: true
-      },
-      {
-        id: 'argo',
-        mode: 'argocd' as LiveMode,
-        kicker: 'Argo CD',
-        title: 'Sync durumu sidebar’da.',
-        copy: 'Applications Sync / Health — ayrı Argo token olmadan Sync ve Refresh.',
-        theme: false,
-        tall: false
-      }
-    ],
-    operate: 'Operasyon',
-    ot: 'Scale, exec, tail, <em>yayınla.</em>',
-    oc: 'Masaüstü uygulaması Helm deploy, Argo sync, Grafana port-forward, Sparks — kubeconfig’inle.',
-    dl: 'İndir',
-    dlt: 'Son <em>imzalı</em> sürümü al.',
-    dlc: 'Kurulumlar GitHub Releases’ta. Klonlanacak bir şey yok.',
-    mac: 'Apple Silicon ve Intel. Developer ID imzalı ve noter onaylı.',
-    win: 'x64 kurulum. Authenticode imzalı.',
-    linux: 'x64 için AppImage veya .deb.',
-    all: 'Tüm sürümler',
-    support: 'Destek',
-    hint: 'Her çerçeve etkileşimli demo veri. Hiçbir şey yüklenmez.'
+type Route = 'home' | 'explore' | 'vpn' | 'molly' | 'sparks' | 'releases'
+
+function parseHash(): { route: Route; anchor: string } {
+  const parts = window.location.hash.replace(/^#\/?/, '').split('/').filter(Boolean)
+  const [first = '', second = ''] = parts
+  if (first === 'explore' || first === 'vpn' || first === 'molly' || first === 'sparks' || first === 'releases') {
+    return { route: first, anchor: second }
   }
-} as const
+  // "#/#features" and "#/themes" both mean: home, scrolled to a section.
+  return { route: 'home', anchor: first.replace(/^#/, '') || second }
+}
 
-const RELEASES = 'https://github.com/magicorntech/magiclens/releases/latest'
+function initialMode(): Mode {
+  try {
+    const saved = localStorage.getItem('ml-site-mode')
+    if (saved === 'light' || saved === 'dark') return saved
+  } catch {
+    /* storage unavailable */
+  }
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
 
-export function App() {
-  const [lang, setLang] = useState<Lang>(() =>
-    typeof navigator !== 'undefined' && navigator.language.startsWith('tr') ? 'tr' : 'en'
+function GithubIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden fill="currentColor">
+      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.54-3.87-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.8 1.19 1.83 1.19 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
+    </svg>
   )
-  const [scrolled, setScrolled] = useState(false)
-  const t = COPY[lang]
+}
+
+export function App(): React.JSX.Element {
+  const [mode, setMode] = useState<Mode>(initialMode)
+  const [themeId, setThemeId] = useState('violet')
+  const [loc, setLoc] = useState(parseHash)
+  const [zoomed, setZoomed] = useState<{ name: string; alt: string } | null>(null)
+  const [download, setDownload] = useState<{ os: Os } | null>(null)
+  const t = COPY
+  const theme = THEMES.find((x) => x.id === themeId) ?? THEMES[2]!
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const onHash = (): void => setLoc(parseHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
+  // Scroll to the section named in the URL, or to the top of a new page.
+  useEffect(() => {
+    const id = loc.anchor
+    const el = id ? document.getElementById(id) : null
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    else window.scrollTo({ top: 0 })
+  }, [loc])
+
+  useEffect(() => {
+    document.documentElement.dataset.mode = mode
+    try {
+      localStorage.setItem('ml-site-mode', mode)
+    } catch {
+      /* storage unavailable */
+    }
+  }, [mode])
+
+  useEffect(() => {
+    if (!zoomed) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setZoomed(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [zoomed])
+
+  // The page itself takes on the chosen theme's accent.
+  const accentVars = useMemo(() => {
+    const neutral = themeId === 'white' || themeId === 'black'
+    const accent = neutral ? (mode === 'dark' ? '#f5f5f7' : '#111114') : theme.accent
+    const glow = neutral ? (mode === 'dark' ? '#8a8a99' : '#9a9aa8') : theme.accent2
+    return { '--accent': accent, '--glow': glow } as React.CSSProperties
+  }, [theme, themeId, mode])
+
+  const ctx = useMemo(
+    () => ({
+      mode,
+      zoom: (name: string, alt: string) => setZoomed({ name, alt }),
+      openDownload: (os?: Os) => setDownload({ os: os ?? detectOs() })
+    }),
+    [mode]
+  )
+  const link = (route: Route, label: string): React.JSX.Element => (
+    <a href={route === 'home' ? '#/' : `#/${route}`} className={loc.route === route ? 'on' : ''}>
+      {label}
+    </a>
+  )
+
   return (
-    <>
-      <div className="bg-mesh" />
-      <div className="bg-grid" />
-      <div className="grain" />
-      <div className="site">
-        <header className={`nav${scrolled ? ' is-scrolled' : ''}`}>
-          <div className="nav-inner">
-            <a className="brand" href="#top">
-              <img src="/icon-180.png" alt="" />
-              MagicLens
+    <SiteCtx.Provider value={ctx}>
+      <div className="site" style={accentVars}>
+        <header className="nav">
+          <a className="brand" href="#/">
+            <img src="/icon-64.png" alt="" width={26} height={26} />
+            MagicLens
+          </a>
+          <nav>
+            {link('home', t.nav.product)}
+            {link('explore', 'Explore')}
+            {link('vpn', 'VPN')}
+            {link('molly', 'Molly · AI')}
+            {link('sparks', 'Sparks')}
+            {link('releases', 'Releases')}
+            <a href="#/themes">{t.nav.themes}</a>
+          </nav>
+          <div className="nav-tools">
+            <button
+              className="mode"
+              onClick={() => setMode(mode === 'dark' ? 'light' : 'dark')}
+              aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {mode === 'dark' ? '☀' : '☾'}
+            </button>
+            <a className="icon-link" href={GITHUB} aria-label="MagicLens on GitHub" title="GitHub">
+              <GithubIcon />
             </a>
-            <nav className="nav-links">
-              <a href="#product">{t.product}</a>
-              <a href="#download">{t.download}</a>
-            </nav>
-            <div className="nav-spacer" />
-            <div className="lang">
-              <button type="button" className={lang === 'en' ? 'is-on' : ''} onClick={() => setLang('en')}>
-                EN
-              </button>
-              <button type="button" className={lang === 'tr' ? 'is-on' : ''} onClick={() => setLang('tr')}>
-                TR
-              </button>
-            </div>
-            <a className="btn btn-coral nav-cta" href="#download">
-              {t.cta}
-            </a>
+            <button className="btn btn--small" onClick={() => ctx.openDownload()}>
+              {t.nav.download}
+            </button>
           </div>
         </header>
 
         <main id="top">
-          <section className="hero wrap">
-            <div className="eyebrow">
-              <b>{t.badge}</b>
-              <span>{t.eyebrow}</span>
-            </div>
-            <h1 dangerouslySetInnerHTML={{ __html: t.title }} />
-            <p className="lede">{t.lede}</p>
-            <div className="hero-actions">
-              <a className="btn btn-coral" href="#product">
-                {t.try}
-              </a>
-              <a className="btn btn-ghost" href="#download">
-                {t.cta}
-              </a>
-            </div>
-            <p className="hero-meta">
-              <span>{t.signed}</span> · <span>{t.local}</span>
-            </p>
-            <div className="stage">
-              <LiveApp mode="app" lang={lang} />
-            </div>
-          </section>
-
-          {t.sections.map((s) => (
-            <section key={s.id} id={s.id}>
-              <div className="wrap">
-                <p className="section-kicker">{s.kicker}</p>
-                <h2 className="section-title">{s.title}</h2>
-                <p className="section-copy">{s.copy}</p>
-                {s.id === 'product' ? <p className="feature-note" style={{ marginBottom: 18 }}>{t.hint}</p> : null}
-                <LiveApp mode={s.mode} tall={s.tall} showThemeBar={s.theme} lang={lang} />
-              </div>
-            </section>
-          ))}
-
-          <section>
-            <div className="wrap">
-              <p className="section-kicker">{t.operate}</p>
-              <h2 className="section-title" dangerouslySetInnerHTML={{ __html: t.ot }} />
-              <p className="section-copy">{t.oc}</p>
-            </div>
-          </section>
+          {loc.route === 'home' ? <Home mode={mode} setMode={setMode} themeId={themeId} setThemeId={setThemeId} /> : null}
+          {loc.route === 'explore' ? <Explore /> : null}
+          {loc.route === 'vpn' ? <Vpn /> : null}
+          {loc.route === 'molly' ? <Molly /> : null}
+          {loc.route === 'sparks' ? <Sparks /> : null}
+          {loc.route === 'releases' ? <Releases /> : null}
 
           <section className="download" id="download">
-            <div className="wrap">
-              <p className="section-kicker">{t.dl}</p>
-              <h2 className="section-title" dangerouslySetInnerHTML={{ __html: t.dlt }} />
-              <p className="section-copy">{t.dlc}</p>
-              <div className="os-grid">
-                <article className="os-card is-suggested">
-                  <span className="suggested">macOS</span>
-                  <h3>macOS</h3>
-                  <p>{t.mac}</p>
-                  <a className="btn btn-coral" href={RELEASES}>
-                    {t.download}
-                  </a>
-                </article>
-                <article className="os-card">
-                  <span className="suggested" />
-                  <h3>Windows</h3>
-                  <p>{t.win}</p>
-                  <a className="btn btn-coral" href={RELEASES}>
-                    {t.download}
-                  </a>
-                </article>
-                <article className="os-card">
-                  <span className="suggested" />
-                  <h3>Linux</h3>
-                  <p>{t.linux}</p>
-                  <a className="btn btn-coral" href={RELEASES}>
-                    {t.download}
-                  </a>
-                </article>
-              </div>
-              <p className="hero-meta" style={{ marginTop: 28 }}>
-                <a href="https://github.com/magicorntech/magiclens/releases">{t.all}</a>
-                · <a href="mailto:support@magicorn.co">support@magicorn.co</a>
-              </p>
+            <h2>{t.download.title}</h2>
+            <p>{t.download.copy}</p>
+            <div className="cta cta--center">
+              {([
+                [t.download.mac, 'mac'],
+                [t.download.win, 'windows'],
+                [t.download.linux, 'linux']
+              ] as const).map(([label, os]) => (
+                <button key={label} className="btn" onClick={() => ctx.openDownload(os)}>
+                  {label}
+                </button>
+              ))}
+              <a className="btn btn--ghost" href={GITHUB}>
+                <GithubIcon /> &nbsp;GitHub
+              </a>
             </div>
+            <small>{t.download.note}</small>
           </section>
         </main>
 
         <footer>
-          <div className="wrap foot">
-            <div>© Magicorn · MagicLens</div>
-            <div className="foot-links">
-              <a href={RELEASES}>{t.download}</a>
-              <a href="mailto:support@magicorn.co">{t.support}</a>
-              <a href="https://github.com/magicorntech/magiclens/releases">GitHub</a>
-            </div>
-          </div>
+          <span>
+            {t.footer.text}{' '}
+            <a href={MAGICORN} target="_blank" rel="noreferrer">
+              {t.footer.team}
+            </a>
+            . {t.footer.note} · <a href="#/releases">Release notes</a>
+          </span>
         </footer>
+
+        {download ? <DownloadModal initialOs={download.os} onClose={() => setDownload(null)} /> : null}
+
+        {zoomed ? (
+          <div className="lightbox" role="dialog" aria-modal onClick={() => setZoomed(null)}>
+            <button className="lightbox-close" aria-label={t.close}>
+              ×
+            </button>
+            <picture>
+              <source type="image/avif" srcSet={shot(zoomed.name)} />
+              <img src={shot(zoomed.name, 'webp')} alt={zoomed.alt} />
+            </picture>
+          </div>
+        ) : null}
       </div>
-    </>
+    </SiteCtx.Provider>
   )
 }
