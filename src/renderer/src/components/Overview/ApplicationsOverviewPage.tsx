@@ -78,8 +78,6 @@ export function ApplicationsOverviewPage({
 
   return (
     <OverviewPage
-      title={t('applicationsOverview.title')}
-      subtitle={t('applicationsOverview.subtitle')}
       actions={
         <div className="ml-overview-filters">
           <Select

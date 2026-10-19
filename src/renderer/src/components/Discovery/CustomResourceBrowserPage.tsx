@@ -28,6 +28,10 @@ interface CustomResourceBrowserPageProps {
   initialMode?: 'all' | 'installed'
   initialFocus?: DynamicResourceFocus | null
   onFocusConsumed?: () => void
+  /** Restrict the kind list to one API group (Gateway API, External Secrets, …). */
+  groupFilter?: string
+  emptyHint?: string
+  brand?: string
 }
 
 type CrdTab = 'all' | 'installed'
@@ -59,7 +63,10 @@ export function CustomResourceBrowserPage({
   namespace,
   initialMode = 'all',
   initialFocus,
-  onFocusConsumed
+  onFocusConsumed,
+  groupFilter,
+  emptyHint,
+  brand
 }: CustomResourceBrowserPageProps): React.JSX.Element {
   const { t } = useTranslation()
   const [tab, setTab] = useState<CrdTab>(initialMode)
@@ -82,16 +89,17 @@ export function CustomResourceBrowserPage({
   const kindsError = kindsQuery.data && 'error' in kindsQuery.data ? kindsQuery.data.error : null
 
   const filteredKinds = useMemo(() => {
+    const scoped = groupFilter ? kinds.filter((kind) => kind.group === groupFilter) : kinds
     const q = search.trim().toLowerCase()
-    if (!q) return kinds
-    return kinds.filter(
+    if (!q) return scoped
+    return scoped.filter(
       (kind) =>
         kind.kind.toLowerCase().includes(q) ||
         kind.group.toLowerCase().includes(q) ||
         kind.crdName.toLowerCase().includes(q) ||
         kind.shortNames.some((name) => name.toLowerCase().includes(q))
     )
-  }, [kinds, search])
+  }, [kinds, search, groupFilter])
 
   const groups = useMemo(() => groupKinds(filteredKinds), [filteredKinds])
 
@@ -104,9 +112,9 @@ export function CustomResourceBrowserPage({
   }, [selectedKind?.crdName, namespace])
 
   useEffect(() => {
-    if (!initialFocus) return
+    if (!initialFocus || groupFilter) return
     setTab('all')
-  }, [initialFocus])
+  }, [initialFocus, groupFilter])
 
   useEffect(() => {
     if (!initialFocus || kinds.length === 0) return
@@ -158,6 +166,11 @@ export function CustomResourceBrowserPage({
       setSelectedKind(null)
     }
   }, [kinds, selectedKind])
+
+  useEffect(() => {
+    if (!groupFilter || selectedKind || filteredKinds.length === 0) return
+    setSelectedKind(filteredKinds[0])
+  }, [groupFilter, selectedKind, filteredKinds])
 
   const selectedInstances = useMemo(
     () => instances.filter((item) => selectedInstanceKeys.includes(item.id)),
@@ -262,9 +275,18 @@ export function CustomResourceBrowserPage({
         <div className="ml-crd-browser__brand">
           <Icon icon={Boxes} variant="toolbar" />
           <span>
-            {t('crdBrowser.brand')} <span>/</span> {t('crdBrowser.browser')}
+            {brand ?? t('crdBrowser.brand')}
+            {groupFilter ? null : (
+              <>
+                {' '}
+                <span>/</span> {t('crdBrowser.browser')}
+              </>
+            )}
           </span>
         </div>
+        {groupFilter ? (
+          <span className="ml-crd-browser__tabs">{groupFilter}</span>
+        ) : (
         <div className="ml-crd-browser__tabs" role="tablist">
           <button
             type="button"
@@ -285,6 +307,7 @@ export function CustomResourceBrowserPage({
             {t('crdBrowser.tabInstalled')}
           </button>
         </div>
+        )}
         <span className="ml-crd-browser__header-count">
           {t('crdBrowser.kindCount', { count: filteredKinds.length })}
         </span>
@@ -318,7 +341,10 @@ export function CustomResourceBrowserPage({
                     }
                   />
                 ) : filteredKinds.length === 0 ? (
-                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('crdBrowser.emptyFilter')} />
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={emptyHint || t('crdBrowser.emptyFilter')}
+                  />
                 ) : (
                   groups.map((group) => (
                     <section key={group.group} className="ml-crd-group">

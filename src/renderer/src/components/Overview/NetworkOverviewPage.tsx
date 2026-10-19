@@ -83,7 +83,7 @@ export function NetworkOverviewPage({
   if (loading && NETWORK_KINDS.every((k) => byKind[k].length === 0)) return <LoadingState />
 
   return (
-    <OverviewPage title={t('networkOverview.title')} subtitle={t('networkOverview.subtitle')}>
+    <OverviewPage>
       <DetailOverview>
         <OverviewGrid>
           {NETWORK_KINDS.map((kind) => (

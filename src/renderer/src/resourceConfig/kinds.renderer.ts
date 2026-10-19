@@ -49,12 +49,18 @@ export const kindGroups: KindGroup[] = [
       'ValidatingWebhookConfigurations',
       'ValidatingAdmissionPolicies',
       'ValidatingAdmissionPolicyBindings'
+    ],
+    virtualEntries: [
+      { key: 'externalSecrets', label: 'External Secrets', icon: virtualPageIconComponents.externalSecrets }
     ]
   },
   {
     title: 'Network',
     kinds: ['Services', 'EndpointSlices', 'Endpoints', 'Ingresses', 'IngressClasses', 'NetworkPolicies'],
-    virtualEntries: [{ key: 'portForwarding', label: 'Port Forwarding', icon: virtualPageIconComponents.portForwarding }]
+    virtualEntries: [
+      { key: 'portForwarding', label: 'Port Forwarding', icon: virtualPageIconComponents.portForwarding },
+      { key: 'gatewayApi', label: 'Gateway API', icon: virtualPageIconComponents.gatewayApi }
+    ]
   },
   {
     title: 'Storage',

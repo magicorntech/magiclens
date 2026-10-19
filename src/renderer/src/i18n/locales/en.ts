@@ -86,6 +86,7 @@ export const en = {
     },
     sections: {
       general: 'General',
+      alerts: 'Alerts',
       updates: 'Updates',
       display: 'Display',
       widget: 'Widget',
@@ -101,6 +102,7 @@ export const en = {
     },
     sectionHints: {
       general: 'Language, refresh cadence, kubeconfig scan path, and cluster housekeeping.',
+      alerts: 'Which cluster conditions raise a local alert, and how they sound.',
       updates: 'Control how MagicLens checks for and installs updates.',
       display: 'Where details open, where Terminal/YAML docks, and what the sidebar shows.',
       widget: 'Menu-bar cluster metrics: which clusters, what they show, and how they look.',
@@ -212,6 +214,9 @@ export const en = {
       refreshTitle: 'Resource refresh interval',
       refreshHint:
         'How often resource lists and metrics refresh automatically. Applies to every open cluster tab; pausing live refresh is still available per resource view.',
+      pageSizeTitle: 'Table page size',
+      pageSizeHint: 'How many rows a table shows the first time it opens. Applies to every list.',
+      pageSize: 'Rows per page',
       kubeconfigPathTitle: 'Local kubeconfig path',
       kubeconfigPathHint:
         'MagicLens auto-scans only this file or folder when you open Add Cluster. Leave empty to use ~/.kube.',
@@ -229,6 +234,64 @@ export const en = {
       dedupeConfirmOk: 'Merge duplicates',
       dedupeNone: 'No duplicate clusters found.',
       dedupeDone: 'Merged {{groups}} group(s), removed {{removed}} duplicate(s). {{kept}} cluster(s) remain.'
+    },
+    alerts: {
+      watchTitle: 'Watching',
+      watchHint: 'Connected clusters are checked about every 30 seconds. New alerts land in the notification bell.',
+      enabled: 'Watch connected clusters',
+      enabledHint: 'Turn this off to stop collecting local alerts.',
+      os: 'Desktop notifications',
+      osHint: 'The first time an alert appears, macOS or Windows shows it. Clicking it opens that resource.',
+      permission: 'System permission',
+      permissionHint: 'MagicLens asks once at launch. If you dismissed it, ask again or open system settings.',
+      allow: 'Ask for permission',
+      system: 'Open system settings',
+      soundTitle: 'Sound',
+      soundHint: 'Played in the app when a new alert arrives. Desktop notifications stay quiet so the tone is not doubled.',
+      sound: 'Notification sound',
+      soundFor: 'Play sound for',
+      soundForHint: 'Errors are crash loops, image pulls, failed pods, and NotReady nodes.',
+      soundForAll: 'Every alert',
+      soundForErrors: 'Errors only',
+      sounds: {
+        off: 'Off',
+        soft: 'Soft',
+        chime: 'Chime',
+        alarm: 'Alarm'
+      },
+      thresholdsTitle: 'Thresholds',
+      thresholdsHint: 'Restarts and pending time only apply to those two alert types.',
+      restarts: 'Restart count',
+      pending: 'Pending for',
+      minutes: '{{count}} min',
+      typesTitle: 'Alert types',
+      typesHint: 'Turn off the conditions you do not want in the bell or as desktop notifications.',
+      types: {
+        crashLoop: 'Crash looping pods',
+        imagePull: 'Image pull failures',
+        podFailed: 'Failed or evicted pods',
+        podPending: 'Pods stuck pending',
+        restartsHigh: 'High restart count',
+        nodeNotReady: 'Nodes not Ready',
+        nodePressure: 'Node pressure',
+        jobFailed: 'Failed jobs',
+        deploymentUnavailable: 'Deployments short of replicas',
+        certExpiring: 'Certificates expiring soon',
+        certExpired: 'Expired certificates'
+      },
+      typeHints: {
+        crashLoop: 'CrashLoopBackOff and restart back-off.',
+        imagePull: 'ImagePullBackOff and ErrImagePull.',
+        podFailed: 'Error, OOMKilled, create/run failures, and evictions.',
+        podPending: 'Still Pending after the threshold above.',
+        restartsHigh: 'Running pods whose restart count crosses the threshold.',
+        nodeNotReady: 'Any node whose status is not Ready.',
+        nodePressure: 'Ready nodes reporting memory, disk, or PID pressure.',
+        jobFailed: 'Jobs whose status is Failed.',
+        deploymentUnavailable: 'Deployments with fewer ready replicas than desired.',
+        certExpiring: 'TLS secrets inside the warning window.',
+        certExpired: 'TLS secrets past their notAfter date.'
+      }
     },
     updates: {
       checkAutomatically: 'Check for updates automatically',
@@ -603,7 +666,8 @@ export const en = {
     about: {
       platform: 'Platform',
       appTitle: 'MagicLens',
-      appHint: 'Desktop Kubernetes client — version and runtime details for this install.'
+      appHint: 'Desktop Kubernetes client — version and runtime details for this install.',
+      developedBy: 'Developed by'
     },
     vpnExtensions: {
       intro:
@@ -825,6 +889,21 @@ export const en = {
       hint: 'Optional. If set, MagicLens auto-connects this VPN when you open the cluster tab. Leave empty to manage VPN yourself. PIN and MFA are remembered per profile for the day after the first successful connect.'
     }
   },
+  yamlEditor: {
+    loading: 'Loading manifest…',
+    checking: 'Checking with the cluster…',
+    empty: 'Manifest is empty',
+    unchanged: 'No changes to apply.',
+    dryRunOk: 'Server accepted this change.',
+    dryRunFail: 'Server rejected this change.',
+    search: 'Search',
+    format: 'Format',
+    validate: 'Validate',
+    back: 'Back',
+    confirm: 'Apply',
+    create: 'Create',
+    applying: 'Applying…'
+  },
   tour: {
     skip: 'Skip',
     back: 'Back',
@@ -1013,6 +1092,8 @@ export const en = {
       eventTimeline: 'Timeline',
       security: 'Security',
       portForwarding: 'Port Forwards',
+      gatewayApi: 'Gateway API',
+      externalSecrets: 'External Secrets',
       helmCharts: 'Helm',
       helmReleases: 'Helm',
       argoDashboard: 'Dashboard',
@@ -1194,7 +1275,9 @@ export const en = {
       unknown: 'unknown',
       empty: 'No data yet',
       noMetrics: 'Metrics are not available for these nodes',
-      noDisk: 'No root disk metrics (needs node-exporter)'
+      noDisk: 'No root disk metrics (needs node-exporter)',
+      clickNode: 'Click a bar to open that node.',
+      clickPods: 'Click a slice to open Pods.'
     }
   },
   nodePods: {
@@ -1301,6 +1384,20 @@ export const en = {
     quotaWarnings: '{{count}} quotas look constrained',
     hpaList: 'Horizontal Pod Autoscalers',
     noHpas: 'No HPAs defined'
+  },
+  certs: {
+    title: 'TLS certificate',
+    subject: 'Subject',
+    issuer: 'Issuer',
+    hosts: 'Hosts',
+    notBefore: 'Valid from',
+    notAfter: 'Expires',
+    expiring: 'Expiring certs',
+    expiringTitle: 'Expiring certificates',
+    noneExpiring: 'No certificates expiring in the next {{days}} days',
+    daysLeft: '{{count}}d',
+    expiredDays: '{{count}}d ago',
+    invalid: 'Unreadable'
   },
   networkOverview: {
     title: 'Network overview',
@@ -2330,8 +2427,8 @@ export const en = {
       upcoming: 'Upcoming'
     },
     inbox: {
-      title: 'Sparks inbox',
-      empty: 'No pings yet',
+      title: 'Notifications',
+      empty: 'No notifications yet',
       markAllRead: 'Mark all read',
       clear: 'Clear',
       openNotes: 'Open Sparks'
@@ -2399,6 +2496,31 @@ export const en = {
       }
     }
   },
+  yamlCompare: {
+    label: 'Compare with another cluster',
+    pickCluster: 'Pick a connected cluster',
+    thisCluster: 'This cluster'
+  },
+  gatewayApi: {
+    empty: 'Gateway API CRDs are not installed on this cluster.'
+  },
+  externalSecrets: {
+    empty: 'External Secrets CRDs are not installed on this cluster.'
+  },
+  alerts: {
+    label: 'Alerts',
+    empty: 'Nothing needs attention'
+  },
+  resourceViews: {
+    label: 'Views',
+    empty: 'No saved views yet',
+    save: 'Save current view',
+    saveTitle: 'Save view',
+    saveConfirm: 'Save',
+    namePlaceholder: 'Name this view',
+    update: 'Update “{{name}}”',
+    delete: 'Delete view'
+  },
   resourceDetail: {
     tabs: {
       overview: 'Overview',
@@ -2418,6 +2540,18 @@ export const en = {
       status: 'Status',
       age: 'Age',
       namespace: 'Namespace'
+    },
+    glance: {
+      title: 'At a glance',
+      replicas: 'Replicas',
+      hpa: 'HPA',
+      pdb: 'PDB',
+      readiness: 'Readiness',
+      liveness: 'Liveness',
+      startup: 'Startup',
+      requests: 'Requests',
+      limits: 'Limits',
+      none: 'None'
     },
     metadata: {
       title: 'Ownership & metadata',
@@ -2463,7 +2597,10 @@ export const en = {
       ended: 'Log stream ended',
       noPods: 'No pods found for this resource.',
       waiting: 'Waiting for log output from {{count}} streams…',
-      unavailable: 'Log streaming is unavailable. Restart MagicLens.'
+      unavailable: 'Log streaming is unavailable. Restart MagicLens.',
+      noMatch: 'No lines match “{{query}}”.',
+      matchCount: '{{shown}} / {{total}}',
+      restarted: '── stream restarted ──'
     },
     workloadPods: {
       empty: 'No pods found for this resource.',
@@ -2483,6 +2620,24 @@ export const en = {
       events: 'Events',
       notes: 'Sparks',
       yaml: 'YAML'
+    },
+    logs: {
+      filter: 'Filter logs',
+      previous: 'Previous',
+      timestamps: 'Timestamps',
+      wrap: 'Wrap',
+      following: 'Following',
+      paused: 'Paused',
+      pausedBanner: 'Log streaming paused',
+      restart: 'Restart',
+      waiting: 'Waiting for log output…',
+      noMatch: 'No lines match “{{query}}”.',
+      matchCount: '{{shown}} / {{total}}',
+      restarted: '── stream restarted ──',
+      ended: 'Log stream ended',
+      downloaded: 'Logs saved to {{path}}',
+      container: 'Container',
+      pod: 'Pod'
     },
     overview: {
       title: 'Overview',

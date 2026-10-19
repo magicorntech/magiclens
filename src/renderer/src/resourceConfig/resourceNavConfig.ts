@@ -97,7 +97,8 @@ export const resourceNavLayout: NavLayoutItem[] = [
       { type: 'kind', kind: 'MutatingWebhookConfigurations' },
       { type: 'kind', kind: 'ValidatingWebhookConfigurations' },
       { type: 'kind', kind: 'ValidatingAdmissionPolicies' },
-      { type: 'kind', kind: 'ValidatingAdmissionPolicyBindings' }
+      { type: 'kind', kind: 'ValidatingAdmissionPolicyBindings' },
+      { type: 'virtual', key: 'externalSecrets', label: 'External Secrets' }
     ]
   },
   {
@@ -113,7 +114,8 @@ export const resourceNavLayout: NavLayoutItem[] = [
       { type: 'kind', kind: 'Ingresses' },
       { type: 'kind', kind: 'IngressClasses' },
       { type: 'kind', kind: 'NetworkPolicies' },
-      { type: 'virtual', key: 'portForwarding', label: 'Port Forwarding' }
+      { type: 'virtual', key: 'portForwarding', label: 'Port Forwarding' },
+      { type: 'virtual', key: 'gatewayApi', label: 'Gateway API' }
     ]
   },
   {

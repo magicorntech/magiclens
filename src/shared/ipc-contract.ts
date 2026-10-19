@@ -21,10 +21,16 @@ export const IPC = {
   RESOURCE_WATCH_STATUS: 'resource:watch:status',
   RESOURCE_GET_MANIFEST: 'resource:getManifest',
   RESOURCE_APPLY_MANIFEST: 'resource:applyManifest',
+  RESOURCE_PREVIEW_MANIFEST: 'resource:previewManifest',
   RESOURCE_CREATE_MANIFEST: 'resource:createManifest',
   RESOURCE_DELETE: 'resource:delete',
   RESOURCE_LIST_EVENTS: 'resource:listEvents',
   RESOURCE_LIST_CLUSTER_EVENTS: 'resource:listClusterEvents',
+  CERTS_LIST: 'certs:list',
+  ALERTS_NOTIFY: 'alerts:notify',
+  ALERTS_REQUEST_PERMISSION: 'alerts:requestPermission',
+  ALERTS_OPEN_SETTINGS: 'alerts:openSettings',
+  ALERTS_CLICK: 'alerts:click',
 
   SESSION_SET_SCOPE: 'session:setScope',
 

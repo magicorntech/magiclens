@@ -3,7 +3,7 @@ import type { ColumnsType } from 'antd/es/table'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
 import type { ResourceEventItem } from '@shared/types/resourceEvents'
 import { useResourceEvents } from '../../queries/useResourceEvents'
-import { readPaginationChange, embeddedTablePagination, EMBEDDED_TABLE_PAGE_SIZE, useTablePagination } from '../../utils/tablePagination'
+import { readPaginationChange, embeddedTablePagination, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from './AgeCell'
 import { compareAgeTimestamps, compareNumericStrings } from '../../utils/tableSort'
@@ -75,10 +75,12 @@ export function ResourceEventsPanel({
   embedded = false
 }: ResourceEventsPanelProps): React.JSX.Element {
   const { data, isLoading, isError, error } = useResourceEvents(clusterId, namespace, name, target, isActive)
-  const { pagination, setPagination, paginationProps } = useTablePagination(
-    [clusterId, namespace, name, target],
-    { defaultPageSize: embedded ? EMBEDDED_TABLE_PAGE_SIZE : undefined }
-  )
+  const { pagination, setPagination, paginationProps } = useTablePagination([
+    clusterId,
+    namespace,
+    name,
+    target
+  ])
 
   if (isError) {
     return (

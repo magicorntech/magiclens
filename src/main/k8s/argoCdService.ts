@@ -135,7 +135,19 @@ function toApplication(obj: ArgoAppObject): ArgoApplication {
     lastOperationPhase: op.phase ?? '',
     lastOperationMessage: op.message ?? '',
     lastSyncedAt: iso(op.finishedAt),
-    ageTimestamp: iso(m.creationTimestamp)
+    ageTimestamp: iso(m.creationTimestamp),
+    driftedResources: (obj.status?.resources ?? [])
+      .filter((r) => (r.status ?? '') === 'OutOfSync')
+      .map((r, i) => ({
+        id: `${r.kind ?? ''}/${r.namespace ?? ''}/${r.name ?? ''}/${i}`,
+        group: r.group ?? '',
+        version: r.version ?? '',
+        kind: r.kind ?? '',
+        name: r.name ?? '',
+        namespace: r.namespace ?? '',
+        syncStatus: r.status ?? '',
+        healthStatus: r.health?.status ?? ''
+      }))
   }
 }
 

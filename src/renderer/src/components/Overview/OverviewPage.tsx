@@ -6,20 +6,23 @@ export function OverviewPage({
   actions,
   children
 }: {
-  title: string
+  title?: string
   subtitle?: string
   actions?: ReactNode
   children: ReactNode
 }): React.JSX.Element {
+  const showHeader = Boolean(title || subtitle || actions)
   return (
     <div className="ml-overview-page">
-      <header className="ml-overview-page__header">
-        <div>
-          <h2 className="ml-overview-page__title">{title}</h2>
-          {subtitle ? <p className="ml-overview-page__subtitle">{subtitle}</p> : null}
-        </div>
-        {actions ? <div className="ml-overview-page__actions">{actions}</div> : null}
-      </header>
+      {showHeader ? (
+        <header className="ml-overview-page__header">
+          <div>
+            {title ? <h2 className="ml-overview-page__title">{title}</h2> : null}
+            {subtitle ? <p className="ml-overview-page__subtitle">{subtitle}</p> : null}
+          </div>
+          {actions ? <div className="ml-overview-page__actions">{actions}</div> : null}
+        </header>
+      ) : null}
       <div className="ml-overview-page__body">{children}</div>
     </div>
   )

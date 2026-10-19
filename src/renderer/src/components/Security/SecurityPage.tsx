@@ -44,11 +44,11 @@ import { useAiAgentStore } from '../../stores/aiAgentStore'
 import { useMollyStore } from '../../stores/mollyStore'
 import { useSecurityStore } from '../../stores/securityStore'
 import {
-  DEFAULT_TABLE_PAGE_SIZE,
   embeddedTablePagination,
   readPaginationChange,
   type TablePaginationState
 } from '../../utils/tablePagination'
+import { useTablePageSizeStore } from '../../stores/tablePageSizeStore'
 import './security.css'
 
 interface SecurityPageProps {
@@ -234,9 +234,10 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
   const [namespaceFilter, setNamespaceFilter] = useState<string | null>(null)
   const [selectedVuln, setSelectedVuln] = useState<SecurityVulnerability | null>(null)
   const [selectedRule, setSelectedRule] = useState<SecurityRuleBookEntry | null>(null)
+  const defaultPageSize = useTablePageSizeStore((s) => s.pageSize)
   const [pagination, setPagination] = useState<TablePaginationState>({
     current: 1,
-    pageSize: DEFAULT_TABLE_PAGE_SIZE
+    pageSize: defaultPageSize
   })
 
   const chartInk = isDark ? 'rgba(148,163,184,0.55)' : 'rgba(100,116,139,0.45)'
@@ -400,7 +401,7 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
     setSeverityFilter([])
     setSourceFilter([])
     setNamespaceFilter(null)
-    setPagination({ current: 1, pageSize: DEFAULT_TABLE_PAGE_SIZE })
+    setPagination({ current: 1, pageSize: defaultPageSize })
     setIntroOpen(false)
     setWorkspaceTabs([])
     setActiveWorkspaceId(LIVE_WORKSPACE_ID)
@@ -445,6 +446,10 @@ export function SecurityPage({ clusterId }: SecurityPageProps): React.JSX.Elemen
       cancelled = true
     }
   }, [clusterId, refreshHistory, applyLiveReport, t])
+
+  useEffect(() => {
+    setPagination({ current: 1, pageSize: defaultPageSize })
+  }, [defaultPageSize])
 
   useEffect(() => {
     setPagination((prev) => ({ ...prev, current: 1 }))

@@ -44,6 +44,89 @@ export async function readResourceManifest(
   return stringify(obj)
 }
 
+function isNotFound(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false
+  const status = err as { statusCode?: number; code?: number; response?: { statusCode?: number } }
+  const code = status.statusCode ?? status.code ?? status.response?.statusCode
+  if (code === 404) return true
+  const message = err instanceof Error ? err.message : String(err)
+  return message.includes('NotFound') || message.includes('404')
+}
+
+/** Stable YAML for a side-by-side diff. Server-managed fields are removed on both sides. */
+export function normalizedManifestYaml(yamlText: string): string {
+  const docs = parseAllDocuments(yamlText)
+    .map((doc) => doc.toJS() as KubernetesObject | null)
+    .filter((doc): doc is KubernetesObject => Boolean(doc?.apiVersion && doc.kind && doc.metadata?.name))
+  if (docs.length === 0) throw new Error('Manifest must include apiVersion, kind, and metadata.name')
+  return docs.map((doc) => stringify(sanitizeForApply(doc)).trimEnd()).join('\n---\n')
+}
+
+async function readLive(clients: ClusterClients, obj: KubernetesObject): Promise<KubernetesObject | null> {
+  try {
+    const namespace = obj.metadata?.namespace
+    const name = obj.metadata?.name ?? ''
+    return await clients.objects.read({
+      apiVersion: obj.apiVersion,
+      kind: obj.kind,
+      metadata: namespace ? { name, namespace } : { name }
+    })
+  } catch (err) {
+    if (isNotFound(err)) return null
+    throw err
+  }
+}
+
+/** Compares the editor with the live object and asks the API server to admit the change without saving it. */
+export async function previewResourceManifest(
+  clients: ClusterClients,
+  yamlText: string,
+  mode: 'edit' | 'create'
+): Promise<{ original: string; modified: string; unchanged: boolean; dryRunOk: boolean; dryRunMessage: string }> {
+  const modified = normalizedManifestYaml(yamlText)
+  const docs = parseAllDocuments(yamlText)
+    .map((doc) => doc.toJS() as KubernetesObject | null)
+    .filter((doc): doc is KubernetesObject => Boolean(doc?.apiVersion && doc.kind && doc.metadata?.name))
+
+  let original = ''
+  if (mode === 'edit' && docs[0]) {
+    const live = await readLive(clients, docs[0])
+    original = live ? stringify(sanitizeForApply(live)).trimEnd() : ''
+  }
+
+  try {
+    if (mode === 'create') {
+      for (const doc of docs) {
+        await clients.objects.create(sanitizeForApply(doc), undefined, 'All', 'magiclens-edit')
+      }
+    } else {
+      await clients.objects.patch(
+        sanitizeForApply(docs[0]!),
+        undefined,
+        'All',
+        'magiclens-edit',
+        true,
+        PatchStrategy.ServerSideApply
+      )
+    }
+    return {
+      original,
+      modified,
+      unchanged: original === modified,
+      dryRunOk: true,
+      dryRunMessage: mode === 'create' ? `Server would create ${docs.length} resource(s).` : 'Server accepted this change.'
+    }
+  } catch (err) {
+    return {
+      original,
+      modified,
+      unchanged: original === modified,
+      dryRunOk: false,
+      dryRunMessage: err instanceof Error ? err.message : String(err)
+    }
+  }
+}
+
 /** Applies an edited manifest via server-side apply — merges rather than requiring an exact
  * resourceVersion match, so concurrent edits from elsewhere don't block the save. */
 export async function applyResourceManifest(

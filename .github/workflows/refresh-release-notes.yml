@@ -8,9 +8,9 @@ on:
       tag:
         description: Release tag to update
         required: true
-        default: v0.1.34
+        default: v0.1.35
   push:
-    branches: [release/v0.1.34]
+    branches: [release/v0.1.35]
     paths:
       - scripts/release-notes.mjs
       - .github/workflows/refresh-release-notes.yml
@@ -26,13 +26,13 @@ jobs:
 
       - name: Write notes
         env:
-          RELEASE_TAG: ${{ github.event.inputs.tag || 'v0.1.34' }}
+          RELEASE_TAG: ${{ github.event.inputs.tag || 'v0.1.35' }}
         run: node scripts/release-notes.mjs "$RELEASE_TAG" > CHANGELOG_RELEASE.md
 
       - name: Update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.event.inputs.tag || 'v0.1.34' }}
+          RELEASE_TAG: ${{ github.event.inputs.tag || 'v0.1.35' }}
         run: |
           gh release edit "$RELEASE_TAG" \
             --repo "${GITHUB_REPOSITORY}" \

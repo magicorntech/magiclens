@@ -38,6 +38,7 @@ import { useBottomPanelOptional } from '../Layout/BottomPanelContext'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { latestDiskSnapshots } from '../Metrics/DiskUsageSummary'
 import { PodMetricsPanel } from './PodMetricsPanel'
+import { YamlClusterCompare } from '../Editor/YamlClusterCompare'
 import { PodNetworkPanel } from './PodNetworkPanel'
 import { PodLogsPanel } from './PodLogsPanel'
 import { PodExecPanel } from './PodExecPanel'
@@ -844,7 +845,16 @@ export function PodDetailView({
         ) : manifestError ? (
           <Alert type="error" showIcon message={String(manifestError)} />
         ) : (
-          <pre className="ml-pod-yaml">{manifest ?? ''}</pre>
+          <>
+            <YamlClusterCompare
+              clusterId={clusterId}
+              kind="Pods"
+              namespace={namespace}
+              name={podName}
+              localYaml={manifest ?? ''}
+              yamlClassName="ml-pod-yaml"
+            />
+          </>
         )
       )
     }

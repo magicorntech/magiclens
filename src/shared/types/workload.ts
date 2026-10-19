@@ -108,6 +108,9 @@ export interface RolloutHistoryResponse {
 export interface WorkloadContainerInfo {
   name: string
   image: string
+  requests?: { cpu?: string; memory?: string }
+  limits?: { cpu?: string; memory?: string }
+  probes: { type: 'liveness' | 'readiness' | 'startup'; handler: string }[]
 }
 
 export interface WorkloadScaleInfo {

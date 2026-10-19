@@ -716,7 +716,7 @@
   margin-inline: 2px !important;
 }
 
-.ml-sidebar-footer__row .ml-sidebar-footer__collapse {
+.ml-sidebar:not(.ml-sidebar--collapsed) .ml-sidebar-footer__row .ml-sidebar-footer__collapse {
   flex: 0 0 auto !important;
   margin-left: auto !important;
   background: transparent !important;
@@ -730,23 +730,43 @@
 }
 
 .ml-sidebar--collapsed .ml-sidebar-footer {
-  padding: 6px 6px 10px !important;
+  width: 100% !important;
+  align-items: center !important;
+  padding: 6px 0 10px !important;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-footer__row {
   flex-direction: column !important;
   align-items: center !important;
-  gap: 2px !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  width: 100% !important;
+}
+
+/* Tooltip wraps the collapse control, so the wrapper is the flex item.
+   Pin every child to the same 36px column as the workspace fabs. */
+.ml-sidebar--collapsed .ml-sidebar-footer__row > * {
+  align-self: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  margin: 0 !important;
+  flex: 0 0 36px !important;
 }
 
 .ml-sidebar--collapsed .ml-sidebar-footer__row .ml-sidebar-btn,
-.ml-sidebar--collapsed .ml-sidebar-footer__collapse,
-.ml-sidebar--collapsed .ml-sidebar-footer__row .ml-update-badge {
+.ml-sidebar--collapsed .ml-sidebar-footer__row .ml-sidebar-footer__collapse,
+.ml-sidebar--collapsed .ml-sidebar-footer__collapse {
   flex: 0 0 auto !important;
-  width: 40px !important;
-  min-width: 40px !important;
-  height: 34px !important;
-  margin-left: 0 !important;
+  align-self: center !important;
+  width: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  height: 36px !important;
+  margin: 0 !important;
   padding: 0 !important;
   justify-content: center !important;
 }

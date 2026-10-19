@@ -2,7 +2,7 @@ import { Empty, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { ResourceEventItem } from '@shared/types/resourceEvents'
 import { useClusterEvents } from '../../queries/useClusterEvents'
-import { readPaginationChange, embeddedTablePagination, EMBEDDED_TABLE_PAGE_SIZE, useTablePagination } from '../../utils/tablePagination'
+import { readPaginationChange, embeddedTablePagination, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from './AgeCell'
 import { compareAgeTimestamps, compareNumericStrings, compareText } from '../../utils/tableSort'
@@ -59,10 +59,11 @@ export function ClusterEventsPanel({
     { involvedObjectKind, involvedObjectName },
     isActive
   )
-  const { pagination, setPagination, paginationProps } = useTablePagination(
-    [clusterId, involvedObjectKind ?? null, involvedObjectName ?? null],
-    { defaultPageSize: isOverview ? EMBEDDED_TABLE_PAGE_SIZE : embedded ? EMBEDDED_TABLE_PAGE_SIZE : undefined }
-  )
+  const { pagination, setPagination, paginationProps } = useTablePagination([
+    clusterId,
+    involvedObjectKind ?? null,
+    involvedObjectName ?? null
+  ])
 
   if (isError) {
     return <Typography.Text type="danger">{error instanceof Error ? error.message : String(error)}</Typography.Text>

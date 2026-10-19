@@ -22,6 +22,8 @@ import type {
   PersistedUiState
 } from '@shared/types/cluster'
 import type { ResourceListRequest, ResourceListResponse } from '@shared/types/resource'
+import type { TlsCertListRequest, TlsCertListResponse } from '@shared/types/tlsCerts'
+import type { AlertsNotifyRequest, AlertsNotifyResponse, OsNotificationTarget } from '@shared/localAlerts'
 import type { ResourceEventsRequest, ResourceEventsResponse, ClusterEventsRequest } from '@shared/types/resourceEvents'
 import type {
   ResourceWatchEventPayload,
@@ -33,6 +35,8 @@ import type {
 import type {
   ResourceApplyManifestRequest,
   ResourceApplyManifestResponse,
+  ResourcePreviewManifestRequest,
+  ResourcePreviewManifestResponse,
   ResourceCreateManifestRequest,
   ResourceCreateManifestResponse,
   ResourceDeleteRequest,
@@ -218,6 +222,8 @@ const api = {
       ipcRenderer.invoke(IPC.RESOURCE_GET_MANIFEST, req),
     applyManifest: (req: ResourceApplyManifestRequest): Promise<ResourceApplyManifestResponse> =>
       ipcRenderer.invoke(IPC.RESOURCE_APPLY_MANIFEST, req),
+    previewManifest: (req: ResourcePreviewManifestRequest): Promise<ResourcePreviewManifestResponse> =>
+      ipcRenderer.invoke(IPC.RESOURCE_PREVIEW_MANIFEST, req),
     createManifest: (req: ResourceCreateManifestRequest): Promise<ResourceCreateManifestResponse> =>
       ipcRenderer.invoke(IPC.RESOURCE_CREATE_MANIFEST, req),
     delete: (req: ResourceDeleteRequest): Promise<ResourceDeleteResponse> =>
@@ -226,6 +232,21 @@ const api = {
       ipcRenderer.invoke(IPC.RESOURCE_LIST_EVENTS, req),
     listClusterEvents: (req: ClusterEventsRequest): Promise<ResourceEventsResponse> =>
       ipcRenderer.invoke(IPC.RESOURCE_LIST_CLUSTER_EVENTS, req)
+  },
+  certs: {
+    list: (req: TlsCertListRequest): Promise<TlsCertListResponse> => ipcRenderer.invoke(IPC.CERTS_LIST, req)
+  },
+  alerts: {
+    notify: (req: AlertsNotifyRequest): Promise<AlertsNotifyResponse> =>
+      ipcRenderer.invoke(IPC.ALERTS_NOTIFY, req),
+    requestPermission: (): Promise<AlertsNotifyResponse> =>
+      ipcRenderer.invoke(IPC.ALERTS_REQUEST_PERMISSION),
+    openSystemSettings: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC.ALERTS_OPEN_SETTINGS),
+    onOpen: (cb: (target: OsNotificationTarget) => void): (() => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, target: OsNotificationTarget): void => cb(target)
+      ipcRenderer.on(IPC.ALERTS_CLICK, listener)
+      return () => ipcRenderer.removeListener(IPC.ALERTS_CLICK, listener)
+    }
   },
   session: {
     setScope: (scope: string): Promise<{ ok: true; scope: string }> =>

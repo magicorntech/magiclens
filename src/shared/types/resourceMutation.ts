@@ -29,6 +29,24 @@ export interface AppliedResourceRef {
 
 export type ResourceApplyManifestResponse = { yaml: string; ref: AppliedResourceRef } | { error: string }
 
+export interface ResourcePreviewManifestRequest {
+  clusterId: string
+  yaml: string
+  mode: 'edit' | 'create'
+}
+
+export interface ResourcePreviewManifestResult {
+  /** Sanitized live manifest. Empty when the object does not exist yet. */
+  original: string
+  /** Sanitized editor manifest, same field stripping as `original`. */
+  modified: string
+  unchanged: boolean
+  dryRunOk: boolean
+  dryRunMessage: string
+}
+
+export type ResourcePreviewManifestResponse = ResourcePreviewManifestResult | { error: string }
+
 export interface ResourceCreateManifestRequest {
   clusterId: string
   /** One or more `---`-separated YAML documents to create. */

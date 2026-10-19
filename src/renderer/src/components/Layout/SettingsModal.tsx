@@ -17,6 +17,7 @@ import {
 import type { AggregationColor } from 'antd/es/color-picker/color'
 import type { LucideIcon } from 'lucide-react'
 import {
+  Bell,
   Bot,
   CheckCircle2,
   CloudDownload,
@@ -45,7 +46,10 @@ import { normalizeUtilityFabSide, type UiFontId, type UiFontWeightId, type UiTex
 import { UI_FONT_STACKS } from '@shared/types/uiTypography'
 import { Icon } from '../ui/Icon'
 import logo from '../../assets/logo.png'
+import magicornLogo from '../../assets/magicorn-logo.png'
 import { refreshIntervalOptions, useLiveRefreshStore } from '../../stores/liveRefreshStore'
+import { useTablePageSizeStore } from '../../stores/tablePageSizeStore'
+import { TABLE_PAGE_SIZE_OPTIONS } from '../../utils/tablePagination'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
 import { useUpdateStore } from '../../stores/updateStore'
 import { useThemeStore, type CustomColorSlot, type ThemeFamily } from '../../stores/themeStore'
@@ -63,6 +67,7 @@ import { WorkspaceOrderSettings } from './WorkspaceOrderSettings'
 import { KeyboardShortcutsSettings } from './KeyboardShortcutsSettings'
 import { VpnExtensionsSettings } from './VpnExtensionsSettings'
 import { PortForwardingSettings } from './PortForwardingSettings'
+import { AlertsSettings } from './AlertsSettings'
 import { SparksSettings } from './SparksSettings'
 import { AiAgentSettings } from './AiAgentSettings'
 import { SearchSettings } from './SearchSettings'
@@ -360,7 +365,7 @@ function paneForSettingsKey(key: string): string | null {
     return 'options'
   }
   if (key.startsWith('settings.aiAgent')) return 'providers'
-  if (key.includes('search.types') || key.includes('typesTitle')) return 'sources'
+  if (key.includes('search.types') || (key.includes('typesTitle') && !key.startsWith('settings.alerts'))) return 'sources'
   if (key.startsWith('settings.search') || key.includes('sections.search')) return 'behavior'
   return null
 }
@@ -373,6 +378,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'general', icon: Settings2, group: 'preferences' },
+  { key: 'alerts', icon: Bell, group: 'preferences' },
   { key: 'appearance', icon: Palette, group: 'preferences' },
   { key: 'sparks', icon: Sparkles, group: 'preferences' },
   { key: 'aiAgent', icon: Bot, group: 'preferences' },
@@ -407,6 +413,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const setSection = useSettingsUiStore((s) => s.setSection)
   const interval = useLiveRefreshStore((s) => s.interval)
   const setInterval_ = useLiveRefreshStore((s) => s.setInterval)
+  const tablePageSize = useTablePageSizeStore((s) => s.pageSize)
+  const setTablePageSize = useTablePageSizeStore((s) => s.setPageSize)
   const [appInfo, setAppInfo] = useState<AppInfoResponse | null>(null)
 
   const updateSettings = useUpdateStore((s) => s.settings)
@@ -612,6 +620,20 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 />
               </div>
             </SettingsSection>
+
+            <SettingsSection
+              title={t('settings.general.pageSizeTitle')}
+              description={t('settings.general.pageSizeHint')}
+            >
+              <div className="ml-settings-segmented-wrap">
+                <Select
+                  value={tablePageSize}
+                  onChange={setTablePageSize}
+                  options={TABLE_PAGE_SIZE_OPTIONS.map((size) => ({ value: Number(size), label: size }))}
+                  style={{ width: 140, maxWidth: '100%' }}
+                />
+              </div>
+            </SettingsSection>
             </>
             )}
             {(paneBySection.general ?? 'app') === 'clusters' ? (
@@ -688,6 +710,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
             ) : null}
           </>
         )
+
+      case 'alerts':
+        return <AlertsSettings />
 
       case 'updates': {
         const updatePhase = updateState?.phase ?? 'idle'
@@ -1088,27 +1113,23 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                   <div className="ml-settings-about__version">
                     {t('common.version')} {appInfo?.version ?? '—'}
                     {appInfo?.buildNumber ? ` · ${t('common.build')} ${appInfo.buildNumber}` : ''}
+                    {appInfo?.platform ? ` · ${appInfo.platform}` : ''}
                   </div>
                 </div>
               </div>
-              <dl className="ml-settings-about__meta">
-                <div>
-                  <dt>Electron</dt>
-                  <dd>{appInfo?.electronVersion ?? '—'}</dd>
-                </div>
-                <div>
-                  <dt>Chromium</dt>
-                  <dd>{appInfo?.chromeVersion ?? '—'}</dd>
-                </div>
-                <div>
-                  <dt>Node.js</dt>
-                  <dd>{appInfo?.nodeVersion ?? '—'}</dd>
-                </div>
-                <div>
-                  <dt>{t('settings.about.platform')}</dt>
-                  <dd>{appInfo?.platform ?? '—'}</dd>
-                </div>
-              </dl>
+              <button
+                type="button"
+                className="ml-settings-about__maker"
+                onClick={() => void window.api.app.openExternalUrl('https://magicorn.co/')}
+              >
+                <img src={magicornLogo} alt="Magicorn" className="ml-settings-about__maker-logo" />
+                <span className="ml-settings-about__maker-copy">
+                  <span className="ml-settings-about__maker-label">{t('settings.about.developedBy')}</span>
+                  <span className="ml-settings-about__maker-name">Magicorn</span>
+                  <span className="ml-settings-about__maker-url">magicorn.co</span>
+                </span>
+                <Icon icon={ExternalLink} variant="detail" className="ml-settings-about__maker-link" />
+              </button>
             </div>
           </SettingsSection>
         )

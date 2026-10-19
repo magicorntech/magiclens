@@ -640,7 +640,7 @@ export function NodesOverviewPage({
   flushHalf()
 
   return (
-    <OverviewPage title={t('nodesOverview.title')} subtitle={t('nodesOverview.subtitle')}>
+    <OverviewPage>
       <DetailOverview>{rows}</DetailOverview>
     </OverviewPage>
   )

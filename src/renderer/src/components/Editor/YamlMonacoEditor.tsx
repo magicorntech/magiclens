@@ -4,6 +4,7 @@ import type { editor } from 'monaco-editor'
 import { Alert, message } from 'antd'
 import { AlignLeft, CheckCircle2, Play, Search } from 'lucide-react'
 import { parse } from 'yaml'
+import { useTranslation } from 'react-i18next'
 import { useResolvedDarkMode } from '../../stores/useResolvedDarkMode'
 import { Icon } from '../ui/Icon'
 import { setupMonaco } from './setupMonaco'
@@ -29,6 +30,7 @@ export function YamlMonacoEditor({
   error,
   onSave
 }: YamlMonacoEditorProps): React.JSX.Element {
+  const { t } = useTranslation()
   const isDark = useResolvedDarkMode()
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
@@ -100,19 +102,19 @@ export function YamlMonacoEditor({
           {validation && !error && <span className="ml-yaml-editor-valid">{validation}</span>}
           <button type="button" className="ml-btn ml-btn--ghost" onClick={handleSearch}>
             <Icon icon={Search} variant="detail" />
-            Search
+            {t('yamlEditor.search')}
           </button>
           <button type="button" className="ml-btn ml-btn--ghost" onClick={handleFormat}>
             <Icon icon={AlignLeft} variant="detail" />
-            Format
+            {t('yamlEditor.format')}
           </button>
           <button type="button" className="ml-btn ml-btn--ghost" onClick={handleValidate}>
             <Icon icon={CheckCircle2} variant="detail" />
-            Validate
+            {t('yamlEditor.validate')}
           </button>
-          <button type="button" className="ml-btn ml-btn--primary" disabled={saving} onClick={onSave}>
+          <button type="button" className="ml-btn ml-btn--ghost" disabled={saving} onClick={onSave}>
             <Icon icon={Play} variant="detail" />
-            {saving ? 'Applying…' : mode === 'create' ? 'Create' : 'Apply'}
+            {saving ? t('yamlEditor.applying') : mode === 'create' ? t('yamlEditor.create') : t('yamlEditor.confirm')}
           </button>
         </div>
       </div>

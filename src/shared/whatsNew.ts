@@ -15,6 +15,17 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.35': {
+    title: 'Alerts, charts, and table defaults',
+    items: [
+      'Settings → Alerts chooses which cluster problems to watch, the notification sound, and whether macOS notifies too.',
+      'Set the default page size for every table. Lists open on that size.',
+      'On Nodes, click a chart bar or its name to open that node.',
+      'Compare YAML with another cluster and review the diff before you apply.',
+      'TLS certificates show how soon they expire.',
+      'Save a table’s filters and columns, and open that view again later.'
+    ]
+  },
   '0.1.34': {
     title: 'Detail tables, node charts, and themes',
     items: [

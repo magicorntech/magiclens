@@ -49,6 +49,8 @@ export interface ArgoApplication {
   lastOperationMessage: string
   lastSyncedAt: string | null
   ageTimestamp: string | null
+  /** OutOfSync managed resources from `status.resources`. */
+  driftedResources: ArgoManagedResource[]
 }
 
 export interface ArgoApplicationSet {

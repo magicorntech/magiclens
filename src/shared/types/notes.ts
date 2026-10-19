@@ -114,6 +114,8 @@ export interface NotesInboxItem {
   body: string
   firedAt: string
   read: boolean
+  /** Spark reminder vs cluster health ping. */
+  source?: 'note' | 'cluster'
   clusterId?: string
   resourceKind?: string
   resourceName?: string

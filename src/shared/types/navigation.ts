@@ -11,6 +11,8 @@ export type VirtualPageKey =
   | 'eventTimeline'
   | 'security'
   | 'portForwarding'
+  | 'gatewayApi'
+  | 'externalSecrets'
   | 'dynamicCustomResources'
   | 'operatorResources'
   | 'discoveredApiGroups'

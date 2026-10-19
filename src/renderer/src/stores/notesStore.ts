@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { LocalAlert } from '@shared/localAlerts'
 import type {
   CreateNoteRequest,
   ListNotesRequest,
@@ -74,6 +75,7 @@ function eventToInboxItem(event: NotesReminderEvent): NotesInboxItem {
     body: note.body,
     firedAt: event.firedAt,
     read: false,
+    source: 'note',
     clusterId: note.clusterId,
     resourceKind: note.resourceKind,
     resourceName: note.resourceName,
@@ -162,6 +164,7 @@ interface NotesStoreState {
   closeEditor: () => void
   clearLastReminder: () => void
   pushInbox: (event: NotesReminderEvent) => void
+  pushClusterAlerts: (alerts: LocalAlert[]) => void
   markInboxRead: (id: string) => void
   markAllInboxRead: () => void
   clearInbox: () => void
@@ -712,6 +715,31 @@ export const useNotesStore = create<NotesStoreState>()((set, get) => ({
       lastReminder: event.note,
       inbox: [item, ...state.inbox.filter((i) => i.id !== item.id)].slice(0, INBOX_LIMIT)
     }))
+  },
+
+  pushClusterAlerts: (alerts) => {
+    if (alerts.length === 0) return
+    const firedAt = new Date().toISOString()
+    set((state) => {
+      const known = new Set(state.inbox.map((item) => item.id))
+      const fresh: NotesInboxItem[] = alerts
+        .filter((alert) => !known.has(alert.id))
+        .map((alert) => ({
+          id: alert.id,
+          noteId: `alert:${alert.id}`,
+          title: alert.title,
+          body: `${alert.clusterName}${alert.body ? ` · ${alert.body}` : ''}`,
+          firedAt,
+          read: false,
+          source: 'cluster',
+          clusterId: alert.clusterId,
+          resourceKind: alert.kind,
+          resourceName: alert.name,
+          namespace: alert.namespace
+        }))
+      if (fresh.length === 0) return state
+      return { inbox: [...fresh, ...state.inbox].slice(0, INBOX_LIMIT) }
+    })
   },
 
   markInboxRead: (id) => {

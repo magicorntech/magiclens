@@ -30,12 +30,16 @@ import { registerClusterAppsHandlers } from './clusterApps.handlers'
 import { registerSecurityHandlers } from './security.handlers'
 import { registerAiHandlers } from './ai.handlers'
 import { registerMollyHandlers } from './molly.handlers'
+import { registerTlsCertHandlers } from './tlsCert.handlers'
+import { registerAlertsHandlers } from './alerts.handlers'
 
 export function registerIpcHandlers(): void {
   registerSessionHandlers()
   registerKubeconfigHandlers()
   registerClusterHandlers()
   registerResourceHandlers()
+  registerTlsCertHandlers()
+  registerAlertsHandlers()
   registerClusterStoreHandlers()
   registerClusterVpnHandlers()
   registerClusterGroupsHandlers()

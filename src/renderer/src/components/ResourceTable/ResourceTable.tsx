@@ -13,10 +13,13 @@ import { useResourceList } from '../../queries/useResourceList'
 import { useNodeMetrics } from '../../queries/useNodeMetrics'
 import { podMetricsKey, usePodTableMetrics } from '../../queries/usePodTableMetrics'
 import { pvcMetricsKey, usePvcTableMetrics } from '../../queries/usePvcTableMetrics'
+import { useTlsCerts } from '../../queries/useTlsCerts'
+import { tlsCertKey } from '@shared/types/tlsCerts'
 import { kindColumnDefs } from '../../resourceConfig/kinds.renderer'
 import { buildCreateTemplate } from '../../resourceConfig/manifestTemplates'
 import { formatBytes, formatCores } from '../../format'
 import { NodeMetricUsageBar } from '../Metrics/NodeMetricUsageBar'
+import { UsageRequestCell } from '../Metrics/UsageRequestCell'
 import { ProgressBar } from '../ui/ProgressBar'
 import {
   ageResourceSorter,
@@ -33,6 +36,7 @@ import { ResizableTable, resetStoredTableWidths } from '../../utils/ResizableTab
 import { useTableColumnPrefs } from '../../utils/useTableColumnPrefs'
 import { TableColumnPicker } from '../ui/TableColumnPicker'
 import { ResourceTableToolbar } from './ResourceTableToolbar'
+import { SavedViewsControl } from './SavedViewsControl'
 import { ResourceDetailDrawer } from './ResourceDetailDrawer'
 import { AgeCell } from './AgeCell'
 import { StatusTag } from './StatusTag'
@@ -45,11 +49,13 @@ import { ResourceRowActions } from './ResourceRowActions'
 import { WorkloadResourceRowActions } from './WorkloadResourceRowActions'
 import { columnUsesRichRender, renderNamespaceCell, renderResourceColumnCell } from './resourceColumnRender'
 import { NodesOverviewPage } from '../Nodes/NodesOverviewPage'
+import { TlsCertExpiryTag } from '../Certs/TlsCertExpiryTag'
 import { NamespaceSelector } from '../Layout/NamespaceSelector'
 import { useBottomPanel } from '../Layout/BottomPanelContext'
 import { batchDeleteResources, confirmBatchDelete } from './batchDelete'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
+import { useSavedViewsStore } from '../../stores/savedViewsStore'
 import { canUseSplitLayouts, useLayoutMode } from '../../hooks/useLayoutMode'
 
 interface ResourceTableProps {
@@ -91,6 +97,8 @@ export function ResourceTable({
   )
   const setResourceWatchDisplay = useResourceWatchDisplayStore((s) => s.setDisplay)
   const { pagination, setPagination, paginationProps } = useTablePagination([clusterId, namespace, kind, search])
+  const pendingApply = useSavedViewsStore((s) => s.pendingApply)
+  const clearPendingApply = useSavedViewsStore((s) => s.setPendingApply)
   const { openYamlEditor, openResourceDetail } = useBottomPanel()
   const resourceDetailPlacement = useDisplaySettingsStore((s) => s.resourceDetailPlacement)
   const layoutMode = useLayoutMode()
@@ -98,6 +106,7 @@ export function ResourceTable({
   const kindNeedsNamespace = isNamespaceScoped(kind)
   const isPodsKind = kind === 'Pods'
   const isPvcsKind = kind === 'PersistentVolumeClaims'
+  const isSecretsKind = kind === 'Secrets'
   const detailInSidebar = resourceDetailPlacement === 'right' && canUseSplitLayouts(layoutMode)
   const detailInDrawer =
     resourceDetailPlacement === 'drawer' ||
@@ -125,6 +134,7 @@ export function ResourceTable({
     namespace,
     isActive && isPvcsKind
   )
+  const { byKey: tlsCertsByKey } = useTlsCerts(isSecretsKind ? clusterId : null, isActive && isSecretsKind)
 
   function applyNamespaceChange(ns: string): void {
     if (onNamespaceChange) {
@@ -133,6 +143,14 @@ export function ResourceTable({
     }
     setSelectedNamespace(clusterId, ns)
   }
+
+  useEffect(() => {
+    if (!pendingApply) return
+    if (pendingApply.clusterId !== clusterId || pendingApply.kind !== kind) return
+    setSearch(pendingApply.search)
+    setSortState(pendingApply.sort ?? {})
+    clearPendingApply(null)
+  }, [pendingApply, clusterId, kind, clearPendingApply])
 
   useEffect(() => {
     setSelectedItem(null)
@@ -210,7 +228,7 @@ export function ResourceTable({
             {
               title: 'CPU',
               key: 'cpu-metric',
-              width: 100,
+              width: 168,
               sorter: (a, b) => {
                 const ca = podMetricsByKey.get(podMetricsKey(a.namespace, a.name))?.cpu ?? -1
                 const cb = podMetricsByKey.get(podMetricsKey(b.namespace, b.name))?.cpu ?? -1
@@ -219,7 +237,14 @@ export function ResourceTable({
               ellipsis: false,
               render: (_, item) => {
                 const m = podMetricsByKey.get(podMetricsKey(item.namespace, item.name))
-                return m ? m.cpu.toFixed(2) : '—'
+                return (
+                  <UsageRequestCell
+                    usage={m?.cpu}
+                    request={Number(item.columns.cpuRequest) || 0}
+                    formatUsage={(n) => n.toFixed(2)}
+                    formatRequest={(n) => n.toFixed(2)}
+                  />
+                )
               }
             },
             sortState
@@ -230,7 +255,7 @@ export function ResourceTable({
             {
               title: 'Memory',
               key: 'memory-metric',
-              width: 110,
+              width: 180,
               sorter: (a, b) => {
                 const ma = podMetricsByKey.get(podMetricsKey(a.namespace, a.name))?.memory ?? -1
                 const mb = podMetricsByKey.get(podMetricsKey(b.namespace, b.name))?.memory ?? -1
@@ -239,7 +264,36 @@ export function ResourceTable({
               ellipsis: false,
               render: (_, item) => {
                 const m = podMetricsByKey.get(podMetricsKey(item.namespace, item.name))
-                return m ? formatBytes(m.memory) : '—'
+                return (
+                  <UsageRequestCell
+                    usage={m?.memory}
+                    request={Number(item.columns.memoryRequest) || 0}
+                    formatUsage={formatBytes}
+                    formatRequest={formatBytes}
+                  />
+                )
+              }
+            },
+            sortState
+          )
+        )
+      }
+      if (isSecretsKind && col.key === 'type') {
+        cols.push(
+          applySortOrder(
+            {
+              title: 'Expires',
+              key: 'tls-expires',
+              width: 140,
+              sorter: (a, b) => {
+                const da = tlsCertsByKey.get(tlsCertKey(a.namespace, a.name))?.daysRemaining ?? 99999
+                const db = tlsCertsByKey.get(tlsCertKey(b.namespace, b.name))?.daysRemaining ?? 99999
+                return da - db
+              },
+              ellipsis: false,
+              render: (_, item) => {
+                const cert = tlsCertsByKey.get(tlsCertKey(item.namespace, item.name))
+                return cert ? <TlsCertExpiryTag cert={cert} /> : '—'
               }
             },
             sortState
@@ -417,6 +471,8 @@ export function ResourceTable({
     nodeMetrics,
     podMetricsByKey,
     pvcMetricsByKey,
+    tlsCertsByKey,
+    isSecretsKind,
     clusterId,
     listQueryKey,
     sortState,
@@ -601,6 +657,16 @@ export function ResourceTable({
               <span>Create</span>
             </button>
             <LiveRefreshControl isFetching={isFetching} onManualRefresh={() => refetch()} />
+            <SavedViewsControl
+              clusterId={clusterId}
+              kind={kind}
+              namespace={namespace}
+              search={search}
+              sort={sortState}
+              onApplyNamespace={applyNamespaceChange}
+              onApplySearch={setSearch}
+              onApplySort={setSortState}
+            />
             {!isNodesKind ? (
               <TableColumnPicker
                 columns={columnPickerItems}

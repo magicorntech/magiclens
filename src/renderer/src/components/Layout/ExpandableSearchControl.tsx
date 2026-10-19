@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Tooltip } from 'antd'
 import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -19,6 +20,23 @@ export function ExpandableSearchControl({
   const openSearch = useGlobalSearchStore((s) => s.openSearch)
   const searchShortcut = useDisplaySettingsStore((s) => s.keyboardShortcuts.globalSearch)
   const isMac = navigator.platform.includes('Mac')
+  const label = t('chrome.searchPlaceholder')
+  const textRef = useRef<HTMLSpanElement>(null)
+  const [overflow, setOverflow] = useState(false)
+
+  useEffect(() => {
+    const el = textRef.current
+    if (!el) return
+    const measure = (): void => {
+      const sample = el.querySelector('span')
+      if (!sample) return
+      setOverflow(sample.scrollWidth > el.clientWidth + 1)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [label])
 
   return (
     <span className="ml-expandable-search-host">
@@ -29,7 +47,15 @@ export function ExpandableSearchControl({
           aria-label={t('chrome.searchPlaceholder')}
           onClick={() => openSearch()}
         >
-          <span className="app-top-bar-search-text">{t('chrome.searchPlaceholder')}</span>
+          <span
+            ref={textRef}
+            className={`app-top-bar-search-text${overflow ? ' is-overflow' : ''}`}
+          >
+            <span className="app-top-bar-search-text__track">
+              <span>{label}</span>
+              {overflow ? <span aria-hidden>{label}</span> : null}
+            </span>
+          </span>
           <kbd className="app-top-bar-kbd">{formatShortcutBinding(searchShortcut, isMac)}</kbd>
           <span className="app-top-bar-search-icon">
             <Icon icon={Search} variant="action" />

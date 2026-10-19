@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { TablePaginationConfig } from 'antd/es/table/interface'
+import { DEFAULT_TABLE_PAGE_SIZE, TABLE_PAGE_SIZE_OPTIONS, useTablePageSizeStore } from '../stores/tablePageSizeStore'
 
-export const TABLE_PAGE_SIZE_OPTIONS = ['10', '20', '30', '50', '60', '70', '100', '200'] as const
-export const DEFAULT_TABLE_PAGE_SIZE = 20
-export const EMBEDDED_TABLE_PAGE_SIZE = 20
+export { DEFAULT_TABLE_PAGE_SIZE, TABLE_PAGE_SIZE_OPTIONS }
+export const EMBEDDED_TABLE_PAGE_SIZE = DEFAULT_TABLE_PAGE_SIZE
 
 export interface TablePaginationState {
   current: number
@@ -54,7 +54,8 @@ export function useTablePagination(
   setPagination: React.Dispatch<React.SetStateAction<TablePaginationState>>
   paginationProps: (total?: number) => TablePaginationConfig
 } {
-  const defaultPageSize = options?.defaultPageSize ?? DEFAULT_TABLE_PAGE_SIZE
+  const storedPageSize = useTablePageSizeStore((s) => s.pageSize)
+  const defaultPageSize = options?.defaultPageSize ?? storedPageSize
   const [pagination, setPagination] = useState<TablePaginationState>({
     current: 1,
     pageSize: defaultPageSize

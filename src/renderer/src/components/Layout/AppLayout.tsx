@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Drawer, Layout, message } from 'antd'
 import { useTranslation } from 'react-i18next'
+import type { ResourceKind } from '@shared/resourceKinds'
+import { RESOURCE_KINDS } from '@shared/resourceKinds'
 import { useClusterStore } from '../../stores/clusterStore'
+import { useLocalAlertsStore } from '../../stores/localAlertsStore'
 import { useVpnStore } from '../../stores/vpnStore'
 import { useSettingsUiStore } from '../../stores/settingsUiStore'
 import { useNotesStore } from '../../stores/notesStore'
@@ -19,6 +22,7 @@ import { LeftSidebar } from './LeftSidebar'
 import { MobileAppBar } from './MobileAppBar'
 import { SettingsModal } from './SettingsModal'
 import { NoteEditorModal } from '../Notes/NoteEditorModal'
+import { LocalAlertsWatcher } from '../Alerts/LocalAlertsWatcher'
 
 export function AppLayout(): React.JSX.Element {
   const { t } = useTranslation()
@@ -52,6 +56,38 @@ export function AppLayout(): React.JSX.Element {
   useEffect(() => {
     void useNotesStore.getState().hydrate()
     return useNotesStore.getState().subscribeReminders()
+  }, [])
+
+  useEffect(() => {
+    const alerts = useLocalAlertsStore.getState()
+    if (alerts.osNotify && !alerts.permissionAsked) {
+      void window.api.alerts.requestPermission()
+      alerts.setPermissionAsked(true)
+    }
+    const kinds = new Set<string>(RESOURCE_KINDS)
+    return window.api.alerts.onOpen((target) => {
+      if (
+        target.clusterId &&
+        target.kind &&
+        target.name &&
+        kinds.has(target.kind)
+      ) {
+        useClusterStore.getState().navigateToResource(target.clusterId, {
+          kind: target.kind as ResourceKind,
+          namespace: target.namespace ?? '',
+          name: target.name
+        })
+        return
+      }
+      if (target.noteId) {
+        const note = useNotesStore.getState().notes.find((item) => item.id === target.noteId)
+        if (note && !note.id.startsWith('test-')) {
+          useNotesStore.getState().openEdit(note)
+          return
+        }
+      }
+      useClusterStore.getState().setActiveView('notes')
+    })
   }, [])
 
   useEffect(() => {
@@ -110,6 +146,7 @@ export function AppLayout(): React.JSX.Element {
         <AddClusterModal open={addClusterModalOpen} onClose={() => setAddClusterModalOpen(false)} />
         {settingsModal}
         <NoteEditorModal />
+        <LocalAlertsWatcher />
       </Layout>
     )
   }
@@ -124,6 +161,7 @@ export function AppLayout(): React.JSX.Element {
       <AddClusterModal open={addClusterModalOpen} onClose={() => setAddClusterModalOpen(false)} />
       {settingsModal}
       <NoteEditorModal />
+      <LocalAlertsWatcher />
     </Layout>
   )
 }

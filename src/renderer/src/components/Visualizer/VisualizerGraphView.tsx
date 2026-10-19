@@ -88,17 +88,20 @@ function toFlow(
   }
 }
 
+const VIZ_FIT_PADDING = { top: '96px', right: '4%', bottom: '4%', left: '4%' } as const
+
 function FitOnLoad({ structure }: { structure: string }): null {
   const { fitView } = useReactFlow()
   const last = useRef('')
   useEffect(() => {
-    if (!structure || structure === last.current) return
-    last.current = structure
+    const key = `${structure}:${VIZ_FIT_PADDING.top}`
+    if (!structure || key === last.current) return
+    last.current = key
     const id = window.requestAnimationFrame(() => {
-      void fitView({ padding: 0.12, duration: 200 })
+      void fitView({ padding: VIZ_FIT_PADDING, duration: 200 })
     })
     return () => window.cancelAnimationFrame(id)
-  }, [fitView, structure])
+  }, [fitView, structure, VIZ_FIT_PADDING.top])
   return null
 }
 
@@ -173,7 +176,7 @@ function VisualizerCanvas({ graph, query, onSelectNode }: VisualizerGraphViewPro
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.12 }}
+        fitViewOptions={{ padding: VIZ_FIT_PADDING }}
         minZoom={0.08}
         maxZoom={2.4}
         nodesConnectable={false}

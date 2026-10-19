@@ -2,11 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Input, Select, message } from 'antd'
 import { Download, Pause, Play, RefreshCw, Search } from 'lucide-react'
 import dayjs from 'dayjs'
+import { useTranslation } from 'react-i18next'
 import { isPodDetailData } from '@shared/types/pod'
+import type { WorkloadKind } from '@shared/types/workload'
 import { usePodDetail } from '../../queries/usePodDetail'
+import { useWorkloadPods } from '../../queries/useWorkloadPods'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { Icon } from '../ui/Icon'
 import { emptyIllustrations } from '../ui/EmptyIllustration'
+import { highlightLogLine } from './logHighlight'
 
 interface PodLogsPanelProps {
   clusterId: string
@@ -16,6 +20,14 @@ interface PodLogsPanelProps {
 }
 
 const MAX_BUFFERED_LINES = 5000
+
+const OWNER_KIND: Record<string, WorkloadKind> = {
+  ReplicaSet: 'ReplicaSets',
+  StatefulSet: 'StatefulSets',
+  DaemonSet: 'DaemonSets',
+  Job: 'Jobs',
+  ReplicationController: 'ReplicationControllers'
+}
 
 const TAIL_PRESETS = [
   { label: '100 lines', value: 100 },
@@ -44,26 +56,26 @@ function sincePresetToIso(preset: string): string | undefined {
   return dayjs().subtract(minutes, 'minute').toISOString()
 }
 
-function highlightLogLine(line: string, query: string): React.JSX.Element {
-  if (!query.trim()) return <>{line || '\u00A0'}</>
-  const idx = line.toLowerCase().indexOf(query.toLowerCase())
-  if (idx < 0) return <>{line}</>
-  return (
-    <>
-      {line.slice(0, idx)}
-      <mark className="ml-log-highlight">{line.slice(idx, idx + query.length)}</mark>
-      {line.slice(idx + query.length)}
-    </>
-  )
-}
-
 export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLogsPanelProps): React.JSX.Element {
+  const { t } = useTranslation()
   const { data: detail, isLoading } = usePodDetail(clusterId, namespace, podName, isActive)
-  const containers = useMemo(
-    () => (isPodDetailData(detail) ? detail.containers.map((c) => c.name) : []),
-    [detail]
+  const owner = isPodDetailData(detail)
+    ? (detail.ownerReferences.find((ref) => ref.controller) ?? detail.ownerReferences[0])
+    : undefined
+  const workloadKind = owner ? (OWNER_KIND[owner.kind] ?? null) : null
+  const { data: siblingData } = useWorkloadPods(
+    clusterId,
+    workloadKind ?? 'ReplicaSets',
+    namespace,
+    workloadKind && owner ? owner.name : '',
+    isActive
   )
+  const siblingPods = useMemo(() => {
+    if (!siblingData || 'error' in siblingData) return []
+    return siblingData.pods
+  }, [siblingData])
 
+  const [selectedPod, setSelectedPod] = useState(podName)
   const [containerName, setContainerName] = useState<string | null>(null)
   const [follow, setFollow] = useState(true)
   const [tailLines, setTailLines] = useState<number>(500)
@@ -81,29 +93,50 @@ export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLog
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const sessionIdRef = useRef<string | null>(null)
   const bufferRef = useRef('')
+  const keepBufferRef = useRef(false)
+
+  const activePod = siblingPods.some((p) => p.name === selectedPod) ? selectedPod : podName
+  const containers = useMemo(() => {
+    const fromSibling = siblingPods.find((p) => p.name === activePod)?.containers
+    if (fromSibling && fromSibling.length > 0) return fromSibling
+    return isPodDetailData(detail) ? detail.containers.map((c) => c.name) : []
+  }, [siblingPods, activePod, detail])
 
   const filteredLines = useMemo(() => {
     const q = logSearch.trim().toLowerCase()
     if (!q) return lines
     return lines.filter((l) => l.toLowerCase().includes(q))
   }, [lines, logSearch])
+  const query = logSearch.trim()
+  const hasFilterMiss = query.length > 0 && lines.length > 0 && filteredLines.length === 0
 
   useEffect(() => {
-    if (!containerName && containers.length > 0) setContainerName(containers[0])
+    setSelectedPod(podName)
+  }, [podName])
+
+  useEffect(() => {
+    if (!containerName || !containers.includes(containerName)) {
+      setContainerName(containers[0] ?? null)
+    }
   }, [containers, containerName])
 
   useEffect(() => {
-    setFileName(`${podName}.log`)
-  }, [podName])
+    setFileName(`${activePod}.log`)
+  }, [activePod])
 
   useEffect(() => {
     if (!isActive || !containerName || !follow) return
 
     const sessionId = newSessionId()
     sessionIdRef.current = sessionId
-    setLines([])
-    setEnded(null)
     bufferRef.current = ''
+    setEnded(null)
+    if (keepBufferRef.current) {
+      keepBufferRef.current = false
+      setLines((prev) => (prev.length > 0 ? [...prev, t('podDetail.logs.restarted')] : prev))
+    } else {
+      setLines([])
+    }
 
     const unsubData = window.api.pod.logs.onData((payload) => {
       if (payload.sessionId !== sessionId) return
@@ -119,14 +152,14 @@ export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLog
 
     const unsubEnded = window.api.pod.logs.onEnded((payload) => {
       if (payload.sessionId !== sessionId) return
-      setEnded(payload.error ?? 'Log stream ended')
+      setEnded(payload.error ?? t('podDetail.logs.ended'))
     })
 
     void window.api.pod.logs.start({
       sessionId,
       clusterId,
       namespace,
-      podName,
+      podName: activePod,
       containerName,
       tailLines: tailLines > 0 ? tailLines : undefined,
       timestamps,
@@ -140,13 +173,26 @@ export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLog
       unsubEnded()
       void window.api.pod.logs.stop({ sessionId })
     }
-  }, [clusterId, namespace, podName, containerName, tailLines, sincePreset, timestamps, previous, follow, isActive, streamKey])
+  }, [
+    clusterId,
+    namespace,
+    activePod,
+    containerName,
+    tailLines,
+    sincePreset,
+    timestamps,
+    previous,
+    follow,
+    isActive,
+    streamKey,
+    t
+  ])
 
   useEffect(() => {
     if (follow && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [lines, follow])
+  }, [filteredLines, follow])
 
   async function handleDownload(): Promise<void> {
     if (!containerName) return
@@ -155,12 +201,12 @@ export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLog
       const res = await window.api.pod.logs.download({
         clusterId,
         namespace,
-        podName,
+        podName: activePod,
         containerName,
-        defaultFileName: fileName.trim() || `${podName}.log`
+        defaultFileName: fileName.trim() || `${activePod}.log`
       })
       if (res.ok) {
-        message.success(`Logs saved to ${res.filePath}`)
+        message.success(t('podDetail.logs.downloaded', { path: res.filePath }))
       } else if (!('canceled' in res)) {
         message.error(res.error)
       }
@@ -176,60 +222,98 @@ export function PodLogsPanel({ clusterId, namespace, podName, isActive }: PodLog
   return (
     <div className="ml-log-viewer">
       <div className="ml-log-toolbar">
-        {containers.length > 1 && (
-          <Select size="small" value={containerName} onChange={setContainerName} options={containers.map((c) => ({ label: c, value: c }))} style={{ width: 160 }} />
-        )}
+        {siblingPods.length > 1 ? (
+          <Select
+            size="small"
+            aria-label={t('podDetail.logs.pod')}
+            value={activePod}
+            onChange={setSelectedPod}
+            options={siblingPods.map((p) => ({
+              label: `${p.name}${p.ready ? '' : ` (${p.status})`}`,
+              value: p.name
+            }))}
+            style={{ minWidth: 180 }}
+          />
+        ) : null}
+        {containers.length > 0 ? (
+          <Select
+            size="small"
+            aria-label={t('podDetail.logs.container')}
+            value={containerName}
+            onChange={setContainerName}
+            options={containers.map((c) => ({ label: c, value: c }))}
+            style={{ width: 160 }}
+          />
+        ) : null}
         <Select size="small" value={tailLines} onChange={setTailLines} options={TAIL_PRESETS.map((p) => ({ label: p.label, value: p.value }))} style={{ width: 120 }} />
         <Select size="small" value={sincePreset} onChange={setSincePreset} options={SINCE_PRESETS.map((p) => ({ label: p.label, value: p.value }))} style={{ width: 140 }} />
         <label className="ml-log-toggle">
           <input type="checkbox" checked={timestamps} onChange={(e) => setTimestamps(e.target.checked)} />
-          Timestamps
+          {t('podDetail.logs.timestamps')}
         </label>
         <label className="ml-log-toggle">
           <input type="checkbox" checked={previous} onChange={(e) => setPrevious(e.target.checked)} />
-          Previous
+          {t('podDetail.logs.previous')}
         </label>
         <label className="ml-log-toggle">
           <input type="checkbox" checked={wrap} onChange={(e) => setWrap(e.target.checked)} />
-          Wrap
+          {t('podDetail.logs.wrap')}
         </label>
         <button type="button" className={`ml-btn ml-btn--ghost${follow ? ' ml-btn--active' : ''}`} onClick={() => setFollow((f) => !f)}>
           <Icon icon={follow ? Play : Pause} variant="detail" />
-          {follow ? 'Following' : 'Paused'}
+          {follow ? t('podDetail.logs.following') : t('podDetail.logs.paused')}
         </button>
-        <button type="button" className="ml-btn ml-btn--ghost" onClick={() => setStreamKey((k) => k + 1)} disabled={!follow}>
+        <button
+          type="button"
+          className="ml-btn ml-btn--ghost"
+          onClick={() => {
+            keepBufferRef.current = true
+            setStreamKey((k) => k + 1)
+          }}
+          disabled={!follow}
+        >
           <Icon icon={RefreshCw} variant="detail" />
-          Restart
+          {t('podDetail.logs.restart')}
         </button>
         <Input
           size="small"
+          className="ml-log-search"
           prefix={<Icon icon={Search} variant="detail" />}
-          placeholder="Filter logs"
+          placeholder={t('podDetail.logs.filter')}
           value={logSearch}
           onChange={(e) => setLogSearch(e.target.value)}
-          style={{ width: 180 }}
           allowClear
+          suffix={
+            query ? (
+              <span className="ml-log-match">
+                {t('podDetail.logs.matchCount', { shown: filteredLines.length, total: lines.length })}
+              </span>
+            ) : null
+          }
         />
         <Input size="small" value={fileName} onChange={(e) => setFileName(e.target.value)} style={{ width: 160 }} placeholder="filename.log" />
         <button type="button" className="ml-btn ml-btn--ghost" disabled={downloading} onClick={() => void handleDownload()}>
           <Icon icon={Download} variant="detail" />
-          Download
+          {t('resourceDetail.workloadLogs.download')}
         </button>
       </div>
 
       {!follow && (
-        <Alert type="info" showIcon message="Log streaming paused" style={{ marginBottom: 8, flexShrink: 0 }} />
+        <Alert type="info" showIcon message={t('podDetail.logs.pausedBanner')} style={{ marginBottom: 8, flexShrink: 0 }} />
       )}
       {ended && <Alert type="warning" showIcon message={ended} style={{ marginBottom: 8, flexShrink: 0 }} />}
 
-      <div
-        ref={scrollRef}
-        className={`ml-log-surface${wrap ? ' ml-log-surface--wrap' : ''}`}
-      >
+      <div ref={scrollRef} className={`ml-log-surface${wrap ? ' ml-log-surface--wrap' : ''}`}>
         {filteredLines.length === 0 ? (
           <div className="ml-log-empty">
             <LogsIllustration />
-            <span>{follow ? 'Waiting for log output…' : 'Stream paused.'}</span>
+            <span>
+              {hasFilterMiss
+                ? t('podDetail.logs.noMatch', { query })
+                : follow
+                  ? t('podDetail.logs.waiting')
+                  : t('podDetail.logs.pausedBanner')}
+            </span>
           </div>
         ) : (
           filteredLines.map((line, i) => (

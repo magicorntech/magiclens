@@ -74,7 +74,7 @@ export function StorageOverviewPage({
   if (loading && STORAGE_KINDS.every((k) => byKind[k].length === 0)) return <LoadingState />
 
   return (
-    <OverviewPage title={t('storageOverview.title')} subtitle={t('storageOverview.subtitle')}>
+    <OverviewPage>
       <DetailOverview>
         <OverviewGrid>
           {STORAGE_KINDS.map((kind) => (

@@ -3,7 +3,7 @@ import { Button, Empty, Input, Tooltip, message } from 'antd'
 import { ChevronRight, ExternalLink, RotateCw } from 'lucide-react'
 import type { ColumnsType } from 'antd/es/table'
 import type { VirtualPageKey } from '@shared/types/navigation'
-import type { ArgoActivityEvent, ArgoApplication } from '@shared/types/argocd'
+import type { ArgoActivityEvent, ArgoApplication, ArgoManagedResource } from '@shared/types/argocd'
 import { useArgoOverview, useArgoSyncMany } from '../../queries/useArgoCd'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { AgeCell } from '../ResourceTable/AgeCell'
@@ -93,6 +93,15 @@ export function ArgoDashboardPage({
   const summary = data?.summary
   const installation = data?.installation
   const attention = useMemo(() => data?.needsAttention ?? [], [data])
+  const drifted = useMemo(() => {
+    const rows: Array<ArgoManagedResource & { app: string; appNs: string }> = []
+    for (const app of attention) {
+      for (const res of app.driftedResources ?? []) {
+        rows.push({ ...res, app: app.name, appNs: app.namespace })
+      }
+    }
+    return rows
+  }, [attention])
   const activity = useMemo(() => data?.activity ?? [], [data])
 
   const filteredActivity = useMemo(() => {
@@ -255,6 +264,42 @@ export function ArgoDashboardPage({
           onOpen={onOpenPage ? () => onOpenPage('argoProjects') : undefined}
         />
       </div>
+
+      <section className="ml-argo-section">
+        <div className="ml-argo-section__head">
+          <h3 className="ml-argo-section__title">Drifted resources</h3>
+          <span className="ml-argo-count">{drifted.length}</span>
+        </div>
+        {drifted.length === 0 && !isLoading ? (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No OutOfSync resources" />
+        ) : (
+          <ResizableTable
+            tableKey="argo-drift"
+            rowKey={(r) => `${r.appNs}/${r.app}/${r.id}`}
+            columns={[
+              { title: 'Application', dataIndex: 'app', key: 'app', width: 160, ellipsis: true },
+              { title: 'Kind', dataIndex: 'kind', key: 'kind', width: 120, ellipsis: true },
+              { title: 'Name', dataIndex: 'name', key: 'name', ellipsis: true },
+              { title: 'Namespace', dataIndex: 'namespace', key: 'namespace', width: 140, ellipsis: true },
+              {
+                title: 'Sync',
+                key: 'sync',
+                width: 110,
+                render: (_v, r) => <ArgoSyncTag status={(r.syncStatus as ArgoApplication['syncStatus']) || 'OutOfSync'} />
+              }
+            ]}
+            dataSource={drifted}
+            loading={isLoading}
+            pagination={false}
+            size="small"
+            scroll={{ y: 220 }}
+            rowClassName={() => 'ml-argo-row--clickable'}
+            onRow={(r) => ({
+              onClick: () => setDetailTarget({ namespace: r.appNs, name: r.app })
+            })}
+          />
+        )}
+      </section>
 
       <section className="ml-argo-section">
         <div className="ml-argo-section__head">

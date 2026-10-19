@@ -8,7 +8,10 @@ import { actionRequiresPermission } from '@shared/workloadActions'
 import { useClusterStore } from '../../stores/clusterStore'
 import { useWorkloadActions } from './useWorkloadActions'
 import { WorkloadActionModals } from './WorkloadActionModals'
+import { WorkloadGlance } from './WorkloadGlance'
 import { WorkloadWarningBanners } from './WorkloadWarningBanners'
+
+const GLANCE_KINDS = new Set(['Deployments', 'StatefulSets', 'DaemonSets'])
 
 const QUICK_IDS = new Set(['scale', 'restart'])
 
@@ -67,6 +70,7 @@ export function WorkloadDetailToolbar({
 
   return (
     <div style={{ marginBottom: 12 }}>
+      {GLANCE_KINDS.has(kind) ? <WorkloadGlance context={workload.context} /> : null}
       <WorkloadWarningBanners hpa={workload.context?.hpa} pdb={workload.context?.pdb} />
       <Space wrap>
         {quick.map((a) => (

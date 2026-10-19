@@ -323,6 +323,28 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
         return <SecurityPage clusterId={clusterId} />
       case 'portForwarding':
         return <PortForwardingPage clusterId={clusterId} />
+      case 'gatewayApi':
+        return (
+          <CustomResourceBrowserPage
+            clusterId={clusterId}
+            namespace={selectedNamespace}
+            initialMode="all"
+            groupFilter="gateway.networking.k8s.io"
+            brand={t('resourceNav.virtual.gatewayApi')}
+            emptyHint={t('gatewayApi.empty')}
+          />
+        )
+      case 'externalSecrets':
+        return (
+          <CustomResourceBrowserPage
+            clusterId={clusterId}
+            namespace={selectedNamespace}
+            initialMode="all"
+            groupFilter="external-secrets.io"
+            brand={t('resourceNav.virtual.externalSecrets')}
+            emptyHint={t('externalSecrets.empty')}
+          />
+        )
       case 'discoveredApiGroups':
         return <DiscoveredApiGroupsPage clusterId={clusterId} />
       case 'discoveredApiVersions':

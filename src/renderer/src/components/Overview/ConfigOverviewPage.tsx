@@ -8,6 +8,9 @@ import { useResourceList } from '../../queries/useResourceList'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { DetailOverview, DetailSection } from '../Detail/detailPrimitives'
 import { OverviewGrid, OverviewPage, OverviewStat } from './OverviewPage'
+import { useTlsCerts } from '../../queries/useTlsCerts'
+import { TLS_CERT_WARN_DAYS } from '@shared/types/tlsCerts'
+import { TlsCertExpiryTag } from '../Certs/TlsCertExpiryTag'
 
 interface ConfigOverviewPageProps {
   clusterId: string
@@ -83,11 +86,17 @@ export function ConfigOverviewPage({
     () => byKind.Secrets.filter((s) => /tls|certificate/i.test(s.columns.type ?? '')).length,
     [byKind.Secrets]
   )
+  const { items: tlsCerts } = useTlsCerts(clusterId, isActive)
+  const expiringCerts = useMemo(
+    () => tlsCerts.filter((c) => c.status === 'expired' || c.status === 'expiring'),
+    [tlsCerts]
+  )
+  const expiredCount = useMemo(() => tlsCerts.filter((c) => c.status === 'expired').length, [tlsCerts])
 
   if (loading && CONFIG_KINDS.every((k) => byKind[k].length === 0)) return <LoadingState />
 
   return (
-    <OverviewPage title={t('configOverview.title')} subtitle={t('configOverview.subtitle')}>
+    <OverviewPage>
       <DetailOverview>
         <OverviewGrid>
           {CONFIG_KINDS.map((kind) => (
@@ -108,6 +117,12 @@ export function ConfigOverviewPage({
             <OverviewStat label={t('configOverview.configMaps')} value={byKind.ConfigMaps.length} onClick={() => onOpenResourceKind('ConfigMaps')} />
             <OverviewStat label={t('configOverview.secrets')} value={byKind.Secrets.length} onClick={() => onOpenResourceKind('Secrets')} />
             <OverviewStat label={t('configOverview.tlsSecrets')} value={tlsSecrets} onClick={() => onOpenResourceKind('Secrets')} />
+            <OverviewStat
+              label={t('certs.expiring')}
+              value={expiringCerts.length}
+              tone={expiredCount > 0 ? 'error' : expiringCerts.length > 0 ? 'warn' : 'ok'}
+              onClick={() => onOpenResourceKind('Secrets')}
+            />
             <OverviewStat label={t('configOverview.hpas')} value={byKind.HorizontalPodAutoscalers.length} onClick={() => onOpenResourceKind('HorizontalPodAutoscalers')} />
             <OverviewStat label={t('configOverview.pdbs')} value={byKind.PodDisruptionBudgets.length} onClick={() => onOpenResourceKind('PodDisruptionBudgets')} />
             <OverviewStat
@@ -119,6 +134,37 @@ export function ConfigOverviewPage({
               onClick={() => onOpenResourceKind('MutatingWebhookConfigurations')}
             />
           </OverviewGrid>
+        </DetailSection>
+
+        <DetailSection title={t('certs.expiringTitle')}>
+          {expiringCerts.length === 0 ? (
+            <span className="ml-detail-empty">{t('certs.noneExpiring', { days: TLS_CERT_WARN_DAYS })}</span>
+          ) : (
+            <div className="ml-overview-list">
+              {expiringCerts.map((cert) => (
+                <button
+                  key={`${cert.namespace}/${cert.name}`}
+                  type="button"
+                  className="ml-overview-list__row"
+                  onClick={() =>
+                    onNavigateToResource({
+                      kind: 'Secrets',
+                      namespace: cert.namespace,
+                      name: cert.name
+                    })
+                  }
+                >
+                  <strong>
+                    {cert.namespace}/{cert.name}
+                  </strong>
+                  <span className="ml-overview-list__meta">
+                    {(cert.ingressHosts[0] || cert.hosts[0] || cert.subject) ?? ''}
+                  </span>
+                  <TlsCertExpiryTag cert={cert} />
+                </button>
+              ))}
+            </div>
+          )}
         </DetailSection>
 
         <DetailSection title={t('configOverview.quotas')}>

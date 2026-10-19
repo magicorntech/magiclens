@@ -7,6 +7,7 @@ import { topologyNodeAge } from './topologyInsights'
 import { topologyToResourceKind } from './topologyResource'
 import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
 import { compareAgeTimestamps, compareText } from '../../utils/tableSort'
+import { useTablePageSizeStore } from '../../stores/tablePageSizeStore'
 
 interface TopologyResourcePanelProps {
   clusterId: string
@@ -22,6 +23,7 @@ export function TopologyResourcePanel({
   onSelectNode
 }: TopologyResourcePanelProps): React.JSX.Element {
   const { t } = useTranslation()
+  const pageSize = useTablePageSizeStore((s) => s.pageSize)
   const [query, setQuery] = useState('')
   const [kind, setKind] = useState<TopologyNodeKind | 'ALL'>('ALL')
   const [health, setHealth] = useState<TopologyHealth | 'ALL'>('ALL')
@@ -165,7 +167,7 @@ export function TopologyResourcePanel({
         rowKey="id"
         columns={columns}
         dataSource={rows}
-        pagination={{ pageSize: 20, showSizeChanger: false }}
+        pagination={{ pageSize, showSizeChanger: false }}
         expandable={{
           expandedRowRender: (row) => (
             <div className="ml-topo-expand">

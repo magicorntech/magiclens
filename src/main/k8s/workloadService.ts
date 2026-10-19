@@ -122,8 +122,48 @@ function mapWorkloadPods(items: V1Pod[]): WorkloadPodInfo[] {
     .filter((p) => p.name && p.containers.length > 0)
 }
 
+function probeHandler(
+  probe: V1Container['livenessProbe']
+): string | undefined {
+  if (!probe) return undefined
+  if (probe.httpGet) {
+    const scheme = (probe.httpGet.scheme ?? 'HTTP').toUpperCase()
+    return `${scheme} GET ${probe.httpGet.path ?? '/'}:${probe.httpGet.port}`
+  }
+  if (probe.tcpSocket) return `TCP ${probe.tcpSocket.port}`
+  if (probe.exec) return `exec: ${(probe.exec.command ?? []).join(' ')}`
+  if (probe.grpc) return `gRPC :${probe.grpc.port}`
+  return 'probe'
+}
+
+function qtyField(value: unknown): string | undefined {
+  if (value == null || value === '') return undefined
+  return String(value)
+}
+
 function extractContainers(containers: V1Container[] | undefined): WorkloadContainerInfo[] {
-  return (containers ?? []).map((c) => ({ name: c.name ?? '', image: c.image ?? '' }))
+  return (containers ?? []).map((c) => {
+    const probes: WorkloadContainerInfo['probes'] = []
+    const liveness = probeHandler(c.livenessProbe)
+    const readiness = probeHandler(c.readinessProbe)
+    const startup = probeHandler(c.startupProbe)
+    if (liveness) probes.push({ type: 'liveness', handler: liveness })
+    if (readiness) probes.push({ type: 'readiness', handler: readiness })
+    if (startup) probes.push({ type: 'startup', handler: startup })
+    const req = c.resources?.requests
+    const lim = c.resources?.limits
+    const requestCpu = qtyField(req?.cpu)
+    const requestMemory = qtyField(req?.memory)
+    const limitCpu = qtyField(lim?.cpu)
+    const limitMemory = qtyField(lim?.memory)
+    return {
+      name: c.name ?? '',
+      image: c.image ?? '',
+      requests: requestCpu || requestMemory ? { cpu: requestCpu, memory: requestMemory } : undefined,
+      limits: limitCpu || limitMemory ? { cpu: limitCpu, memory: limitMemory } : undefined,
+      probes
+    }
+  })
 }
 
 async function detectExtensions(clients: ClusterClients): Promise<{ argoRollouts: boolean; keda: boolean }> {
@@ -257,6 +297,12 @@ export async function getWorkloadContext(
       const ds = await clients.apps.readNamespacedDaemonSet({ name, namespace })
       containers = extractContainers(ds.spec?.template?.spec?.containers)
       matchLabels = ds.spec?.selector?.matchLabels
+      replicas = {
+        currentReplicas: ds.status?.desiredNumberScheduled ?? 0,
+        readyReplicas: ds.status?.numberReady ?? 0,
+        kubectlResource: kubectlResourceName(kind),
+        hasOwnerDeployment: false
+      }
       break
     }
     case 'ReplicaSets': {

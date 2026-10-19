@@ -1,4 +1,6 @@
 import { ipcMain } from 'electron'
+import { parse } from 'yaml'
+import type { KubernetesObject } from '@kubernetes/client-node'
 import { IPC } from '@shared/ipc-contract'
 import type { ResourceListRequest, ResourceListResponse } from '@shared/types/resource'
 import type { ResourceEventsRequest, ResourceEventsResponse, ClusterEventsRequest } from '@shared/types/resourceEvents'
@@ -10,6 +12,8 @@ import type {
 import type {
   ResourceApplyManifestRequest,
   ResourceApplyManifestResponse,
+  ResourcePreviewManifestRequest,
+  ResourcePreviewManifestResponse,
   ResourceCreateManifestRequest,
   ResourceCreateManifestResponse,
   ResourceDeleteRequest,
@@ -26,6 +30,8 @@ import {
   applyResourceManifest,
   createResourceManifests,
   deleteResourceObject,
+  normalizedManifestYaml,
+  previewResourceManifest,
   readResourceManifest
 } from '../k8s/resourceMutationService'
 import { resourceWatchManager } from '../k8s/resourceWatchManager'
@@ -100,6 +106,35 @@ export function registerResourceHandlers(): void {
       try {
         const clients = clusterManager.require(req.clusterId)
         return await applyResourceManifest(clients, req.yaml)
+      } catch (err) {
+        return { error: err instanceof Error ? err.message : String(err) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC.RESOURCE_PREVIEW_MANIFEST,
+    async (_e, req: ResourcePreviewManifestRequest): Promise<ResourcePreviewManifestResponse> => {
+      try {
+        if (isDemoCluster(req.clusterId)) {
+          const modified = normalizedManifestYaml(req.yaml)
+          let original = ''
+          if (req.mode === 'edit') {
+            const parsed = parse(req.yaml) as KubernetesObject | null
+            original = normalizedManifestYaml(
+              getDemoManifest(parsed?.kind ?? '', parsed?.metadata?.name ?? '', parsed?.metadata?.namespace ?? '')
+            )
+          }
+          return {
+            original,
+            modified,
+            unchanged: original === modified,
+            dryRunOk: true,
+            dryRunMessage: 'Demo cluster. Nothing was sent.'
+          }
+        }
+        const clients = clusterManager.require(req.clusterId)
+        return await previewResourceManifest(clients, req.yaml, req.mode)
       } catch (err) {
         return { error: err instanceof Error ? err.message : String(err) }
       }

@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Spin, message } from 'antd'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
+import type { ResourcePreviewManifestResult } from '@shared/types/resourceMutation'
 import type { YamlTabState } from '../Layout/BottomPanelContext'
 import { refreshNamespaces } from '../../queries/useNamespaces'
 import { YamlMonacoEditor } from '../Editor/YamlMonacoEditor'
+import { YamlApplyReview } from '../Editor/YamlApplyReview'
 
 interface YamlEditorPanelBodyProps {
   tab: YamlTabState
@@ -11,10 +14,13 @@ interface YamlEditorPanelBodyProps {
 }
 
 export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): React.JSX.Element {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [value, setValue] = useState(tab.initialYaml)
   const [loading, setLoading] = useState(tab.mode === 'edit')
   const [saving, setSaving] = useState(false)
+  const [reviewing, setReviewing] = useState(false)
+  const [review, setReview] = useState<ResourcePreviewManifestResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -67,6 +73,30 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
       ? tab.title
       : `${tab.name ?? 'resource'}${tab.namespace ? ` · ${tab.namespace}` : ''}`
 
+  async function handleReview(): Promise<void> {
+    if (!value.trim()) {
+      setError(t('yamlEditor.empty'))
+      return
+    }
+    setReviewing(true)
+    setError(null)
+    setReview(null)
+    try {
+      const res = await window.api.resource.previewManifest({
+        clusterId: tab.clusterId,
+        yaml: value,
+        mode: tab.mode
+      })
+      if ('error' in res) {
+        setError(res.error)
+        return
+      }
+      setReview(res)
+    } finally {
+      setReviewing(false)
+    }
+  }
+
   async function handleSave(): Promise<void> {
     if (!value.trim()) {
       setError('Manifest is empty')
@@ -115,10 +145,27 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
     }
   }
 
-  if (loading) {
+  if (loading || reviewing) {
     return (
       <div className="ml-yaml-editor-loading">
-        <Spin tip="Loading manifest…" />
+        <Spin tip={reviewing ? t('yamlEditor.checking') : t('yamlEditor.loading')} />
+      </div>
+    )
+  }
+
+  if (review) {
+    return (
+      <div className="ml-yaml-editor-body">
+        <YamlApplyReview
+          original={review.original}
+          modified={review.modified}
+          unchanged={review.unchanged}
+          dryRunOk={review.dryRunOk}
+          dryRunMessage={review.dryRunMessage}
+          saving={saving}
+          onBack={() => setReview(null)}
+          onApply={() => void handleSave()}
+        />
       </div>
     )
   }
@@ -133,7 +180,7 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
         resourceLabel={resourceLabel}
         saving={saving}
         error={error}
-        onSave={() => void handleSave()}
+        onSave={() => void handleReview()}
       />
     </div>
   )

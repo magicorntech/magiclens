@@ -8,7 +8,8 @@ import { useResourceList } from '../../queries/useResourceList'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { DetailOverview, DetailSection } from '../Detail/detailPrimitives'
 import { OverviewGrid, OverviewPage, OverviewStat } from './OverviewPage'
-import { DEFAULT_TABLE_PAGE_SIZE, TABLE_PAGE_SIZE_OPTIONS } from '../../utils/tablePagination'
+import { TABLE_PAGE_SIZE_OPTIONS } from '../../utils/tablePagination'
+import { useTablePageSizeStore } from '../../stores/tablePageSizeStore'
 
 interface ProblemWorkload {
   kind: ResourceKind
@@ -56,8 +57,9 @@ export function WorkloadsOverviewPage({
   onNavigateToResource
 }: WorkloadsOverviewPageProps): React.JSX.Element {
   const { t } = useTranslation()
+  const defaultPageSize = useTablePageSizeStore((s) => s.pageSize)
   const [problemsPage, setProblemsPage] = useState(1)
-  const [problemsPageSize, setProblemsPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [problemsPageSize, setProblemsPageSize] = useState(defaultPageSize)
 
   const deploy = useResourceList(clusterId, 'ALL', 'Deployments', isActive)
   const sts = useResourceList(clusterId, 'ALL', 'StatefulSets', isActive)
@@ -105,6 +107,11 @@ export function WorkloadsOverviewPage({
   }, [unhealthy, problemsPage, problemsPageSize])
 
   useEffect(() => {
+    setProblemsPageSize(defaultPageSize)
+    setProblemsPage(1)
+  }, [defaultPageSize])
+
+  useEffect(() => {
     const maxPage = Math.max(1, Math.ceil(unhealthy.length / problemsPageSize))
     if (problemsPage > maxPage) setProblemsPage(maxPage)
   }, [unhealthy.length, problemsPage, problemsPageSize])
@@ -125,7 +132,7 @@ export function WorkloadsOverviewPage({
   if (loading && allWorkloads.length === 0) return <LoadingState />
 
   return (
-    <OverviewPage title={t('workloadsOverview.title')} subtitle={t('workloadsOverview.subtitle')}>
+    <OverviewPage>
       <DetailOverview>
         <OverviewGrid>
           {WORKLOAD_KINDS.map((kind) => (

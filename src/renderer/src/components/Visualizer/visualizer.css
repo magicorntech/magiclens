@@ -82,6 +82,8 @@
   flex: 1;
   min-height: 0;
   display: flex;
+  padding-top: 20px;
+  box-sizing: border-box;
 }
 
 .ml-viz-canvas {

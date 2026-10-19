@@ -2,9 +2,13 @@ import { Button, Empty, List, Popover, Typography } from 'antd'
 import dayjs from 'dayjs'
 import { Bell, BellRing } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import type { ResourceKind } from '@shared/resourceKinds'
+import { RESOURCE_KINDS } from '@shared/resourceKinds'
 import { Icon } from '../ui/Icon'
 import { useNotesStore } from '../../stores/notesStore'
 import { useClusterStore } from '../../stores/clusterStore'
+
+const KIND_SET = new Set<string>(RESOURCE_KINDS)
 
 interface NotesNotificationBellProps {
   className?: string
@@ -21,6 +25,7 @@ export function NotesNotificationBell({ className }: NotesNotificationBellProps)
   const openEdit = useNotesStore((s) => s.openEdit)
   const notes = useNotesStore((s) => s.notes)
   const setActiveView = useClusterStore((s) => s.setActiveView)
+  const navigateToResource = useClusterStore((s) => s.navigateToResource)
   const unread = inbox.filter((i) => !i.read).length
 
   const content = (
@@ -38,21 +43,32 @@ export function NotesNotificationBell({ className }: NotesNotificationBellProps)
       </div>
 
       {inbox.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('notes.inbox.empty')} />
+        <div className="ml-notes-inbox__body ml-notes-inbox__body--empty">
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('notes.inbox.empty')} />
+        </div>
       ) : (
         <List
+          className="ml-notes-inbox__body"
           size="small"
           dataSource={inbox}
-          style={{ maxHeight: 320, overflow: 'auto', width: 320 }}
           renderItem={(item) => (
             <List.Item
               className={`ml-notes-inbox__item${!item.read ? ' ml-notes-inbox__item--unread' : ''}`}
               onClick={() => {
                 markInboxRead(item.id)
+                if (item.source === 'cluster' && item.clusterId && item.resourceName && item.resourceKind && KIND_SET.has(item.resourceKind)) {
+                  navigateToResource(item.clusterId, {
+                    kind: item.resourceKind as ResourceKind,
+                    namespace: item.namespace ?? '',
+                    name: item.resourceName
+                  })
+                  setInboxOpen(false)
+                  return
+                }
                 const note = notes.find((n) => n.id === item.noteId)
                 if (note && !note.id.startsWith('test-')) {
                   openEdit(note)
-                } else {
+                } else if (item.source !== 'cluster') {
                   setActiveView('notes')
                 }
                 setInboxOpen(false)

@@ -1,4 +1,5 @@
 import { BrowserWindow, Notification } from 'electron'
+import type { OsNotificationTarget } from '@shared/localAlerts'
 import { randomUUID } from 'crypto'
 import { join } from 'node:path'
 import { IPC } from '@shared/ipc-contract'
@@ -53,7 +54,20 @@ function notificationIcon(): string | undefined {
  * On modern Electron + macOS, Electron.app must be code-signed (ad-hoc is enough for local dev).
  * Failures are silent unless we listen for the `failed` event.
  */
-export function showOsNotification(title: string, body: string): Promise<OsNotificationResult> {
+function focusMainWindow(): void {
+  const win = BrowserWindow.getAllWindows().find((candidate) => !candidate.isDestroyed())
+  if (!win) return
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+}
+
+export function showOsNotification(
+  title: string,
+  body: string,
+  target?: OsNotificationTarget,
+  silent = false
+): Promise<OsNotificationResult> {
   return new Promise((resolve) => {
     if (!Notification.isSupported()) {
       resolve({ ok: false, error: 'Notifications are not supported on this platform' })
@@ -72,10 +86,14 @@ export function showOsNotification(title: string, body: string): Promise<OsNotif
       const notification = new Notification({
         title: title || 'MagicLens',
         body: body || 'Reminder',
-        silent: false,
+        silent,
         ...(icon ? { icon } : {})
       })
 
+      notification.on('click', () => {
+        focusMainWindow()
+        if (target) safeSend(IPC.ALERTS_CLICK, target)
+      })
       notification.on('show', () => finish({ ok: true }))
       notification.on('failed', (_event, error) => {
         const message = String(error || 'Notification failed')
@@ -136,7 +154,15 @@ export async function deliverNoteReminder(
 
   const os = await showOsNotification(
     delivered.title || 'MagicLens reminder',
-    notificationBodyForNote(delivered)
+    notificationBodyForNote(delivered),
+    {
+      type: delivered.resourceKind && delivered.resourceName ? 'resource' : 'note',
+      noteId: delivered.id,
+      clusterId: delivered.clusterId,
+      kind: delivered.resourceKind,
+      namespace: delivered.namespace,
+      name: delivered.resourceName
+    }
   )
   if (!os.ok) {
     console.warn('[notes] reminder OS notify failed for', delivered.id, os.error)

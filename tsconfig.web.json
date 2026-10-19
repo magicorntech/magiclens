@@ -17,5 +17,6 @@
       "@renderer/*": ["src/renderer/src/*"]
     }
   },
-  "include": ["src/renderer/src/**/*", "src/shared/**/*", "src/preload/index.d.ts"]
+  "include": ["src/renderer/src/**/*", "src/shared/**/*", "src/preload/index.d.ts"],
+  "exclude": ["src/shared/**/*.test.ts", "src/shared/testSetup.ts", "src/renderer/src/**/*.test.ts", "src/renderer/src/**/*.test.tsx"]
 }

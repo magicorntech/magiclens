@@ -9,6 +9,7 @@ import { useWorkloadPods } from '../../queries/useWorkloadPods'
 import { ErrorState, LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { Icon } from '../ui/Icon'
 import { emptyIllustrations } from '../ui/EmptyIllustration'
+import { highlightLogLine } from '../Pod/logHighlight'
 
 interface WorkloadLogsPanelProps {
   clusterId: string
@@ -51,19 +52,6 @@ function sincePresetToIso(preset: string): string | undefined {
   const minutes = map[preset]
   if (!minutes) return undefined
   return dayjs().subtract(minutes, 'minute').toISOString()
-}
-
-function highlightLogLine(line: string, query: string): React.JSX.Element {
-  if (!query.trim()) return <>{line || '\u00A0'}</>
-  const idx = line.toLowerCase().indexOf(query.toLowerCase())
-  if (idx < 0) return <>{line}</>
-  return (
-    <>
-      {line.slice(0, idx)}
-      <mark className="ml-log-highlight">{line.slice(idx, idx + query.length)}</mark>
-      {line.slice(idx + query.length)}
-    </>
-  )
 }
 
 function sourceHue(source: string): number {
@@ -130,6 +118,7 @@ export function WorkloadLogsPanel({
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const sessionIdRef = useRef<string | null>(null)
   const bufferBySourceRef = useRef<Map<string, string>>(new Map())
+  const keepBufferRef = useRef(false)
 
   const containerNames = useMemo(() => {
     const names = new Set<string>()
@@ -149,6 +138,8 @@ export function WorkloadLogsPanel({
     if (!q) return lines
     return lines.filter((l) => l.text.toLowerCase().includes(q) || l.source.toLowerCase().includes(q))
   }, [lines, logSearch])
+  const query = logSearch.trim()
+  const hasFilterMiss = query.length > 0 && lines.length > 0 && filteredLines.length === 0
 
   useEffect(() => {
     if (podFilter !== ALL && !pods.some((p) => p.name === podFilter)) setPodFilter(ALL)
@@ -167,9 +158,16 @@ export function WorkloadLogsPanel({
 
     const sessionId = newSessionId()
     sessionIdRef.current = sessionId
-    setLines([])
     setEnded(null)
     bufferBySourceRef.current = new Map()
+    if (keepBufferRef.current) {
+      keepBufferRef.current = false
+      setLines((prev) =>
+        prev.length > 0 ? [...prev, { source: '', text: t('resourceDetail.workloadLogs.restarted') }] : prev
+      )
+    } else {
+      setLines([])
+    }
 
     const unsubData = window.api.pod.logs.onData((payload) => {
       if (payload.sessionId !== sessionId) return
@@ -240,7 +238,7 @@ export function WorkloadLogsPanel({
     if (follow && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [lines, follow])
+  }, [filteredLines, follow])
 
   async function handleDownload(): Promise<void> {
     if (sources.length === 0) return
@@ -333,7 +331,10 @@ export function WorkloadLogsPanel({
         <button
           type="button"
           className="ml-btn ml-btn--ghost"
-          onClick={() => setStreamKey((k) => k + 1)}
+          onClick={() => {
+            keepBufferRef.current = true
+            setStreamKey((k) => k + 1)
+          }}
           disabled={!follow}
         >
           <Icon icon={RefreshCw} variant="detail" />
@@ -341,12 +342,22 @@ export function WorkloadLogsPanel({
         </button>
         <Input
           size="small"
+          className="ml-log-search"
           prefix={<Icon icon={Search} variant="detail" />}
           placeholder={t('resourceDetail.workloadLogs.filter')}
           value={logSearch}
           onChange={(e) => setLogSearch(e.target.value)}
-          style={{ width: 180 }}
           allowClear
+          suffix={
+            query ? (
+              <span className="ml-log-match">
+                {t('resourceDetail.workloadLogs.matchCount', {
+                  shown: filteredLines.length,
+                  total: lines.length
+                })}
+              </span>
+            ) : null
+          }
         />
         <Input
           size="small"
@@ -386,9 +397,11 @@ export function WorkloadLogsPanel({
           <div className="ml-log-empty">
             <LogsIllustration />
             <span>
-              {follow
-                ? t('resourceDetail.workloadLogs.waiting', { count: sources.length })
-                : t('resourceDetail.workloadLogs.pausedBanner')}
+              {hasFilterMiss
+                ? t('resourceDetail.workloadLogs.noMatch', { query })
+                : follow
+                  ? t('resourceDetail.workloadLogs.waiting', { count: sources.length })
+                  : t('resourceDetail.workloadLogs.pausedBanner')}
             </span>
           </div>
         ) : (

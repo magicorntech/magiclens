@@ -145,9 +145,9 @@ import { DEFAULT_RESOURCE_NAV_ORDER } from './resourceNavOrder'
 import type { MenuBarWidgetPrefs } from './menuBarWidget'
 import { defaultMenuBarWidgetPrefs } from './menuBarWidget'
 import type { KeyboardShortcuts } from './keyboardShortcuts'
-import { defaultKeyboardShortcuts, normalizeKeyboardShortcuts } from './keyboardShortcuts'
+import { defaultKeyboardShortcuts } from './keyboardShortcuts'
 import type { AppLocale } from './locale'
-import { defaultAppLocale, normalizeAppLocale } from './locale'
+import { defaultAppLocale } from './locale'
 
 export type { KeyboardShortcuts, ShortcutActionId, ShortcutBinding } from './keyboardShortcuts'
 export {

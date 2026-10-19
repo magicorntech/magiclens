@@ -2,6 +2,7 @@ import type { V1ObjectMeta } from '@kubernetes/client-node'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceListItem } from '@shared/types/resource'
 import type { ClusterClients } from './clusterManager'
+import { parseCpuQuantity, parseMemoryQuantity } from '@shared/quantity'
 import { derivePodStatus } from './podStatus'
 
 /** Group/Version/Resource info needed to build a Kubernetes Watch API path. */
@@ -146,6 +147,12 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
       const readyCount = containers.filter((c) => c.ready).length
       const restarts = containers.reduce((sum, c) => sum + (c.restartCount ?? 0), 0)
       const status = derivePodStatus(pod)
+      let cpuRequest = 0
+      let memoryRequest = 0
+      for (const c of pod.spec?.containers ?? []) {
+        cpuRequest += parseCpuQuantity(c.resources?.requests?.cpu)
+        memoryRequest += parseMemoryQuantity(c.resources?.requests?.memory)
+      }
       return {
         ...baseMeta(pod),
         statusText: status.statusText,
@@ -157,7 +164,9 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
           restarts: String(restarts),
           controlledBy: ownerKind(pod),
           node: pod.spec?.nodeName ?? '-',
-          qos: pod.status?.qosClass ?? '-'
+          qos: pod.status?.qosClass ?? '-',
+          cpuRequest: String(cpuRequest),
+          memoryRequest: String(memoryRequest)
         }
       }
     }

@@ -24,6 +24,10 @@ import { NodeExecPanel } from '../Node/NodeExecPanel'
 import { NodePodsPanel } from '../Node/NodePodsPanel'
 import { ResourceNotesTab } from '../Notes/ResourceNotesTab'
 import { kindColumnDefs } from '../../resourceConfig/kinds.renderer'
+import { useTlsCerts } from '../../queries/useTlsCerts'
+import { tlsCertKey } from '@shared/types/tlsCerts'
+import { TlsCertFacts } from '../Certs/TlsCertFacts'
+import { YamlClusterCompare } from '../Editor/YamlClusterCompare'
 import { useBottomPanelOptional } from '../Layout/BottomPanelContext'
 import { Icon } from '../ui/Icon'
 import { parseResourceManifest } from './parseManifest'
@@ -126,6 +130,8 @@ export function GenericResourceDetailView({
     namespace,
     yamlEnabled
   )
+  const { byKey: tlsCertsByKey } = useTlsCerts(kind === 'Secrets' ? clusterId : null, isActive && kind === 'Secrets')
+  const tlsCert = kind === 'Secrets' ? tlsCertsByKey.get(tlsCertKey(namespace, name)) : undefined
 
   const parsed = useMemo(() => (manifest ? parseResourceManifest(manifest) : null), [manifest])
 
@@ -264,6 +270,7 @@ export function GenericResourceDetailView({
       <DetailSection title={t('resourceDetail.overview.title')}>
         {manifestLoading && !parsed ? <LoadingState /> : <DetailFactGrid facts={dedupedFacts} />}
       </DetailSection>
+      {tlsCert ? <TlsCertFacts cert={tlsCert} /> : null}
 
       <DetailSection title={t('resourceDetail.metadata.title')}>
         <DetailFactGrid
@@ -502,7 +509,17 @@ export function GenericResourceDetailView({
           ) : manifestError ? (
             <Alert type="error" showIcon message={String(manifestError)} />
           ) : (
-            <pre className="ml-detail-yaml">{manifest ?? ''}</pre>
+            <>
+              <YamlClusterCompare
+                clusterId={clusterId}
+                kind={kind}
+                namespace={namespace}
+                name={name}
+                localYaml={manifest ?? ''}
+                target={target}
+                yamlClassName="ml-detail-yaml"
+              />
+            </>
           )}
         </DetailPane>
       )

@@ -6,6 +6,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -15,6 +16,7 @@ import {
 } from 'recharts'
 import type { ClusterMetricsSummary, NodeMetricEntry } from '@shared/types/metrics'
 import type { ResourceListItem } from '@shared/types/resource'
+import { useClusterStore } from '../../stores/clusterStore'
 import { useResolvedDarkMode } from '../../stores/useResolvedDarkMode'
 import { useLiveRefetchInterval } from '../../stores/useLiveRefetchInterval'
 
@@ -65,7 +67,21 @@ function diskPercentForNode(nodeName: string, fromProm: Map<string, number> | un
 }
 
 function shortName(name: string): string {
-  return name.length > 18 ? `${name.slice(0, 16)}…` : name
+  if (name.length <= 18) return name
+  return `…${name.slice(-16)}`
+}
+
+function usageFill(value: number): string {
+  if (value >= 85) return '#e85d4c'
+  if (value >= 70) return '#e3b341'
+  return '#7c6af7'
+}
+
+interface UsageRow {
+  name: string
+  full: string
+  value: number
+  unit: string
 }
 
 function pct(used: number | undefined, total: number): number | null {
@@ -82,15 +98,13 @@ export function NodesFleetCharts({
 }: NodesFleetChartsProps): React.JSX.Element {
   const { t } = useTranslation()
   const isDark = useResolvedDarkMode()
-  const tick = isDark ? '#94a3b8' : '#64748b'
-  const grid = isDark ? 'rgba(148,163,184,0.18)' : 'rgba(100,116,139,0.18)'
-  const tooltipStyle = {
-    background: 'var(--ml-bg-elevated)',
-    border: '1px solid var(--ml-border)',
-    borderRadius: 0,
-    color: 'var(--ml-text)',
-    fontSize: 12
+  const navigateToResource = useClusterStore((s) => s.navigateToResource)
+  const openResourceKind = useClusterStore((s) => s.openResourceKind)
+  const openNode = (name: string): void => {
+    navigateToResource(clusterId, { kind: 'Nodes', namespace: '', name })
   }
+  const tick = isDark ? '#94a3b8' : '#64748b'
+  const grid = isDark ? 'rgba(148,163,184,0.14)' : 'rgba(100,116,139,0.16)'
 
   const byName = useMemo(() => new Map(metrics.map((m) => [m.name, m])), [metrics])
   const refetchInterval = useLiveRefetchInterval(isActive)
@@ -113,9 +127,9 @@ export function NodesFleetCharts({
       .map((node) => {
         const metric = byName.get(node.name)
         const value = pct(metric?.cpuUsageCores, metric?.cpuAllocatableCores ?? 0)
-        return value == null ? null : { name: shortName(node.name), full: node.name, value }
+        return value == null ? null : { name: shortName(node.name), full: node.name, value, unit: '%' }
       })
-      .filter((row): row is { name: string; full: string; value: number } => row != null)
+      .filter((row): row is UsageRow => row != null)
       .sort((a, b) => b.value - a.value)
       .slice(0, 8)
   }, [nodes, byName])
@@ -125,9 +139,9 @@ export function NodesFleetCharts({
       .map((node) => {
         const metric = byName.get(node.name)
         const value = pct(metric?.memoryUsageBytes, metric?.memoryAllocatableBytes ?? 0)
-        return value == null ? null : { name: shortName(node.name), full: node.name, value }
+        return value == null ? null : { name: shortName(node.name), full: node.name, value, unit: '%' }
       })
-      .filter((row): row is { name: string; full: string; value: number } => row != null)
+      .filter((row): row is UsageRow => row != null)
       .sort((a, b) => b.value - a.value)
       .slice(0, 8)
   }, [nodes, byName])
@@ -135,9 +149,9 @@ export function NodesFleetCharts({
   const podRows = useMemo(
     () =>
       [
-        { name: t('nodesOverview.charts.running'), key: 'running', value: summary.runningPods, fill: 'var(--ml-success)' },
-        { name: t('nodesOverview.charts.pending'), key: 'pending', value: summary.pendingPods, fill: 'var(--ml-warning)' },
-        { name: t('nodesOverview.charts.failed'), key: 'failed', value: summary.failedPods, fill: 'var(--ml-error)' }
+        { name: t('nodesOverview.charts.running'), full: t('nodesOverview.charts.running'), key: 'running', value: summary.runningPods, unit: '', fill: 'var(--ml-success)' },
+        { name: t('nodesOverview.charts.pending'), full: t('nodesOverview.charts.pending'), key: 'pending', value: summary.pendingPods, unit: '', fill: 'var(--ml-warning)' },
+        { name: t('nodesOverview.charts.failed'), full: t('nodesOverview.charts.failed'), key: 'failed', value: summary.failedPods, unit: '', fill: 'var(--ml-error)' }
       ].filter((row) => row.value > 0),
     [summary.failedPods, summary.pendingPods, summary.runningPods, t]
   )
@@ -147,94 +161,207 @@ export function NodesFleetCharts({
     return nodes
       .map((node) => {
         const value = diskPercentForNode(node.name, fromProm) ?? byName.get(node.name)?.diskUsagePercent
-        return value == null ? null : { name: shortName(node.name), value: Math.round(value * 10) / 10 }
+        return value == null
+          ? null
+          : { name: shortName(node.name), full: node.name, value: Math.round(value * 10) / 10, unit: '%' }
       })
-      .filter((row): row is { name: string; value: number } => row != null)
+      .filter((row): row is UsageRow => row != null)
       .sort((a, b) => b.value - a.value)
       .slice(0, 8)
   }, [nodes, byName, diskQuery.data])
 
   return (
     <div className="ml-nodes-charts">
-      <ChartCard title={t('nodesOverview.charts.cpu')}>
+      <ChartCard title={t('nodesOverview.charts.cpu')} hint={cpuRows.length ? t('nodesOverview.charts.clickNode') : undefined}>
         {cpuRows.length === 0 ? (
           <Empty label={t('nodesOverview.charts.noMetrics')} />
         ) : (
-          <ResponsiveContainer width="100%" height={168}>
-            <BarChart data={cpuRows} layout="vertical" margin={{ left: 4, right: 8, top: 4, bottom: 0 }}>
-              <CartesianGrid stroke={grid} horizontal={false} />
-              <XAxis type="number" domain={[0, 100]} tick={{ fill: tick, fontSize: 10 }} unit="%" />
-              <YAxis type="category" dataKey="name" width={108} tick={{ fill: tick, fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value}%`, t('nodesOverview.charts.cpu')]} />
-              <Bar dataKey="value" fill="var(--ml-primary)" barSize={10} />
-            </BarChart>
-          </ResponsiveContainer>
+          <UsageBars rows={cpuRows} tick={tick} grid={grid} onOpen={openNode} />
         )}
       </ChartCard>
 
-      <ChartCard title={t('nodesOverview.charts.memory')}>
+      <ChartCard title={t('nodesOverview.charts.memory')} hint={memoryRows.length ? t('nodesOverview.charts.clickNode') : undefined}>
         {memoryRows.length === 0 ? (
           <Empty label={t('nodesOverview.charts.noMetrics')} />
         ) : (
-          <ResponsiveContainer width="100%" height={168}>
-            <BarChart data={memoryRows} layout="vertical" margin={{ left: 4, right: 8, top: 4, bottom: 0 }}>
-              <CartesianGrid stroke={grid} horizontal={false} />
-              <XAxis type="number" domain={[0, 100]} tick={{ fill: tick, fontSize: 10 }} unit="%" />
-              <YAxis type="category" dataKey="name" width={108} tick={{ fill: tick, fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value}%`, t('nodesOverview.charts.memory')]} />
-              <Bar dataKey="value" fill="#6366f1" barSize={10} />
-            </BarChart>
-          </ResponsiveContainer>
+          <UsageBars rows={memoryRows} tick={tick} grid={grid} onOpen={openNode} />
         )}
       </ChartCard>
 
-      <ChartCard title={t('nodesOverview.charts.pods')}>
+      <ChartCard title={t('nodesOverview.charts.pods')} hint={podRows.length ? t('nodesOverview.charts.clickPods') : undefined}>
         {podRows.length === 0 ? (
           <Empty label={t('nodesOverview.charts.empty')} />
         ) : (
+          <div className="ml-nodes-chart__plot" onMouseDown={(event) => event.preventDefault()}>
           <ResponsiveContainer width="100%" height={168}>
-            <PieChart>
-              <Pie data={podRows} dataKey="value" nameKey="name" innerRadius={42} outerRadius={64} paddingAngle={2}>
+            <PieChart accessibilityLayer={false}>
+              <Pie
+                data={podRows}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={42}
+                outerRadius={64}
+                paddingAngle={2}
+                stroke="none"
+                activeShape={false}
+                style={{ cursor: 'pointer' }}
+                onClick={() => openResourceKind(clusterId, 'Pods')}
+              >
                 {podRows.map((row) => (
                   <Cell key={row.key} fill={row.fill} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={tooltipStyle} />
+              <ChartTooltip />
             </PieChart>
           </ResponsiveContainer>
+          </div>
         )}
       </ChartCard>
 
-      <ChartCard title={t('nodesOverview.charts.disk')}>
+      <ChartCard title={t('nodesOverview.charts.disk')} hint={diskRows.length ? t('nodesOverview.charts.clickNode') : undefined}>
         {diskRows.length === 0 ? (
           <Empty label={t('nodesOverview.charts.noDisk')} />
         ) : (
-          <ResponsiveContainer width="100%" height={168}>
-            <BarChart data={diskRows} layout="vertical" margin={{ left: 4, right: 8, top: 4, bottom: 0 }}>
-              <CartesianGrid stroke={grid} horizontal={false} />
-              <XAxis type="number" domain={[0, 100]} tick={{ fill: tick, fontSize: 10 }} unit="%" />
-              <YAxis type="category" dataKey="name" width={108} tick={{ fill: tick, fontSize: 10 }} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(value) => [`${value}%`, t('nodesOverview.charts.disk')]} />
-              <Bar dataKey="value" barSize={10}>
-                {diskRows.map((row) => (
-                  <Cell
-                    key={row.name}
-                    fill={row.value >= 85 ? '#d94c4c' : row.value >= 70 ? '#e3b341' : '#38bdf8'}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <UsageBars rows={diskRows} tick={tick} grid={grid} onOpen={openNode} />
         )}
       </ChartCard>
     </div>
   )
 }
 
-function ChartCard({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
+function UsageBars({
+  rows,
+  tick,
+  grid,
+  onOpen
+}: {
+  rows: UsageRow[]
+  tick: string
+  grid: string
+  onOpen: (name: string) => void
+}): React.JSX.Element {
+  const height = Math.max(148, rows.length * 28 + 28)
+  return (
+    <div className="ml-nodes-chart__plot" onMouseDown={(event) => event.preventDefault()}>
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart
+        data={rows}
+        layout="vertical"
+        margin={{ left: 0, right: 36, top: 4, bottom: 0 }}
+        barCategoryGap={8}
+        accessibilityLayer={false}
+      >
+        <CartesianGrid stroke={grid} horizontal={false} verticalValues={[25, 50, 75, 100]} />
+        <XAxis type="number" domain={[0, 100]} tick={{ fill: tick, fontSize: 10 }} unit="%" axisLine={false} tickLine={false} />
+        <YAxis
+          type="category"
+          dataKey="name"
+          width={124}
+          axisLine={false}
+          tickLine={false}
+          tick={(props: { x: number; y: number; payload?: { value?: string } }) => {
+            const label = props.payload?.value ?? ''
+            const row = rows.find((item) => item.name === label)
+            return (
+              <text
+                x={props.x}
+                y={props.y}
+                dy={4}
+                textAnchor="end"
+                fill={tick}
+                fontSize={11}
+                cursor="pointer"
+                onClick={() => {
+                  if (row?.full) onOpen(row.full)
+                }}
+              >
+                {label}
+              </text>
+            )
+          }}
+        />
+        <ChartTooltip />
+        <Bar
+          dataKey="value"
+          barSize={8}
+          activeBar={false}
+          background={false}
+          isAnimationActive={false}
+          onClick={(bar) => {
+            const row = ('payload' in bar ? bar.payload : bar) as UsageRow
+            if (row.full) onOpen(row.full)
+          }}
+        >
+          {rows.map((row) => (
+            <Cell key={row.full} fill={usageFill(row.value)} />
+          ))}
+          <LabelList
+            dataKey="value"
+            position="right"
+            content={(props) => {
+              const { x, y, width, height, value, index } = props
+              const row = typeof index === 'number' ? rows[index] : undefined
+              if (x == null || y == null || width == null || height == null) return null
+              return (
+                <text
+                  x={Number(x) + Number(width) + 6}
+                  y={Number(y) + Number(height) / 2}
+                  dy={4}
+                  fill={tick}
+                  fontSize={11}
+                  cursor="pointer"
+                  onClick={() => {
+                    if (row?.full) onOpen(row.full)
+                  }}
+                >
+                  {value}%
+                </text>
+              )
+            }}
+          />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+    </div>
+  )
+}
+
+function ChartTooltip(): React.JSX.Element {
+  return (
+    <Tooltip
+      cursor={false}
+      isAnimationActive={false}
+      wrapperStyle={{ background: 'transparent', border: 'none', outline: 'none', boxShadow: 'none' }}
+      content={({ active, payload }) => {
+        if (!active || !payload?.length) return null
+        const row = payload[0].payload as UsageRow
+        return (
+          <div className="ml-nodes-chart__tip">
+            <span className="ml-nodes-chart__tip-name">{row.full || row.name}</span>
+            <span className="ml-nodes-chart__tip-value">
+              {row.value}
+              {row.unit}
+            </span>
+          </div>
+        )
+      }}
+    />
+  )
+}
+
+function ChartCard({
+  title,
+  hint,
+  children
+}: {
+  title: string
+  hint?: string
+  children: React.ReactNode
+}): React.JSX.Element {
   return (
     <section className="ml-nodes-chart">
       <h3 className="ml-nodes-chart__title">{title}</h3>
+      {hint ? <p className="ml-nodes-chart__hint">{hint}</p> : null}
       {children}
     </section>
   )

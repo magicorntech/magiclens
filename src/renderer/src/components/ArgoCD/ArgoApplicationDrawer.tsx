@@ -145,7 +145,8 @@ export function ArgoApplicationDrawer({
       key: 'sync',
       width: 110,
       sorter: (a, b) => compareText(a.syncStatus, b.syncStatus),
-      render: (_v, r) => r.syncStatus || '—'
+      render: (_v, r) =>
+        r.syncStatus ? <ArgoSyncTag status={r.syncStatus as 'Synced' | 'OutOfSync' | 'Unknown'} /> : '—'
     },
     {
       // Resources with no health concept (ConfigMap, Service) report nothing here.
@@ -323,7 +324,9 @@ export function ArgoApplicationDrawer({
                 tableKey="argo-managed-resources"
                 rowKey="id"
                 columns={resourceColumns}
-                dataSource={detail.managedResources}
+                dataSource={[...detail.managedResources].sort(
+                  (a, b) => Number(b.syncStatus === 'OutOfSync') - Number(a.syncStatus === 'OutOfSync')
+                )}
                 pagination={false}
                 size="small"
                 scroll={{ y: 260 }}

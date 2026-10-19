@@ -169,7 +169,9 @@ function podsForApp(app: DemoApp): ResourceListItem[] {
         restarts: pending ? '0' : String((i * 2) % 5),
         controlledBy: app.kind,
         node: pending ? '-' : nodeName(i + app.name.length),
-        qos: 'Burstable'
+        qos: 'Burstable',
+        cpuRequest: String(0.1 + (i % 3) * 0.1),
+        memoryRequest: String((128 + (i % 4) * 64) * 1024 * 1024)
       },
       Math.max(1, app.ageDays - i)
     )
@@ -196,7 +198,27 @@ export const DAEMONSETS: ResourceListItem[] = APPS.filter((a) => a.kind === 'Dae
   row('ds', a.name, a.namespace, 'Available', 'green', { ready: `${a.replicas}/${a.replicas}`, controlledBy: '-' }, a.ageDays)
 )
 
-export const PODS: ResourceListItem[] = APPS.flatMap(podsForApp)
+export const PODS: ResourceListItem[] = [
+  ...APPS.flatMap(podsForApp),
+  row(
+    'pod',
+    'checkout-api-7f8d9c-crash',
+    'shop',
+    'CrashLoopBackOff',
+    'red',
+    {
+      containers: WAITING_DOT,
+      ready: '0/1',
+      restarts: '14',
+      controlledBy: 'Deployment',
+      node: 'aurora-pool-b-2',
+      qos: 'Burstable',
+      cpuRequest: '0.25',
+      memoryRequest: String(256 * 1024 * 1024)
+    },
+    1
+  )
+]
 
 export const REPLICASETS: ResourceListItem[] = DEPLOYMENTS.map((d) =>
   row('rs', `${d.name}-7f8d9c`, d.namespace, 'Available', 'green', { ready: d.columns.ready, controlledBy: `Deployment/${d.name}` }, 12)
@@ -261,6 +283,7 @@ export const CONFIGMAPS: ResourceListItem[] = [
 
 export const SECRETS: ResourceListItem[] = [
   row('sec', 'storefront-tls', 'shop', 'Active', 'default', { type: 'kubernetes.io/tls', keys: '2' }, 18),
+  row('sec', 'checkout-old-tls', 'payments', 'Active', 'default', { type: 'kubernetes.io/tls', keys: '2' }, 90),
   row('sec', 'payments-db', 'payments', 'Active', 'default', { type: 'Opaque', keys: '3' }, 13),
   row('sec', 'postgres-auth', 'data', 'Active', 'default', { type: 'Opaque', keys: '2' }, 40),
   row('sec', 'argocd-secret', 'argocd', 'Active', 'default', { type: 'Opaque', keys: '5' }, 35),
@@ -460,7 +483,13 @@ export function demoCustomResourceKinds(): CustomResourceKind[] {
     { group: 'argoproj.io', version: 'v1alpha1', apiVersion: 'argoproj.io/v1alpha1', kind: 'AppProject', plural: 'appprojects', singular: 'appproject', namespaced: true, shortNames: ['appproj'], categories: [], crdName: 'appprojects.argoproj.io', instanceCount: 3 },
     { group: 'cert-manager.io', version: 'v1', apiVersion: 'cert-manager.io/v1', kind: 'Certificate', plural: 'certificates', singular: 'certificate', namespaced: true, shortNames: ['cert'], categories: [], crdName: 'certificates.cert-manager.io', instanceCount: 6 },
     { group: 'monitoring.coreos.com', version: 'v1', apiVersion: 'monitoring.coreos.com/v1', kind: 'Prometheus', plural: 'prometheuses', singular: 'prometheus', namespaced: true, shortNames: [], categories: [], crdName: 'prometheuses.monitoring.coreos.com', instanceCount: 1 },
-    { group: 'monitoring.coreos.com', version: 'v1', apiVersion: 'monitoring.coreos.com/v1', kind: 'ServiceMonitor', plural: 'servicemonitors', singular: 'servicemonitor', namespaced: true, shortNames: ['smon'], categories: [], crdName: 'servicemonitors.monitoring.coreos.com', instanceCount: 11 }
+    { group: 'monitoring.coreos.com', version: 'v1', apiVersion: 'monitoring.coreos.com/v1', kind: 'ServiceMonitor', plural: 'servicemonitors', singular: 'servicemonitor', namespaced: true, shortNames: ['smon'], categories: [], crdName: 'servicemonitors.monitoring.coreos.com', instanceCount: 11 },
+    { group: 'gateway.networking.k8s.io', version: 'v1', apiVersion: 'gateway.networking.k8s.io/v1', kind: 'Gateway', plural: 'gateways', singular: 'gateway', namespaced: true, shortNames: ['gtw'], categories: [], crdName: 'gateways.gateway.networking.k8s.io', instanceCount: 1 },
+    { group: 'gateway.networking.k8s.io', version: 'v1', apiVersion: 'gateway.networking.k8s.io/v1', kind: 'HTTPRoute', plural: 'httproutes', singular: 'httproute', namespaced: true, shortNames: [], categories: [], crdName: 'httproutes.gateway.networking.k8s.io', instanceCount: 2 },
+    { group: 'gateway.networking.k8s.io', version: 'v1', apiVersion: 'gateway.networking.k8s.io/v1', kind: 'GRPCRoute', plural: 'grpcroutes', singular: 'grpcroute', namespaced: true, shortNames: [], categories: [], crdName: 'grpcroutes.gateway.networking.k8s.io', instanceCount: 1 },
+    { group: 'external-secrets.io', version: 'v1beta1', apiVersion: 'external-secrets.io/v1beta1', kind: 'ExternalSecret', plural: 'externalsecrets', singular: 'externalsecret', namespaced: true, shortNames: ['es'], categories: [], crdName: 'externalsecrets.external-secrets.io', instanceCount: 2 },
+    { group: 'external-secrets.io', version: 'v1beta1', apiVersion: 'external-secrets.io/v1beta1', kind: 'SecretStore', plural: 'secretstores', singular: 'secretstore', namespaced: true, shortNames: [], categories: [], crdName: 'secretstores.external-secrets.io', instanceCount: 1 },
+    { group: 'external-secrets.io', version: 'v1beta1', apiVersion: 'external-secrets.io/v1beta1', kind: 'ClusterSecretStore', plural: 'clustersecretstores', singular: 'clustersecretstore', namespaced: false, shortNames: [], categories: [], crdName: 'clustersecretstores.external-secrets.io', instanceCount: 1 }
   ]
 }
 
@@ -509,7 +538,19 @@ export function demoDynamicResources(kind: string, namespace: string | 'ALL'): D
     ],
     Certificate: INGRESSES.map((ing, i) => ({ name: `${ing.name}-tls`, namespace: ing.namespace, age: 12 + i })),
     Prometheus: [{ name: 'k8s', namespace: 'monitoring', age: 30 }],
-    ServiceMonitor: APPS.slice(0, 11).map((a) => ({ name: a.name, namespace: a.namespace, age: a.ageDays }))
+    ServiceMonitor: APPS.slice(0, 11).map((a) => ({ name: a.name, namespace: a.namespace, age: a.ageDays })),
+    Gateway: [{ name: 'shop-gateway', namespace: 'shop', age: 18 }],
+    HTTPRoute: [
+      { name: 'storefront', namespace: 'shop', age: 16 },
+      { name: 'admin-console', namespace: 'shop', age: 20 }
+    ],
+    GRPCRoute: [{ name: 'payments-grpc', namespace: 'payments', age: 8 }],
+    ExternalSecret: [
+      { name: 'checkout-db', namespace: 'shop', age: 12 },
+      { name: 'payments-stripe', namespace: 'payments', age: 10 }
+    ],
+    SecretStore: [{ name: 'vault-shop', namespace: 'shop', age: 20 }],
+    ClusterSecretStore: [{ name: 'aws-secrets', namespace: '', age: 30 }]
   }
   const items = (catalog[kind] ?? []).map((item) => ({
     id: `demo-cr-${kind}-${item.namespace}-${item.name}`,

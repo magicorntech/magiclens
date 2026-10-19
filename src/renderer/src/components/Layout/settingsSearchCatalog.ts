@@ -9,8 +9,20 @@ export const SETTINGS_SEARCH: Array<{ section: SettingsSection; keys: string[] }
       'settings.sectionHints.general',
       'settings.language.title',
       'settings.general.refreshTitle',
+      'settings.general.pageSizeTitle',
       'settings.general.kubeconfigPathTitle',
       'settings.general.dedupeTitle'
+    ]
+  },
+  {
+    section: 'alerts',
+    keys: [
+      'settings.sections.alerts',
+      'settings.alerts.watchTitle',
+      'settings.alerts.soundTitle',
+      'settings.alerts.typesTitle',
+      'settings.alerts.os',
+      'settings.alerts.sound'
     ]
   },
   {
@@ -129,6 +141,6 @@ export const SETTINGS_SEARCH: Array<{ section: SettingsSection; keys: string[] }
   },
   {
     section: 'about',
-    keys: ['settings.sections.about', 'settings.about.appTitle']
+    keys: ['settings.sections.about', 'settings.about.appTitle', 'settings.about.developedBy']
   }
 ]

@@ -15,6 +15,8 @@ import { ResizableTable } from '../../utils/ResizableTable'
 import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
 import { compareColumnValues, compareText, statusSorter } from '../../utils/tableSort'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
+import { useTablePageSizeStore } from '../../stores/tablePageSizeStore'
+import { TABLE_PAGE_SIZE_OPTIONS } from '../../utils/tablePagination'
 
 interface NodeInspectorDrawerProps {
   open: boolean
@@ -73,6 +75,7 @@ export function NodeInspectorDrawer({
   isActive,
   onClose
 }: NodeInspectorDrawerProps): React.JSX.Element {
+  const pageSize = useTablePageSizeStore((s) => s.pageSize)
   const layoutMode = useLayoutMode()
   const isMobile = layoutMode === 'mobile'
   const defaultWidth = layoutMode === 'compact' ? 440 : 560
@@ -149,7 +152,7 @@ export function NodeInspectorDrawer({
                   size="small"
                   resizable={false}
                   fitPageSize
-                  pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: ['10','20','50'] }}
+                  pagination={{ pageSize, showSizeChanger: true, pageSizeOptions: [...TABLE_PAGE_SIZE_OPTIONS] }}
                   dataSource={nodePods}
                   columns={[
                     { title: 'Name', dataIndex: 'name', key: 'name', ellipsis: true, sorter: (a, b) => compareText(a.name, b.name) },

@@ -141,6 +141,7 @@ export const tr: TranslationOverrides = {
     },
     sections: {
       general: 'Genel',
+      alerts: 'Uyarılar',
       updates: 'Güncellemeler',
       display: 'Görünüm',
       widget: 'Widget',
@@ -156,6 +157,7 @@ export const tr: TranslationOverrides = {
     },
     sectionHints: {
       general: 'Dil, yenileme sıklığı, kubeconfig tarama yolu ve küme bakımı.',
+      alerts: 'Hangi küme durumlarının yerel uyarı çıkaracağı ve nasıl ses çıkaracağı.',
       updates: 'MagicLens güncellemelerinin nasıl kontrol edilip kurulacağını yönetin.',
       display: 'Detayların nerede açılacağı, Terminal/YAML dock konumu ve kenar çubuğu.',
       widget: 'Menü çubuğu küme metrikleri: hangi kümeler, neler görünecek ve nasıl görünecek.',
@@ -265,6 +267,9 @@ export const tr: TranslationOverrides = {
       hint: 'Uygulama dilini seçin. Ant Design bileşenleri ve tarihler bu ayarı takip eder.'
     },
     general: {
+      pageSizeTitle: 'Tablo sayfa boyutu',
+      pageSizeHint: 'Bir tablo ilk açıldığında kaç satır göstereceği. Tüm listeler için geçerlidir.',
+      pageSize: 'Sayfa başına satır',
       refreshTitle: 'Kaynak yenileme aralığı',
       refreshHint:
         'Kaynak listeleri ve metriklerin ne sıklıkla otomatik yenileneceği. Tüm açık küme sekmelerine uygulanır; canlı yenilemeyi kaynak görünümünde duraklatabilirsiniz.',
@@ -285,6 +290,64 @@ export const tr: TranslationOverrides = {
       dedupeConfirmOk: 'Birleştir',
       dedupeNone: 'Tekrarlayan küme bulunamadı.',
       dedupeDone: '{{groups}} grup birleştirildi, {{removed}} tekrar silindi. {{kept}} küme kaldı.'
+    },
+    alerts: {
+      watchTitle: 'İzleme',
+      watchHint: 'Bağlı kümeler yaklaşık 30 saniyede bir kontrol edilir. Yeni uyarılar bildirim ziline düşer.',
+      enabled: 'Bağlı kümeleri izle',
+      enabledHint: 'Kapatınca yerel uyarı toplanmaz.',
+      os: 'Masaüstü bildirimleri',
+      osHint: 'Bir uyarı ilk kez görününce macOS veya Windows bildirir. Tıklayınca ilgili kaynak açılır.',
+      permission: 'Sistem izni',
+      permissionHint: 'MagicLens açılışta bir kez sorar. Kapattıysan yeniden iste veya sistem ayarlarını aç.',
+      allow: 'İzin iste',
+      system: 'Sistem ayarlarını aç',
+      soundTitle: 'Ses',
+      soundHint: 'Yeni uyarı gelince uygulama içinden çalar. Masaüstü bildirimi sessiz kalır, ses iki kez duyulmaz.',
+      sound: 'Bildirim sesi',
+      soundFor: 'Ses çalsın',
+      soundForHint: 'Hatalar: crash loop, imaj çekme, başarısız pod ve NotReady node.',
+      soundForAll: 'Tüm uyarılar',
+      soundForErrors: 'Yalnız hatalar',
+      sounds: {
+        off: 'Kapalı',
+        soft: 'Yumuşak',
+        chime: 'Zil',
+        alarm: 'Alarm'
+      },
+      thresholdsTitle: 'Eşikler',
+      thresholdsHint: 'Yeniden başlatma ve bekleme süresi yalnızca bu iki uyarı türü için geçerlidir.',
+      restarts: 'Yeniden başlatma sayısı',
+      pending: 'Pending süresi',
+      minutes: '{{count}} dk',
+      typesTitle: 'Uyarı türleri',
+      typesHint: 'Zilde ve masaüstü bildiriminde görmek istemediklerini kapat.',
+      types: {
+        crashLoop: 'Crash loop pod’lar',
+        imagePull: 'İmaj çekme hataları',
+        podFailed: 'Başarısız veya evict edilen pod’lar',
+        podPending: 'Pending’de kalan pod’lar',
+        restartsHigh: 'Yüksek yeniden başlatma',
+        nodeNotReady: 'Ready olmayan node’lar',
+        nodePressure: 'Node baskısı',
+        jobFailed: 'Başarısız job’lar',
+        deploymentUnavailable: 'Eksik replikalı deployment’lar',
+        certExpiring: 'Süresi yaklaşan sertifikalar',
+        certExpired: 'Süresi dolmuş sertifikalar'
+      },
+      typeHints: {
+        crashLoop: 'CrashLoopBackOff ve restart back-off.',
+        imagePull: 'ImagePullBackOff ve ErrImagePull.',
+        podFailed: 'Error, OOMKilled, create/run hataları ve eviction.',
+        podPending: 'Yukarıdaki eşikten uzun süredir Pending.',
+        restartsHigh: 'Eşiği aşan restart sayısına sahip çalışan pod’lar.',
+        nodeNotReady: 'Durumu Ready olmayan her node.',
+        nodePressure: 'Ready olup bellek, disk veya PID baskısı bildiren node’lar.',
+        jobFailed: 'Durumu Failed olan job’lar.',
+        deploymentUnavailable: 'İstenenden az hazır replikası olan deployment’lar.',
+        certExpiring: 'Uyarı penceresindeki TLS secret’lar.',
+        certExpired: 'notAfter tarihi geçmiş TLS secret’lar.'
+      }
     },
     updates: {
       checkAutomatically: 'Güncellemeleri otomatik kontrol et',
@@ -661,7 +724,8 @@ export const tr: TranslationOverrides = {
     about: {
       platform: 'Platform',
       appTitle: 'MagicLens',
-      appHint: 'Masaüstü Kubernetes istemcisi — bu kurulumun sürüm ve çalışma zamanı bilgileri.'
+      appHint: 'Masaüstü Kubernetes istemcisi — bu kurulumun sürüm ve çalışma zamanı bilgileri.',
+      developedBy: 'Geliştiren ekip'
     },
     vpnExtensions: {
       intro:
@@ -884,6 +948,21 @@ export const tr: TranslationOverrides = {
         'İsteğe bağlı. Seçerseniz küme sekmesine geçince MagicLens bu VPN’e otomatik bağlanır. Boş bırakırsanız VPN’i kendiniz yönetirsiniz. PIN ve MFA, ilk başarılı bağlantıdan sonra gün boyu profil bazında hatırlanır.'
     }
   },
+  yamlEditor: {
+    loading: 'Manifest yükleniyor…',
+    checking: 'Küme kontrol ediliyor…',
+    empty: 'Manifest boş',
+    unchanged: 'Uygulanacak değişiklik yok.',
+    dryRunOk: 'Sunucu bu değişikliği kabul etti.',
+    dryRunFail: 'Sunucu bu değişikliği reddetti.',
+    search: 'Ara',
+    format: 'Biçimle',
+    validate: 'Doğrula',
+    back: 'Geri',
+    confirm: 'Uygula',
+    create: 'Oluştur',
+    applying: 'Uygulanıyor…'
+  },
   tour: {
     skip: 'Atla',
     back: 'Geri',
@@ -1034,6 +1113,8 @@ export const tr: TranslationOverrides = {
       eventTimeline: 'Timeline',
       security: 'Güvenlik',
       portForwarding: 'Port Forwards',
+      gatewayApi: 'Gateway API',
+      externalSecrets: 'External Secrets',
       helmCharts: 'Helm',
       helmReleases: 'Helm',
       argoDashboard: 'Panel',
@@ -1266,7 +1347,9 @@ export const tr: TranslationOverrides = {
       unknown: 'bilinmiyor',
       empty: 'Henüz veri yok',
       noMetrics: 'Bu node’lar için metrik yok',
-      noDisk: 'Kök disk metriği yok (node-exporter gerekir)'
+      noDisk: 'Kök disk metriği yok (node-exporter gerekir)',
+      clickNode: 'Çubuğa tıklayınca node detayı açılır.',
+      clickPods: 'Dilimlere tıklayınca Pods açılır.'
     }
   },
   nodePods: {
@@ -1373,6 +1456,20 @@ export const tr: TranslationOverrides = {
     quotaWarnings: '{{count}} kota sınırlı görünüyor',
     hpaList: 'Horizontal Pod Autoscaler’lar',
     noHpas: 'HPA tanımlı değil'
+  },
+  certs: {
+    title: 'TLS sertifikası',
+    subject: 'Subject',
+    issuer: 'Issuer',
+    hosts: 'Host’lar',
+    notBefore: 'Geçerlilik',
+    notAfter: 'Bitiş',
+    expiring: 'Bitecek sertifikalar',
+    expiringTitle: 'Süresi dolmak üzere',
+    noneExpiring: 'Önümüzdeki {{days}} günde süresi dolacak sertifika yok',
+    daysLeft: '{{count}}g',
+    expiredDays: '{{count}}g önce',
+    invalid: 'Okunamadı'
   },
   networkOverview: {
     title: 'Network genel bakış',
@@ -1556,6 +1653,31 @@ export const tr: TranslationOverrides = {
     graphCrash: 'Harita çizilemedi. Yenilemeyi deneyin.',
     stats: '{{namespaces}} namespace · {{workloads}} iş yükü · {{services}} servis'
   },
+  yamlCompare: {
+    label: 'Başka bir kümeyle karşılaştır',
+    pickCluster: 'Bağlı bir küme seç',
+    thisCluster: 'Bu küme'
+  },
+  gatewayApi: {
+    empty: 'Bu kümede Gateway API CRD’leri yüklü değil.'
+  },
+  externalSecrets: {
+    empty: 'Bu kümede External Secrets CRD’leri yüklü değil.'
+  },
+  alerts: {
+    label: 'Uyarılar',
+    empty: 'Dikkat isteyen bir durum yok'
+  },
+  resourceViews: {
+    label: 'Görünümler',
+    empty: 'Kayıtlı görünüm yok',
+    save: 'Geçerli görünümü kaydet',
+    saveTitle: 'Görünümü kaydet',
+    saveConfirm: 'Kaydet',
+    namePlaceholder: 'Görünüme bir ad ver',
+    update: '“{{name}}” güncelle',
+    delete: 'Görünümü sil'
+  },
   resourceDetail: {
     tabs: {
       overview: 'Genel',
@@ -1575,6 +1697,18 @@ export const tr: TranslationOverrides = {
       status: 'Durum',
       age: 'Yaş',
       namespace: 'Namespace'
+    },
+    glance: {
+      title: 'Bir bakışta',
+      replicas: 'Replica',
+      hpa: 'HPA',
+      pdb: 'PDB',
+      readiness: 'Readiness',
+      liveness: 'Liveness',
+      startup: 'Startup',
+      requests: 'Request',
+      limits: 'Limit',
+      none: 'Yok'
     },
     metadata: {
       title: 'Sahiplik & metadata',
@@ -1620,7 +1754,10 @@ export const tr: TranslationOverrides = {
       ended: 'Log akışı bitti',
       noPods: 'Bu kaynak için pod bulunamadı.',
       waiting: '{{count}} akıştan log bekleniyor…',
-      unavailable: 'Log akışı kullanılamıyor. MagicLens’i yeniden başlat.'
+      unavailable: 'Log akışı kullanılamıyor. MagicLens’i yeniden başlat.',
+      noMatch: '“{{query}}” ile eşleşen satır yok.',
+      matchCount: '{{shown}} / {{total}}',
+      restarted: '── akış yeniden başladı ──'
     },
     workloadPods: {
       empty: 'Bu kaynak için pod bulunamadı.',
@@ -1640,6 +1777,24 @@ export const tr: TranslationOverrides = {
       events: 'Olaylar',
       notes: 'Sparks',
       yaml: 'YAML'
+    },
+    logs: {
+      filter: 'Loglarda ara',
+      previous: 'Önceki',
+      timestamps: 'Zaman damgası',
+      wrap: 'Kaydır',
+      following: 'Canlı',
+      paused: 'Duraklatıldı',
+      pausedBanner: 'Log akışı duraklatıldı',
+      restart: 'Yeniden başlat',
+      waiting: 'Log bekleniyor…',
+      noMatch: '“{{query}}” ile eşleşen satır yok.',
+      matchCount: '{{shown}} / {{total}}',
+      restarted: '── akış yeniden başladı ──',
+      ended: 'Log akışı bitti',
+      downloaded: 'Loglar kaydedildi: {{path}}',
+      container: 'Konteyner',
+      pod: 'Pod'
     },
     overview: {
       title: 'Genel bakış',
@@ -2535,8 +2690,8 @@ export const tr: TranslationOverrides = {
       upcoming: 'Yaklaşan'
     },
     inbox: {
-      title: 'Sparks gelen kutusu',
-      empty: 'Henüz ping yok',
+      title: 'Bildirimler',
+      empty: 'Henüz bildirim yok',
       markAllRead: 'Tümünü okundu say',
       clear: 'Temizle',
       openNotes: 'Sparks’a git'

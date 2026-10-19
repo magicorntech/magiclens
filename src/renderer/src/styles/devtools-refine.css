@@ -581,9 +581,9 @@
 .ml-chrome-actions--strip .app-top-bar-search--strip.is-expanded {
   height: var(--ml-action-size) !important;
   min-height: var(--ml-action-size) !important;
-  width: 210px !important;
-  min-width: 210px !important;
-  max-width: 210px !important;
+  width: 268px !important;
+  min-width: 268px !important;
+  max-width: 268px !important;
   padding: 0 0 0 10px !important;
   gap: 8px !important;
   border-radius: 0 !important;
@@ -618,16 +618,16 @@
 }
 
 .ml-chrome-actions--strip .ml-expandable-search-host {
-  width: 210px;
-  max-width: 210px;
+  width: 268px;
+  max-width: 268px;
 }
 
 .app-top-bar-actions .ml-expandable-search-host,
 .app-top-bar-actions .app-top-bar-search,
 .app-top-bar-actions .app-top-bar-search.is-expanded {
-  width: 240px;
-  min-width: 240px;
-  max-width: 240px;
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
   height: var(--ml-action-size) !important;
   min-height: var(--ml-action-size) !important;
   box-sizing: border-box;

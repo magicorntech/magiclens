@@ -16,6 +16,7 @@ import type { HelmChartSummary } from '@shared/types/helm'
 import type { TopologyGraphResponse } from '@shared/types/topology'
 import type { VisualizerGraphResponse } from '@shared/types/visualizer'
 import type { WorkloadContextInfo, WorkloadPodInfo } from '@shared/types/workload'
+import type { TlsCertInfo, TlsCertListResponse } from '@shared/types/tlsCerts'
 import { addCluster, listClusters, updateCluster } from '../persistence/clusterStore'
 import { saveClusterGroups } from '../persistence/clusterGroups'
 import { setHasSeenWelcome, setLastSeenSplashVersion } from '../persistence/appSettings'
@@ -156,6 +157,53 @@ export function demoTopologyGraph(namespace: string | 'ALL', clusterId = DEMO_CL
 
 export { demoSecurityReport } from './demoSecurity'
 
+function isoDaysFromNow(days: number): string {
+  return new Date(Date.now() + days * 86_400_000).toISOString()
+}
+
+export function demoTlsCerts(clusterId = DEMO_CLUSTER_ID): TlsCertListResponse {
+  if (!hasDemoCatalog(clusterId)) return { items: [] }
+  const items: TlsCertInfo[] = [
+    {
+      namespace: 'payments',
+      name: 'checkout-old-tls',
+      subject: 'checkout.aurora.shop',
+      issuer: "Let's Encrypt",
+      hosts: ['checkout.aurora.shop'],
+      ingressHosts: ['checkout.aurora.shop'],
+      notBefore: isoDaysFromNow(-400),
+      notAfter: isoDaysFromNow(-12),
+      daysRemaining: -12,
+      status: 'expired'
+    },
+    {
+      namespace: 'shop',
+      name: 'storefront-tls',
+      subject: 'shop.aurora.shop',
+      issuer: "Let's Encrypt",
+      hosts: ['shop.aurora.shop', 'www.aurora.shop'],
+      ingressHosts: ['shop.aurora.shop'],
+      notBefore: isoDaysFromNow(-80),
+      notAfter: isoDaysFromNow(11),
+      daysRemaining: 11,
+      status: 'expiring'
+    },
+    {
+      namespace: 'cert-manager',
+      name: 'wildcard-aurora-tls',
+      subject: '*.aurora.shop',
+      issuer: "Let's Encrypt",
+      hosts: ['*.aurora.shop'],
+      ingressHosts: [],
+      notBefore: isoDaysFromNow(-30),
+      notAfter: isoDaysFromNow(58),
+      daysRemaining: 58,
+      status: 'ok'
+    }
+  ]
+  return { items }
+}
+
 export function demoWorkloadContext(name: string): WorkloadContextInfo {
   const deploy = DEPLOYMENTS.find((d) => d.name === name)
   const app = APPS.find((a) => a.name === name)
@@ -167,7 +215,26 @@ export function demoWorkloadContext(name: string): WorkloadContextInfo {
       kubectlResource: app?.kind === 'StatefulSet' ? 'statefulset' : 'deployment',
       hasOwnerDeployment: false
     },
-    containers: [{ name, image: app?.image ?? `ghcr.io/aurora/${name}:1.4.2` }],
+    containers: [
+      {
+        name,
+        image: app?.image ?? `ghcr.io/aurora/${name}:1.4.2`,
+        requests: { cpu: '100m', memory: '128Mi' },
+        limits: { cpu: '500m', memory: '512Mi' },
+        probes: [
+          { type: 'readiness', handler: 'HTTP GET /ready:8080' },
+          { type: 'liveness', handler: 'HTTP GET /healthz:8080' }
+        ]
+      }
+    ],
+    hpa:
+      name === 'storefront'
+        ? { name: 'storefront', namespace: 'shop', minReplicas: 2, maxReplicas: 8, currentReplicas: desired || 2 }
+        : undefined,
+    pdb:
+      name === 'storefront'
+        ? { name: 'storefront', namespace: 'shop', minAvailable: '1' }
+        : undefined,
     paused: false,
     extensions: { argoRollouts: name === 'storefront', keda: name === 'checkout-api' }
   }

@@ -8,6 +8,7 @@ import { usePodMetrics } from '../../queries/usePodMetrics'
 import { usePodMetricsRange } from '../../queries/useMetricsRange'
 import { isPodDetailData } from '@shared/types/pod'
 import { usePodDetail } from '../../queries/usePodDetail'
+import { parseCpuQuantity, parseMemoryQuantity, usagePercent } from '@shared/quantity'
 import { formatBytes, formatCores } from '../../format'
 import { usePodMetricsHistoryStore } from '../../stores/podMetricsHistoryStore'
 import { seriesToChartPoints } from '../../utils/metricsChart'
@@ -95,6 +96,18 @@ export function PodMetricsPanel({
   const cpuChart = useHistorical ? historicalCpu : { points: sessionCpuPoints, seriesNames: containerNames }
   const memoryChart = useHistorical ? historicalMemory : { points: sessionMemoryPoints, seriesNames: containerNames }
 
+  const requestByName = useMemo(() => {
+    const map = new Map<string, { cpu: number; memory: number }>()
+    if (!isPodDetailData(detail)) return map
+    for (const c of detail.containers) {
+      map.set(c.name, {
+        cpu: parseCpuQuantity(c.requests?.cpu),
+        memory: parseMemoryQuantity(c.requests?.memory)
+      })
+    }
+    return map
+  }, [detail])
+
   if (metricsLoading || detailLoading || rangeLoading) return <LoadingState />
 
   if (!metrics?.metricsAvailable && !useHistorical) {
@@ -108,19 +121,44 @@ export function PodMetricsPanel({
     )
   }
 
+  const totalRequestCpu = [...requestByName.values()].reduce((s, r) => s + r.cpu, 0)
+  const totalRequestMemory = [...requestByName.values()].reduce((s, r) => s + r.memory, 0)
+  const cpuPct = metrics ? usagePercent(metrics.totalCpuUsageCores, totalRequestCpu) : null
+  const memPct = metrics ? usagePercent(metrics.totalMemoryUsageBytes, totalRequestMemory) : null
+
   const columns: ColumnsType<PodContainerMetric> = [
     { title: 'Container', dataIndex: 'name', key: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
     {
       title: 'CPU usage',
       key: 'cpu',
       sorter: (a, b) => a.cpuUsageCores - b.cpuUsageCores,
-      render: (_, c) => <Typography.Text>{formatCores(c.cpuUsageCores)}</Typography.Text>
+      render: (_, c) => {
+        const req = requestByName.get(c.name)?.cpu ?? 0
+        const pct = usagePercent(c.cpuUsageCores, req)
+        return (
+          <Typography.Text>
+            {formatCores(c.cpuUsageCores)}
+            {req > 0 ? ` / ${formatCores(req)}` : ''}
+            {pct != null ? ` (${Math.round(pct)}%)` : ''}
+          </Typography.Text>
+        )
+      }
     },
     {
       title: 'Memory usage',
       key: 'memory',
       sorter: (a, b) => a.memoryUsageBytes - b.memoryUsageBytes,
-      render: (_, c) => <Typography.Text>{formatBytes(c.memoryUsageBytes)}</Typography.Text>
+      render: (_, c) => {
+        const req = requestByName.get(c.name)?.memory ?? 0
+        const pct = usagePercent(c.memoryUsageBytes, req)
+        return (
+          <Typography.Text>
+            {formatBytes(c.memoryUsageBytes)}
+            {req > 0 ? ` / ${formatBytes(req)}` : ''}
+            {pct != null ? ` (${Math.round(pct)}%)` : ''}
+          </Typography.Text>
+        )
+      }
     }
   ]
 
@@ -144,17 +182,21 @@ export function PodMetricsPanel({
           <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
             <div style={{ flex: 1 }}>
               <Typography.Text type="secondary">Total CPU</Typography.Text>
-              <Progress percent={Math.min(100, metrics.totalCpuUsageCores * 100)} size="small" showInfo={false} />
-              <Typography.Text strong>{formatCores(metrics.totalCpuUsageCores)}</Typography.Text>
+              <Progress percent={Math.min(100, cpuPct ?? 0)} size="small" showInfo={false} />
+              <Typography.Text strong>
+                {formatCores(metrics.totalCpuUsageCores)}
+                {totalRequestCpu > 0 ? ` / ${formatCores(totalRequestCpu)}` : ''}
+                {cpuPct != null ? ` (${Math.round(cpuPct)}%)` : ''}
+              </Typography.Text>
             </div>
             <div style={{ flex: 1 }}>
               <Typography.Text type="secondary">Total Memory</Typography.Text>
-              <Progress
-                percent={Math.min(100, (metrics.totalMemoryUsageBytes / (1024 * 1024 * 1024)) * 20)}
-                size="small"
-                showInfo={false}
-              />
-              <Typography.Text strong>{formatBytes(metrics.totalMemoryUsageBytes)}</Typography.Text>
+              <Progress percent={Math.min(100, memPct ?? 0)} size="small" showInfo={false} />
+              <Typography.Text strong>
+                {formatBytes(metrics.totalMemoryUsageBytes)}
+                {totalRequestMemory > 0 ? ` / ${formatBytes(totalRequestMemory)}` : ''}
+                {memPct != null ? ` (${Math.round(memPct)}%)` : ''}
+              </Typography.Text>
             </div>
           </div>
 
