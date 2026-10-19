@@ -1,7 +1,8 @@
 name: Release
 
 # Triggered whenever a semantic version tag (v1.0.0, v1.0.1, v1.1.0, v2.0.0, ...) is pushed.
-# Builds desktop installers for macOS (dmg only, arm64 + x64) and Windows (nsis exe),
+# Builds desktop installers for macOS (dmg to download, zip for the auto-updater, arm64 + x64)
+# and Windows (nsis exe),
 # uploads them to a single GitHub Release for the tag, and writes an auto-generated
 # changelog into the release notes.
 on:

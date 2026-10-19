@@ -58,9 +58,12 @@ mac:
   target:
     - target: dmg
       arch: [x64, arm64]
+    # electron-updater on macOS installs from the zip. The website only offers the dmg.
+    - target: zip
+      arch: [x64, arm64]
 
 dmg:
-  writeUpdateInfo: true
+  writeUpdateInfo: false
 
 win:
   icon: build/icon.png
