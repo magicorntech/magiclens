@@ -2,18 +2,22 @@ name: Refresh release notes
 
 # Rewrites an already published release body from src/shared/whatsNew.ts.
 # No commit hashes and no compare URL.
+# The tag push that starts Release also changes this file's default in older
+# copies; do not run on that change. The Release workflow writes the notes
+# after the installers exist. This job only refreshes a release that is already up.
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag to update
-        required: true
-        default: v0.1.35
+        description: Release tag to update. Empty uses package.json.
+        required: false
+        default: ''
   push:
-    branches: [release/v0.1.35]
+    branches:
+      - 'release/**'
     paths:
       - scripts/release-notes.mjs
-      - .github/workflows/refresh-release-notes.yml
+      - src/shared/whatsNew.ts
 
 permissions:
   contents: write
@@ -24,16 +28,28 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="v$(node -p "require('./package.json').version")"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - name: Write notes
-        env:
-          RELEASE_TAG: ${{ github.event.inputs.tag || 'v0.1.35' }}
-        run: node scripts/release-notes.mjs "$RELEASE_TAG" > CHANGELOG_RELEASE.md
+        run: node scripts/release-notes.mjs "${{ steps.tag.outputs.tag }}" > CHANGELOG_RELEASE.md
 
       - name: Update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.event.inputs.tag || 'v0.1.35' }}
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
+          if ! gh release view "$RELEASE_TAG" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG is not published yet. The Release workflow writes these notes after the installers upload."
+            exit 0
+          fi
           gh release edit "$RELEASE_TAG" \
             --repo "${GITHUB_REPOSITORY}" \
             --notes-file CHANGELOG_RELEASE.md
