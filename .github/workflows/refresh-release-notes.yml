@@ -1,0 +1,39 @@
+name: Refresh release notes
+
+# Rewrites an already published release body from src/shared/whatsNew.ts.
+# No commit hashes and no compare URL.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to update
+        required: true
+        default: v0.1.34
+  push:
+    branches: [release/v0.1.34]
+    paths:
+      - scripts/release-notes.mjs
+      - .github/workflows/refresh-release-notes.yml
+
+permissions:
+  contents: write
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Write notes
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag || 'v0.1.34' }}
+        run: node scripts/release-notes.mjs "$RELEASE_TAG" > CHANGELOG_RELEASE.md
+
+      - name: Update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.tag || 'v0.1.34' }}
+        run: |
+          gh release edit "$RELEASE_TAG" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --notes-file CHANGELOG_RELEASE.md

@@ -3,8 +3,8 @@ name: Release
 # Triggered whenever a semantic version tag (v1.0.0, v1.0.1, v1.1.0, v2.0.0, ...) is pushed.
 # Builds desktop installers for macOS (dmg to download, zip for the auto-updater, arm64 + x64)
 # and Windows (nsis exe),
-# uploads them to a single GitHub Release for the tag, and writes an auto-generated
-# changelog into the release notes.
+# uploads them to a single GitHub Release for the tag, and writes the curated
+# What's New notes (no commit hashes or compare links).
 on:
   push:
     tags:
@@ -145,30 +145,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build changelog from git history
+      - name: Build release notes
         id: changelog
         run: |
-          CURRENT_TAG="${GITHUB_REF_NAME}"
-          PREV_TAG="$(git tag --sort=-creatordate | grep -A1 "^${CURRENT_TAG}$" | tail -n1)"
-          if [ "$PREV_TAG" == "$CURRENT_TAG" ] || [ -z "$PREV_TAG" ]; then
-            RANGE="$CURRENT_TAG"
-            echo "No previous tag found, using full history up to $CURRENT_TAG"
+          if node scripts/release-notes.mjs "${GITHUB_REF_NAME}" > CHANGELOG_RELEASE.md; then
+            echo "Using What's New notes for ${GITHUB_REF_NAME}"
           else
-            RANGE="$PREV_TAG..$CURRENT_TAG"
-            echo "Changelog range: $RANGE"
-          fi
-
-          {
-            echo "## What's changed"
-            echo ""
-            git log "$RANGE" --no-merges --pretty=format:"- %s (%h)"
-            echo ""
-            echo ""
-            if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$CURRENT_TAG" ]; then
-              echo "**Full changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${CURRENT_TAG}"
+            echo "No What's New entry; listing commit subjects only"
+            CURRENT_TAG="${GITHUB_REF_NAME}"
+            PREV_TAG="$(git tag --sort=-creatordate | grep -A1 "^${CURRENT_TAG}$" | tail -n1)"
+            if [ "$PREV_TAG" == "$CURRENT_TAG" ] || [ -z "$PREV_TAG" ]; then
+              RANGE="$CURRENT_TAG"
+            else
+              RANGE="$PREV_TAG..$CURRENT_TAG"
             fi
-          } > CHANGELOG_RELEASE.md
-
+            {
+              echo "## What's changed"
+              echo ""
+              git log "$RANGE" --no-merges --pretty=format:"- %s"
+              echo ""
+            } > CHANGELOG_RELEASE.md
+          fi
           cat CHANGELOG_RELEASE.md
 
       - name: Update GitHub Release with changelog
