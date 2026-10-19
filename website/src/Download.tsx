@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
-const API = 'https://api.github.com/repos/magicorntech/magiclens-releases/releases?per_page=30'
-const RELEASES_PAGE = 'https://github.com/magicorntech/magiclens-releases/releases'
+const API = 'https://api.github.com/repos/magicorntech/magiclens/releases?per_page=30'
+const RELEASES_PAGE = 'https://github.com/magicorntech/magiclens/releases'
 const CACHE_KEY = 'ml-releases-v1'
 const CACHE_MS = 10 * 60 * 1000
 
@@ -83,7 +83,6 @@ function choicesFor(os: Os, assets: Asset[]): Choice[] {
     if (os === 'mac') {
       const arm = /arm64/i.test(n)
       if (/\.dmg$/i.test(n)) out.push({ label: arm ? 'Apple Silicon' : 'Intel', hint: 'Disk image (.dmg)', asset: a })
-      else if (/mac\.zip$/i.test(n)) out.push({ label: arm ? 'Apple Silicon' : 'Intel', hint: 'ZIP archive', asset: a })
     } else if (os === 'windows') {
       if (/\.exe$/i.test(n)) out.push({ label: 'Windows 10 / 11 (x64)', hint: 'Installer (.exe)', asset: a })
     } else {

@@ -1,6 +1,6 @@
 import { WHATS_NEW } from '../../../src/shared/whatsNew'
 
-const REPO = 'https://github.com/magicorntech/magiclens-releases'
+const REPO = 'https://github.com/magicorntech/magiclens'
 
 /** Newest first, by numeric version. */
 function sortedVersions(): string[] {

@@ -11,8 +11,7 @@ import {
 
 const AUTO_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000 // 4 hours
 const REMIND_LATER_DELAY_MS = 60 * 60 * 1000 // 1 hour
-// Installers live in a public releases-only repository; the source repository is private.
-const RELEASES_BASE_URL = 'https://github.com/magicorntech/magiclens-releases/releases'
+const RELEASES_BASE_URL = 'https://github.com/magicorntech/magiclens/releases'
 const RESUME_CHECK_DELAY_MS = 8_000
 /** Tag can exist before CI finishes uploading latest-*.yml + installers. */
 const ARTIFACTS_PENDING_RETRY_MS = 3 * 60 * 1000

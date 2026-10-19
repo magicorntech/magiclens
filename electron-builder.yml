@@ -23,21 +23,13 @@ asarUnpack:
 
 # electron-updater reads this at runtime to know where to look for new releases.
 #
-# Installers are published to a separate, public releases-only repository so that the source repository
-# can stay private. Publishing there needs a token with Contents: write on it (RELEASES_TOKEN in CI).
-#
-# releaseType is "draft", not "release": the three platform builds run in parallel and macOS
-# (slower, due to notarization) finishes well after Windows/Linux. If each platform published
-# straight to a public release, there'd be a multi-minute window where the release exists with
-# some platforms' latest*.yml missing — any client checking for updates in that window gets a 404
-# on its own platform's file. Publishing as a draft keeps the release invisible to electron-updater
-# and the public API until every platform has uploaded; the "Generate changelog & finalize
-# release" job in release.yml flips it to published (`gh release edit --draft=false`) only after
-# all three builds succeed.
+# releaseType is "draft", not "release": macOS and Windows build in parallel and macOS
+# (slower, due to notarization) finishes later. Publishing as a draft keeps the release
+# invisible until both have uploaded; the changelog job flips it to published.
 publish:
   provider: github
   owner: magicorntech
-  repo: magiclens-releases
+  repo: magiclens
   releaseType: draft
 
 # Auto-update on macOS requires the app (and the downloaded update) to be code-signed.
@@ -66,12 +58,9 @@ mac:
   target:
     - target: dmg
       arch: [x64, arm64]
-    - target: zip
-      arch: [x64, arm64]
 
 dmg:
-  # Updates on macOS come from the zip target; a dmg blockmap is never used, so do not publish one.
-  writeUpdateInfo: false
+  writeUpdateInfo: true
 
 win:
   icon: build/icon.png
@@ -89,23 +78,5 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: always
   createStartMenuShortcut: true
-
-linux:
-  icon: build/icon.png
-  category: Development
-  target:
-    - target: AppImage
-      arch: [x64]
-    - target: deb
-      arch: [x64]
-
-deb:
-  depends:
-    - libgtk-3-0
-    - libnotify4
-    - libnss3
-    - libxss1
-    - libxtst6
-    - xdg-utils
 
 npmRebuild: false

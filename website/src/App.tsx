@@ -9,7 +9,7 @@ import { Vpn } from './pages/Vpn'
 import { DownloadModal, detectOs, type Os } from './Download'
 import { SiteCtx, shot, type Mode } from './ui'
 
-const GITHUB = 'https://github.com/magicorntech/magiclens-releases'
+const GITHUB = 'https://github.com/magicorntech/magiclens'
 const MAGICORN = 'https://magicorn.co/'
 
 type Route = 'home' | 'explore' | 'vpn' | 'molly' | 'sparks' | 'releases'
@@ -130,7 +130,7 @@ export function App(): React.JSX.Element {
             >
               {mode === 'dark' ? '☀' : '☾'}
             </button>
-            <a className="icon-link" href={GITHUB} aria-label="MagicLens releases on GitHub" title="Releases on GitHub">
+            <a className="icon-link" href={GITHUB} aria-label="MagicLens on GitHub" title="GitHub">
               <GithubIcon />
             </a>
             <button className="btn btn--small" onClick={() => ctx.openDownload()}>
