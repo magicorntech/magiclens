@@ -238,3 +238,26 @@ Yani tab bar, sayfa gövdesi ve Nodes overview 0'da, namespace butonu 8'de duruy
 - **2026-09-02 (menü çubuğu ikonu → template image):** Tepsi ikonu tam renkli `icon.png`'nin 18px'e küçültülmüş haliydi; hem gradyanlar/terminal rozeti o boyutta okunmuyordu hem de menü çubuğu temasına uyum sağlamıyordu. Yerine monokrom **template image** kondu (`resources/trayTemplate.png` + `@2x`): saf siyah + alfa, rengi AppKit veriyor — açık temada siyah, koyu temada beyaz, vurgulanınca doğru şekilde ters çevriliyor. Marka 18px'te okunacak şekilde yedigen + tekerleğe indirildi. Windows/Linux'ta template kavramı olmadığı ve tepsi arka planları çeşitli olduğu için orada renkli ikon korundu.
   **Rasterize sorunu:** SVG'yi PNG'ye çevirecek araç bulunamadı — `qlmanage` stroke-only SVG'yi boş render etti, Electron/Chromium gizli saydam pencerede `capturePage`'de takıldı (hem `offscreen: true` ile hem onsuz), rsvg/ImageMagick/cairosvg/sharp kurulu değil. İki adet 18px ikon için `sharp`/`node-canvas` bağımlılığı eklemek yerine [`scripts/build-tray-icon.mjs`](scripts/build-tray-icon.mjs) saf Node ile yazıldı: mesafe alanı + 4×4 supersampling ile rasterize, elle PNG kodlama (yerleşik zlib). Script **hem SVG'yi hem iki PNG'yi tek geometri tanımından** üretiyor, yani ikili doğruluk kaynağı yok.
 - **2026-09-02 (v0.1.19 yayınlandı):** İlk imzalı + notarize sürüm. CI 43 dk sürdü (önceki imzasız sürümler ~6 dk) — fark tamamen notarization; hesabın ilk gönderimi olduğu için Apple yavaş işledi, sonraki sürümlerde 2-5 dk'ya inmesi bekleniyor. CI log'unda imzalama kimliği yereldekiyle aynı hash çıktı (`BB4B37A8…`), yani secret'lar doğru çözüldü. 15 asset yayınlandı (dmg/zip × x64/arm64, exe, AppImage/deb, latest*.yml).
+
+## Demo media + marketing site (Oct 2026)
+- [x] Demo mode capture harness: `src/main/demoScreenshots.ts` (4K stills + real-mouse video scenes via frame subscription → ffmpeg)
+- [x] Demo data for Molly (`ai/demoMollyScript.ts`, `ai/demoMollyTools.ts`) and Sparks (`notes/demoNotes.ts`)
+- [x] Demo mode isolates `userData` **and** `documents` (the Sparks vault) — it must never touch real files
+- [x] Encoding: `scripts/encode-demo-media.mjs` (AVIF 4:4:4 + WebP, AV1 1440p, H.264 1440p, posters)
+- [x] Media-only multi-page site in `website/` (Home, Explore, Molly & AI, Sparks; 17 clips, 6 themes × light/dark, page gallery, lightbox, EN/TR)
+- [x] Fix: sidebar favourites rows no longer squash over each other when the list is long (`.ml-sidebar-list > *`)
+- [x] Demo: 6 favourite clusters, rich Sparks vault, no on-screen cursor (click ripple only)
+- [ ] Commit + deploy (not done; waiting for go-ahead)
+- Re-capture: `MAGICLENS_DEMO=1 MAGICLENS_SCREENSHOTS=1 MAGICLENS_CAPTURE=stills|themes|video MAGICLENS_SCENES=<name> MAGICLENS_SCREENSHOT_DIR=<dir> MAGICLENS_FFMPEG=<ffmpeg> npm run dev`
+
+## Site round 2 (Oct 16, 2026)
+- [x] VPN demo mode (`vpnManager` demo branches, `seedDemoVpn`): no processes, sudo or keychain; WireGuard one-click, Pritunl PIN+MFA
+- [x] Sparks graph: radial layout centred on the stage, centre-to-centre edges, glide transition
+- [x] Demo: platform-prod and payments-prod share the aurora catalog; Argo/Grafana/Prometheus show demo stand-in images (`DemoAppFrame`)
+- [x] Capture harness: no cursor or click markers, `MAGICLENS_VARIANT=light|dark` (White/Black schemes, `-dark` suffix), overview-free scenes, `vpn`, `themes`, `sparks-graph`, `webapps`
+- [x] Website: English only, GitHub icon, Magicorn credit, VPN page, light/dark media swap, theme reel
+- [x] Web-UI stand-ins (Argo CD/Grafana/Prometheus) cropped + host/IP masked by `scripts/prepare-demo-webapp-images.mjs`; `webapps` scene captured (light + dark)
+- [x] Media encoded and installed in `website/public/media` (240 MB: AVIF 1920/4K, WebP 1920, AV1 + H.264 1440p); site build passes
+- [ ] Open: Nodes pages still carry the "Nodes overview" header (table shares the screen); legacy `website/src/live` unused; no commit yet
+
+- [x] Website: Releases page (`#/releases`, fed by `src/shared/whatsNew.ts`) and a Download dialog (OS tabs, version picker, direct asset links from the GitHub releases API)
