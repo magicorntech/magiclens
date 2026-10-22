@@ -1,4 +1,24 @@
 import type { ResourceKind } from '@shared/resourceKinds'
+import type { VirtualPageKey } from '@shared/types/navigation'
+
+/** Virtual pages that can sit in a resource split pane beside a kind or another page. */
+const SPLITTABLE_VIRTUAL_PAGES = new Set<VirtualPageKey>([
+  'helmCharts',
+  'helmReleases',
+  'appGrafana',
+  'appPrometheus',
+  'appArgoCd',
+  'argoDashboard',
+  'argoApplications',
+  'argoApplicationSets',
+  'argoProjects',
+  'argoRepositories',
+  'argoClusters'
+])
+
+export function isSplittableVirtualPage(page: VirtualPageKey | null | undefined): page is VirtualPageKey {
+  return page != null && SPLITTABLE_VIRTUAL_PAGES.has(page)
+}
 
 export interface ResourceTabPreferences {
   pinned: ResourceKind[]
@@ -13,6 +33,9 @@ export interface ResourceTabPreferences {
   splitView: boolean
   splitLeftKind: ResourceKind | null
   splitRightKind: ResourceKind | null
+  /** When set, that pane shows the virtual page instead of its kind. */
+  splitLeftPage: VirtualPageKey | null
+  splitRightPage: VirtualPageKey | null
   /** Per-pane namespace while resource tabs are split (falls back to cluster namespace). */
   splitLeftNamespace: string | null
   splitRightNamespace: string | null
@@ -28,6 +51,8 @@ export const defaultResourceTabPreferences = (): ResourceTabPreferences => ({
   splitView: false,
   splitLeftKind: null,
   splitRightKind: null,
+  splitLeftPage: null,
+  splitRightPage: null,
   splitLeftNamespace: null,
   splitRightNamespace: null,
   focusedSplitPane: 'left'

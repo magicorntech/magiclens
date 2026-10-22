@@ -98,7 +98,8 @@ export const resourceNavLayout: NavLayoutItem[] = [
       { type: 'kind', kind: 'ValidatingWebhookConfigurations' },
       { type: 'kind', kind: 'ValidatingAdmissionPolicies' },
       { type: 'kind', kind: 'ValidatingAdmissionPolicyBindings' },
-      { type: 'virtual', key: 'externalSecrets', label: 'External Secrets' }
+      { type: 'virtual', key: 'externalSecrets', label: 'External Secrets' },
+      { type: 'virtual', key: 'tlsCerts', label: 'TLS Certificates' }
     ]
   },
   {

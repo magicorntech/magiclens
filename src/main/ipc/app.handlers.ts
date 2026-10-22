@@ -230,6 +230,7 @@ export function registerAppHandlers(): void {
   })
 
   ipcMain.handle(IPC.APP_OPEN_DEVTOOLS, (event): { ok: true } => {
+    if (app.isPackaged) return { ok: true }
     const win = windowFromEvent(event)
     win?.webContents.openDevTools({ mode: 'detach' })
     return { ok: true }

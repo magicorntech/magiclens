@@ -15,6 +15,7 @@ import {
   type ArgoSyncStatus
 } from '@shared/types/argocd'
 import type { ClusterClients } from './clusterManager'
+import { listEventsForObject, listRecentClusterEvents } from './eventsService'
 
 /**
  * Reads Argo CD state from its CRDs over the existing cluster connection. See the note in
@@ -334,19 +335,19 @@ export async function listArgoActivity(
 ): Promise<ArgoActivityEvent[]> {
   if (!namespace) return []
 
-  const res = await clients.core.listNamespacedEvent({ namespace })
+  const events = await listRecentClusterEvents(clients, { namespace, limit: 300 })
   const argoKinds = new Set(['Application', 'ApplicationSet', 'AppProject'])
 
-  return (res.items ?? [])
-    .filter((e) => argoKinds.has(e.involvedObject?.kind ?? ''))
-    .map((e) => ({
-      id: e.metadata?.uid ?? `${e.metadata?.namespace}/${e.metadata?.name}`,
-      kind: e.involvedObject?.kind ?? '',
-      name: e.involvedObject?.name ?? '',
-      namespace: e.involvedObject?.namespace ?? e.metadata?.namespace ?? '',
-      type: e.reason ?? '',
-      message: e.message ?? '',
-      timestamp: iso(e.lastTimestamp ?? e.eventTime ?? e.metadata?.creationTimestamp)
+  return events
+    .filter((event) => argoKinds.has(event.involvedKind))
+    .map((event) => ({
+      id: event.id,
+      kind: event.involvedKind,
+      name: event.involvedName,
+      namespace: event.involvedNamespace || namespace,
+      type: event.reason,
+      message: event.message,
+      timestamp: iso(event.lastTimestamp ?? event.firstTimestamp)
     }))
     .sort((a, b) => (b.timestamp ?? '').localeCompare(a.timestamp ?? ''))
     .slice(0, 100)
@@ -460,19 +461,16 @@ export async function getArgoApplicationDetail(
 
   let events: ArgoActivityEvent[] = []
   try {
-    const res = await clients.core.listNamespacedEvent({
-      namespace,
-      fieldSelector: `involvedObject.name=${name}`
-    })
-    events = (res.items ?? [])
-      .map((e) => ({
-        id: e.metadata?.uid ?? `${e.metadata?.namespace}/${e.metadata?.name}`,
-        kind: e.involvedObject?.kind ?? '',
-        name: e.involvedObject?.name ?? '',
-        namespace: e.involvedObject?.namespace ?? namespace,
-        type: e.reason ?? '',
-        message: e.message ?? '',
-        timestamp: iso(e.lastTimestamp ?? e.eventTime ?? e.metadata?.creationTimestamp)
+    const listed = await listEventsForObject(clients, namespace, 'Application', name)
+    events = listed
+      .map((event) => ({
+        id: event.id,
+        kind: event.involvedKind,
+        name: event.involvedName,
+        namespace: event.involvedNamespace || namespace,
+        type: event.reason,
+        message: event.message,
+        timestamp: iso(event.lastTimestamp ?? event.firstTimestamp)
       }))
       .sort((a, b) => (b.timestamp ?? '').localeCompare(a.timestamp ?? ''))
   } catch {

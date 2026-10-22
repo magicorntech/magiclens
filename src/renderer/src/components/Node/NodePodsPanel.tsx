@@ -1,19 +1,19 @@
 import { useMemo, useState } from 'react'
 import { Input, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { ResourceListItem } from '@shared/types/resource'
 import { useResourceList } from '../../queries/useResourceList'
-import { useLiveRefetchInterval } from '../../stores/useLiveRefetchInterval'
-import { useBottomPanelOptional } from '../Layout/BottomPanelContext'
-import { formatBytes, formatCores } from '../../format'
+import { podMetricsKey, usePodTableMetrics } from '../../queries/usePodTableMetrics'
+import { formatBytes } from '../../format'
 import { ResizableTable } from '../../utils/ResizableTable'
 import { StatusTag } from '../ResourceTable/StatusTag'
 import { AgeCell } from '../ResourceTable/AgeCell'
 import { ResourceRowActions } from '../ResourceTable/ResourceRowActions'
+import { UsageRequestCell } from '../Metrics/UsageRequestCell'
+import { useBottomPanelOptional } from '../Layout/BottomPanelContext'
 import { readPaginationChange, useTablePagination } from '../../utils/tablePagination'
-import { compareAgeTimestamps, compareColumnValues, statusSorter } from '../../utils/tableSort'
+import { compareAgeTimestamps, compareColumnValues, compareUsageRatio, statusSorter } from '../../utils/tableSort'
 
 interface NodePodsPanelProps {
   clusterId: string
@@ -35,7 +35,6 @@ export function NodePodsPanel({
 }: NodePodsPanelProps): React.JSX.Element {
   const { t } = useTranslation()
   const openResourceDetail = useBottomPanelOptional()?.openResourceDetail
-  const refetchInterval = useLiveRefetchInterval(isActive)
   const { data: podsData } = useResourceList(clusterId, PODS_LIST_NAMESPACE, 'Pods', isActive)
   const { setPagination, paginationProps } = useTablePagination([clusterId, nodeName])
   const [filter, setFilter] = useState('')
@@ -51,37 +50,19 @@ export function NodePodsPanel({
     return podsData.items.filter((p) => p.columns.node === nodeName)
   }, [podsData, nodeName])
 
-  const metricsQuery = useQuery({
-    queryKey: ['namespace-pod-metrics', clusterId, 'ALL'],
-    queryFn: () => window.api.pod.getNamespaceMetrics({ clusterId, namespace: 'ALL' }),
-    enabled: isActive,
-    refetchInterval,
-    placeholderData: keepPreviousData
-  })
-
-  const metricsByPod = useMemo(() => {
-    const map = new Map<string, { cpu: number; memory: number }>()
-    const data = metricsQuery.data
-    if (!data?.metricsAvailable) return map
-    for (const pod of data.pods) {
-      const key = pod.namespace ? `${pod.namespace}/${pod.podName}` : pod.podName
-      map.set(key, { cpu: pod.cpuUsageCores, memory: pod.memoryUsageBytes })
-    }
-    return map
-  }, [metricsQuery.data])
+  const podMetricsByKey = usePodTableMetrics(clusterId, PODS_LIST_NAMESPACE, isActive)
 
   const rows: NodePodRow[] = useMemo(
     () =>
       nodePods.map((pod) => {
-        const metrics =
-          metricsByPod.get(`${pod.namespace}/${pod.name}`) ?? metricsByPod.get(pod.name)
+        const metrics = podMetricsByKey.get(podMetricsKey(pod.namespace, pod.name))
         return {
           ...pod,
           cpuUsageCores: metrics?.cpu,
           memoryUsageBytes: metrics?.memory
         }
       }),
-    [nodePods, metricsByPod]
+    [nodePods, podMetricsByKey]
   )
 
   const filtered = useMemo(() => {
@@ -137,16 +118,56 @@ export function NodePodsPanel({
     {
       title: t('nodePods.cpu'),
       key: 'cpu',
-      width: 88,
-      sorter: (a, b) => (a.cpuUsageCores ?? -1) - (b.cpuUsageCores ?? -1),
-      render: (_, row) => (row.cpuUsageCores !== undefined ? formatCores(row.cpuUsageCores) : '—')
+      width: 168,
+      ellipsis: false,
+      sorter: (a, b, order) =>
+        compareUsageRatio(
+          a.cpuUsageCores,
+          Number(a.columns.cpuRequest) || 0,
+          b.cpuUsageCores,
+          Number(b.columns.cpuRequest) || 0,
+          order
+        ),
+      render: (_, row) => (
+        <UsageRequestCell
+          usage={row.cpuUsageCores}
+          request={Number(row.columns.cpuRequest) || 0}
+          formatUsage={(n) => n.toFixed(2)}
+          formatRequest={(n) => n.toFixed(2)}
+          clusterId={clusterId}
+          namespace={row.namespace}
+          podName={row.name}
+          metric="cpu"
+          isActive={isActive}
+        />
+      )
     },
     {
       title: t('nodePods.memory'),
       key: 'memory',
-      width: 96,
-      sorter: (a, b) => (a.memoryUsageBytes ?? -1) - (b.memoryUsageBytes ?? -1),
-      render: (_, row) => (row.memoryUsageBytes !== undefined ? formatBytes(row.memoryUsageBytes) : '—')
+      width: 180,
+      ellipsis: false,
+      sorter: (a, b, order) =>
+        compareUsageRatio(
+          a.memoryUsageBytes,
+          Number(a.columns.memoryRequest) || 0,
+          b.memoryUsageBytes,
+          Number(b.columns.memoryRequest) || 0,
+          order
+        ),
+      render: (_, row) => (
+        <UsageRequestCell
+          usage={row.memoryUsageBytes}
+          request={Number(row.columns.memoryRequest) || 0}
+          formatUsage={formatBytes}
+          formatRequest={formatBytes}
+          clusterId={clusterId}
+          namespace={row.namespace}
+          podName={row.name}
+          metric="memory"
+          isActive={isActive}
+        />
+      )
     },
     {
       title: t('nodePods.restarts'),
@@ -224,7 +245,7 @@ export function NodePodsPanel({
       <ResizableTable
         tableKey={`node-pods-${nodeName}`}
         rowKey="id"
-        size="small"
+        size="middle"
         columns={columns}
         dataSource={filtered}
         pagination={paginationProps(filtered.length)}

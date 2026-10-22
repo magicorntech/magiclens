@@ -15,6 +15,20 @@ export interface WhatsNewEntry {
 }
 
 export const WHATS_NEW: Record<string, WhatsNewEntry> = {
+  '0.1.36': {
+    title: 'Confirmed changes, events, and certificates',
+    items: [
+      'Molly can propose a scale, restart, or YAML apply. Nothing changes until you confirm, and the action stays on the resource.',
+      'Alert history remains after a problem clears. Snooze applies to that alert on that cluster.',
+      'A saved table view is listed only on the cluster where you saved it.',
+      'HPA rows show pod usage against the request.',
+      'TLS certificates have their own page. The Config overview count opens it.',
+      'Events for pods, workloads, nodes, and the cluster include newer Kubernetes events. An OOMKilled container still appears after the event expires.',
+      'Helm, Grafana, Prometheus, and Argo CD can sit in a split view.',
+      'CPU and memory columns sort by usage percent.',
+      'The packaged app does not open DevTools from the menu or a shortcut.'
+    ]
+  },
   '0.1.35': {
     title: 'Alerts, charts, and table defaults',
     items: [

@@ -9,8 +9,64 @@ import { listDynamicResources } from './dynamicResourceService'
 import { listRecentClusterEvents } from './eventsService'
 import { listHelmReleases } from './helmService'
 import { resourceRegistry } from './resourceRegistry'
+import { SEARCH_HEAVY_TIMEOUT_MS, SEARCH_LIST_CONCURRENCY, SEARCH_LIST_TIMEOUT_MS } from '@shared/searchLimits'
 
 const DEFAULT_LIMIT = 15
+const LIST_CACHE_MS = 30_000
+
+interface CachedList<T> {
+  at: number
+  items: T[]
+}
+
+const listCache = new Map<string, CachedList<unknown>>()
+
+function readCache<T>(key: string): T[] | null {
+  const hit = listCache.get(key)
+  if (!hit || Date.now() - hit.at > LIST_CACHE_MS) return null
+  return hit.items as T[]
+}
+
+function writeCache<T>(key: string, items: T[]): T[] {
+  listCache.set(key, { at: Date.now(), items })
+  return items
+}
+
+async function cachedLoad<T>(key: string, load: () => Promise<T[]>): Promise<T[]> {
+  const hit = readCache<T>(key)
+  if (hit) return hit
+  return writeCache(key, await load())
+}
+
+async function runPool(jobs: Array<() => Promise<void>>, limit: number): Promise<void> {
+  if (jobs.length === 0) return
+  let next = 0
+  const workers = Array.from({ length: Math.min(limit, jobs.length) }, async () => {
+    while (next < jobs.length) {
+      const job = jobs[next]
+      next += 1
+      await job()
+    }
+  })
+  await Promise.all(workers)
+}
+
+function withDeadline<T>(promise: Promise<T>, fallback: T, ms: number): Promise<T> {
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (value: T): void => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(value)
+    }
+    const timer = setTimeout(() => finish(fallback), ms)
+    promise.then(
+      (value) => finish(value),
+      () => finish(fallback)
+    )
+  })
+}
 
 const BUILTIN_KIND_MAP: Partial<Record<GlobalSearchType, ResourceKind>> = {
   namespaces: 'Namespaces',
@@ -52,7 +108,14 @@ async function searchBuiltinKind(
   limit: number
 ): Promise<GlobalSearchResult[]> {
   try {
-    const items = await resourceRegistry[kind].list(clients, 'ALL')
+    const cacheKey = `${clusterId}:kind:${kind}`
+    const items = await cachedLoad(cacheKey, async () =>
+      (await resourceRegistry[kind].list(clients, 'ALL')).map((item) => ({
+        name: item.name,
+        namespace: item.namespace,
+        statusText: item.statusText || undefined
+      }))
+    )
     const results: GlobalSearchResult[] = []
     for (const item of items) {
       if (!matchesSearchText(item.name, text) && !matchesSearchText(item.namespace, text)) continue
@@ -81,7 +144,7 @@ async function searchEvents(
   limit: number
 ): Promise<GlobalSearchResult[]> {
   try {
-    const events = await listRecentClusterEvents(clients, { limit: 200 })
+    const events = await cachedLoad(`${clusterId}:events`, () => listRecentClusterEvents(clients, { limit: 200 }))
     const results: GlobalSearchResult[] = []
     for (const event of events) {
       const haystacks = [event.reason, event.message, event.source]
@@ -112,7 +175,7 @@ async function searchHelmReleases(
   limit: number
 ): Promise<GlobalSearchResult[]> {
   try {
-    const releases = await listHelmReleases(clients)
+    const releases = await cachedLoad(`${clusterId}:helm`, () => listHelmReleases(clients))
     const results: GlobalSearchResult[] = []
     for (const release of releases) {
       const haystacks = [release.name, release.namespace, release.chartName, release.status]
@@ -142,7 +205,7 @@ async function searchCrds(
   limit: number
 ): Promise<GlobalSearchResult[]> {
   try {
-    const kinds = await listCustomResourceKinds(clients, false)
+    const kinds = await cachedLoad(`${clusterId}:crds`, () => listCustomResourceKinds(clients, false))
     const results: GlobalSearchResult[] = []
     for (const kind of kinds) {
       const haystacks = [kind.crdName, kind.kind, kind.group, kind.plural, ...kind.shortNames]
@@ -171,7 +234,7 @@ async function searchCustomResources(
   limit: number
 ): Promise<GlobalSearchResult[]> {
   try {
-    const kinds = await listCustomResourceKinds(clients, true)
+    const kinds = await cachedLoad(`${clusterId}:crds`, () => listCustomResourceKinds(clients, false))
     const matchingKinds = kinds
       .filter((k) => {
         if (!text.trim()) return true
@@ -217,7 +280,7 @@ export async function searchClusterResources(
   const text = req.query.trim()
   const groups = new Map<GlobalSearchType, GlobalSearchResult[]>()
 
-  const tasks: Promise<void>[] = []
+  const jobs: Array<() => Promise<void>> = []
 
   for (const searchType of RESOURCE_SEARCH_TYPES) {
     if (!types.has(searchType)) continue
@@ -225,8 +288,8 @@ export async function searchClusterResources(
     if (!kind) continue
 
     if (searchType === 'events') {
-      tasks.push(
-        searchEvents(clients, clusterId, clusterName, text, limit).then((results) =>
+      jobs.push(() =>
+        withDeadline(searchEvents(clients, clusterId, clusterName, text, limit), [], SEARCH_LIST_TIMEOUT_MS).then((results) =>
           pushResults(groups, searchType, results)
         )
       )
@@ -234,38 +297,40 @@ export async function searchClusterResources(
     }
 
     if (searchType === 'crds') {
-      tasks.push(
-        searchCrds(clients, clusterId, clusterName, text, limit).then((results) =>
+      jobs.push(() =>
+        withDeadline(searchCrds(clients, clusterId, clusterName, text, limit), [], SEARCH_LIST_TIMEOUT_MS).then((results) =>
           pushResults(groups, searchType, results)
         )
       )
       continue
     }
 
-    tasks.push(
-      searchBuiltinKind(clients, clusterId, clusterName, searchType, kind, text, limit).then((results) =>
-        pushResults(groups, searchType, results)
-      )
+    jobs.push(() =>
+      withDeadline(
+        searchBuiltinKind(clients, clusterId, clusterName, searchType, kind, text, limit),
+        [],
+        SEARCH_LIST_TIMEOUT_MS
+      ).then((results) => pushResults(groups, searchType, results))
     )
   }
 
   if (types.has('helm-releases')) {
-    tasks.push(
-      searchHelmReleases(clients, clusterId, clusterName, text, limit).then((results) =>
+    jobs.push(() =>
+      withDeadline(searchHelmReleases(clients, clusterId, clusterName, text, limit), [], SEARCH_HEAVY_TIMEOUT_MS).then((results) =>
         pushResults(groups, 'helm-releases', results)
       )
     )
   }
 
   if (types.has('custom-resources')) {
-    tasks.push(
-      searchCustomResources(clients, clusterId, clusterName, text, limit).then((results) =>
-        pushResults(groups, 'custom-resources', results)
+    jobs.push(() =>
+      withDeadline(searchCustomResources(clients, clusterId, clusterName, text, limit), [], SEARCH_HEAVY_TIMEOUT_MS).then(
+        (results) => pushResults(groups, 'custom-resources', results)
       )
     )
   }
 
-  await Promise.all(tasks)
+  await runPool(jobs, SEARCH_LIST_CONCURRENCY)
 
   return GLOBAL_SEARCH_TYPES.filter((type) => groups.has(type)).map((type) => ({
     type,

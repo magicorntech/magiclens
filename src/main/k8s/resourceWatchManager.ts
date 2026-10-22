@@ -41,10 +41,16 @@ function statusCodeOf(err: unknown): number | undefined {
   return undefined
 }
 
-function buildTargetKey(clusterId: string, namespace: string, target: ResourceWatchTarget): string {
+export function buildTargetKey(clusterId: string, namespace: string, target: ResourceWatchTarget): string {
   return target.type === 'builtin'
     ? `${clusterId}::${namespace}::builtin::${target.kind}`
     : `${clusterId}::${namespace}::dynamic::${target.apiVersion}::${target.kind}`
+}
+
+/** Same cluster/kind/namespace already has a watch: stop that session instead of opening a second one. */
+export function priorWatchSessionId(existing: string | undefined, next: string): string | null {
+  if (existing && existing !== next) return existing
+  return null
 }
 
 function buildDynamicWatchPath(
@@ -109,11 +115,8 @@ class ResourceWatchManager {
     this.stop(req.sessionId)
 
     const targetKey = buildTargetKey(req.clusterId, req.namespace, req.target)
-    const priorSessionId = this.targetKeyToSessionId.get(targetKey)
-    if (priorSessionId && priorSessionId !== req.sessionId) {
-      // Prevent duplicate watchers for the same cluster/kind/namespace.
-      this.stop(priorSessionId)
-    }
+    const priorSessionId = priorWatchSessionId(this.targetKeyToSessionId.get(targetKey), req.sessionId)
+    if (priorSessionId) this.stop(priorSessionId)
 
     let clients = clusterManager.get(req.clusterId)
     if (!clients) {

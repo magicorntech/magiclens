@@ -47,6 +47,7 @@ export function createAppWebPreferences(): WebPreferences {
     contextIsolation: true,
     nodeIntegration: false,
     sandbox: true,
+    devTools: !app.isPackaged,
     spellcheck: false,
     backgroundThrottling: true,
     v8CacheOptions: 'code',

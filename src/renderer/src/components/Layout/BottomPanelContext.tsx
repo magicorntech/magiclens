@@ -96,17 +96,35 @@ export function BottomPanelProvider({ children, clusterId }: { children: ReactNo
 
   const openResourceDetail = useCallback((params: OpenResourceDetailParams) => {
     setTabs((prev) => {
-      const existing = prev.find(
+      const sameItem = prev.find(
         (t) =>
           t.kind === 'resource-detail' &&
           t.clusterId === params.clusterId &&
           t.resourceKind === params.resourceKind &&
           t.item.id === params.item.id
       )
-      if (existing) {
-        setActiveTabId(existing.id)
+      if (sameItem) {
+        setActiveTabId(sameItem.id)
         return prev.map((t) =>
-          t.id === existing.id && t.kind === 'resource-detail' ? { ...t, item: params.item } : t
+          t.id === sameItem.id && t.kind === 'resource-detail' ? { ...t, item: params.item, title: params.item.name } : t
+        )
+      }
+      // One open node detail follows the node you click. Other kinds keep their own tabs.
+      const replaceNode =
+        params.resourceKind === 'Nodes'
+          ? prev.find(
+              (t) =>
+                t.kind === 'resource-detail' &&
+                t.clusterId === params.clusterId &&
+                t.resourceKind === 'Nodes'
+            )
+          : undefined
+      if (replaceNode && replaceNode.kind === 'resource-detail') {
+        setActiveTabId(replaceNode.id)
+        return prev.map((t) =>
+          t.id === replaceNode.id && t.kind === 'resource-detail'
+            ? { ...t, title: params.item.name, namespace: params.namespace, item: params.item }
+            : t
         )
       }
       const id = newId('detail')

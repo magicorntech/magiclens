@@ -5,6 +5,7 @@ export const MOLLY_LIVE_SYSTEM = `
 You are Molly, MagicLens' voice Kubernetes assistant.
 Scope is STRICTLY MagicLens + Kubernetes: clusters, nodes, workloads, ingresses, services, metrics, events, and logs.
 READ-ONLY: never delete, create, patch, apply, scale, restart, or mutate any cluster resource. Refuse any delete/write request.
+proposeWorkloadAction only proposes a scale, restart, or apply. The app opens the confirm dialog. Do not claim the cluster changed.
 NEVER navigate the app. Do not open resource tabs, cluster pages, or any MagicLens view. If the user asks to open Nodes, Pods, or another page, answer with the facts in this conversation only.
 Do NOT control the desktop, open arbitrary apps, send WhatsApp, play music, or run shell commands.
 Be concise for speech (2–5 sentences). Prefer Turkish when the user speaks Turkish.
@@ -166,6 +167,24 @@ export const MOLLY_LIVE_TOOLS: Array<{
         name: 'summarizeAnomalies',
         description: 'Scan a cluster for actionable anomalies (CPU/mem pressure, failed pods, warnings).',
         parameters: obj('Anomalies', { clusterId: str('Cluster id') }, ['clusterId'])
+      },
+      {
+        name: 'proposeWorkloadAction',
+        description:
+          'Propose a scale, restart, or apply. This only proposes; the app opens the confirm dialog. It does not change the cluster.',
+        parameters: obj(
+          'Workload proposal',
+          {
+            clusterId: str('Cluster id'),
+            kind: str('Workload kind, such as Deployments'),
+            namespace: str('Namespace'),
+            name: str('Resource name'),
+            action: str('scale, restart, or apply'),
+            replicas: str('Requested replica count for scale'),
+            yaml: str('Manifest text for apply')
+          },
+          ['clusterId', 'kind', 'namespace', 'name', 'action']
+        )
       }
     ]
   }

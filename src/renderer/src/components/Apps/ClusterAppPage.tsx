@@ -8,6 +8,7 @@ import { Icon } from '../ui/Icon'
 import { DemoAppFrame } from './DemoAppFrame'
 import { ArgoAppLogo, GrafanaLogo, PrometheusLogo } from '../../icons/AppsLogos'
 import { useClusterStore } from '../../stores/clusterStore'
+import { clusterAppPartition } from './clusterAppPartition'
 
 const KIND_BY_PAGE = {
   appArgoCd: 'argocd',
@@ -234,10 +235,10 @@ export function ClusterAppPage({ clusterId, page }: ClusterAppPageProps): React.
               webviewRef.current = el
             }}
             src={webviewSrc}
-            partition={`persist:cluster-app-${clusterId}-${kind}`}
+            partition={clusterAppPartition(clusterId, kind)}
             key={`${clusterId}-${kind}`}
             allowpopups
-            webpreferences="contextIsolation=yes, nodeIntegration=no, sandbox=yes"
+            webpreferences={`contextIsolation=yes, nodeIntegration=no, sandbox=yes${import.meta.env.DEV ? '' : ',devTools=no'}`}
           />
         ) : null}
       </div>

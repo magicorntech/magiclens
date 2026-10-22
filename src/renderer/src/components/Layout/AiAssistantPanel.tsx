@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Input, Select, Tooltip } from 'antd'
 import { Bot, Mic, Minimize2, Settings2, Sparkles, Square, Trash2, Send } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +10,7 @@ import { useResizableDrawerWidth } from '../../hooks/useResizableDrawerWidth'
 import { resolveActiveProvider, useAiAgentStore, type AiChatMessage } from '../../stores/aiAgentStore'
 import { selectActiveLines, useMollyStore, type MollyChatLine } from '../../stores/mollyStore'
 import { MollyToolCharts } from '../Molly/MollyToolCharts'
+import { MollyWorkloadProposal } from '../Molly/MollyWorkloadProposal'
 import { MollyVoiceHud, orbStateToHudPhase } from '../Molly/MollyVoiceHud'
 import './aiAssistant.css'
 
@@ -313,9 +314,12 @@ export function AiAssistantPanel({
                   {line.tools && line.tools.length > 0 ? (
                     <div className="ml-ai-chat__actions">
                       {line.tools.map((tool, idx) => (
-                        <span key={`${line.id}-t-${idx}`} className="ml-ai-assistant__chip">
-                          {tool.name}: {tool.summary}
-                        </span>
+                        <Fragment key={`${line.id}-t-${idx}`}>
+                          <span className="ml-ai-assistant__chip">
+                            {tool.name}: {tool.summary}
+                          </span>
+                          <MollyWorkloadProposal tool={tool} />
+                        </Fragment>
                       ))}
                     </div>
                   ) : null}

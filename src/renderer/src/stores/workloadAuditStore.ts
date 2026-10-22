@@ -35,3 +35,19 @@ export function recordWorkloadAudit(
 ): void {
   useWorkloadAuditStore.getState().addEntry(entry)
 }
+
+const SECRET_MATERIAL_RE = /-----BEGIN [A-Z0-9 ]*(?:PRIVATE KEY|CERTIFICATE)-----/i
+
+/** Scale and restart commands are patches. Hide anything that looks like a Secret body. */
+export function workloadAuditCommandText(command: string | undefined): string | null {
+  const text = command?.trim()
+  if (!text || SECRET_MATERIAL_RE.test(text)) return null
+  return text
+}
+
+/** Drop error text that contains key or certificate material. */
+export function workloadAuditErrorText(error: string | undefined): string | undefined {
+  if (!error) return undefined
+  if (SECRET_MATERIAL_RE.test(error)) return undefined
+  return error.length > 400 ? `${error.slice(0, 400)}…` : error
+}

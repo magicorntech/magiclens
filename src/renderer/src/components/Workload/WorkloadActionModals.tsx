@@ -14,6 +14,7 @@ interface WorkloadActionModalsProps {
   namespace: string
   name: string
   workload: WorkloadActions
+  initialReplicas?: number
 }
 
 export function WorkloadActionModals({
@@ -21,7 +22,8 @@ export function WorkloadActionModals({
   kind,
   namespace,
   name,
-  workload
+  workload,
+  initialReplicas
 }: WorkloadActionModalsProps): React.JSX.Element {
   const modal = workload.modal as WorkloadModal
 
@@ -34,6 +36,7 @@ export function WorkloadActionModals({
         name={name}
         context={workload.context}
         loading={workload.actionLoading}
+        initialReplicas={initialReplicas}
         onCancel={() => workload.setModal(null)}
         onConfirm={workload.confirmScale}
       />

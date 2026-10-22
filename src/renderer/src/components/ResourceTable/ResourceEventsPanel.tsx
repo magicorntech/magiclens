@@ -1,12 +1,9 @@
-import { Empty, Tag, Typography } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
+import { Empty, Typography } from 'antd'
 import type { ResourceMutationTarget } from '@shared/types/resourceMutation'
-import type { ResourceEventItem } from '@shared/types/resourceEvents'
 import { useResourceEvents } from '../../queries/useResourceEvents'
 import { readPaginationChange, embeddedTablePagination, useTablePagination } from '../../utils/tablePagination'
 import { ResizableTable } from '../../utils/ResizableTable'
-import { AgeCell } from './AgeCell'
-import { compareAgeTimestamps, compareNumericStrings } from '../../utils/tableSort'
+import { useEventColumns } from './eventColumns'
 
 interface ResourceEventsPanelProps {
   clusterId: string
@@ -17,55 +14,6 @@ interface ResourceEventsPanelProps {
   embedded?: boolean
 }
 
-const columns: ColumnsType<ResourceEventItem> = [
-  {
-    title: 'Type',
-    dataIndex: 'type',
-    key: 'type',
-    width: 90,
-    sorter: (a, b) => a.type.localeCompare(b.type),
-    render: (v: string) => <Tag color={v === 'Warning' ? 'gold' : 'blue'}>{v}</Tag>
-  },
-  {
-    title: 'Reason',
-    dataIndex: 'reason',
-    key: 'reason',
-    width: 160,
-    ellipsis: true,
-    sorter: (a, b) => a.reason.localeCompare(b.reason, undefined, { sensitivity: 'base' })
-  },
-  {
-    title: 'Message',
-    dataIndex: 'message',
-    key: 'message',
-    ellipsis: true,
-    sorter: (a, b) => a.message.localeCompare(b.message, undefined, { sensitivity: 'base' })
-  },
-  {
-    title: 'Count',
-    dataIndex: 'count',
-    key: 'count',
-    width: 70,
-    sorter: (a, b) => compareNumericStrings(String(a.count), String(b.count))
-  },
-  {
-    title: 'Last seen',
-    dataIndex: 'lastTimestamp',
-    key: 'lastTimestamp',
-    width: 110,
-    sorter: (a, b) => compareAgeTimestamps(a.lastTimestamp, b.lastTimestamp),
-    render: (v: string | null) => <AgeCell timestamp={v} />
-  },
-  {
-    title: 'Source',
-    dataIndex: 'source',
-    key: 'source',
-    width: 140,
-    ellipsis: true,
-    sorter: (a, b) => a.source.localeCompare(b.source, undefined, { sensitivity: 'base' })
-  }
-]
-
 export function ResourceEventsPanel({
   clusterId,
   namespace,
@@ -74,6 +22,7 @@ export function ResourceEventsPanel({
   isActive,
   embedded = false
 }: ResourceEventsPanelProps): React.JSX.Element {
+  const columns = useEventColumns()
   const { data, isLoading, isError, error } = useResourceEvents(clusterId, namespace, name, target, isActive)
   const { pagination, setPagination, paginationProps } = useTablePagination([
     clusterId,
@@ -95,7 +44,7 @@ export function ResourceEventsPanel({
   }
 
   const events = data?.events ?? []
-  const tableScroll = embedded ? { x: 720 } : undefined
+  const tableScroll = { x: 860 }
 
   if (!isLoading && events.length === 0) {
     return <Empty description="No events for this resource" />

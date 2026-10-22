@@ -37,6 +37,7 @@ Allowed tools:
 - getSecurity — args: { clusterId }. Read the latest Security page scan: score, findings, and recommendations. Does not start a scan.
 - startSecurityScan — args: { clusterId }. Start a new MagicLens security scan and return the new recommendations. Use only when the user asks to scan or rescan.
 - summarizeAnomalies — args: { clusterId }
+- proposeWorkloadAction — args: { clusterId, kind, namespace, name, action, replicas?, yaml? }. action is scale, restart, or apply. replicas is the requested count for scale. yaml is the manifest text for apply. This tool only proposes; the app opens the confirm dialog. It does not change the cluster.
 Rules:
 - Never invent cluster IDs; use listClusters first if unsure.
 - For any resource question, call listResources or inspectResource first. Do not refuse because a kind is unfamiliar. CRDs and operator types are looked up on the cluster.
@@ -51,6 +52,7 @@ Rules:
 - After tools return, answer the user in plain language (no JSON) unless you need another tool.
 - READ-ONLY only: never delete, create, patch, apply, scale, restart, or mutate. Refuse delete requests politely.
 - Do not claim you mutated the cluster — you have no write or delete permission.
+- proposeWorkloadAction only proposes a scale, restart, or apply. The app opens the confirm dialog. Do not claim the cluster changed.
 - Do not volunteer startup scans or unsolicited findings — wait for the user.
 `.trim()
 

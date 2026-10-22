@@ -12,7 +12,13 @@ import {
   parseGlobalSearchQuery
 } from '@shared/globalSearchKeywords'
 import { searchSecurityRuleBook } from '@shared/securityCatalog'
-import { GLOBAL_SEARCH_TYPES, type GlobalSearchGroup, type GlobalSearchResult, type GlobalSearchType } from '@shared/types/search'
+import {
+  GLOBAL_SEARCH_TYPES,
+  type GlobalSearchGroup,
+  type GlobalSearchResponse,
+  type GlobalSearchResult,
+  type GlobalSearchType
+} from '@shared/types/search'
 import { HighlightText } from '../ClusterTabs/ClusterSearchInput'
 import { matchesSearch } from '../../clusterFilter'
 import { useClusterStore } from '../../stores/clusterStore'
@@ -23,9 +29,38 @@ import { useNotesStore } from '../../stores/notesStore'
 import { useSecurityStore } from '../../stores/securityStore'
 import { shortcutParts } from '@shared/types/keyboardShortcuts'
 import { kindIcons } from '../../resourceConfig/kinds.renderer'
+import { keepSearchResult, SEARCH_REQUEST_TIMEOUT_MS } from '@shared/searchLimits'
 
 const FLAT_ITEM_ATTR = 'data-global-search-index'
 const LOCAL_SEARCH_TYPES = new Set<GlobalSearchType>(['clusters', 'sparks', 'security'])
+const FAST_SEARCH_TYPES = new Set<GlobalSearchType>([
+  'namespaces',
+  'pods',
+  'deployments',
+  'statefulsets',
+  'daemonsets',
+  'services',
+  'ingresses',
+  'configmaps',
+  'nodes'
+])
+const SEARCH_TIMEOUT_ERROR = 'search-timeout'
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error('timeout')), ms)
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer)
+        resolve(value)
+      },
+      (error: unknown) => {
+        window.clearTimeout(timer)
+        reject(error instanceof Error ? error : new Error(String(error)))
+      }
+    )
+  })
+}
 
 /** Prefer the leaf name for long ARNs / paths so result rows stay scannable. */
 function shortDisplayName(name: string): string {
@@ -179,6 +214,7 @@ export function GlobalSearchModal(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef<InputRef>(null)
+  const searchGeneration = useRef(0)
   const listRef = useRef<HTMLDivElement>(null)
 
   const parsed = useMemo(() => parseGlobalSearchQuery(query, typeFilter), [query, typeFilter])
@@ -319,14 +355,24 @@ export function GlobalSearchModal(): React.JSX.Element {
     typeFilter
   ])
 
-  const targetCluster = useMemo(() => {
-    const connected = clusters.filter((c) => c.status === 'connected')
-    if (activeClusterId) {
-      const active = connected.find((c) => c.id === activeClusterId)
-      if (active) return active
-    }
-    return connected[0] ?? null
-  }, [clusters, activeClusterId])
+  const searchTargetKey = useMemo(() => {
+    const connected = clusters.filter((cluster) => cluster.status === 'connected')
+    const active = activeClusterId ? connected.find((cluster) => cluster.id === activeClusterId) : undefined
+    const picked = searchAllConnected ? connected : active ? [active] : connected.slice(0, 1)
+    return picked
+      .map((cluster) => `${cluster.id}\t${cluster.customName || cluster.contextName || ''}`)
+      .join('\n')
+  }, [activeClusterId, clusters, searchAllConnected])
+
+  const searchClusterLabel = useMemo(() => {
+    const names = searchTargetKey
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => shortDisplayName(line.split('\t')[1] || line.split('\t')[0] || ''))
+      .filter(Boolean)
+    if (names.length <= 3) return names.join(', ')
+    return `${names.slice(0, 3).join(', ')} +${names.length - 3}`
+  }, [searchTargetKey])
 
   useEffect(() => {
     if (!open) return
@@ -339,17 +385,21 @@ export function GlobalSearchModal(): React.JSX.Element {
     if (!open) {
       setApiGroups([])
       setError(null)
+      setLoading(false)
       return
     }
 
-    const targets = searchAllConnected
-      ? clusters.filter((cluster) => cluster.status === 'connected').slice(0, 6)
-      : targetCluster
-        ? [targetCluster]
-        : []
+    const targets = searchTargetKey
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [id, name] = line.split('\t')
+        return { id, name: name || id }
+      })
 
     if (targets.length === 0 || searchTypes.length === 0) {
       setApiGroups([])
+      setLoading(false)
       return
     }
 
@@ -359,42 +409,80 @@ export function GlobalSearchModal(): React.JSX.Element {
       return
     }
 
-    let cancelled = false
+    const generation = ++searchGeneration.current
     const timer = window.setTimeout(() => {
+      const runSearch = async (
+        types: GlobalSearchType[]
+      ): Promise<{ groups: GlobalSearchGroup[]; errors: string[]; timedOut: boolean }> => {
+        if (types.length === 0) return { groups: [], errors: [], timedOut: false }
+        const settled = await Promise.allSettled(
+          targets.map((cluster) =>
+            withTimeout(
+              window.api.search.resources({
+                clusterId: cluster.id,
+                clusterName: cluster.name,
+                query: parsed.text,
+                types,
+                limitPerType
+              }),
+              SEARCH_REQUEST_TIMEOUT_MS
+            )
+          )
+        )
+        const groups: GlobalSearchGroup[] = []
+        const errors: string[] = []
+        let timedOut = false
+        for (const item of settled) {
+          if (item.status === 'rejected') {
+            timedOut = true
+            continue
+          }
+          const res: GlobalSearchResponse = item.value
+          if ('error' in res) errors.push(res.error)
+          else groups.push(...res.groups)
+        }
+        return { groups: mergeSearchGroups(groups, limitPerType), errors, timedOut }
+      }
+
+      const fastTypes = searchTypes.filter((type) => FAST_SEARCH_TYPES.has(type))
+      const slowTypes = searchTypes.filter((type) => !FAST_SEARCH_TYPES.has(type))
+      const primary = fastTypes.length > 0 ? fastTypes : slowTypes
+      const secondary = fastTypes.length > 0 ? slowTypes : []
+
       setLoading(true)
       setError(null)
-      void Promise.all(
-        targets.map((cluster) =>
-          window.api.search.resources({
-            clusterId: cluster.id,
-            clusterName: cluster.customName,
-            query: parsed.text,
-            types: searchTypes,
-            limitPerType
-          })
+      void runSearch(primary).then(async (first) => {
+        if (!keepSearchResult(generation, searchGeneration.current)) return
+        setError(
+          first.groups.length === 0 && first.errors[0]
+            ? first.errors[0]
+            : first.timedOut && first.groups.length === 0
+              ? SEARCH_TIMEOUT_ERROR
+              : null
         )
-      )
-        .then((responses) => {
-          if (cancelled) return
-          const groups: GlobalSearchGroup[] = []
-          const errors: string[] = []
-          for (const res of responses) {
-            if ('error' in res) errors.push(res.error)
-            else groups.push(...res.groups)
-          }
-          setError(groups.length === 0 && errors[0] ? errors[0] : null)
-          setApiGroups(mergeSearchGroups(groups, limitPerType))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 250)
+        setApiGroups(first.groups)
+        if (secondary.length === 0) {
+          setLoading(false)
+          return
+        }
+        const second = await runSearch(secondary)
+        if (!keepSearchResult(generation, searchGeneration.current)) return
+        setApiGroups(mergeSearchGroups([...first.groups, ...second.groups], limitPerType))
+        if (first.groups.length === 0 && second.groups.length === 0) {
+          setError(second.errors[0] ?? (second.timedOut ? SEARCH_TIMEOUT_ERROR : null))
+        }
+        setLoading(false)
+      }).catch(() => {
+        if (!keepSearchResult(generation, searchGeneration.current)) return
+        setLoading(false)
+      })
+    }, 160)
 
     return () => {
-      cancelled = true
+      searchGeneration.current += 1
       window.clearTimeout(timer)
     }
-  }, [clusters, limitPerType, open, parsed.text, searchAllConnected, searchTypes, targetCluster, typeFilter])
+  }, [limitPerType, open, parsed.text, searchTargetKey, searchTypes, typeFilter])
 
   const allGroups = useMemo(
     () => [...clusterGroups, ...sparkGroups, ...securityGroups, ...apiGroups],
@@ -504,6 +592,7 @@ export function GlobalSearchModal(): React.JSX.Element {
 
   const showEmpty = !loading && flatResults.length === 0 && query.trim().length > 0
   const showHint = !loading && flatResults.length === 0 && query.trim().length === 0
+  const showSearching = loading && flatResults.length === 0
 
   return (
     <Modal
@@ -511,7 +600,8 @@ export function GlobalSearchModal(): React.JSX.Element {
       open={open}
       onCancel={closeSearch}
       footer={null}
-      width={720}
+      width={820}
+      centered
       destroyOnHidden
       className="global-search-modal"
       styles={{ body: { padding: 0 } }}
@@ -520,13 +610,12 @@ export function GlobalSearchModal(): React.JSX.Element {
       <div className="global-search-header">
         <Input
           ref={inputRef}
-          prefix={<Icon icon={Search} variant="detail" />}
+          prefix={<Icon icon={Search} size={15} />}
           placeholder={t('search.placeholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleInputKeyDown}
           variant="borderless"
-          size="large"
           allowClear
         />
       </div>
@@ -551,16 +640,19 @@ export function GlobalSearchModal(): React.JSX.Element {
         })}
       </div>
 
+      {loading && flatResults.length > 0 ? <div className="global-search-loading-bar" /> : null}
+
       <div className="global-search-body" ref={listRef}>
-        {loading && (
+        {showSearching && (
           <div className="global-search-loading">
-            <Spin size="small" /> {t('search.searching')}
+            <Spin />
+            <span>{t('search.searching')}</span>
           </div>
         )}
 
         {error && (
           <Typography.Text type="danger" className="global-search-error">
-            {error}
+            {error === SEARCH_TIMEOUT_ERROR ? t('search.timedOut') : error}
           </Typography.Text>
         )}
 
@@ -582,9 +674,9 @@ export function GlobalSearchModal(): React.JSX.Element {
                 ))}
               </div>
             ) : null}
-            {targetCluster ? (
+            {searchClusterLabel ? (
               <p className="global-search-hint__meta">
-                {t('search.searchingIn', { cluster: shortDisplayName(targetCluster.customName) })}
+                {t('search.searchingIn', { cluster: searchClusterLabel })}
               </p>
             ) : (
               <p className="global-search-hint__meta global-search-hint__meta--warn">
@@ -651,6 +743,16 @@ export function GlobalSearchModal(): React.JSX.Element {
   )
 }
 
+function ClusterMark({ name }: { name: string }): React.JSX.Element | null {
+  const label = shortDisplayName(name)
+  if (!label) return null
+  return (
+    <span className="global-search-item-meta" title={name}>
+      {label}
+    </span>
+  )
+}
+
 function ResultRow({
   result,
   query,
@@ -706,9 +808,7 @@ function ResultRow({
               {[result.namespace, result.kind, result.subtitle].filter(Boolean).join(' · ')}
             </span>
           </span>
-          <span className="global-search-item-meta" title={result.clusterName}>
-            {shortDisplayName(result.clusterName)}
-          </span>
+          <ClusterMark name={result.clusterName} />
         </>
       )
     case 'helm-release':
@@ -726,6 +826,7 @@ function ResultRow({
               </span>
             </span>
           </span>
+          <ClusterMark name={result.clusterName} />
         </>
       )
     case 'crd':
@@ -740,6 +841,7 @@ function ResultRow({
               {result.kind} · {result.group}
             </span>
           </span>
+          <ClusterMark name={result.clusterName} />
         </>
       )
     case 'custom-resource':
@@ -754,6 +856,7 @@ function ResultRow({
               {[result.namespace, result.kind, result.apiVersion].filter(Boolean).join(' · ')}
             </span>
           </span>
+          <ClusterMark name={result.clusterName} />
         </>
       )
     case 'event':
@@ -775,6 +878,7 @@ function ResultRow({
                 .join(' · ')}
             </span>
           </span>
+          <ClusterMark name={result.clusterName} />
         </>
       )
     case 'security':

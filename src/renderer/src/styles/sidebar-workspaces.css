@@ -732,6 +732,7 @@
 .ml-sidebar--collapsed .ml-sidebar-footer {
   width: 100% !important;
   align-items: center !important;
+  margin-top: auto !important;
   padding: 6px 0 10px !important;
 }
 

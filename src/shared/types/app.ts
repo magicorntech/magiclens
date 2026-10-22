@@ -199,6 +199,10 @@ export interface DisplaySettings {
   workspaceDockMagnification: boolean
   /** Show the connected namespace chip on sidebar cluster items (default on). */
   showClusterNamespace: boolean
+  /**
+   * Resource navigation icon strength, 40–100. 100 is full; lower values fade the icons.
+   */
+  navIconBrightness: number
   /** Soft UI font / weight / contrast tweaks (does not replace color themes). */
   uiTypography: UiTypographyPrefs
   resourceDetailPlacement: ResourceDetailPlacement
@@ -232,6 +236,12 @@ export interface DisplaySettings {
   kubeconfigScanPath: string
 }
 
+export function normalizeNavIconBrightness(value: unknown): number {
+  const n = typeof value === 'number' ? value : 100
+  if (!Number.isFinite(n)) return 100
+  return Math.min(100, Math.max(40, Math.round(n)))
+}
+
 export const defaultDisplaySettings: DisplaySettings = {
   showClusterTabLogos: true,
   showResourceTabIcons: true,
@@ -240,6 +250,7 @@ export const defaultDisplaySettings: DisplaySettings = {
   showSidebarLogos: false,
   workspaceDockMagnification: true,
   showClusterNamespace: true,
+  navIconBrightness: 100,
   uiTypography: defaultUiTypography,
   resourceDetailPlacement: 'drawer',
   resourceDetailMaskBlur: false,

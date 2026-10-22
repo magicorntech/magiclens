@@ -291,7 +291,20 @@ export const en = {
         deploymentUnavailable: 'Deployments with fewer ready replicas than desired.',
         certExpiring: 'TLS secrets inside the warning window.',
         certExpired: 'TLS secrets past their notAfter date.'
-      }
+      },
+      historyTitle: 'Alert history',
+      historyHint: 'Cleared alerts stay here. A snooze applies only to this alert on this cluster.',
+      activeTitle: 'Active',
+      activeEmpty: 'No active alerts.',
+      clearedTitle: 'Cleared',
+      clearedEmpty: 'No cleared alerts.',
+      clearedAt: 'Cleared {{time}}',
+      snoozeHour: '1 hour',
+      snoozeDay: 'Until tomorrow',
+      snoozeCleared: 'Until cleared',
+      unsnooze: 'Unsnooze',
+      snoozedUntil: 'Snoozed until {{until}}',
+      snoozedUntilCleared: 'Snoozed until this alert clears'
     },
     updates: {
       checkAutomatically: 'Check for updates automatically',
@@ -377,6 +390,8 @@ export const en = {
       showClusterNamespace: 'Show connected namespace',
       showClusterNamespaceHint:
         'When enabled, the selected namespace is shown as a chip on connected clusters in the left sidebar.',
+      navIconBrightness: 'Navigation icon brightness',
+      navIconBrightnessHint: 'How strong the resource menu icons look. Currently {{value}}%.',
       tabIconsTitle: 'Tab icons',
       showClusterLogos: 'Show logos on cluster tabs',
       showResourceIcons: 'Show icons on resource tabs',
@@ -1094,6 +1109,7 @@ export const en = {
       portForwarding: 'Port Forwards',
       gatewayApi: 'Gateway API',
       externalSecrets: 'External Secrets',
+      tlsCerts: 'TLS Certificates',
       helmCharts: 'Helm',
       helmReleases: 'Helm',
       argoDashboard: 'Dashboard',
@@ -1266,7 +1282,7 @@ export const en = {
     },
     charts: {
       cpu: 'CPU by node',
-      memory: 'Memory by node',
+      memory: 'Memory (GiB)',
       pods: 'Pod status',
       running: 'Running',
       disk: 'Disk by node',
@@ -1276,8 +1292,8 @@ export const en = {
       empty: 'No data yet',
       noMetrics: 'Metrics are not available for these nodes',
       noDisk: 'No root disk metrics (needs node-exporter)',
-      clickNode: 'Click a bar to open that node.',
-      clickPods: 'Click a slice to open Pods.'
+      clickNode: 'Click a node to open it.',
+      clickPods: 'Click a circle to open Pods.'
     }
   },
   nodePods: {
@@ -1339,6 +1355,18 @@ export const en = {
     cpuAlloc: 'CPU allocatable',
     memAlloc: 'Memory allocatable',
     recentEvents: 'Recent events'
+  },
+  eventsTable: {
+    when: 'When',
+    object: 'Object',
+    reason: 'Reason',
+    message: 'Message',
+    type: 'Type',
+    count: 'Count',
+    created: 'Created',
+    lastSeen: 'Last seen',
+    source: 'Source',
+    namespace: 'Namespace'
   },
   workloadsOverview: {
     title: 'Workloads overview',
@@ -1978,6 +2006,7 @@ export const en = {
   search: {
     placeholder: 'Search clusters, Sparks, pods…',
     searching: 'Searching…',
+    timedOut: 'Search timed out on one or more clusters. Showing matches that came back.',
     noResults: 'No results',
     connectHint: 'Connect a cluster to search resources across namespaces.',
     typeHint:
@@ -2097,7 +2126,10 @@ export const en = {
     subtitle:
       'Voice Kubernetes assistant — read-only. Multiple chats with local history. No auto scans.',
     readOnly: 'Read-only',
-    readOnlyHint: 'Molly answers in chat only. It does not open tabs. Delete / create / patch are blocked.',
+    readOnlyHint: 'Molly proposes a change. Scale, restart, and apply run only after you confirm.',
+    proposal: {
+      editorUnavailable: 'Open this cluster to review the YAML.'
+    },
     prefs: 'Preferences',
     chats: 'Chats',
     newChat: 'New chat',
@@ -2519,7 +2551,9 @@ export const en = {
     saveConfirm: 'Save',
     namePlaceholder: 'Name this view',
     update: 'Update “{{name}}”',
-    delete: 'Delete view'
+    delete: 'Delete view',
+    everyCluster: 'Every cluster',
+    useOnThisCluster: 'Use on this cluster'
   },
   resourceDetail: {
     tabs: {
@@ -2583,6 +2617,16 @@ export const en = {
       deleteBody: 'This action cannot be undone.',
       deleted: 'Deleted "{{name}}"',
       deleteFailed: 'Delete failed: {{error}}'
+    },
+    audit: {
+      title: 'Recent actions',
+      success: 'Succeeded',
+      failed: 'Failed: {{error}}',
+      failedUnknown: 'Failed',
+      scale: 'Scale',
+      restart: 'Restart',
+      editYaml: 'Apply YAML',
+      other: '{{action}}'
     },
     workloadLogs: {
       allPods: 'All pods ({{count}})',

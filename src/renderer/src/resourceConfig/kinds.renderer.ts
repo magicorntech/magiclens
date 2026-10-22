@@ -145,7 +145,8 @@ export const kindColumnDefs: Record<ResourceKind, ColumnDef[]> = {
   HorizontalPodAutoscalers: [
     { key: 'target', title: 'Target' },
     { key: 'minMax', title: 'Min/Max' },
-    { key: 'replicas', title: 'Replicas' }
+    { key: 'replicas', title: 'Replicas' },
+    { key: 'usage', title: 'Usage' }
   ],
   PodDisruptionBudgets: [
     { key: 'minAvailable', title: 'Min available' },

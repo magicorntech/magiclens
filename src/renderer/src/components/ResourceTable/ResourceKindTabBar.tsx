@@ -18,7 +18,7 @@ import { motion as motionTokens } from '../../design-system/tokens'
 import { virtualPageIcons } from '../../icons/resourceKindIcons'
 import { VIRTUAL_PAGE_LABELS } from '../../resourceConfig/virtualPageLabels'
 import { useDisplaySettingsStore } from '../../stores/displaySettingsStore'
-import { kindTabId, mergeTabOrder, virtualTabId } from '../../utils/resourceTabPreferences'
+import { isSplittableVirtualPage, kindTabId, mergeTabOrder, virtualTabId } from '../../utils/resourceTabPreferences'
 import { Icon } from '../ui/Icon'
 import { ResourceTabLabel } from './ResourceTabLabel'
 
@@ -33,7 +33,12 @@ export interface ResourceTabContextActions {
   onToggleSplit: () => void
   onOpenInLeftPane?: (kind: ResourceKind) => void
   onOpenInRightPane?: (kind: ResourceKind) => void
+  onSplitWithVirtual?: (page: VirtualPageKey) => void
+  onOpenVirtualInPane?: (page: VirtualPageKey, pane: 'left' | 'right') => void
+  onCloseVirtual?: (page: VirtualPageKey) => void
   allowSplit: boolean
+  /** Open kinds plus Helm, Grafana, Prometheus, and Argo pages. */
+  splitCandidateCount: number
   splitActive: boolean
   canCloseAll: boolean
   canCloseSplitTabs: boolean
@@ -136,7 +141,7 @@ function buildTabContextMenu(
       key: 'toggle-split',
       label: actions.splitActive ? 'Exit split view' : 'Split view',
       icon: <Icon icon={Columns2} variant="detail" />,
-      disabled: !actions.splitActive && actions.orderedKinds.length < 2
+      disabled: !actions.splitActive && actions.splitCandidateCount < 2
     })
 
     if (actions.splitActive) {
@@ -181,7 +186,7 @@ function buildBarContextMenu(actions: ResourceTabContextActions): MenuProps['ite
       key: 'toggle-split',
       label: actions.splitActive ? 'Exit split view' : 'Split view',
       icon: <Icon icon={Columns2} variant="detail" />,
-      disabled: !actions.splitActive && actions.orderedKinds.length < 2
+      disabled: !actions.splitActive && actions.splitCandidateCount < 2
     })
   }
 
@@ -372,6 +377,7 @@ function TabReorderGroup({
               active={activeVirtualPage === page}
               onSelect={() => onSelectVirtualPage?.(page)}
               onClose={() => onCloseVirtualPage?.(page)}
+              contextActions={contextActions}
             />
           )
         }
@@ -416,12 +422,76 @@ function handleTabListKeyDown(e: React.KeyboardEvent<HTMLDivElement>): void {
   next.focus()
 }
 
+function buildVirtualTabContextMenu(
+  page: VirtualPageKey,
+  actions: ResourceTabContextActions
+): MenuProps['items'] {
+  const items: NonNullable<MenuProps['items']> = []
+  if (actions.allowSplit && isSplittableVirtualPage(page)) {
+    items.push({
+      key: 'toggle-split',
+      label: actions.splitActive ? 'Exit split view' : 'Split view',
+      icon: <Icon icon={Columns2} variant="detail" />,
+      disabled: !actions.splitActive && actions.splitCandidateCount < 2
+    })
+    if (actions.splitActive) {
+      items.push(
+        {
+          key: 'open-left',
+          label: 'Open in left pane',
+          icon: <Icon icon={PanelLeft} variant="detail" />
+        },
+        {
+          key: 'open-right',
+          label: 'Open in right pane',
+          icon: <Icon icon={PanelRight} variant="detail" />
+        }
+      )
+    }
+    items.push({ type: 'divider' })
+  }
+  items.push({
+    key: 'close',
+    label: 'Close tab',
+    icon: <Icon icon={X} variant="detail" />
+  })
+  return items
+}
+
+function virtualTabContextMenuHandler(
+  page: VirtualPageKey,
+  actions: ResourceTabContextActions,
+  onClose: () => void
+): NonNullable<MenuProps['onClick']> {
+  return ({ key }) => {
+    switch (key) {
+      case 'close':
+        actions.onCloseVirtual?.(page)
+        onClose()
+        break
+      case 'toggle-split':
+        if (actions.splitActive) actions.onToggleSplit()
+        else actions.onSplitWithVirtual?.(page)
+        break
+      case 'open-left':
+        actions.onOpenVirtualInPane?.(page, 'left')
+        break
+      case 'open-right':
+        actions.onOpenVirtualInPane?.(page, 'right')
+        break
+      default:
+        break
+    }
+  }
+}
+
 function VirtualTabItem({
   id,
   page,
   active,
   onSelect,
-  onClose
+  onClose,
+  contextActions
 }: {
   /** Reorder value — the merged-order id, not the page key. */
   id: string
@@ -429,12 +499,20 @@ function VirtualTabItem({
   active: boolean
   onSelect: () => void
   onClose: () => void
+  contextActions?: ResourceTabContextActions
 }): React.JSX.Element {
   const { t } = useTranslation()
   const showIcons = useDisplaySettingsStore((s) => s.showResourceTabIcons)
   const dragControls = useDragControls()
   const label = t(`resourceNav.virtual.${page}`, { defaultValue: VIRTUAL_PAGE_LABELS[page] })
-  return (
+  const menu =
+    contextActions && isSplittableVirtualPage(page)
+      ? {
+          items: buildVirtualTabContextMenu(page, contextActions),
+          onClick: virtualTabContextMenuHandler(page, contextActions, onClose)
+        }
+      : null
+  const item = (
     <Reorder.Item
       value={id}
       dragListener={false}
@@ -452,6 +530,7 @@ function VirtualTabItem({
         cursor: 'grabbing'
       }}
       onClick={onSelect}
+      onContextMenu={menu ? (e) => e.stopPropagation() : undefined}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
@@ -503,6 +582,12 @@ function VirtualTabItem({
         </span>
       </span>
     </Reorder.Item>
+  )
+  if (!menu) return item
+  return (
+    <Dropdown menu={menu} trigger={['contextMenu']} destroyOnHidden>
+      {item}
+    </Dropdown>
   )
 }
 

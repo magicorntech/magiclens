@@ -35,6 +35,7 @@ const CLUSTER_SCOPED_VIRTUAL_PAGES = new Set<VirtualPageKey>([
   'portForwarding',
   'gatewayApi',
   'externalSecrets',
+  'tlsCerts',
   'workloadsOverview',
   'configOverview',
   'networkOverview',
@@ -168,6 +169,23 @@ function AppShellInner({
   /** Browser model: no dedicated cluster header — only overlay/split/namespace. */
   const showChromeHeader = overlayResourceNav || splitView || showHeaderNamespace
 
+  // Let the resource nav rise into the cluster-tab row so tabs start at its right edge.
+  useEffect(() => {
+    const raised = !overlayResourceNav && !splitView
+    const inset = raised
+      ? `${resourceMenuCollapsed ? RESOURCE_SIDER_COLLAPSED_WIDTH : resourceSiderWidth}px`
+      : '0px'
+    const lift = raised ? `${52 + (showChromeHeader ? 32 : 0)}px` : '0px'
+    document.documentElement.style.setProperty('--ml-resource-tab-inset', inset)
+    document.documentElement.style.setProperty('--ml-resource-nav-lift', lift)
+    document.documentElement.classList.toggle('ml-resource-nav-raised', raised)
+    return () => {
+      document.documentElement.style.removeProperty('--ml-resource-tab-inset')
+      document.documentElement.style.removeProperty('--ml-resource-nav-lift')
+      document.documentElement.classList.remove('ml-resource-nav-raised')
+    }
+  }, [overlayResourceNav, splitView, resourceMenuCollapsed, resourceSiderWidth, showChromeHeader])
+
   const clusterMeta = [cluster.serverVersion, cluster.status === 'connected' ? 'Connected' : cluster.status]
     .filter(Boolean)
     .join(' · ')
@@ -207,7 +225,7 @@ function AppShellInner({
 
     if (panelPlacement === 'left') {
       return (
-        <Splitter layout="horizontal" style={{ height: '100%' }}>
+        <Splitter key="left" className="ml-utility-split" layout="horizontal">
           <Splitter.Panel defaultSize="38%" min="18%" max="70%">
             {panel}
           </Splitter.Panel>
@@ -220,7 +238,7 @@ function AppShellInner({
 
     if (panelPlacement === 'right') {
       return (
-        <Splitter layout="horizontal" style={{ height: '100%' }}>
+        <Splitter key="right" className="ml-utility-split" layout="horizontal">
           <Splitter.Panel defaultSize="62%" min="25%">
             {main}
           </Splitter.Panel>
@@ -232,7 +250,7 @@ function AppShellInner({
     }
 
     return (
-      <Splitter layout="vertical" style={{ height: '100%' }}>
+      <Splitter key="bottom" className="ml-utility-split" layout="vertical">
         <Splitter.Panel defaultSize="65%" min="25%">
           {main}
         </Splitter.Panel>
@@ -341,7 +359,7 @@ function AppShellInner({
         )}
         <Content className="ml-workspace-content">
           <div className="ml-workspace-content-inner">
-            {showAssistant ? (
+            {showAssistant && !splitPane ? (
               <div className="ml-workspace-with-assistant">
                 <div className="ml-workspace-with-assistant__main">
                   {renderWorkspaceBody()}

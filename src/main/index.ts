@@ -18,6 +18,7 @@ import { createMainWindow } from './window'
 import { syncMenuBarWidget } from './menuBarWidget'
 import { vpnManager } from './vpn/vpnManager'
 import { installMediaPermissions } from './mediaPermissions'
+import { installDevToolsLock, lockPackagedDevToolsSwitches } from './devtoolsLock'
 
 // As early as possible — before any other module has a chance to throw.
 installCrashLogging()
@@ -27,6 +28,7 @@ installCrashLogging()
 crashReporter.start({ uploadToServer: false, compress: true })
 
 // Must run before ready — Chromium ignores most switches after initialization.
+lockPackagedDevToolsSwitches()
 applyChromiumPerformanceFlags()
 applyDemoCaptureSwitches()
 registerSparksMediaScheme()
@@ -40,6 +42,7 @@ app.setName('MagicLens')
 let isQuitting = false
 
 app.whenReady().then(() => {
+  installDevToolsLock()
   fixShellPath()
   seedDemoWorkspace()
   installSparksMediaProtocol()

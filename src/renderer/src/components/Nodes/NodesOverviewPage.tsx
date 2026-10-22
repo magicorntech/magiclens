@@ -575,11 +575,7 @@ export function NodesOverviewPage({
         return {
           body: (
             <DetailSection title={t('clusterOverview.recentEvents')}>
-              <NodesEventsStrip
-                clusterId={clusterId}
-                isActive={isActive}
-                selectedNodeName={selectedItem?.name}
-              />
+              <NodesEventsStrip clusterId={clusterId} isActive={isActive} />
             </DetailSection>
           )
         }

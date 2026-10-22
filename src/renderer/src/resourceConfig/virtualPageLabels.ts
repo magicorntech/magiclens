@@ -14,6 +14,7 @@ export const VIRTUAL_PAGE_LABELS: Record<VirtualPageKey, string> = {
   portForwarding: 'Port Forwarding',
   gatewayApi: 'Gateway API',
   externalSecrets: 'External Secrets',
+  tlsCerts: 'TLS Certificates',
   dynamicCustomResources: 'Custom Resources',
   operatorResources: 'Custom Resources',
   discoveredApiGroups: 'API Groups',

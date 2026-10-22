@@ -12,6 +12,8 @@ interface ScaleModalProps {
   name: string
   context?: WorkloadContextInfo
   loading?: boolean
+  /** When set, the confirm dialog opens on this count. The write still waits for confirm. */
+  initialReplicas?: number
   onCancel: () => void
   onConfirm: (replicas: number) => void
 }
@@ -23,16 +25,22 @@ export function ScaleModal({
   name,
   context,
   loading,
+  initialReplicas,
   onCancel,
   onConfirm
 }: ScaleModalProps): React.JSX.Element {
-  const [replicas, setReplicas] = useState(context?.replicas?.currentReplicas ?? 1)
+  const [replicas, setReplicas] = useState(initialReplicas ?? context?.replicas?.currentReplicas ?? 1)
   const current = context?.replicas?.currentReplicas ?? 0
   const scalingDown = replicas < current
 
   useEffect(() => {
-    if (open) setReplicas(context?.replicas?.currentReplicas ?? 1)
-  }, [open, context?.replicas?.currentReplicas])
+    if (!open) return
+    if (initialReplicas != null && Number.isInteger(initialReplicas) && initialReplicas >= 0) {
+      setReplicas(initialReplicas)
+      return
+    }
+    setReplicas(context?.replicas?.currentReplicas ?? 1)
+  }, [open, context?.replicas?.currentReplicas, initialReplicas])
 
   const ownerWarning =
     kind === 'ReplicaSets' && context?.replicas?.hasOwnerDeployment

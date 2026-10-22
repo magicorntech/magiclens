@@ -34,7 +34,7 @@ export function LocalAlertsWatcher(): null {
 
   useEffect(() => {
     if (!enabled) {
-      ingest([], { osNotify: false })
+      ingest([], { osNotify: false, recordHistory: false })
       return
     }
 
@@ -70,7 +70,7 @@ export function LocalAlertsWatcher(): null {
         )
         if (cancelled) return
         const alerts: LocalAlert[] = batches.flat()
-        ingest(alerts, { osNotify })
+        ingest(alerts, { osNotify, recordHistory: true })
       } catch (err) {
         console.warn('[alerts] poll failed', err)
       } finally {

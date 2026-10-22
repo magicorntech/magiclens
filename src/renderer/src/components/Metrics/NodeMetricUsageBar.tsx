@@ -65,17 +65,22 @@ export function NodeMetricUsageBar({
 
   if (!showHistory) return bar
 
-  const title = metric === 'cpu' ? 'CPU over time' : 'Memory over time'
+  const title = metric === 'cpu' ? 'CPU' : 'Memory'
 
   return (
     <Popover
       trigger="hover"
-      mouseEnterDelay={0.35}
-      placement="left"
+      mouseEnterDelay={0.2}
+      mouseLeaveDelay={0.15}
+      placement="bottomRight"
       open={open}
       onOpenChange={setOpen}
+      getPopupContainer={() => document.body}
+      zIndex={4000}
+      classNames={{ container: 'ml-pod-metric-popover-shell' }}
       content={
         <MetricsHistoryPopoverContent
+          compact
           title={title}
           metric={metric}
           rangeData={rangeData}
@@ -83,6 +88,7 @@ export function NodeMetricUsageBar({
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
           formatValue={formatValue}
+          caption={{ name: nodeName ?? '' }}
         />
       }
     >

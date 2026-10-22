@@ -9,6 +9,7 @@ import {
   Progress,
   Segmented,
   Select,
+  Slider,
   Space,
   Tag,
   Typography,
@@ -446,6 +447,8 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
   const workspaceDockMagnification = useDisplaySettingsStore((s) => s.workspaceDockMagnification)
   const setWorkspaceDockMagnification = useDisplaySettingsStore((s) => s.setWorkspaceDockMagnification)
   const setShowClusterNamespace = useDisplaySettingsStore((s) => s.setShowClusterNamespace)
+  const navIconBrightness = useDisplaySettingsStore((s) => s.navIconBrightness)
+  const setNavIconBrightness = useDisplaySettingsStore((s) => s.setNavIconBrightness)
   const setResourceDetailPlacement = useDisplaySettingsStore((s) => s.setResourceDetailPlacement)
   const setResourceDetailMaskBlur = useDisplaySettingsStore((s) => s.setResourceDetailMaskBlur)
   const setUtilityPanelPlacement = useDisplaySettingsStore((s) => s.setUtilityPanelPlacement)
@@ -1005,6 +1008,21 @@ export function SettingsModal({ open, onClose }: SettingsModalProps): React.JSX.
                 description={t('settings.display.showClusterNamespaceHint')}
                 checked={showClusterNamespace}
                 onChange={(checked) => void setShowClusterNamespace(checked)}
+              />
+              <SettingsRow
+                title={t('settings.display.navIconBrightness')}
+                description={t('settings.display.navIconBrightnessHint', { value: navIconBrightness })}
+                stacked
+                control={
+                  <Slider
+                    min={40}
+                    max={100}
+                    step={5}
+                    value={navIconBrightness}
+                    onChange={(value: number) => void setNavIconBrightness(value)}
+                    tooltip={{ formatter: (value) => `${value ?? navIconBrightness}%` }}
+                  />
+                }
               />
             </SettingsSection>
 

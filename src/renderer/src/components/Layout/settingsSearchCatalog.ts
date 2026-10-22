@@ -69,7 +69,8 @@ export const SETTINGS_SEARCH: Array<{ section: SettingsSection; keys: string[] }
       'settings.display.resourceNavOrderTitle',
       'settings.display.nodesTitle',
       'settings.display.showWorkspaces',
-      'settings.display.showSidebarLogos'
+      'settings.display.showSidebarLogos',
+      'settings.display.navIconBrightness'
     ]
   },
   {

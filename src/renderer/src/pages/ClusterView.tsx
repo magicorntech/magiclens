@@ -26,6 +26,7 @@ import { ClusterAppPage } from '../components/Apps/ClusterAppPage'
 import { WorkloadsOverviewPage } from '../components/Overview/WorkloadsOverviewPage'
 import { ApplicationsOverviewPage } from '../components/Overview/ApplicationsOverviewPage'
 import { ConfigOverviewPage } from '../components/Overview/ConfigOverviewPage'
+import { TlsCertsPage } from '../components/Overview/TlsCertsPage'
 import { NetworkOverviewPage } from '../components/Overview/NetworkOverviewPage'
 import { StorageOverviewPage } from '../components/Overview/StorageOverviewPage'
 import { OverviewDetailShell } from '../components/Overview/OverviewDetailShell'
@@ -334,6 +335,8 @@ export function ClusterView({ clusterId, splitPane }: ClusterViewProps): React.J
             emptyHint={t('gatewayApi.empty')}
           />
         )
+      case 'tlsCerts':
+        return <TlsCertsPage clusterId={clusterId} onNavigate={handleNavigateToResource} />
       case 'externalSecrets':
         return (
           <CustomResourceBrowserPage

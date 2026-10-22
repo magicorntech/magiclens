@@ -53,6 +53,48 @@ export function compareText(a: string | null | undefined, b: string | null | und
   return (a ?? '').localeCompare(b ?? '', undefined, { numeric: true, sensitivity: 'base' })
 }
 
+/**
+ * Numeric compare that keeps missing values at the bottom in both directions.
+ * Ant Design negates the result when the order is descend, so the missing-row
+ * sign is flipped first to survive that.
+ */
+export function compareOptionalNumber(
+  a: number | null | undefined,
+  b: number | null | undefined,
+  order?: 'ascend' | 'descend' | null
+): number {
+  const aOk = a != null && Number.isFinite(a)
+  const bOk = b != null && Number.isFinite(b)
+  if (aOk && bOk) return a - b
+  if (!aOk && !bOk) return 0
+  const sink = order === 'descend' ? -1 : 1
+  return aOk ? -sink : sink
+}
+
+/**
+ * Sort a usage/request (or usage/allocatable) cell the way it is drawn:
+ * the percent bar first, then absolute usage when the percents match.
+ * Rows with no usage stay at the bottom.
+ */
+export function compareUsageRatio(
+  aUsage: number | null | undefined,
+  aBasis: number | null | undefined,
+  bUsage: number | null | undefined,
+  bBasis: number | null | undefined,
+  order?: 'ascend' | 'descend' | null
+): number {
+  const ratio = (usage: number | null | undefined, basis: number | null | undefined): number | null => {
+    if (usage == null || !Number.isFinite(usage)) return null
+    if (basis != null && basis > 0 && Number.isFinite(basis)) return usage / basis
+    return null
+  }
+  const byRatio = compareOptionalNumber(ratio(aUsage, aBasis), ratio(bUsage, bBasis), order)
+  if (byRatio !== 0) return byRatio
+  const finite = (value: number | null | undefined): number | null =>
+    value != null && Number.isFinite(value) ? value : null
+  return compareOptionalNumber(finite(aUsage), finite(bUsage), order)
+}
+
 export function compareNumericStrings(a: string, b: string): number {
   const na = Number.parseFloat(a.replace(/[^\d.-]/g, ''))
   const nb = Number.parseFloat(b.replace(/[^\d.-]/g, ''))

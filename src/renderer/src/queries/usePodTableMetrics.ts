@@ -13,6 +13,21 @@ export function podMetricsKey(namespace: string, podName: string): string {
   return `${namespace}/${podName}`
 }
 
+const METRICS_POLL_CAP_MS = 5000
+
+export function podMetricsRefetchInterval(input: {
+  isActiveTab: boolean
+  isConnected: boolean
+  windowFocused: boolean
+  paused: boolean
+  interval: number | 'manual'
+}): number | false {
+  const shouldPoll = input.isActiveTab && input.isConnected && input.windowFocused && !input.paused
+  if (!shouldPoll) return false
+  if (input.interval === 'manual') return METRICS_POLL_CAP_MS
+  return Math.min(input.interval, METRICS_POLL_CAP_MS)
+}
+
 /**
  * Live CPU/memory for pods in the resource table.
  * One batched request (single namespace or 'ALL') so every row's usage
@@ -29,12 +44,13 @@ export function usePodTableMetrics(
   const windowFocused = useIsWindowFocused()
   // Usage should feel live: follow the global interval, but cap at 5s and keep
   // polling even in manual mode. Respect pause and stop when unfocused/inactive.
-  const shouldPoll = isActiveTab && isConnected && windowFocused && !paused
-  const refetchInterval = shouldPoll
-    ? interval === 'manual'
-      ? 5000
-      : Math.min(interval, 5000)
-    : false
+  const refetchInterval = podMetricsRefetchInterval({
+    isActiveTab,
+    isConnected,
+    windowFocused,
+    paused,
+    interval
+  })
 
   const namespace = useMemo(() => {
     const param = listNamespaceParam(namespaceSelection)

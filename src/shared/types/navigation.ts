@@ -13,6 +13,7 @@ export type VirtualPageKey =
   | 'portForwarding'
   | 'gatewayApi'
   | 'externalSecrets'
+  | 'tlsCerts'
   | 'dynamicCustomResources'
   | 'operatorResources'
   | 'discoveredApiGroups'

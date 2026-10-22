@@ -67,6 +67,74 @@ export interface LocalAlert {
   name?: string
 }
 
+export interface AlertHistoryEntry extends LocalAlert {
+  firstSeen: string
+  lastSeen: string
+  clearedAt: string | null
+}
+
+export interface AlertSnooze {
+  id: string
+  clusterId: string
+  until: string
+}
+
+export function mergeAlertHistory(
+  prev: AlertHistoryEntry[],
+  current: LocalAlert[],
+  nowIso: string
+): AlertHistoryEntry[] {
+  const currentById = new Map(current.map((alert) => [alert.id, alert]))
+  const seen = new Set<string>()
+  const next: AlertHistoryEntry[] = []
+
+  for (const entry of prev) {
+    if (seen.has(entry.id)) continue
+    seen.add(entry.id)
+    const live = currentById.get(entry.id)
+    if (live) {
+      next.push({
+        ...live,
+        firstSeen: entry.firstSeen,
+        lastSeen: nowIso,
+        clearedAt: null
+      })
+      continue
+    }
+    if (entry.clearedAt == null) {
+      next.push({ ...entry, clearedAt: nowIso })
+      continue
+    }
+    next.push(entry)
+  }
+
+  for (const alert of currentById.values()) {
+    if (seen.has(alert.id)) continue
+    seen.add(alert.id)
+    next.push({
+      ...alert,
+      firstSeen: nowIso,
+      lastSeen: nowIso,
+      clearedAt: null
+    })
+  }
+
+  return next
+}
+
+export function isAlertSnoozed(
+  snoozes: AlertSnooze[],
+  alert: { id: string; clusterId: string },
+  nowMs: number
+): boolean {
+  return snoozes.some(
+    (snooze) =>
+      snooze.id === alert.id &&
+      snooze.clusterId === alert.clusterId &&
+      Date.parse(snooze.until) > nowMs
+  )
+}
+
 export interface LocalAlertSources {
   clusterId: string
   clusterName: string

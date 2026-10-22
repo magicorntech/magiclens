@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { Spin, message } from 'antd'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import type { ResourcePreviewManifestResult } from '@shared/types/resourceMutation'
+import { apiKindToResourceKind } from '@shared/resourceKinds'
+import type { AppliedResourceRef, ResourcePreviewManifestResult } from '@shared/types/resourceMutation'
 import type { YamlTabState } from '../Layout/BottomPanelContext'
 import { refreshNamespaces } from '../../queries/useNamespaces'
+import { recordWorkloadAudit, workloadAuditErrorText } from '../../stores/workloadAuditStore'
 import { YamlMonacoEditor } from '../Editor/YamlMonacoEditor'
 import { YamlApplyReview } from '../Editor/YamlApplyReview'
 
@@ -17,7 +19,9 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [value, setValue] = useState(tab.initialYaml)
-  const [loading, setLoading] = useState(tab.mode === 'edit')
+  const [loading, setLoading] = useState(
+    tab.mode === 'edit' && Boolean(tab.target && tab.name) && !tab.initialYaml.trim()
+  )
   const [saving, setSaving] = useState(false)
   const [reviewing, setReviewing] = useState(false)
   const [review, setReview] = useState<ResourcePreviewManifestResult | null>(null)
@@ -27,7 +31,7 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
     setValue(tab.initialYaml)
     setError(null)
 
-    if (tab.mode !== 'edit' || !tab.target || !tab.name) {
+    if (tab.mode !== 'edit' || !tab.target || !tab.name || tab.initialYaml.trim()) {
       setLoading(false)
       return
     }
@@ -97,9 +101,30 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
     }
   }
 
+  function auditYamlSave(success: boolean, error?: string, ref?: AppliedResourceRef): void {
+    const kind = ref
+      ? (apiKindToResourceKind(ref.kind) ?? (tab.target?.type === 'builtin' ? tab.target.kind : ref.kind))
+      : tab.target?.type === 'builtin'
+        ? tab.target.kind
+        : ''
+    const name = (ref?.name || tab.name || '').trim()
+    const namespace = ref?.namespace ?? tab.namespace
+    if (!kind || !name) return
+    recordWorkloadAudit({
+      clusterId: tab.clusterId,
+      kind,
+      namespace,
+      name,
+      action: 'editYaml',
+      success,
+      error: success ? undefined : workloadAuditErrorText(error)
+    })
+  }
+
   async function handleSave(): Promise<void> {
     if (!value.trim()) {
       setError('Manifest is empty')
+      auditYamlSave(false, 'Manifest is empty')
       return
     }
 
@@ -112,20 +137,25 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
         if ('error' in res) {
           if (res.created.length === 0) {
             setError(res.error)
+            auditYamlSave(false, res.error)
             return
           }
           message.warning(`Created ${res.created.length} resource(s), but: ${res.error}`)
+          for (const created of res.created) auditYamlSave(true, undefined, created)
         } else {
           message.success(`Created ${res.created.map((c) => `${c.kind}/${c.name}`).join(', ')}`)
+          for (const created of res.created) auditYamlSave(true, undefined, created)
         }
         namespaceListChanged = res.created.some((c) => c.kind === 'Namespace')
       } else {
         const res = await window.api.resource.applyManifest({ clusterId: tab.clusterId, yaml: value })
         if ('error' in res) {
           setError(res.error)
+          auditYamlSave(false, res.error)
           return
         }
         message.success(`Saved ${res.ref.kind}/${res.ref.name}`)
+        auditYamlSave(true, undefined, res.ref)
         namespaceListChanged = res.ref.kind === 'Namespace'
       }
       // The manifest may contain any kind (and e.g. a Deployment also spawns Pods/ReplicaSets),
@@ -140,6 +170,10 @@ export function YamlEditorPanelBody({ tab, onDone }: YamlEditorPanelBodyProps): 
         await refreshNamespaces(queryClient, tab.clusterId)
       }
       onDone()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg)
+      auditYamlSave(false, msg)
     } finally {
       setSaving(false)
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Dropdown, Input, Modal, Select, Switch, message } from 'antd'
 import { MOLLY_LIVE_MODEL_AUTO, MOLLY_LIVE_MODEL_OPTIONS } from '@shared/mollyModels'
 import {
@@ -26,6 +26,7 @@ import {
 import { useSettingsUiStore } from '../stores/settingsUiStore'
 import { MollyVoiceHud, orbStateToHudPhase } from '../components/Molly/MollyVoiceHud'
 import { MollyToolCharts } from '../components/Molly/MollyToolCharts'
+import { MollyWorkloadProposal } from '../components/Molly/MollyWorkloadProposal'
 import {
   formatMollyChatJson,
   formatMollyChatMarkdown,
@@ -394,12 +395,12 @@ export function MollyPage(): React.JSX.Element {
                       <MollyToolCharts tools={line.tools} />
                       <div className="ml-molly-line__tools">
                         {line.tools.map((tool, idx) => (
-                          <span
-                            key={`${line.id}-t-${idx}`}
-                            className={`ml-molly-tool-chip${tool.ok ? '' : ' is-error'}`}
-                          >
-                            {tool.name}: {tool.summary}
-                          </span>
+                          <Fragment key={`${line.id}-t-${idx}`}>
+                            <span className={`ml-molly-tool-chip${tool.ok ? '' : ' is-error'}`}>
+                              {tool.name}: {tool.summary}
+                            </span>
+                            <MollyWorkloadProposal tool={tool} />
+                          </Fragment>
                         ))}
                       </div>
                     </>

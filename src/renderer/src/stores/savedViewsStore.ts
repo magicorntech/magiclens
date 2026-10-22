@@ -10,6 +10,7 @@ export interface SavedResourceView {
   namespace: string
   search: string
   sort: TableSortState
+  clusterId: string
   createdAt: string
   lastUsedAt: string
 }
@@ -36,6 +37,43 @@ function uid(): string {
 }
 
 const MAX_VIEWS = 40
+
+type PersistedSavedViews = {
+  views: SavedResourceView[]
+}
+
+export function migrateSavedViews(persisted: unknown): PersistedSavedViews {
+  const state = (persisted ?? {}) as { views?: unknown }
+  const raw = Array.isArray(state.views) ? state.views : []
+  const views = raw.map((entry) => {
+    const view = (entry !== null && typeof entry === 'object' ? entry : {}) as Partial<SavedResourceView>
+    return {
+      ...view,
+      clusterId: typeof view.clusterId === 'string' ? view.clusterId : ''
+    } as SavedResourceView
+  })
+  return { ...state, views }
+}
+
+export function savedViewAppliesOnCluster(
+  view: Pick<SavedResourceView, 'clusterId'>,
+  clusterId: string
+): boolean {
+  return view.clusterId === '' || view.clusterId === clusterId
+}
+
+export function savedViewsForCluster(
+  views: readonly SavedResourceView[],
+  clusterId: string
+): { cluster: SavedResourceView[]; legacy: SavedResourceView[] } {
+  const cluster: SavedResourceView[] = []
+  const legacy: SavedResourceView[] = []
+  for (const view of views) {
+    if (view.clusterId === '') legacy.push(view)
+    else if (view.clusterId === clusterId) cluster.push(view)
+  }
+  return { cluster, legacy }
+}
 
 export const useSavedViewsStore = create<SavedViewsState>()(
   persist(
@@ -68,6 +106,8 @@ export const useSavedViewsStore = create<SavedViewsState>()(
     }),
     {
       name: 'magiclens-saved-views',
+      version: 1,
+      migrate: migrateSavedViews,
       partialize: (state) => ({ views: state.views })
     }
   )

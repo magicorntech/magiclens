@@ -7,6 +7,7 @@ import type { ResourceFocus, PendingNavigation, VirtualPageKey } from '@shared/t
 import type { KubeconfigSource } from '@shared/types/kubeconfig'
 import { isNamespaceScoped } from '@shared/resourceKinds'
 import {
+  isSplittableVirtualPage,
   loadResourceTabPreferences,
   saveResourceTabPreferences,
   sortResourceKinds,
@@ -347,7 +348,9 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
       const patch: Partial<ResourceTabPreferences> = {}
       if (prefs.splitLeftKind === kind) patch.splitLeftKind = selectedResourceKind
       if (prefs.splitRightKind === kind) patch.splitRightKind = selectedResourceKind
-      if (openResourceKinds.length < 2) patch.splitView = false
+      if (openResourceKinds.length + cluster.openVirtualPages.filter(isSplittableVirtualPage).length < 2) {
+        patch.splitView = false
+      }
       if (Object.keys(patch).length > 0) {
         saveResourceTabPreferences(id, { ...prefs, ...patch })
       }
@@ -362,7 +365,9 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
       const openResourceKinds = cluster.openResourceKinds.filter((k) => prefs.pinned.includes(k))
       if (openResourceKinds.length === cluster.openResourceKinds.length) return {}
       const selectedResourceKind = openResourceKinds[0] ?? null
-      const patch: Partial<ResourceTabPreferences> = { splitView: false }
+      const keepSplit =
+        openResourceKinds.length + cluster.openVirtualPages.filter(isSplittableVirtualPage).length >= 2
+      const patch: Partial<ResourceTabPreferences> = keepSplit ? {} : { splitView: false }
       if (prefs.splitLeftKind && !openResourceKinds.includes(prefs.splitLeftKind)) {
         patch.splitLeftKind = selectedResourceKind
       }
@@ -424,6 +429,16 @@ export const useClusterStore = create<ClusterStoreState>((set) => ({
       let selectedVirtualPage = cluster.selectedVirtualPage
       if (selectedVirtualPage === page) {
         selectedVirtualPage = openVirtualPages[0] ?? null
+      }
+      const prefs = loadResourceTabPreferences(id)
+      const tabPatch: Partial<ResourceTabPreferences> = {}
+      if (prefs.splitLeftPage === page) tabPatch.splitLeftPage = null
+      if (prefs.splitRightPage === page) tabPatch.splitRightPage = null
+      if (cluster.openResourceKinds.length + openVirtualPages.filter(isSplittableVirtualPage).length < 2) {
+        tabPatch.splitView = false
+      }
+      if (Object.keys(tabPatch).length > 0) {
+        saveResourceTabPreferences(id, { ...prefs, ...tabPatch })
       }
       const patch: Partial<ClusterEntry> = { openVirtualPages, selectedVirtualPage }
       if (

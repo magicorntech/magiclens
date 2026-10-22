@@ -10,6 +10,7 @@ import {
   CoreV1Api,
   CustomObjectsApi,
   DiscoveryV1Api,
+  EventsV1Api,
   KubeConfig,
   KubernetesObjectApi,
   Metrics,
@@ -27,6 +28,8 @@ import { buildKubeConfig } from './kubeconfigParser'
 export interface ClusterClients {
   kc: KubeConfig
   core: CoreV1Api
+  /** events.k8s.io/v1. Kubelet writes OOMKilling and other new events here. */
+  events: EventsV1Api
   apps: AppsV1Api
   networking: NetworkingV1Api
   batch: BatchV1Api
@@ -59,6 +62,7 @@ class ClusterManager {
     const clients: ClusterClients = {
       kc,
       core: kc.makeApiClient(CoreV1Api),
+      events: kc.makeApiClient(EventsV1Api),
       apps: kc.makeApiClient(AppsV1Api),
       networking: kc.makeApiClient(NetworkingV1Api),
       batch: kc.makeApiClient(BatchV1Api),

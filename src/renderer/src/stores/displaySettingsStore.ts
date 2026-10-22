@@ -8,6 +8,7 @@ import {
   type UtilityPanelPlacement,
   normalizeUtilityFabSide,
   normalizeUiTypography,
+  normalizeNavIconBrightness,
   type UiTypographyPrefs
 } from '@shared/types/app'
 import { applyUiTypography } from '../theme/applyUiTypography'
@@ -50,6 +51,7 @@ interface DisplaySettingsState extends DisplaySettings {
   setShowSidebarLogos: (value: boolean) => Promise<void>
   setWorkspaceDockMagnification: (value: boolean) => Promise<void>
   setShowClusterNamespace: (value: boolean) => Promise<void>
+  setNavIconBrightness: (value: number) => Promise<void>
   setUiTypography: (value: Partial<UiTypographyPrefs>) => Promise<void>
   setResourceDetailPlacement: (value: ResourceDetailPlacement) => Promise<void>
   setResourceDetailMaskBlur: (value: boolean) => Promise<void>
@@ -89,6 +91,9 @@ function applyDisplay(next: DisplaySettings): DisplaySettings {
     locale: normalizeAppLocale(next.locale)
   }
   applyUiTypography(applied.uiTypography)
+  const brightness = normalizeNavIconBrightness(applied.navIconBrightness)
+  applied.navIconBrightness = brightness
+  document.documentElement.style.setProperty('--ml-nav-icon-opacity', String(brightness / 100))
   return applied
 }
 
@@ -134,6 +139,12 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()((set, get)
   },
   setShowClusterNamespace: async (value) => {
     const next = await window.api.app.setDisplaySettings({ showClusterNamespace: value })
+    set(applyDisplay(next))
+  },
+  setNavIconBrightness: async (value) => {
+    const next = await window.api.app.setDisplaySettings({
+      navIconBrightness: normalizeNavIconBrightness(value)
+    })
     set(applyDisplay(next))
   },
   setUiTypography: async (value) => {

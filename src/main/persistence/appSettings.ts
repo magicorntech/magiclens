@@ -1,7 +1,7 @@
 import Store from 'electron-store'
 import type { UpdateSettings } from '@shared/types/update'
 import type { PortForwardSettings } from '@shared/types/portForward'
-import { defaultDisplaySettings, type DisplaySettings, normalizeUtilityFabSide, normalizeUiTypography } from '@shared/types/app'
+import { defaultDisplaySettings, type DisplaySettings, normalizeUtilityFabSide, normalizeUiTypography, normalizeNavIconBrightness } from '@shared/types/app'
 import { normalizeChromeToolbarPrefs } from '@shared/types/chromeToolbar'
 import { normalizeResourceNavOrder } from '@shared/types/resourceNavOrder'
 import { normalizeMenuBarWidgetPrefs } from '@shared/types/menuBarWidget'
@@ -136,7 +136,8 @@ export function getDisplaySettings(): DisplaySettings {
     resourceNavOrder: normalizeResourceNavOrder(stored?.resourceNavOrder),
     keyboardShortcuts: normalizeKeyboardShortcuts(stored?.keyboardShortcuts),
     locale: normalizeAppLocale(stored?.locale),
-    kubeconfigScanPath: typeof stored?.kubeconfigScanPath === 'string' ? stored.kubeconfigScanPath : ''
+    kubeconfigScanPath: typeof stored?.kubeconfigScanPath === 'string' ? stored.kubeconfigScanPath : '',
+    navIconBrightness: normalizeNavIconBrightness(stored?.navIconBrightness)
   }
 }
 
@@ -162,7 +163,10 @@ export function setDisplaySettings(patch: Partial<DisplaySettings>): DisplaySett
       : current.keyboardShortcuts,
     locale: normalizeAppLocale(patch.locale ?? current.locale),
     kubeconfigScanPath:
-      patch.kubeconfigScanPath !== undefined ? patch.kubeconfigScanPath : current.kubeconfigScanPath
+      patch.kubeconfigScanPath !== undefined ? patch.kubeconfigScanPath : current.kubeconfigScanPath,
+    navIconBrightness: normalizeNavIconBrightness(
+      patch.navIconBrightness !== undefined ? patch.navIconBrightness : current.navIconBrightness
+    )
   }
   store.set('displaySettings', next)
   return next

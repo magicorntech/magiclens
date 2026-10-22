@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { ResourceFocus } from '@shared/types/navigation'
 import type { ResourceListItem } from '@shared/types/resource'
+import { useClusterStore } from '../../stores/clusterStore'
 import { useResourceList } from '../../queries/useResourceList'
 import { LoadingState } from '../ResourceTable/EmptyErrorStates'
 import { DetailOverview, DetailSection } from '../Detail/detailPrimitives'
@@ -44,6 +45,7 @@ export function ConfigOverviewPage({
   onNavigateToResource
 }: ConfigOverviewPageProps): React.JSX.Element {
   const { t } = useTranslation()
+  const openVirtualPage = useClusterStore((s) => s.openVirtualPage)
 
   const cm = useResourceList(clusterId, 'ALL', 'ConfigMaps', isActive)
   const sec = useResourceList(clusterId, 'ALL', 'Secrets', isActive)
@@ -121,7 +123,7 @@ export function ConfigOverviewPage({
               label={t('certs.expiring')}
               value={expiringCerts.length}
               tone={expiredCount > 0 ? 'error' : expiringCerts.length > 0 ? 'warn' : 'ok'}
-              onClick={() => onOpenResourceKind('Secrets')}
+              onClick={() => openVirtualPage(clusterId, 'tlsCerts')}
             />
             <OverviewStat label={t('configOverview.hpas')} value={byKind.HorizontalPodAutoscalers.length} onClick={() => onOpenResourceKind('HorizontalPodAutoscalers')} />
             <OverviewStat label={t('configOverview.pdbs')} value={byKind.PodDisruptionBudgets.length} onClick={() => onOpenResourceKind('PodDisruptionBudgets')} />

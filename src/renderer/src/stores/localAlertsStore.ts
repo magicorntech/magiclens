@@ -3,6 +3,10 @@ import { persist } from 'zustand/middleware'
 import {
   DEFAULT_LOCAL_ALERT_PREFS,
   defaultAlertTypes,
+  isAlertSnoozed,
+  mergeAlertHistory,
+  type AlertHistoryEntry,
+  type AlertSnooze,
   type AlertSoundId,
   type LocalAlert,
   type LocalAlertPrefs,
@@ -15,6 +19,8 @@ interface LocalAlertsState {
   enabled: boolean
   osNotify: boolean
   alerts: LocalAlert[]
+  history: AlertHistoryEntry[]
+  snoozes: AlertSnooze[]
   notifiedIds: string[]
   permissionAsked: boolean
   prefs: LocalAlertPrefs
@@ -26,7 +32,9 @@ interface LocalAlertsState {
   setRestartThreshold: (restartThreshold: number) => void
   setPendingMinutes: (pendingMinutes: number) => void
   setTypeEnabled: (type: LocalAlertType, enabled: boolean) => void
-  ingest: (alerts: LocalAlert[], opts: { osNotify: boolean }) => void
+  snooze: (alert: { id: string; clusterId: string }, untilIso: string) => void
+  unsnooze: (id: string, clusterId: string) => void
+  ingest: (alerts: LocalAlert[], opts: { osNotify: boolean; recordHistory: boolean }) => void
 }
 
 const MAX_NOTIFIED = 400
@@ -37,6 +45,8 @@ export const useLocalAlertsStore = create<LocalAlertsState>()(
       enabled: true,
       osNotify: true,
       alerts: [],
+      history: [],
+      snoozes: [],
       notifiedIds: [],
       permissionAsked: false,
       prefs: DEFAULT_LOCAL_ALERT_PREFS,
@@ -56,9 +66,29 @@ export const useLocalAlertsStore = create<LocalAlertsState>()(
         set((state) => ({
           prefs: { ...state.prefs, types: { ...state.prefs.types, [type]: enabled } }
         })),
+      snooze: (alert, untilIso) =>
+        set((state) => ({
+          snoozes: [
+            ...state.snoozes.filter(
+              (snooze) => snooze.id !== alert.id || snooze.clusterId !== alert.clusterId
+            ),
+            { id: alert.id, clusterId: alert.clusterId, until: untilIso }
+          ]
+        })),
+      unsnooze: (id, clusterId) =>
+        set((state) => ({
+          snoozes: state.snoozes.filter((snooze) => snooze.id !== id || snooze.clusterId !== clusterId)
+        })),
       ingest: (alerts, opts) => {
+        const nowMs = Date.now()
+        const snoozes = get().snoozes
         const notified = new Set(get().notifiedIds)
-        const fresh = alerts.filter((alert) => !notified.has(alert.id))
+        const snoozedIds = new Set(
+          alerts.filter((alert) => isAlertSnoozed(snoozes, alert, nowMs)).map((alert) => alert.id)
+        )
+        for (const id of snoozedIds) notified.delete(id)
+        const notifyable = alerts.filter((alert) => !snoozedIds.has(alert.id))
+        const fresh = notifyable.filter((alert) => !notified.has(alert.id))
         const prefs = get().prefs
         useNotesStore.getState().pushClusterAlerts(fresh)
         const audible = fresh.filter((alert) => prefs.soundFor === 'all' || alert.severity === 'error')
@@ -79,8 +109,12 @@ export const useLocalAlertsStore = create<LocalAlertsState>()(
             })
           }
         }
-        const notifiedIds = [...notified, ...alerts.map((alert) => alert.id)].slice(-MAX_NOTIFIED)
-        set({ alerts, notifiedIds })
+        const notifiedIds = [...notified, ...notifyable.map((alert) => alert.id)].slice(-MAX_NOTIFIED)
+        const history =
+          opts.recordHistory === false
+            ? get().history
+            : mergeAlertHistory(get().history, alerts, new Date(nowMs).toISOString())
+        set({ alerts, notifiedIds, history })
       }
     }),
     {
@@ -90,13 +124,17 @@ export const useLocalAlertsStore = create<LocalAlertsState>()(
         osNotify: state.osNotify,
         notifiedIds: state.notifiedIds,
         permissionAsked: state.permissionAsked,
-        prefs: state.prefs
+        prefs: state.prefs,
+        history: state.history,
+        snoozes: state.snoozes
       }),
       merge: (persisted, current) => {
         const saved = (persisted ?? {}) as Partial<LocalAlertsState>
         return {
           ...current,
           ...saved,
+          history: Array.isArray(saved.history) ? saved.history : [],
+          snoozes: Array.isArray(saved.snoozes) ? saved.snoozes : [],
           prefs: {
             ...DEFAULT_LOCAL_ALERT_PREFS,
             ...saved.prefs,

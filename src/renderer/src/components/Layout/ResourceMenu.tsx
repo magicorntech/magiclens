@@ -712,7 +712,7 @@ export function ResourceMenu({
 
   if (collapsed) {
     return (
-      <nav className="ml-resource-nav ml-resource-nav--collapsed" aria-label={t('resourceNav.aria')}>
+      <nav className="ml-resource-nav ml-resource-nav--collapsed titlebar-no-drag" aria-label={t('resourceNav.aria')}>
         {favoriteKinds.filter((k) => !hiddenKinds.has(k)).length > 0 &&
           renderCollapsedFlyout(
             FAVORITES_SECTION_ID,
@@ -764,7 +764,7 @@ export function ResourceMenu({
   return (
     <nav
       ref={navRef}
-      className="ml-resource-nav"
+      className="ml-resource-nav titlebar-no-drag"
       aria-label={t('resourceNav.aria')}
       role="menu"
       onKeyDown={onKeyDown}

@@ -299,6 +299,7 @@
   height: 34px;
   border-radius: 999px;
   overflow: hidden;
+  background: transparent;
 }
 
 .ml-sidebar-section--compact .ml-sidebar-list--dock {
@@ -311,11 +312,11 @@
 
 .ml-sidebar-section--compact .ml-ws-rail-item:hover {
   transform: none;
-  background: color-mix(in srgb, var(--ml-sidebar-text) 6%, transparent);
+  background: transparent;
 }
 
 .ml-sidebar-section--compact .ml-ws-rail-item.is-active {
-  background: color-mix(in srgb, var(--ml-sidebar-text) 9%, transparent) !important;
+  background: transparent !important;
 }
 
 .ml-sidebar-list--compact-workspaces {
@@ -1029,6 +1030,10 @@
   padding: 6px 8px 0 0 !important;
 }
 
+html.ml-resource-nav-raised .ml-cluster-tab-strip--browser .ml-browser-tabs__list {
+  padding-left: 8px !important;
+}
+
 /* —— Theme toggle: same footprint as other chrome icons —— */
 .ml-chrome-actions--strip .ml-theme-toggle-compact.ant-segmented,
 .ml-chrome-actions .ml-theme-toggle-compact.ant-segmented,
@@ -1342,8 +1347,8 @@
   width: 16px !important;
   min-width: 16px !important;
   height: 16px !important;
-  opacity: 0.65;
-  color: var(--ml-text-tertiary) !important;
+  opacity: var(--ml-nav-icon-opacity, 1);
+  color: var(--ml-text) !important;
 }
 
 .ml-resource-nav-item-icon svg {
@@ -1353,7 +1358,7 @@
 
 .ml-resource-nav-item-icon--brand,
 .ml-resource-nav-flyout-item-icon.ml-resource-nav-item-icon--brand {
-  opacity: 1 !important;
+  opacity: var(--ml-nav-icon-opacity, 1) !important;
   color: unset !important;
 }
 
@@ -1392,6 +1397,18 @@
 .ml-resource-nav-rail-item--brand .ml-brand-img {
   width: 16px;
   height: 16px;
+}
+
+.ml-resource-nav-rail-item svg,
+.ml-resource-nav-rail-item .ml-brand-img {
+  opacity: var(--ml-nav-icon-opacity, 1);
+}
+
+.ml-resource-nav-rail-item:hover svg,
+.ml-resource-nav-rail-item.is-active svg,
+.ml-resource-nav-rail-item:hover .ml-brand-img,
+.ml-resource-nav-rail-item.is-active .ml-brand-img {
+  opacity: 1;
 }
 
 .ml-resource-nav-item.is-active.ml-resource-nav-item--child {
@@ -2186,23 +2203,25 @@
 .ml-sidebar--collapsed .ml-ws-rail-item,
 .ml-sidebar-section--compact .ml-ws-rail-item {
   border-radius: 999px !important;
-  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent) !important;
+  background: transparent !important;
   overflow: hidden !important;
+  box-shadow: none !important;
 }
 
 .ml-sidebar--collapsed .ml-ws-rail-item.is-active,
 .ml-sidebar-section--compact .ml-ws-rail-item.is-active,
 .ml-ws-rail-item.is-active,
-.ml-ws-rail-item.is-flyout-open {
-  background: color-mix(in srgb, var(--ml-sidebar-text) 14%, transparent) !important;
-}
-
-.ml-ws-rail-item.is-session-live {
-  background: color-mix(in srgb, var(--ml-sidebar-text) 8%, transparent) !important;
-}
-
+.ml-ws-rail-item.is-flyout-open,
+.ml-ws-rail-item.is-session-live,
 .ml-ws-rail-item.is-session-live.is-active {
-  background: color-mix(in srgb, var(--ml-sidebar-text) 14%, transparent) !important;
+  background: transparent !important;
+}
+
+.ml-sidebar--collapsed .ml-ws-rail-item .ant-avatar,
+.ml-sidebar-section--compact .ml-ws-rail-item .ant-avatar {
+  background: transparent !important;
+  color: var(--ml-sidebar-text) !important;
+  border-radius: 999px !important;
 }
 
 .ml-sidebar--collapsed .ml-ws-rail-item .ml-cluster-avatar,
@@ -2210,4 +2229,6 @@
 .ml-sidebar--collapsed .ml-ws-rail-item img,
 .ml-sidebar-section--compact .ml-ws-rail-item img {
   border-radius: 999px !important;
+  object-fit: cover !important;
+  background: transparent !important;
 }

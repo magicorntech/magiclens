@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Splitter, message } from 'antd'
 import { Columns2, PanelLeft, PanelRight } from 'lucide-react'
 import type { ResourceKind } from '@shared/resourceKinds'
 import type { VirtualPageKey } from '@shared/types/navigation'
 import { useClusterStore } from '../../stores/clusterStore'
-import { sortResourceKinds } from '../../utils/resourceTabPreferences'
+import {
+  isSplittableVirtualPage,
+  sortResourceKinds,
+  type ResourceTabPreferences
+} from '../../utils/resourceTabPreferences'
 import { RESOURCE_TAB_SPLIT_PANEL_MIN_PX } from '../../constants/clusterSplitLimits'
 import { canUseSplitLayouts, useLayoutMode } from '../../hooks/useLayoutMode'
 import { Icon } from '../ui/Icon'
@@ -12,6 +16,44 @@ import { ResourceTable } from './ResourceTable'
 import { ResourceKindTabBar, type ResourceTabContextActions } from './ResourceKindTabBar'
 import { EmptyState } from './EmptyErrorStates'
 import { CLUSTER_APP_PAGES, isClusterAppPage } from '../Apps/ClusterAppPage'
+import { clusterAppHostMounted } from '../Apps/clusterAppPartition'
+
+type SplitPaneSide = 'left' | 'right'
+
+type SplitPaneTarget =
+  | { type: 'kind'; kind: ResourceKind }
+  | { type: 'virtual'; page: VirtualPageKey }
+
+function sameSplitTarget(a: SplitPaneTarget, b: SplitPaneTarget): boolean {
+  if (a.type !== b.type) return false
+  return a.type === 'kind' ? a.kind === (b as typeof a).kind : a.page === (b as typeof a).page
+}
+
+function resolveSplitPane(
+  prefs: ResourceTabPreferences,
+  pane: SplitPaneSide,
+  openVirtualPages: VirtualPageKey[],
+  openKinds: ResourceKind[]
+): SplitPaneTarget | null {
+  const page = pane === 'left' ? prefs.splitLeftPage : prefs.splitRightPage
+  if (page && isSplittableVirtualPage(page) && openVirtualPages.includes(page)) {
+    return { type: 'virtual', page }
+  }
+  const kind = pane === 'left' ? prefs.splitLeftKind : prefs.splitRightKind
+  if (kind && openKinds.includes(kind)) return { type: 'kind', kind }
+  return null
+}
+
+function splitTargetPatch(pane: SplitPaneSide, target: SplitPaneTarget): Partial<ResourceTabPreferences> {
+  if (pane === 'left') {
+    return target.type === 'virtual'
+      ? { splitLeftPage: target.page }
+      : { splitLeftPage: null, splitLeftKind: target.kind }
+  }
+  return target.type === 'virtual'
+    ? { splitRightPage: target.page }
+    : { splitRightPage: null, splitRightKind: target.kind }
+}
 
 interface ResourceKindTabsProps {
   clusterId: string
@@ -38,6 +80,7 @@ export function ResourceKindTabs({
   const closeAllResourceKinds = useClusterStore((s) => s.closeAllResourceKinds)
   const openResourceKind = useClusterStore((s) => s.openResourceKind)
   const openVirtualPage = useClusterStore((s) => s.openVirtualPage)
+  const setSelectedVirtualPage = useClusterStore((s) => s.setSelectedVirtualPage)
   const closeVirtualPage = useClusterStore((s) => s.closeVirtualPage)
   const reorderVirtualPages = useClusterStore((s) => s.reorderVirtualPages)
   const reorderResourceKinds = useClusterStore((s) => s.reorderResourceKinds)
@@ -113,6 +156,68 @@ export function ResourceKindTabs({
       updateResourceTabPrefs(clusterId, { splitView: false })
     }
   }, [allowResourceSplit, clusterId, prefs.splitView, updateResourceTabPrefs])
+
+  const splittablePages = useMemo(
+    () => openVirtualPages.filter(isSplittableVirtualPage),
+    [openVirtualPages]
+  )
+  const splitCandidateCount = orderedKinds.length + splittablePages.length
+
+  const selectionRef = useRef({ page: selectedVirtualPage, kind: selectedResourceKind })
+  useEffect(() => {
+    const prev = selectionRef.current
+    selectionRef.current = { page: selectedVirtualPage, kind: selectedResourceKind }
+    if (prev.page === selectedVirtualPage && prev.kind === selectedResourceKind) return
+    if (!prefs.splitView || !allowResourceSplit) return
+    if (selectedVirtualPage && !isSplittableVirtualPage(selectedVirtualPage)) return
+
+    const pane = prefs.focusedSplitPane
+    if (selectedVirtualPage && isSplittableVirtualPage(selectedVirtualPage)) {
+      const owner: SplitPaneSide | null =
+        prefs.splitLeftPage === selectedVirtualPage
+          ? 'left'
+          : prefs.splitRightPage === selectedVirtualPage
+            ? 'right'
+            : null
+      if (owner) {
+        if (prefs.focusedSplitPane !== owner) {
+          updateResourceTabPrefs(clusterId, { focusedSplitPane: owner })
+          forceRender((n) => n + 1)
+        }
+        return
+      }
+      updateResourceTabPrefs(clusterId, splitTargetPatch(pane, { type: 'virtual', page: selectedVirtualPage }))
+      forceRender((n) => n + 1)
+      return
+    }
+
+    if (selectedVirtualPage || !selectedResourceKind || !openResourceKinds.includes(selectedResourceKind)) return
+    const leftShows = !prefs.splitLeftPage && prefs.splitLeftKind === selectedResourceKind
+    const rightShows = !prefs.splitRightPage && prefs.splitRightKind === selectedResourceKind
+    if (leftShows || rightShows) {
+      const owner: SplitPaneSide = leftShows ? 'left' : 'right'
+      if (prefs.focusedSplitPane !== owner) {
+        updateResourceTabPrefs(clusterId, { focusedSplitPane: owner })
+        forceRender((n) => n + 1)
+      }
+      return
+    }
+    updateResourceTabPrefs(clusterId, splitTargetPatch(pane, { type: 'kind', kind: selectedResourceKind }))
+    forceRender((n) => n + 1)
+  }, [
+    allowResourceSplit,
+    clusterId,
+    openResourceKinds,
+    prefs.focusedSplitPane,
+    prefs.splitLeftKind,
+    prefs.splitLeftPage,
+    prefs.splitRightKind,
+    prefs.splitRightPage,
+    prefs.splitView,
+    selectedResourceKind,
+    selectedVirtualPage,
+    updateResourceTabPrefs
+  ])
 
   if (orderedKinds.length === 0 && openVirtualPages.length === 0) {
     return <EmptyState />
@@ -195,12 +300,7 @@ export function ResourceKindTabs({
   }
 
   function handlePaneTabSelect(kind: ResourceKind, pane: 'left' | 'right'): void {
-    updateResourceTabPrefs(clusterId, {
-      focusedSplitPane: pane,
-      ...(pane === 'left' ? { splitLeftKind: kind } : { splitRightKind: kind })
-    })
-    setSelectedResourceKind(clusterId, kind)
-    refreshPrefs()
+    openTargetInPane({ type: 'kind', kind }, pane)
   }
 
   function handleCloseTab(kind: ResourceKind): void {
@@ -272,56 +372,70 @@ export function ResourceKindTabs({
     })
   }
 
+  function collectSplitTargets(): SplitPaneTarget[] {
+    return [
+      ...splittablePages.map((page) => ({ type: 'virtual' as const, page })),
+      ...orderedKinds.map((kind) => ({ type: 'kind' as const, kind }))
+    ]
+  }
+
+  function openTargetInPane(target: SplitPaneTarget, pane: SplitPaneSide): void {
+    const otherPane: SplitPaneSide = pane === 'left' ? 'right' : 'left'
+    const existing = resolveSplitPane(prefs, otherPane, openVirtualPages, orderedKinds)
+    let other = existing
+    if (!prefs.splitView || !other) {
+      const different = collectSplitTargets().find((item) => !sameSplitTarget(item, target)) ?? null
+      if (!different && !other) {
+        message.info('Open at least two tabs to split')
+        return
+      }
+      other = different ?? other
+    }
+    updateResourceTabPrefs(clusterId, {
+      splitView: true,
+      focusedSplitPane: pane,
+      ...splitTargetPatch(pane, target),
+      ...(other ? splitTargetPatch(otherPane, other) : {}),
+      splitLeftNamespace: prefs.splitLeftNamespace ?? namespace,
+      splitRightNamespace: prefs.splitRightNamespace ?? namespace
+    })
+    if (target.type === 'virtual') setSelectedVirtualPage(clusterId, target.page)
+    else setSelectedResourceKind(clusterId, target.kind)
+    refreshPrefs()
+  }
+
   function toggleSplitView(): void {
     if (prefs.splitView) {
-      const focusedNs =
-        prefs.focusedSplitPane === 'left'
-          ? (prefs.splitLeftNamespace ?? namespace)
-          : (prefs.splitRightNamespace ?? namespace)
-      setSelectedNamespace(clusterId, focusedNs)
+      const focused = resolveSplitPane(prefs, prefs.focusedSplitPane, openVirtualPages, orderedKinds)
+      if (focused?.type === 'virtual') {
+        setSelectedVirtualPage(clusterId, focused.page)
+      } else if (focused?.type === 'kind') {
+        const focusedNs =
+          prefs.focusedSplitPane === 'left'
+            ? (prefs.splitLeftNamespace ?? namespace)
+            : (prefs.splitRightNamespace ?? namespace)
+        setSelectedNamespace(clusterId, focusedNs)
+        setSelectedResourceKind(clusterId, focused.kind)
+      }
       updateResourceTabPrefs(clusterId, { splitView: false })
       refreshPrefs()
       return
     }
-    if (orderedKinds.length < 2) {
-      message.info('Open at least two resource tabs to split')
+    const current: SplitPaneTarget | null =
+      selectedVirtualPage && isSplittableVirtualPage(selectedVirtualPage)
+        ? { type: 'virtual', page: selectedVirtualPage }
+        : selectedResourceKind
+          ? { type: 'kind', kind: selectedResourceKind }
+          : (collectSplitTargets()[0] ?? null)
+    if (!current) {
+      message.info('Open at least two tabs to split')
       return
     }
-    const left = selectedResourceKind ?? orderedKinds[0]
-    const right = orderedKinds.find((k) => k !== left) ?? orderedKinds[1]
-    updateResourceTabPrefs(clusterId, {
-      splitView: true,
-      splitLeftKind: left,
-      splitRightKind: right,
-      splitLeftNamespace: namespace,
-      splitRightNamespace: namespace,
-      focusedSplitPane: 'left'
-    })
-    refreshPrefs()
+    openTargetInPane(current, 'left')
   }
 
   function openInPane(kind: ResourceKind, pane: 'left' | 'right'): void {
-    const patch =
-      pane === 'left'
-        ? {
-            splitView: true as const,
-            splitLeftKind: kind,
-            focusedSplitPane: 'left' as const,
-            splitLeftNamespace: prefs.splitLeftNamespace ?? namespace,
-            splitRightNamespace: prefs.splitRightNamespace ?? namespace,
-            splitRightKind: prefs.splitRightKind ?? orderedKinds.find((k) => k !== kind) ?? kind
-          }
-        : {
-            splitView: true as const,
-            splitRightKind: kind,
-            focusedSplitPane: 'right' as const,
-            splitLeftNamespace: prefs.splitLeftNamespace ?? namespace,
-            splitRightNamespace: prefs.splitRightNamespace ?? namespace,
-            splitLeftKind: prefs.splitLeftKind ?? orderedKinds.find((k) => k !== kind) ?? kind
-          }
-    updateResourceTabPrefs(clusterId, patch)
-    setSelectedResourceKind(clusterId, kind)
-    refreshPrefs()
+    openTargetInPane({ type: 'kind', kind }, pane)
   }
 
   function handlePaneNamespaceChange(pane: 'left' | 'right', ns: string): void {
@@ -335,15 +449,20 @@ export function ResourceKindTabs({
     refreshPrefs()
   }
 
-  function focusPane(pane: 'left' | 'right'): void {
-    if (!splitLeftKind || !splitRightKind) return
-    const paneNs =
-      pane === 'left'
-        ? (prefs.splitLeftNamespace ?? namespace)
-        : (prefs.splitRightNamespace ?? namespace)
+  function focusPane(pane: SplitPaneSide): void {
+    const target = resolveSplitPane(prefs, pane, openVirtualPages, orderedKinds)
+    if (!target) return
     updateResourceTabPrefs(clusterId, { focusedSplitPane: pane })
-    setSelectedNamespace(clusterId, paneNs)
-    setSelectedResourceKind(clusterId, pane === 'left' ? splitLeftKind : splitRightKind)
+    if (target.type === 'virtual') {
+      setSelectedVirtualPage(clusterId, target.page)
+    } else {
+      const paneNs =
+        pane === 'left'
+          ? (prefs.splitLeftNamespace ?? namespace)
+          : (prefs.splitRightNamespace ?? namespace)
+      setSelectedNamespace(clusterId, paneNs)
+      setSelectedResourceKind(clusterId, target.kind)
+    }
     refreshPrefs()
   }
 
@@ -367,7 +486,11 @@ export function ResourceKindTabs({
     onToggleSplit: toggleSplitView,
     onOpenInLeftPane: (kind) => openInPane(kind, 'left'),
     onOpenInRightPane: (kind) => openInPane(kind, 'right'),
-    allowSplit: allowResourceSplit && orderedKinds.length >= 1,
+    onSplitWithVirtual: (page) => openTargetInPane({ type: 'virtual', page }, 'left'),
+    onOpenVirtualInPane: (page, pane) => openTargetInPane({ type: 'virtual', page }, pane),
+    onCloseVirtual: (page) => closeVirtualPage(clusterId, page),
+    allowSplit: allowResourceSplit && splitCandidateCount >= 1,
+    splitCandidateCount,
     splitActive: Boolean(prefs.splitView && allowResourceSplit),
     canCloseAll: closableKinds.length > 0,
     canCloseSplitTabs: Boolean(prefs.splitView && closableSplitKinds.length > 0),
@@ -377,7 +500,7 @@ export function ResourceKindTabs({
   }
 
   const tabBarExtra =
-    allowResourceSplit && (prefs.splitView || orderedKinds.length >= 2) ? (
+    allowResourceSplit && (prefs.splitView || splitCandidateCount >= 2) ? (
       <div className="ml-resource-tab-extra ml-action-bar ml-action-bar--end">
         <div className="ml-action-group ml-action-group--end ml-resource-tab-extra__tools">
           {prefs.splitView ? (
@@ -447,65 +570,54 @@ export function ResourceKindTabs({
     contextActions
   }
 
-  const isSplit = Boolean(prefs.splitView && allowResourceSplit && splitLeftKind && splitRightKind && !showingVirtual)
-
-  if (isSplit) {
+  const leftTarget = resolveSplitPane(prefs, 'left', openVirtualPages, orderedKinds)
+  const rightTarget = resolveSplitPane(prefs, 'right', openVirtualPages, orderedKinds)
+  const blockingVirtual =
+    showingVirtual && selectedVirtualPage != null && !isSplittableVirtualPage(selectedVirtualPage)
+  if (prefs.splitView && allowResourceSplit && leftTarget && rightTarget && !blockingVirtual) {
+    const panes: Array<{ pane: SplitPaneSide; target: SplitPaneTarget }> = [
+      { pane: 'left', target: leftTarget },
+      { pane: 'right', target: rightTarget }
+    ]
     return (
       <div className="resource-kind-tabs-root resource-kind-tabs-root--split">
         <div className="resource-kind-tabs-content">
           <Splitter style={{ height: '100%' }}>
-            <Splitter.Panel
-              defaultSize="50%"
-              min={RESOURCE_TAB_SPLIT_PANEL_MIN_PX}
-              className={prefs.focusedSplitPane === 'left' ? 'ml-split-pane--focused' : 'ml-split-pane'}
-            >
-              <div className="ml-split-pane-inner" onMouseDown={() => focusPane('left')}>
-                <ResourceKindTabBar
-                  {...sharedTabBarProps}
-                  className="ml-resource-tab-bar--pane"
-                  activeKind={splitLeftKind}
-                  openVirtualPages={[]}
-                  activeVirtualPage={null}
-                  onSelectKind={(kind) => handlePaneTabSelect(kind, 'left')}
-                  extra={splitToggleExtra}
-                />
-                <div className="ml-split-pane-body">
-                  <ResourceTable
-                    clusterId={clusterId}
-                    namespace={leftNamespace}
-                    kind={splitLeftKind}
-                    isActive={isClusterActive}
-                    onNamespaceChange={(ns) => handlePaneNamespaceChange('left', ns)}
+            {panes.map(({ pane, target }) => (
+              <Splitter.Panel
+                key={pane}
+                defaultSize="50%"
+                min={RESOURCE_TAB_SPLIT_PANEL_MIN_PX}
+                className={prefs.focusedSplitPane === pane ? 'ml-split-pane--focused' : 'ml-split-pane'}
+              >
+                <div className="ml-split-pane-inner" onMouseDown={() => focusPane(pane)}>
+                  <ResourceKindTabBar
+                    {...sharedTabBarProps}
+                    className="ml-resource-tab-bar--pane"
+                    activeKind={target.type === 'kind' ? target.kind : null}
+                    openVirtualPages={splittablePages}
+                    activeVirtualPage={target.type === 'virtual' ? target.page : null}
+                    onSelectKind={(kind) => handlePaneTabSelect(kind, pane)}
+                    onSelectVirtualPage={(page) => openTargetInPane({ type: 'virtual', page }, pane)}
+                    onCloseVirtualPage={(page) => closeVirtualPage(clusterId, page)}
+                    extra={splitToggleExtra}
                   />
+                  <div className="ml-split-pane-body">
+                    {target.type === 'virtual' ? (
+                      renderVirtualPage?.(target.page)
+                    ) : (
+                      <ResourceTable
+                        clusterId={clusterId}
+                        namespace={pane === 'left' ? leftNamespace : rightNamespace}
+                        kind={target.kind}
+                        isActive={isClusterActive}
+                        onNamespaceChange={(ns) => handlePaneNamespaceChange(pane, ns)}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Splitter.Panel>
-            <Splitter.Panel
-              defaultSize="50%"
-              min={RESOURCE_TAB_SPLIT_PANEL_MIN_PX}
-              className={prefs.focusedSplitPane === 'right' ? 'ml-split-pane--focused' : 'ml-split-pane'}
-            >
-              <div className="ml-split-pane-inner" onMouseDown={() => focusPane('right')}>
-                <ResourceKindTabBar
-                  {...sharedTabBarProps}
-                  className="ml-resource-tab-bar--pane"
-                  activeKind={splitRightKind}
-                  openVirtualPages={[]}
-                  activeVirtualPage={null}
-                  onSelectKind={(kind) => handlePaneTabSelect(kind, 'right')}
-                  extra={splitToggleExtra}
-                />
-                <div className="ml-split-pane-body">
-                  <ResourceTable
-                    clusterId={clusterId}
-                    namespace={rightNamespace}
-                    kind={splitRightKind}
-                    isActive={isClusterActive}
-                    onNamespaceChange={(ns) => handlePaneNamespaceChange('right', ns)}
-                  />
-                </div>
-              </div>
-            </Splitter.Panel>
+              </Splitter.Panel>
+            ))}
           </Splitter>
         </div>
       </div>
@@ -517,7 +629,7 @@ export function ResourceKindTabs({
     // Only mount the absolute host while an app page is actually front.
     // Leaving an inset:0 / z-index:0 host mounted over Nodes/Pods paints a black
     // layer in Electron even when visibility:hidden (webview / compositor quirk).
-    if (!isClusterAppPage(selectedVirtualPage)) return null
+    if (!clusterAppHostMounted(selectedVirtualPage)) return null
     return (
       <div className="ml-cluster-app-host is-front">
         {keptAppPages.map((page) =>

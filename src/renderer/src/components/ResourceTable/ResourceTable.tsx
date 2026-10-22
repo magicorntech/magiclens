@@ -12,6 +12,8 @@ import type { ResourceListItem } from '@shared/types/resource'
 import { useResourceList } from '../../queries/useResourceList'
 import { useNodeMetrics } from '../../queries/useNodeMetrics'
 import { podMetricsKey, usePodTableMetrics } from '../../queries/usePodTableMetrics'
+import { hpaTargetUsage } from './hpaUsage'
+import { useHpaTargetUsage } from './useHpaTargetUsage'
 import { pvcMetricsKey, usePvcTableMetrics } from '../../queries/usePvcTableMetrics'
 import { useTlsCerts } from '../../queries/useTlsCerts'
 import { tlsCertKey } from '@shared/types/tlsCerts'
@@ -24,6 +26,7 @@ import { ProgressBar } from '../ui/ProgressBar'
 import {
   ageResourceSorter,
   columnValueSorter,
+  compareUsageRatio,
   statusSorter,
   type TableSortState
 } from '../../utils/tableSort'
@@ -71,8 +74,8 @@ function applySortOrder(
   col: ColumnsType<ResourceListItem>[number],
   sortState: TableSortState
 ): ColumnsType<ResourceListItem>[number] {
-  if (!col.key || sortState.columnKey !== col.key) return col
-  return { ...col, sortOrder: sortState.order ?? null }
+  if (!col.key || !col.sorter || !sortState.columnKey) return col
+  return { ...col, sortOrder: sortState.columnKey === col.key ? (sortState.order ?? null) : null }
 }
 
 export function ResourceTable({
@@ -105,6 +108,7 @@ export function ResourceTable({
   const isNodesKind = kind === 'Nodes'
   const kindNeedsNamespace = isNamespaceScoped(kind)
   const isPodsKind = kind === 'Pods'
+  const isHpaKind = kind === 'HorizontalPodAutoscalers'
   const isPvcsKind = kind === 'PersistentVolumeClaims'
   const isSecretsKind = kind === 'Secrets'
   const detailInSidebar = resourceDetailPlacement === 'right' && canUseSplitLayouts(layoutMode)
@@ -129,6 +133,7 @@ export function ResourceTable({
     namespace,
     isActive && isPodsKind
   )
+  const hpaTargets = useHpaTargetUsage(isHpaKind ? clusterId : null, namespace, isActive && isHpaKind)
   const pvcMetricsByKey = usePvcTableMetrics(
     isPvcsKind ? clusterId : null,
     namespace,
@@ -209,7 +214,75 @@ export function ResourceTable({
         )
       )
     }
+    const hpaUsageFor = (item: ResourceListItem) => {
+      const ns = item.namespace
+      return hpaTargetUsage(
+        item.columns.target ?? '',
+        hpaTargets.pods.filter((pod) => pod.namespace === ns),
+        hpaTargets.replicaSets.filter((replicaSet) => replicaSet.namespace === ns),
+        hpaTargets.metrics
+      )
+    }
+
     for (const col of kindColumnDefs[kind] ?? []) {
+      if (isHpaKind && col.key === 'usage') {
+        cols.push(
+          applySortOrder(
+            {
+              title: col.title,
+              key: col.key,
+              width: 240,
+              sorter: (a, b, order) => {
+                const left = hpaUsageFor(a)
+                const right = hpaUsageFor(b)
+                const byCpu = compareUsageRatio(
+                  left.hasUsage ? left.cpuUsage : undefined,
+                  left.cpuRequest,
+                  right.hasUsage ? right.cpuUsage : undefined,
+                  right.cpuRequest,
+                  order
+                )
+                if (byCpu !== 0) return byCpu
+                return compareUsageRatio(
+                  left.hasUsage ? left.memoryUsage : undefined,
+                  left.memoryRequest,
+                  right.hasUsage ? right.memoryUsage : undefined,
+                  right.memoryRequest,
+                  order
+                )
+              },
+              ellipsis: false,
+              render: (_, item) => {
+                const summed = hpaUsageFor(item)
+                return (
+                  <div className="ml-hpa-usage">
+                    <div className="ml-hpa-usage-row">
+                      <span className="ml-hpa-usage-label">CPU</span>
+                      <UsageRequestCell
+                        usage={summed.hasUsage ? summed.cpuUsage : undefined}
+                        request={summed.cpuRequest}
+                        formatUsage={(n) => n.toFixed(2)}
+                        formatRequest={(n) => n.toFixed(2)}
+                      />
+                    </div>
+                    <div className="ml-hpa-usage-row">
+                      <span className="ml-hpa-usage-label">Memory</span>
+                      <UsageRequestCell
+                        usage={summed.hasUsage ? summed.memoryUsage : undefined}
+                        request={summed.memoryRequest}
+                        formatUsage={formatBytes}
+                        formatRequest={formatBytes}
+                      />
+                    </div>
+                  </div>
+                )
+              }
+            },
+            sortState
+          )
+        )
+        continue
+      }
       cols.push(
         applySortOrder(
           {
@@ -229,10 +302,10 @@ export function ResourceTable({
               title: 'CPU',
               key: 'cpu-metric',
               width: 168,
-              sorter: (a, b) => {
-                const ca = podMetricsByKey.get(podMetricsKey(a.namespace, a.name))?.cpu ?? -1
-                const cb = podMetricsByKey.get(podMetricsKey(b.namespace, b.name))?.cpu ?? -1
-                return ca - cb
+              sorter: (a, b, order) => {
+                const ca = podMetricsByKey.get(podMetricsKey(a.namespace, a.name))?.cpu
+                const cb = podMetricsByKey.get(podMetricsKey(b.namespace, b.name))?.cpu
+                return compareUsageRatio(ca, Number(a.columns.cpuRequest) || 0, cb, Number(b.columns.cpuRequest) || 0, order)
               },
               ellipsis: false,
               render: (_, item) => {
@@ -243,6 +316,11 @@ export function ResourceTable({
                     request={Number(item.columns.cpuRequest) || 0}
                     formatUsage={(n) => n.toFixed(2)}
                     formatRequest={(n) => n.toFixed(2)}
+                    clusterId={clusterId}
+                    namespace={item.namespace}
+                    podName={item.name}
+                    metric="cpu"
+                    isActive={isActive}
                   />
                 )
               }
@@ -256,10 +334,16 @@ export function ResourceTable({
               title: 'Memory',
               key: 'memory-metric',
               width: 180,
-              sorter: (a, b) => {
-                const ma = podMetricsByKey.get(podMetricsKey(a.namespace, a.name))?.memory ?? -1
-                const mb = podMetricsByKey.get(podMetricsKey(b.namespace, b.name))?.memory ?? -1
-                return ma - mb
+              sorter: (a, b, order) => {
+                const ma = podMetricsByKey.get(podMetricsKey(a.namespace, a.name))?.memory
+                const mb = podMetricsByKey.get(podMetricsKey(b.namespace, b.name))?.memory
+                return compareUsageRatio(
+                  ma,
+                  Number(a.columns.memoryRequest) || 0,
+                  mb,
+                  Number(b.columns.memoryRequest) || 0,
+                  order
+                )
               },
               ellipsis: false,
               render: (_, item) => {
@@ -270,6 +354,11 @@ export function ResourceTable({
                     request={Number(item.columns.memoryRequest) || 0}
                     formatUsage={formatBytes}
                     formatRequest={formatBytes}
+                    clusterId={clusterId}
+                    namespace={item.namespace}
+                    podName={item.name}
+                    metric="memory"
+                    isActive={isActive}
                   />
                 )
               }
@@ -343,12 +432,18 @@ export function ResourceTable({
             title: 'CPU',
             key: 'cpu-metric',
             width: 160,
-            sorter: (a, b) => {
-              const ca =
-                nodeMetrics?.nodes.find((n) => n.name === a.name)?.cpuUsageCores ?? -1
-              const cb =
-                nodeMetrics?.nodes.find((n) => n.name === b.name)?.cpuUsageCores ?? -1
-              return ca - cb
+            sorter: (a, b, order) => {
+              const na = nodeMetrics?.nodes.find((n) => n.name === a.name)
+              const nb = nodeMetrics?.nodes.find((n) => n.name === b.name)
+              const basis = (cores: number | undefined, capacity: number | undefined): number =>
+                cores && cores > 0 ? cores : capacity && capacity > 0 ? capacity : 0
+              return compareUsageRatio(
+                na?.cpuUsageCores,
+                basis(na?.cpuAllocatableCores, na?.cpuCapacityCores),
+                nb?.cpuUsageCores,
+                basis(nb?.cpuAllocatableCores, nb?.cpuCapacityCores),
+                order
+              )
             },
             ellipsis: false,
             render: (_, item) => {
@@ -378,12 +473,18 @@ export function ResourceTable({
             title: 'Memory',
             key: 'memory-metric',
             width: 160,
-            sorter: (a, b) => {
-              const ma =
-                nodeMetrics?.nodes.find((n) => n.name === a.name)?.memoryUsageBytes ?? -1
-              const mb =
-                nodeMetrics?.nodes.find((n) => n.name === b.name)?.memoryUsageBytes ?? -1
-              return ma - mb
+            sorter: (a, b, order) => {
+              const na = nodeMetrics?.nodes.find((n) => n.name === a.name)
+              const nb = nodeMetrics?.nodes.find((n) => n.name === b.name)
+              const basis = (bytes: number | undefined, capacity: number | undefined): number =>
+                bytes && bytes > 0 ? bytes : capacity && capacity > 0 ? capacity : 0
+              return compareUsageRatio(
+                na?.memoryUsageBytes,
+                basis(na?.memoryAllocatableBytes, na?.memoryCapacityBytes),
+                nb?.memoryUsageBytes,
+                basis(nb?.memoryAllocatableBytes, nb?.memoryCapacityBytes),
+                order
+              )
             },
             ellipsis: false,
             render: (_, item) => {
@@ -467,6 +568,8 @@ export function ResourceTable({
     namespace,
     isNodesKind,
     isPodsKind,
+    isHpaKind,
+    hpaTargets,
     isPvcsKind,
     nodeMetrics,
     podMetricsByKey,

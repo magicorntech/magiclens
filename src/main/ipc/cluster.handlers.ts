@@ -15,6 +15,7 @@ import { portForwardManager } from '../k8s/portForwardManager'
 import { resourceWatchManager } from '../k8s/resourceWatchManager'
 import { podLogManager } from '../k8s/podLogManager'
 import { podExecManager } from '../k8s/podExecManager'
+import { nodeExecManager } from '../k8s/nodeExecManager'
 import { demoNamespaces, isDemoCluster } from '../k8s/demoMode'
 
 export function registerClusterHandlers(): void {
@@ -38,6 +39,7 @@ export function registerClusterHandlers(): void {
     portForwardManager.stopAllForCluster(req.clusterId)
     podLogManager.stopAllForCluster(req.clusterId)
     podExecManager.stopAllForCluster(req.clusterId)
+    nodeExecManager.stopAllForCluster(req.clusterId)
     clusterManager.disconnect(req.clusterId)
     clearDiscoveryCache(req.clusterId)
     clearPrometheusCache(req.clusterId)

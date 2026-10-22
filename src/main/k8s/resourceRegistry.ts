@@ -4,6 +4,7 @@ import type { ResourceListItem } from '@shared/types/resource'
 import type { ClusterClients } from './clusterManager'
 import { parseCpuQuantity, parseMemoryQuantity } from '@shared/quantity'
 import { derivePodStatus } from './podStatus'
+import { listEventObjects } from './eventsService'
 
 /** Group/Version/Resource info needed to build a Kubernetes Watch API path. */
 export interface ResourceGvk {
@@ -35,12 +36,6 @@ function baseMeta(obj: { metadata?: V1ObjectMeta }) {
     namespace: obj.metadata?.namespace ?? '',
     ageTimestamp: obj.metadata?.creationTimestamp ? new Date(obj.metadata.creationTimestamp).toISOString() : null
   }
-}
-
-function ownerKind(obj: { metadata?: V1ObjectMeta }): string {
-  const owner = obj.metadata?.ownerReferences?.[0]
-  if (!owner) return '-'
-  return owner.kind
 }
 
 function ownerReference(obj: { metadata?: V1ObjectMeta }): string {
@@ -162,7 +157,7 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
           containers: podContainerStatuses(pod),
           ready: `${readyCount}/${containers.length}`,
           restarts: String(restarts),
-          controlledBy: ownerKind(pod),
+          controlledBy: ownerReference(pod),
           node: pod.spec?.nodeName ?? '-',
           qos: pod.status?.qosClass ?? '-',
           cpuRequest: String(cpuRequest),
@@ -734,10 +729,7 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
 
   Events: defineKind(
     { group: '', version: 'v1', plural: 'events', namespaced: true },
-    (clients, namespace) =>
-      namespace === 'ALL'
-        ? clients.core.listEventForAllNamespaces()
-        : clients.core.listNamespacedEvent({ namespace }),
+    (clients, namespace) => listEventObjects(clients, namespace),
     (event) => ({
       ...baseMeta(event),
       statusText: event.type ?? 'Normal',
@@ -745,7 +737,7 @@ export const resourceRegistry: Record<ResourceKind, ResourceKindConfig> = {
       columns: {
         reason: event.reason ?? '-',
         object: event.involvedObject?.name ?? '-',
-        message: event.message ?? '-'
+        message: event.message ?? (event as { note?: string }).note ?? '-'
       }
     })
   )

@@ -11,7 +11,11 @@ let tick = 0
 let intervalId: ReturnType<typeof setInterval> | null = null
 const listeners = new Set<() => void>()
 
-function subscribe(listener: () => void): () => void {
+export function sharedClockIntervalActive(): boolean {
+  return intervalId != null
+}
+
+export function subscribeSharedClock(listener: () => void): () => void {
   if (listeners.size === 0) {
     intervalId = setInterval(() => {
       tick += 1
@@ -33,5 +37,5 @@ function getSnapshot(): number {
 }
 
 export function useSharedClockTick(): number {
-  return useSyncExternalStore(subscribe, getSnapshot)
+  return useSyncExternalStore(subscribeSharedClock, getSnapshot)
 }

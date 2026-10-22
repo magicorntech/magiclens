@@ -6,6 +6,8 @@ import { ALL_NAMESPACES, isNoNamespaceSelection } from '@shared/namespaceSelecti
 import type { ResourceKind } from '@shared/resourceKinds'
 import { useClusterStore } from '../../stores/clusterStore'
 import {
+  savedViewAppliesOnCluster,
+  savedViewsForCluster,
   useSavedViewsStore,
   viewsMatchCurrent,
   type SavedResourceView
@@ -55,11 +57,13 @@ export function SavedViewsControl({
   const [saveOpen, setSaveOpen] = useState(false)
   const [name, setName] = useState('')
 
-  const ordered = useMemo(
-    () => [...views].sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt)),
-    [views]
-  )
-  const active = ordered.find((view) => viewsMatchCurrent(view, kind, namespace, search, sort))
+  const { cluster: clusterViews, legacy: legacyViews } = useMemo(() => {
+    const ordered = [...views].sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt))
+    return savedViewsForCluster(ordered, clusterId)
+  }, [views, clusterId])
+  const active =
+    clusterViews.find((view) => viewsMatchCurrent(view, kind, namespace, search, sort)) ??
+    legacyViews.find((view) => viewsMatchCurrent(view, kind, namespace, search, sort))
 
   function namespaceLabel(value: string): string {
     if (value === ALL_NAMESPACES) return t('common.allNamespaces')
@@ -69,6 +73,7 @@ export function SavedViewsControl({
   }
 
   function applyView(view: SavedResourceView): void {
+    if (!savedViewAppliesOnCluster(view, clusterId)) return
     touchView(view.id)
     onApplyNamespace(view.namespace)
     if (view.kind === kind) {
@@ -96,50 +101,76 @@ export function SavedViewsControl({
   function handleSave(): void {
     const trimmed = name.trim()
     if (!trimmed) return
-    saveView({ name: trimmed, kind, namespace, search, sort })
+    saveView({ name: trimmed, kind, namespace, search, sort, clusterId })
     setSaveOpen(false)
   }
 
   function updateActive(): void {
     if (!active) return
-    updateView(active.id, { kind, namespace, search, sort, lastUsedAt: new Date().toISOString() })
+    updateView(active.id, {
+      kind,
+      namespace,
+      search,
+      sort,
+      clusterId,
+      lastUsedAt: new Date().toISOString()
+    })
     setMenuOpen(false)
   }
 
+  function renderView(view: SavedResourceView): React.JSX.Element {
+    const isActive = active?.id === view.id
+    const kindLabel = t(`resourceNav.kinds.${view.kind}`, { defaultValue: view.kind })
+    const legacy = view.clusterId === ''
+    return (
+      <div key={view.id} className={`ml-saved-view-item${isActive ? ' ml-saved-view-item--active' : ''}`}>
+        <div className="ml-saved-view-item__main">
+          <button type="button" className="ml-saved-view-item__body" onClick={() => applyView(view)}>
+            <span className="ml-saved-view-item__name">{view.name}</span>
+            <span className="ml-saved-view-item__meta">
+              {kindLabel}
+              {' · '}
+              {namespaceLabel(view.namespace)}
+              {view.search.trim() ? ` · ${view.search.trim()}` : ''}
+            </span>
+          </button>
+          {legacy ? (
+            <button
+              type="button"
+              className="ml-saved-view-item__keep"
+              onClick={() => updateView(view.id, { clusterId })}
+            >
+              {t('resourceViews.useOnThisCluster')}
+            </button>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          className="ml-saved-view-item__delete"
+          aria-label={t('resourceViews.delete')}
+          onClick={() => removeView(view.id)}
+        >
+          <Icon icon={Trash2} variant="micro" />
+        </button>
+      </div>
+    )
+  }
+
+  const hasVisibleViews = clusterViews.length > 0 || legacyViews.length > 0
+
   const panel = (
     <div className="ml-saved-views-menu" onMouseDown={(e) => e.preventDefault()}>
-      {ordered.length === 0 ? (
+      {!hasVisibleViews ? (
         <div className="ml-saved-views-menu__empty">{t('resourceViews.empty')}</div>
       ) : (
         <div className="ml-saved-views-menu__list">
-          {ordered.map((view) => {
-            const isActive = active?.id === view.id
-            const kindLabel = t(`resourceNav.kinds.${view.kind}`, { defaultValue: view.kind })
-            return (
-              <div
-                key={view.id}
-                className={`ml-saved-view-item${isActive ? ' ml-saved-view-item--active' : ''}`}
-              >
-                <button type="button" className="ml-saved-view-item__body" onClick={() => applyView(view)}>
-                  <span className="ml-saved-view-item__name">{view.name}</span>
-                  <span className="ml-saved-view-item__meta">
-                    {kindLabel}
-                    {' · '}
-                    {namespaceLabel(view.namespace)}
-                    {view.search.trim() ? ` · ${view.search.trim()}` : ''}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="ml-saved-view-item__delete"
-                  aria-label={t('resourceViews.delete')}
-                  onClick={() => removeView(view.id)}
-                >
-                  <Icon icon={Trash2} variant="micro" />
-                </button>
-              </div>
-            )
-          })}
+          {clusterViews.map(renderView)}
+          {legacyViews.length > 0 ? (
+            <>
+              <div className="ml-saved-views-menu__group">{t('resourceViews.everyCluster')}</div>
+              {legacyViews.map(renderView)}
+            </>
+          ) : null}
         </div>
       )}
       <div className="ml-saved-views-menu__footer">

@@ -347,7 +347,20 @@ export const tr: TranslationOverrides = {
         deploymentUnavailable: 'İstenenden az hazır replikası olan deployment’lar.',
         certExpiring: 'Uyarı penceresindeki TLS secret’lar.',
         certExpired: 'notAfter tarihi geçmiş TLS secret’lar.'
-      }
+      },
+      historyTitle: 'Uyarı geçmişi',
+      historyHint: 'Kapanan uyarılar burada kalır. Erteleme yalnızca bu kümedeki bu uyarı için geçerlidir.',
+      activeTitle: 'Aktif',
+      activeEmpty: 'Aktif uyarı yok.',
+      clearedTitle: 'Kapanan',
+      clearedEmpty: 'Kapanan uyarı yok.',
+      clearedAt: 'Kapandı {{time}}',
+      snoozeHour: '1 saat',
+      snoozeDay: 'Yarına kadar',
+      snoozeCleared: 'Kapanana kadar',
+      unsnooze: 'Ertelemeyi kaldır',
+      snoozedUntil: '{{until}} tarihine kadar ertelendi',
+      snoozedUntilCleared: 'Bu uyarı kapanana kadar ertelendi'
     },
     updates: {
       checkAutomatically: 'Güncellemeleri otomatik kontrol et',
@@ -433,6 +446,8 @@ export const tr: TranslationOverrides = {
       showClusterNamespace: 'Bağlı namespace’i göster',
       showClusterNamespaceHint:
         'Açıkken, sol kenar çubuğundaki bağlı kümelerde seçili namespace bir etiket olarak gösterilir.',
+      navIconBrightness: 'Navigasyon ikon parlaklığı',
+      navIconBrightnessHint: 'Kaynak menüsündeki ikonların ne kadar belirgin görüneceği. Şu an %{{value}}.',
       tabIconsTitle: 'Sekme simgeleri',
       showClusterLogos: 'Küme sekmelerinde logo göster',
       showResourceIcons: 'Kaynak sekmelerinde simge göster',
@@ -1115,6 +1130,7 @@ export const tr: TranslationOverrides = {
       portForwarding: 'Port Forwards',
       gatewayApi: 'Gateway API',
       externalSecrets: 'External Secrets',
+      tlsCerts: 'TLS sertifikaları',
       helmCharts: 'Helm',
       helmReleases: 'Helm',
       argoDashboard: 'Panel',
@@ -1338,7 +1354,7 @@ export const tr: TranslationOverrides = {
     },
     charts: {
       cpu: 'Node başına CPU',
-      memory: 'Node başına bellek',
+      memory: 'Bellek (GiB)',
       pods: 'Pod durumu',
       running: 'Çalışıyor',
       disk: 'Node başına disk',
@@ -1348,8 +1364,8 @@ export const tr: TranslationOverrides = {
       empty: 'Henüz veri yok',
       noMetrics: 'Bu node’lar için metrik yok',
       noDisk: 'Kök disk metriği yok (node-exporter gerekir)',
-      clickNode: 'Çubuğa tıklayınca node detayı açılır.',
-      clickPods: 'Dilimlere tıklayınca Pods açılır.'
+      clickNode: 'Node’a tıklayınca detayı açılır.',
+      clickPods: 'Yuvarlağa tıklayınca Pods açılır.'
     }
   },
   nodePods: {
@@ -1411,6 +1427,18 @@ export const tr: TranslationOverrides = {
     cpuAlloc: 'CPU allocatable',
     memAlloc: 'Bellek allocatable',
     recentEvents: 'Son olaylar'
+  },
+  eventsTable: {
+    when: 'Zaman',
+    object: 'Nesne',
+    reason: 'Neden',
+    message: 'Mesaj',
+    type: 'Tür',
+    count: 'Adet',
+    created: 'Oluşturulma',
+    lastSeen: 'Son görülme',
+    source: 'Kaynak',
+    namespace: 'Namespace'
   },
   workloadsOverview: {
     title: 'Workload genel bakış',
@@ -1676,7 +1704,9 @@ export const tr: TranslationOverrides = {
     saveConfirm: 'Kaydet',
     namePlaceholder: 'Görünüme bir ad ver',
     update: '“{{name}}” güncelle',
-    delete: 'Görünümü sil'
+    delete: 'Görünümü sil',
+    everyCluster: 'Tüm kümeler',
+    useOnThisCluster: 'Bu kümede kullan'
   },
   resourceDetail: {
     tabs: {
@@ -1740,6 +1770,16 @@ export const tr: TranslationOverrides = {
       deleteBody: 'Bu işlem geri alınamaz.',
       deleted: '"{{name}}" silindi',
       deleteFailed: 'Silme başarısız: {{error}}'
+    },
+    audit: {
+      title: 'Son işlemler',
+      success: 'Başarılı',
+      failed: 'Başarısız: {{error}}',
+      failedUnknown: 'Başarısız',
+      scale: 'Ölçekle',
+      restart: 'Yeniden başlat',
+      editYaml: 'YAML uygula',
+      other: '{{action}}'
     },
     workloadLogs: {
       allPods: 'Tüm pod’lar ({{count}})',
@@ -2241,6 +2281,7 @@ export const tr: TranslationOverrides = {
   search: {
     placeholder: 'Küme, Sparks, pod ara…',
     searching: 'Aranıyor…',
+    timedOut: 'Bazı kümelerde arama zaman aşımına uğradı. Gelen eşleşmeler gösteriliyor.',
     noResults: 'Sonuç yok',
     connectHint: 'Namespace’ler arasında kaynak aramak için bir kümeye bağlanın.',
     typeHint:
@@ -2360,7 +2401,10 @@ export const tr: TranslationOverrides = {
     subtitle:
       'Sesli Kubernetes asistanı — salt okunur. Birden fazla sohbet, yerel geçmiş. Otomatik tarama yok.',
     readOnly: 'Salt okunur',
-    readOnlyHint: 'Molly yalnızca sohbette yanıt verir, sekme açmaz. Silme / oluşturma / patch engellenir.',
+    readOnlyHint: 'Molly değişikliği önerir. Ölçek, yeniden başlatma ve apply yalnızca onayından sonra çalışır.',
+    proposal: {
+      editorUnavailable: 'YAML’i incelemek için bu kümeyi açın.'
+    },
     prefs: 'Tercihler',
     chats: 'Sohbetler',
     newChat: 'Yeni sohbet',

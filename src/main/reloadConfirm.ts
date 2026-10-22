@@ -169,8 +169,7 @@ export function installApplicationMenu(): void {
             if (win) void confirmAndReloadWindow(win, true)
           }
         },
-        { type: 'separator' },
-        { role: 'toggleDevTools' },
+        ...(app.isPackaged ? [] : [{ type: 'separator' as const }, { role: 'toggleDevTools' as const }]),
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },

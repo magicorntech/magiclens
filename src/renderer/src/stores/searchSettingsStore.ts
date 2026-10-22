@@ -24,7 +24,7 @@ export const useSearchSettingsStore = create<SearchSettingsState>()(
     (set, get) => ({
       enabledTypes: [...GLOBAL_SEARCH_TYPES],
       limitPerType: 15,
-      searchAllConnected: false,
+      searchAllConnected: true,
       rememberRecent: true,
       recent: [],
       toggleType: (type) =>
@@ -47,6 +47,13 @@ export const useSearchSettingsStore = create<SearchSettingsState>()(
       },
       clearRecent: () => set({ recent: [] })
     }),
-    { name: 'magiclens-search-settings' }
+    {
+      name: 'magiclens-search-settings',
+      version: 1,
+      migrate: (persisted) => {
+        if (!persisted || typeof persisted !== 'object') return persisted as SearchSettingsState
+        return { ...(persisted as object), searchAllConnected: true }
+      }
+    }
   )
 )

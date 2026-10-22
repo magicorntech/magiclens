@@ -24,9 +24,11 @@ export function PodMetricsChart({
 }: PodMetricsChartProps): React.JSX.Element {
   return (
     <div>
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-        {title}
-      </Typography.Text>
+      {title ? (
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {title}
+        </Typography.Text>
+      ) : null}
       {points.length < 2 ? (
         <Empty
           description="Collecting data points..."
@@ -34,8 +36,9 @@ export function PodMetricsChart({
           style={{ margin: '20px 0' }}
         />
       ) : (
+        <div className="ml-pod-metrics-chart" onMouseDown={(event) => event.preventDefault()}>
         <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={points.map((p) => ({ t: p.t, ...p.values }))} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+          <AreaChart data={points.map((p) => ({ t: p.t, ...p.values }))} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} accessibilityLayer={false}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="t"
@@ -47,8 +50,23 @@ export function PodMetricsChart({
             />
             <YAxis tickFormatter={(v: number) => formatValue(v)} width={72} tick={{ fontSize: 11 }} />
             <Tooltip
-              labelFormatter={(t) => dayjs(t as number).format('HH:mm:ss')}
-              formatter={(value) => formatValue(Number(value))}
+              isAnimationActive={false}
+              wrapperStyle={{ outline: 'none', background: 'transparent', border: 'none', boxShadow: 'none' }}
+              content={({ active, label, payload }) => {
+                if (!active || !payload?.length) return null
+                return (
+                  <div className="ml-pod-metrics-tip">
+                    <div className="ml-pod-metrics-tip__time">{dayjs(label as number).format('HH:mm:ss')}</div>
+                    {payload.map((entry) => (
+                      <div key={String(entry.dataKey)} className="ml-pod-metrics-tip__row">
+                        <span className="ml-pod-metrics-tip__swatch" style={{ background: entry.color }} />
+                        <span className="ml-pod-metrics-tip__name">{entry.name}</span>
+                        <span className="ml-pod-metrics-tip__value">{formatValue(Number(entry.value))}</span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              }}
             />
             {seriesNames.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
             {seriesNames.map((name, i) => {
@@ -75,6 +93,7 @@ export function PodMetricsChart({
             })}
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       )}
     </div>
   )

@@ -89,6 +89,7 @@ export type MollyToolName =
   | 'startSecurityScan'
   | 'navigateTo'
   | 'summarizeAnomalies'
+  | 'proposeWorkloadAction'
 
 export interface MollyToolCall {
   name: MollyToolName

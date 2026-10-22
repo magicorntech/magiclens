@@ -23,6 +23,7 @@ import type { SecurityReport, SecurityScanProgress } from '@shared/types/securit
 import type { MetricsSeries } from '@shared/types/metrics'
 import { parseCpuQuantity, parseMemoryQuantity } from '../k8s/quantity'
 import type { ClusterClients } from '../k8s/clusterManager'
+import { listRecentClusterEvents } from '../k8s/eventsService'
 import { apiVersionOf, K8S_KIND_NAME, resourceRegistry } from '../k8s/resourceRegistry'
 import { discoverApiResources } from '../k8s/discoveryService'
 import { listDynamicResourcesRaw } from '../k8s/dynamicResourceService'
@@ -971,33 +972,17 @@ async function toolGetEvents(
 ): Promise<MollyToolResult> {
   if (!clusterId) return { name: 'getEvents', ok: false, summary: 'clusterId required' }
   const result = await withClusterClients(clusterId, async (clients: ClusterClients) => {
-    const res = namespace
-      ? await clients.core.listNamespacedEvent({ namespace })
-      : await clients.core.listEventForAllNamespaces()
-    const items = (res.items ?? [])
-      .slice()
-      .sort((a, b) => {
-        const ta =
-          Date.parse(
-            String(a.lastTimestamp ?? a.eventTime ?? a.metadata?.creationTimestamp ?? '')
-          ) || 0
-        const tb =
-          Date.parse(
-            String(b.lastTimestamp ?? b.eventTime ?? b.metadata?.creationTimestamp ?? '')
-          ) || 0
-        return tb - ta
-      })
-      .map((e) => ({
-        type: e.type,
-        reason: e.reason,
-        message: e.message,
-        namespace: e.metadata?.namespace,
-        name: e.involvedObject?.name,
-        kind: e.involvedObject?.kind,
-        count: e.count,
-        at: e.lastTimestamp ?? e.eventTime ?? e.metadata?.creationTimestamp ?? ''
-      }))
-    return items
+    const events = await listRecentClusterEvents(clients, { namespace, limit: 200 })
+    return events.map((event) => ({
+      type: event.type,
+      reason: event.reason,
+      message: event.message,
+      namespace: event.involvedNamespace,
+      name: event.involvedName,
+      kind: event.involvedKind,
+      count: event.count,
+      at: event.lastTimestamp ?? event.firstTimestamp ?? ''
+    }))
   })
   if ('error' in result) return { name: 'getEvents', ok: false, summary: String(result.error) }
   const sinceMs = opts?.since ? Date.parse(parseSince(opts.since).sinceTime ?? '') : NaN
@@ -1303,6 +1288,60 @@ async function toolSummarizeAnomalies(clusterId: string): Promise<MollyToolResul
   }
 }
 
+function toolProposeWorkloadAction(args: Record<string, unknown>): MollyToolResult {
+  const clusterRef = asString(args.clusterId)
+  const clusterId = resolveClusterId(clusterRef) ?? ''
+  const kind = asString(args.kind)
+  const namespace = typeof args.namespace === 'string' ? args.namespace.trim() : null
+  const name = asString(args.name)
+  const action = asString(args.action)
+  const actionOk = action === 'scale' || action === 'restart' || action === 'apply'
+  if (!clusterRef || !kind || namespace == null || !name || !actionOk) {
+    return {
+      name: 'proposeWorkloadAction',
+      ok: false,
+      summary: 'Need clusterId, kind, namespace, name, and action (scale, restart, or apply).'
+    }
+  }
+  if (!clusterId) {
+    return {
+      name: 'proposeWorkloadAction',
+      ok: false,
+      summary: `Unknown cluster "${clusterRef}".`
+    }
+  }
+  if (action === 'scale') {
+    const replicas = asNumber(args.replicas)
+    if (replicas == null || !Number.isInteger(replicas) || replicas < 0) {
+      return { name: 'proposeWorkloadAction', ok: false, summary: 'Scale needs a replica count.' }
+    }
+    return {
+      name: 'proposeWorkloadAction',
+      ok: true,
+      summary: `Propose scale ${kind} ${namespace}/${name} to ${replicas}. Confirm in the app.`,
+      data: { action, clusterId, kind, namespace, name, replicas }
+    }
+  }
+  if (action === 'restart') {
+    return {
+      name: 'proposeWorkloadAction',
+      ok: true,
+      summary: `Propose restart ${kind} ${namespace}/${name}. Confirm in the app.`,
+      data: { action, clusterId, kind, namespace, name }
+    }
+  }
+  const yaml = typeof args.yaml === 'string' ? args.yaml : ''
+  if (!yaml.trim()) {
+    return { name: 'proposeWorkloadAction', ok: false, summary: 'Apply needs YAML.' }
+  }
+  return {
+    name: 'proposeWorkloadAction',
+    ok: true,
+    summary: `Propose apply ${kind} ${namespace}/${name}. Confirm in the app.`,
+    data: { action, clusterId, kind, namespace, name, yaml }
+  }
+}
+
 const MUTATING_TOOL_RE =
   /^(delete|create|apply|patch|update|replace|scale|restart|exec|rollout|uninstall|install|drain|cordon|taint)/i
 
@@ -1324,8 +1363,8 @@ export async function runMollyTool(call: MollyToolCall): Promise<MollyToolResult
         'Molly is read-only. Ask for a resource list, status, metrics, events, or logs — the answer stays in chat.'
     }
   }
-  if (isDemoMode()) return demoMollyTool(call)
-  if (call.name !== 'listClusters' && args.clusterId != null) {
+  if (isDemoMode() && call.name !== 'proposeWorkloadAction') return demoMollyTool(call)
+  if (call.name !== 'listClusters' && call.name !== 'proposeWorkloadAction' && args.clusterId != null) {
     // Normalize cluster references for every tool that needs live clients.
     const prepared = prepareCluster(asString(args.clusterId))
     if (!prepared.ok) {
@@ -1388,6 +1427,8 @@ export async function runMollyTool(call: MollyToolCall): Promise<MollyToolResult
         asString(args.namespace),
         asString(args.name)
       )
+    case 'proposeWorkloadAction':
+      return toolProposeWorkloadAction(args)
     default:
       return { name: call.name, ok: false, summary: `Unknown tool: ${call.name}` }
   }
@@ -1451,5 +1492,6 @@ export const MOLLY_TOOL_NAMES: MollyToolName[] = [
   'getUsage',
   'getSecurity',
   'startSecurityScan',
-  'summarizeAnomalies'
+  'summarizeAnomalies',
+  'proposeWorkloadAction'
 ]
